@@ -315,6 +315,61 @@ app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res)
   }
 });
 
+// PATCH /reports/:id/state - Change report state (Responders/Admins only)
+app.patch('/reports/:id/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
+  const { id } = req.params;
+  const { newState } = req.body;
+  const allowedStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
+  const allowedTransitions = {
+    submitted: ['acknowledged', 'investigating'],
+    acknowledged: ['investigating', 'resolved', 'closed'],
+    investigating: ['resolved', 'closed'],
+    resolved: ['closed'],
+    closed: [],
+  };
+  if (!newState || !allowedStates.includes(newState)) {
+    return res.status(400).json({ error: 'Invalid or missing newState.' });
+  }
+  try {
+    // Fetch the report and its event
+    const report = await prisma.report.findUnique({ where: { id }, include: { event: true } });
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+    // Check user has Responder/Admin/SuperAdmin role for the event
+    const userId = req.user.id;
+    const eventId = report.eventId;
+    const userRoles = await prisma.userEventRole.findMany({
+      where: { userId, eventId },
+      include: { role: true },
+    });
+    const roleNames = userRoles.map(uer => uer.role.name);
+    if (!roleNames.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r))) {
+      return res.status(403).json({ error: 'You do not have permission to change the state for this report.' });
+    }
+    // Validate allowed state transition
+    if (!allowedTransitions[report.state].includes(newState)) {
+      return res.status(400).json({ error: `Invalid state transition from ${report.state} to ${newState}.` });
+    }
+    // Update the report state
+    const updated = await prisma.report.update({
+      where: { id },
+      data: { state: newState },
+    });
+    // Log audit
+    await logAudit({
+      eventId,
+      userId,
+      action: `change_report_state:${report.state}->${newState}`,
+      targetType: 'Report',
+      targetId: id,
+    });
+    res.json({ message: 'Report state updated.', report: updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update report state.', details: err.message });
+  }
+});
+
 // Admin: List all users (Super Admin only)
 app.get('/admin/users', requireSuperAdmin(), async (req, res) => {
   try {

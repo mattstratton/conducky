@@ -28,7 +28,7 @@
 
 ## Phase 4: Report Submission & Management
 - [~] Design and implement report submission form (with all required fields)
-- [ ] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
+- [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
 - [ ] Allow admins to define custom report types per event ([#5](https://github.com/mattstratton/conducky/issues/5))
 - [ ] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [ ] Admin/Responder UI for managing and responding to reports
@@ -51,6 +51,13 @@
 - [ ] Write user documentation (how to use the system, submit/manage reports, admin features, etc.)
 - [ ] Write detailed local development documentation (using Docker, docker-compose, local environment setup, troubleshooting, etc.)
 - [ ] Prepare for production deployment (security, backups, etc.)
+
+## Phase 8: Frontend MVP (Initial UI for Testing)
+- [ ] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
+- [ ] Implement authentication UI (login/logout)
+- [ ] Add dashboard page to list reports for an event
+- [ ] Add report submission form (type, description, evidence upload)
+- [ ] Add state change controls for authorized users (Responders/Admins)
 
 ---
 
