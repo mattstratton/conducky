@@ -62,9 +62,10 @@ model Report {
   type        String
   description String
   state       String   // submitted, acknowledged, investigating, resolved, closed
+  evidence    String?  // file path of uploaded evidence (optional)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  // Add more fields as needed (e.g., evidence, involved parties)
+  // Add more fields as needed (e.g., involved parties)
 }
 
 model AuditLog {

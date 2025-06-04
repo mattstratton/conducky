@@ -12,11 +12,12 @@
     "bcrypt": "^6.0.0",
     "express": "latest",
     "express-session": "^1.18.1",
+    "multer": "^2.0.1",
     "passport": "^0.7.0",
-    "passport-local": "^1.0.0",
-    "prisma": "^6.9.0"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.9.0"
   }
 }
