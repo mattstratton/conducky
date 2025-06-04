@@ -53,4 +53,18 @@ Both the frontend and backend use `.env` files to manage environment variables a
   ```
 - If you encounter errors about missing Prisma client, re-run the generate command above inside the backend container.
 
+- **Audit Logging:**
+  - Use the `logAudit` helper in `backend/utils/audit.js` to log actions to the `AuditLog` table.
+  - Example usage:
+    ```js
+    await logAudit({
+      eventId: 'event-id',
+      userId: 'user-id',
+      action: 'action_name',
+      targetType: 'EntityType',
+      targetId: 'entity-id',
+    });
+    ```
+  - See the `/audit-test` endpoint in `index.js` for a working example.
+
  

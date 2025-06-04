@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node index.js",
+    "dev": "nodemon index.js",
     "start": "node index.js",
     "seed": "node prisma/seed.js",
     "postinstall": "prisma generate"
@@ -12,5 +12,8 @@
     "@prisma/client": "^6.9.0",
     "express": "latest",
     "prisma": "^6.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

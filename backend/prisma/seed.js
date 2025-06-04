@@ -10,7 +10,18 @@ async function main() {
       create: { name },
     });
   }
+
+  const event = await prisma.event.upsert({
+    where: { slug: 'test-event' },
+    update: {},
+    create: {
+      name: 'Test Event',
+      slug: 'test-event',
+    },
+  });
+
   console.log('Default roles seeded.');
+  console.log('Test event seeded. Event ID:', event.id);
 }
 
 main()

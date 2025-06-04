@@ -1,0 +1,7 @@
+{
+  "name": "conducky-root",
+  "private": true,
+  "scripts": {
+    "refresh-dev": "./refresh-dev.sh"
+  }
+} 

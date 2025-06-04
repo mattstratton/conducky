@@ -6,7 +6,7 @@
 - [X] Document local development workflow using Docker (how to start, stop, debug, etc.)
 - [~] Configure environment variables and secrets management
 - [ ] Set up database schema using ORM (support Postgres & MySQL)
-- [ ] Implement basic audit logging infrastructure
+- [X] Implement basic audit logging infrastructure
 
 ## Phase 2: Authentication & User Management
 - [ ] Implement email/password authentication (including magic link)
