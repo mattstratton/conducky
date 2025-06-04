@@ -8,10 +8,17 @@ const path = require('path');
 const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const cors = require('cors');
 const app = express();
 const PORT = 4000;
 const { logAudit } = require('./utils/audit');
 const { requireRole, requireSuperAdmin } = require('./utils/rbac');
+
+// Global request logger
+app.use((req, res, next) => {
+  console.log('[GLOBAL] Incoming request:', req.method, req.url);
+  next();
+});
 
 // Multer setup for evidence uploads
 const uploadDir = path.join(__dirname, 'uploads');
@@ -28,6 +35,12 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
+
+// CORS middleware (allow frontend dev server)
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true,
+}));
 
 // Body parsing middleware
 app.use(express.json());
@@ -251,9 +264,32 @@ app.delete('/events/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async
 });
 
 // List all users and their roles for an event
-app.get('/events/:eventId/users', requireRole(['Admin', 'SuperAdmin']), async (req, res) => {
-  const { eventId } = req.params;
+app.get('/events/:eventId/users', async (req, res) => {
+  console.log('[ROUTE] /events/:eventId/users handler', { url: req.url, params: req.params, query: req.query });
+  // Inline RBAC logic for Admin/SuperAdmin
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const eventId = req.params && req.params.eventId;
+  if (!eventId) {
+    return res.status(400).json({ error: 'Missing eventId in params' });
+  }
   try {
+    // Check for SuperAdmin role globally
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(uer => uer.role.name === 'SuperAdmin');
+    if (!isSuperAdmin) {
+      // Otherwise, check for allowed roles for this event
+      const userRoles = allUserRoles.filter(uer => uer.eventId === eventId);
+      const hasRole = userRoles.some(uer => ['Admin', 'SuperAdmin'].includes(uer.role.name));
+      if (!hasRole) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // --- original handler logic ---
     const userEventRoles = await prisma.userEventRole.findMany({
       where: { eventId },
       include: {
@@ -282,6 +318,7 @@ app.get('/events/:eventId/users', requireRole(['Admin', 'SuperAdmin']), async (r
 
 // Submit a report for an event (anonymous or authenticated, with evidence upload)
 app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res) => {
+  console.log('Received report submission:', req.body, req.file);
   const { eventId } = req.params;
   const { type, description } = req.body;
   let evidencePath = null;
@@ -311,62 +348,8 @@ app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res)
     });
     res.status(201).json({ report });
   } catch (err) {
+    console.error('Error creating report:', err);
     res.status(500).json({ error: 'Failed to submit report.', details: err.message });
-  }
-});
-
-// PATCH /reports/:id/state - Change report state (Responders/Admins only)
-app.patch('/reports/:id/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
-  const { id } = req.params;
-  const { newState } = req.body;
-  const allowedStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
-  const allowedTransitions = {
-    submitted: ['acknowledged', 'investigating'],
-    acknowledged: ['investigating', 'resolved', 'closed'],
-    investigating: ['resolved', 'closed'],
-    resolved: ['closed'],
-    closed: [],
-  };
-  if (!newState || !allowedStates.includes(newState)) {
-    return res.status(400).json({ error: 'Invalid or missing newState.' });
-  }
-  try {
-    // Fetch the report and its event
-    const report = await prisma.report.findUnique({ where: { id }, include: { event: true } });
-    if (!report) {
-      return res.status(404).json({ error: 'Report not found.' });
-    }
-    // Check user has Responder/Admin/SuperAdmin role for the event
-    const userId = req.user.id;
-    const eventId = report.eventId;
-    const userRoles = await prisma.userEventRole.findMany({
-      where: { userId, eventId },
-      include: { role: true },
-    });
-    const roleNames = userRoles.map(uer => uer.role.name);
-    if (!roleNames.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r))) {
-      return res.status(403).json({ error: 'You do not have permission to change the state for this report.' });
-    }
-    // Validate allowed state transition
-    if (!allowedTransitions[report.state].includes(newState)) {
-      return res.status(400).json({ error: `Invalid state transition from ${report.state} to ${newState}.` });
-    }
-    // Update the report state
-    const updated = await prisma.report.update({
-      where: { id },
-      data: { state: newState },
-    });
-    // Log audit
-    await logAudit({
-      eventId,
-      userId,
-      action: `change_report_state:${report.state}->${newState}`,
-      targetType: 'Report',
-      targetId: id,
-    });
-    res.json({ message: 'Report state updated.', report: updated });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update report state.', details: err.message });
   }
 });
 
@@ -428,6 +411,67 @@ app.post('/admin/users', requireSuperAdmin(), async (req, res) => {
     res.status(201).json({ message: 'User created/invited.', user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create/invite user.', details: err.message });
+  }
+});
+
+// List all reports for an event
+app.get('/events/:eventId/reports', async (req, res) => {
+  const { eventId } = req.params;
+  try {
+    const reports = await prisma.report.findMany({
+      where: { eventId },
+      include: { reporter: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ reports });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch reports', details: err.message });
+  }
+});
+
+// Get a single report for an event by report ID
+app.get('/events/:eventId/reports/:reportId', async (req, res) => {
+  const { eventId, reportId } = req.params;
+  if (!eventId || !reportId) {
+    return res.status(400).json({ error: 'eventId and reportId are required.' });
+  }
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: { reporter: true },
+    });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    res.json({ report });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch report', details: err.message });
+  }
+});
+
+// Change the state of a report (Responder/Admin/SuperAdmin only)
+app.patch('/events/:eventId/reports/:reportId/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
+  const { eventId, reportId } = req.params;
+  const { state } = req.body;
+  const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
+  if (!state || !validStates.includes(state)) {
+    return res.status(400).json({ error: 'Invalid or missing state.' });
+  }
+  try {
+    // Check report exists and belongs to event
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    // Update state
+    const updated = await prisma.report.update({
+      where: { id: reportId },
+      data: { state },
+      include: { reporter: true },
+    });
+    res.json({ report: updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update report state', details: err.message });
   }
 });
 

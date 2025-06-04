@@ -13,6 +13,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ReportState {
+  submitted
+  acknowledged
+  investigating
+  resolved
+  closed
+}
+
+enum ReportType {
+  harassment
+  safety
+  other
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -53,21 +67,13 @@ model UserEventRole {
   @@unique([userId, eventId, roleId])
 }
 
-enum ReportState {
-  submitted
-  acknowledged
-  investigating
-  resolved
-  closed
-}
-
 model Report {
   id          String   @id @default(uuid())
   event       Event    @relation(fields: [eventId], references: [id])
   eventId     String
   reporter    User?    @relation("ReporterReports", fields: [reporterId], references: [id])
   reporterId  String?
-  type        String
+  type        ReportType
   description String
   state       ReportState   // submitted, acknowledged, investigating, resolved, closed
   evidence    String?  // file path of uploaded evidence (optional)

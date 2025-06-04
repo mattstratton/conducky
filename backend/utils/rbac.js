@@ -10,10 +10,23 @@ function requireRole(allowedRoles) {
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    // Get eventId from query, body, or params
-    const eventId = req.query.eventId || req.body.eventId || req.params.eventId;
+    // Defensive: ensure req.params is always an object
+    if (!req.params) {
+      console.error('[RBAC] FATAL: req.params is undefined!', { url: req.url, method: req.method });
+      return res.status(500).json({ error: 'Internal error: req.params is undefined. This should never happen in Express.' });
+    }
+    const params = req.params;
+    const eventId = req.query.eventId || req.body.eventId || params.eventId;
+    console.log('[RBAC] requireRole:', {
+      url: req.url,
+      method: req.method,
+      params,
+      query: req.query,
+      body: req.body,
+      eventId,
+    });
     if (!eventId) {
-      return res.status(400).json({ error: 'Missing eventId' });
+      return res.status(400).json({ error: 'Missing eventId (checked req.query, req.body, req.params)' });
     }
     try {
       // Check for SuperAdmin role globally

@@ -4,10 +4,12 @@ services:
     build: ./frontend
     ports:
       - '3001:3000'
-    env_file:
-      - ./frontend/.env
+    environment:
+      BACKEND_API_URL: http://backend:4000
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
   backend:
     build: ./backend
     ports:
