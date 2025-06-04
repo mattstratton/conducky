@@ -4,27 +4,33 @@
 - [X] Initialize monorepo/project structure (Next.js frontend, Node.js backend)
 - [X] Set up Dockerfile and docker-compose for local development (all services run locally in containers)
 - [X] Document local development workflow using Docker (how to start, stop, debug, etc.)
-- [~] Configure environment variables and secrets management
-- [ ] Set up database schema using ORM (support Postgres & MySQL)
+- [X] Configure environment variables and secrets management
+- [X] Set up database schema using ORM (support Postgres & MySQL)
 - [X] Implement basic audit logging infrastructure
 
 ## Phase 2: Authentication & User Management
-- [ ] Implement email/password authentication (including magic link)
-- [ ] Integrate social login (Google, GitHub)
-- [ ] Support anonymous report submission (with optional email)
-- [ ] Implement user roles: Reporter, Responder, Admin, Super Admin
-- [ ] Role-based access control (RBAC) middleware
+- [X] Implement email/password authentication (including magic link)
+- [ ] Integrate social login (Google, GitHub) ([#3](https://github.com/mattstratton/conducky/issues/3))
+- [ ] Support anonymous report submission (with optional email) ([#4](https://github.com/mattstratton/conducky/issues/4))
+- [X] Implement user roles: Reporter, Responder, Admin, Super Admin
+- [X] Role-based access control (RBAC) middleware
+- [X] Implement registration, login, logout, and session check endpoints
 
 ## Phase 3: Multi-Tenancy & Event Management
-- [ ] Implement event (tenant) creation and management (Super Admin only)
-- [ ] Isolate users, reports, and roles per event
-- [ ] Admin UI for managing event users and roles
+- [X] Implement event (tenant) creation and management (Super Admin only)
+- [X] List all events (Super Admin only)
+- [X] Get event details (Admins of that event)
+- [X] Assign/remove roles for users within an event
+- [~] Enforce event scoping for all queries (users, reports, etc.)
+- [X] List all users and their roles for an event
+- [X] List all reports for an event (stub/placeholder)
+- [X] Admin UI/API for managing event users and roles
 
 ## Phase 4: Report Submission & Management
-- [ ] Design and implement report submission form (with all required fields)
-- [ ] Support evidence file uploads (configurable storage)
-- [ ] Allow admins to define custom report types per event
-- [ ] Implement report state machine (submitted, acknowledged, investigating, resolved, closed)
+- [~] Design and implement report submission form (with all required fields)
+- [ ] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
+- [ ] Allow admins to define custom report types per event ([#5](https://github.com/mattstratton/conducky/issues/5))
+- [ ] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [ ] Admin/Responder UI for managing and responding to reports
 
 ## Phase 5: Notifications

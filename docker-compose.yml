@@ -12,13 +12,13 @@ services:
     build: ./backend
     ports:
       - '4000:4000'
+      - '5555:5555'
     env_file:
       - ./backend/.env
     depends_on:
       - db
     volumes:
       - ./backend:/app
-      - /app/node_modules
   db:
     image: postgres:15
     restart: always

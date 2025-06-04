@@ -43,15 +43,17 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 ## Backend: Prisma & Database
 
-- **After rebuilding or updating the backend container, always generate the Prisma client inside the container:**
+- **After starting or rebuilding the backend container, you must generate the Prisma client inside the container before using the backend:**
   ```sh
   docker-compose exec backend npx prisma generate
   ```
-- **To run the seed script (populate default roles, etc.), run:**
+- **To run the seed script (populate default roles, a test event, and test users), run:**
   ```sh
   docker-compose exec backend npm run seed
   ```
 - If you encounter errors about missing Prisma client, re-run the generate command above inside the backend container.
+
+- **Note:** The Prisma client is not generated automatically during Docker build. You must always run the generate command after starting the stack.
 
 - **Audit Logging:**
   - Use the `logAudit` helper in `backend/utils/audit.js` to log actions to the `AuditLog` table.
@@ -66,5 +68,41 @@ Both the frontend and backend use `.env` files to manage environment variables a
     });
     ```
   - See the `/audit-test` endpoint in `index.js` for a working example.
+
+## RBAC Middleware
+
+- Use the `requireRole` middleware from `backend/utils/rbac.js` to protect routes based on user roles for a given event.
+- Example usage:
+  ```js
+  // Only allow Admins for the event
+  app.get('/admin-only', requireRole(['Admin']), (req, res) => {
+    res.json({ message: 'You are an admin for this event!' });
+  });
+  ```
+- The middleware expects `eventId` to be provided as a query param, body, or route param.
+  - Example: `GET /admin-only?eventId=YOUR_EVENT_ID`
+- Returns 401 if not authenticated, 400 if eventId is missing, and 403 if the user does not have the required role.
+
+**What the seed script loads:**
+
+- **Roles:**
+  - Reporter
+  - Responder
+  - Admin
+  - SuperAdmin
+- **Event:**
+  - Name: `Test Event`
+  - Slug: `test-event`
+- **Users:**
+  - **Event Admin**
+    - Email: `admin@test.com`
+    - Password: `adminpass`
+    - Assigned the `Admin` role for the test event
+  - **SuperAdmin**
+    - Email: `superadmin@test.com`
+    - Password: `superpass`
+    - Assigned the `SuperAdmin` role for the test event (for demo purposes)
+
+You can use these credentials to log in and test the application immediately after seeding.
 
  
