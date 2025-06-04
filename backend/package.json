@@ -1,0 +1,15 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "express": "latest",
+    "prisma": "^6.9.0"
+  }
+}
