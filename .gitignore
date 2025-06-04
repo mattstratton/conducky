@@ -1,3 +1,4 @@
 # Ignore environment variable files
 backend/.env
 frontend/.env 
+cursor_clarifying_requirements_for_syst.md

@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  name           String?
+  passwordHash   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  userEventRoles UserEventRole[]
+  reports        Report[]        @relation("ReporterReports")
+  auditLogs      AuditLog[]
+}
+
+model Event {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  userEventRoles UserEventRole[]
+  reports        Report[]
+  auditLogs      AuditLog[]
+}
+
+model Role {
+  id             String          @id @default(uuid())
+  name           String          @unique // e.g., Reporter, Responder, Admin, SuperAdmin
+  userEventRoles UserEventRole[]
+}
+
+model UserEventRole {
+  id      String @id @default(uuid())
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+  role    Role   @relation(fields: [roleId], references: [id])
+  roleId  String
+
+  @@unique([userId, eventId, roleId])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  event       Event    @relation(fields: [eventId], references: [id])
+  eventId     String
+  reporter    User?    @relation("ReporterReports", fields: [reporterId], references: [id])
+  reporterId  String?
+  type        String
+  description String
+  state       String // submitted, acknowledged, investigating, resolved, closed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Add more fields as needed (e.g., evidence, involved parties)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventId    String
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  action     String
+  targetType String
+  targetId   String
+  timestamp  DateTime @default(now())
+}

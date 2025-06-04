@@ -39,4 +39,18 @@ Both the frontend and backend use `.env` files to manage environment variables a
 - For production, set environment variables in your hosting provider or CI/CD pipeline as needed.
 - **Do not commit secrets to version control.**
 
---- 
+---
+
+## Backend: Prisma & Database
+
+- **After rebuilding or updating the backend container, always generate the Prisma client inside the container:**
+  ```sh
+  docker-compose exec backend npx prisma generate
+  ```
+- **To run the seed script (populate default roles, etc.), run:**
+  ```sh
+  docker-compose exec backend npm run seed
+  ```
+- If you encounter errors about missing Prisma client, re-run the generate command above inside the backend container.
+
+ 

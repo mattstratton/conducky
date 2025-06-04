@@ -16,6 +16,9 @@ services:
       - ./backend/.env
     depends_on:
       - db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
   db:
     image: postgres:15
     restart: always
