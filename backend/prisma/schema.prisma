@@ -53,6 +53,14 @@ model UserEventRole {
   @@unique([userId, eventId, roleId])
 }
 
+enum ReportState {
+  submitted
+  acknowledged
+  investigating
+  resolved
+  closed
+}
+
 model Report {
   id          String   @id @default(uuid())
   event       Event    @relation(fields: [eventId], references: [id])
@@ -61,7 +69,7 @@ model Report {
   reporterId  String?
   type        String
   description String
-  state       String   // submitted, acknowledged, investigating, resolved, closed
+  state       ReportState   // submitted, acknowledged, investigating, resolved, closed
   evidence    String?  // file path of uploaded evidence (optional)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
