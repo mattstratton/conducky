@@ -31,13 +31,14 @@ services:
     buildCommand: '' # Use Dockerfile
     startCommand: '' # Use Dockerfile
 
-  - type: database
-    name: conducky-db
+databases:
+  - name: conducky-db
     plan: free
     properties:
       engine: postgres
       version: 15
-    
+    ipAllowList: [] # Only allow internal connections
+
 # Notes:
 # - The backend and frontend are deployed as separate web services using their respective Dockerfiles.
 # - The backend gets its DATABASE_URL from the managed Postgres instance.
