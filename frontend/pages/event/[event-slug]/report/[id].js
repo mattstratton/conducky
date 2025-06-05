@@ -91,36 +91,36 @@ export default function ReportDetail({ initialReport, error }) {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '2rem', border: '1px solid #ccc', borderRadius: 8 }}>
-      <h2>Report Detail</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="max-w-600 mx-auto p-4 border border-gray-300 rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">Report Detail</h2>
+      <table className="w-full border-collapse">
         <tbody>
-          <tr><td><b>ID</b></td><td>{report.id}</td></tr>
-          <tr><td><b>Type</b></td><td>{report.type}</td></tr>
-          <tr><td><b>Description</b></td><td>{report.description}</td></tr>
+          <tr><td className="font-bold"><b>ID</b></td><td>{report.id}</td></tr>
+          <tr><td className="font-bold"><b>Type</b></td><td>{report.type}</td></tr>
+          <tr><td className="font-bold"><b>Description</b></td><td>{report.description}</td></tr>
           <tr>
-            <td><b>State</b></td>
+            <td className="font-bold"><b>State</b></td>
             <td>
               {canChangeState ? (
                 <>
-                  <select value={report.state} onChange={handleStateChange} disabled={loading}>
+                  <select value={report.state} onChange={handleStateChange} disabled={loading} className="p-2 border border-gray-300 rounded">
                     {validStates.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {stateChangeError && <span style={{ color: 'red', marginLeft: 8 }}>{stateChangeError}</span>}
-                  {stateChangeSuccess && <span style={{ color: 'green', marginLeft: 8 }}>{stateChangeSuccess}</span>}
+                  {stateChangeError && <span className="text-red-500 ml-2">{stateChangeError}</span>}
+                  {stateChangeSuccess && <span className="text-green-500 ml-2">{stateChangeSuccess}</span>}
                 </>
               ) : (
                 report.state
               )}
             </td>
           </tr>
-          <tr><td><b>Evidence</b></td><td>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer">Download</a> : 'None'}</td></tr>
-          <tr><td><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
-          <tr><td><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
+          <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500">Download</a> : 'None'}</td></tr>
+          <tr><td className="font-bold"><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
+          <tr><td className="font-bold"><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
         </tbody>
       </table>
-      <div style={{ marginTop: 24 }}>
-        <button onClick={() => router.push(`/event/${eventSlug}`)}>Back to Event</button>
+      <div className="mt-4">
+        <button onClick={() => router.push(`/event/${eventSlug}`)} className="px-4 py-2 bg-blue-500 text-white rounded">Back to Event</button>
       </div>
     </div>
   );

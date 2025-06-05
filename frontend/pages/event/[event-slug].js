@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
+import { ModalContext } from '../../context/ModalContext';
 
 const validStates = [
   'submitted',
@@ -19,6 +20,7 @@ export default function EventDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stateChange, setStateChange] = useState({}); // { [reportId]: { loading, error, success } }
+  const { openModal } = useContext(ModalContext);
 
   // Fetch event details and user session
   useEffect(() => {
@@ -90,43 +92,47 @@ export default function EventDashboard() {
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: 40 }}>
-      <h1>Event: {event.name}</h1>
-      <p><b>Slug:</b> {event.slug}</p>
+    <div className="font-sans p-4">
+      <h1 className="text-2xl font-bold mb-4">Event: {event.name}</h1>
+      <p className="text-sm font-medium text-gray-500"><b>Slug:</b> {event.slug}</p>
       <Link href="/">← Back to Events</Link>
-      <hr />
-      {/* Show report creation form for all roles */}
-      <div>
-        <h2>Submit a Report</h2>
-        <ReportForm eventSlug={event.slug} />
+      <hr className="my-4" />
+      {/* Submit Report Button */}
+      <div className="mb-6 flex justify-start">
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-semibold transition-colors"
+          onClick={() => openModal(event.slug, event.name)}
+        >
+          Submit Report
+        </button>
       </div>
-      <hr />
+      <hr className="my-4" />
       {/* Show reports for all roles, but filter for regular users */}
       <div>
-        <h2>{(isResponder || isAdmin || isSuperAdmin) ? 'All Reports' : 'Your Reports'}</h2>
+        <h2 className="text-xl font-bold mb-4">{(isResponder || isAdmin || isSuperAdmin) ? 'All Reports' : 'Your Reports'}</h2>
         {reports.length === 0 ? <p>No reports yet.</p> : (
-          <ul>
+          <ul className="list-disc pl-8">
             {(isResponder || isAdmin || isSuperAdmin
               ? reports
               : reports.filter(r => r.reporter && user && r.reporter.id === user.id)
             ).map(report => (
-              <li key={report.id} style={{ marginBottom: 12 }}>
+              <li key={report.id} className="mb-4">
                 <b>{report.type}</b>: {report.description} (state: {canChangeState ? (
                   <>
                     <select
                       value={report.state}
                       onChange={e => handleStateChange(report.id, e.target.value)}
                       disabled={stateChange[report.id]?.loading}
-                      style={{ marginLeft: 8, marginRight: 8 }}
+                      className="mr-4"
                     >
                       {validStates.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    {stateChange[report.id]?.error && <span style={{ color: 'red', marginLeft: 8 }}>{stateChange[report.id].error}</span>}
-                    {stateChange[report.id]?.success && <span style={{ color: 'green', marginLeft: 8 }}>{stateChange[report.id].success}</span>}
+                    {stateChange[report.id]?.error && <span className="text-red-500 ml-4">{stateChange[report.id].error}</span>}
+                    {stateChange[report.id]?.success && <span className="text-green-500 ml-4">{stateChange[report.id].success}</span>}
                   </>
                 ) : report.state})
-                {report.reporter && <span> — by {report.reporter.email || 'anonymous'}</span>}
-                {' '}<Link href={`/event/${event.slug}/report/${report.id}`}>View Details</Link>
+                {report.reporter && <span className="text-sm text-gray-500"> — by {report.reporter.email || 'anonymous'}</span>}
+                {' '}<Link href={`/event/${event.slug}/report/${report.id}`} className="text-blue-500">View Details</Link>
               </li>
             ))}
           </ul>
@@ -174,24 +180,43 @@ function ReportForm({ eventSlug }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: 20, marginBottom: 20 }}>
-      <div>
-        <label>Type:<br />
-          <select value={type} onChange={e => setType(e.target.value)} required>
+    <div className="bg-white rounded-lg shadow-md p-6 max-w-xl mx-auto border border-gray-100">
+      <h3 className="text-lg font-semibold mb-4 text-gray-800">Submit a Report</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-type">Type</label>
+          <select
+            id="report-type"
+            value={type}
+            onChange={e => setType(e.target.value)}
+            required
+            className="mt-1 block w-64 max-w-xs rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          >
             <option value="">Select type</option>
             {reportTypes.map(rt => (
               <option key={rt.value} value={rt.value}>{rt.label}</option>
             ))}
           </select>
-        </label>
-      </div>
-      <div>
-        <label>Description:<br />
-          <textarea value={description} onChange={e => setDescription(e.target.value)} required />
-        </label>
-      </div>
-      <button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Report'}</button>
-      {message && <p>{message}</p>}
-    </form>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-description">Description</label>
+          <textarea
+            id="report-description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            required
+            className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-medium transition-colors disabled:opacity-60"
+        >
+          {submitting ? 'Submitting...' : 'Submit Report'}
+        </button>
+        {message && <p className="mt-2 text-sm text-gray-500">{message}</p>}
+      </form>
+    </div>
   );
 } 

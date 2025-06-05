@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { ModalContext } from '../context/ModalContext';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
   const router = useRouter();
+  const { openModal } = useContext(ModalContext);
 
   useEffect(() => {
     // Check authentication
@@ -46,9 +48,6 @@ export default function Dashboard() {
       })
       .then(data => {
         setEvents(data.events || []);
-        if (data.events && data.events.length > 0) {
-          setSelectedEventSlug(data.events[0].slug);
-        }
       })
       .catch(() => {
         setError('Could not load events');
@@ -129,15 +128,16 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: 40 }}>
-      <h1>Dashboard</h1>
+    <div className="font-sans p-4">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
       <p><Link href="/">Home</Link></p>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
       {events.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
+        <div className="mb-4">
           <label>
             Select Event:{' '}
             <select value={selectedEventSlug} onChange={e => setSelectedEventSlug(e.target.value)}>
+              <option value="">-- Select an event --</option>
               {events.map(ev => (
                 <option key={ev.id} value={ev.slug}>{ev.name}</option>
               ))}
@@ -145,46 +145,29 @@ export default function Dashboard() {
           </label>
         </div>
       )}
-
-      {/* Report Submission Form */}
-      {selectedEventSlug && (
-        <form onSubmit={handleReportSubmit} style={{ marginBottom: 32, maxWidth: 400 }}>
-          <h2>Submit a Report</h2>
-          <div style={{ marginBottom: 12 }}>
-            <label>Type<br />
-              <select value={type} onChange={e => setType(e.target.value)} required style={{ width: '100%' }}>
-                <option value="">Select type</option>
-                <option value="harassment">Harassment</option>
-                <option value="safety">Safety</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Description<br />
-              <textarea value={description} onChange={e => setDescription(e.target.value)} required style={{ width: '100%' }} />
-            </label>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Evidence (optional)<br />
-              <input type="file" onChange={e => setEvidence(e.target.files[0])} />
-            </label>
-          </div>
-          {submitError && <div style={{ color: 'red', marginBottom: 12 }}>{submitError}</div>}
-          {submitSuccess && <div style={{ color: 'green', marginBottom: 12 }}>{submitSuccess}</div>}
-          <button type="submit">Submit Report</button>
-        </form>
-      )}
-
-      {loading ? <p>Loading reports...</p> : (
-        <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', marginTop: 20 }}>
+      {/* Submit Report Button */}
+      <div className="mb-6 flex justify-start">
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-semibold transition-colors disabled:opacity-60"
+          disabled={!selectedEventSlug}
+          onClick={() => {
+            const selectedEvent = events.find(ev => ev.slug === selectedEventSlug);
+            openModal(selectedEventSlug, selectedEvent ? selectedEvent.name : '');
+          }}
+        >
+          Submit Report
+        </button>
+      </div>
+      {/* Reports Table */}
+      {selectedEventSlug && !loading ? (
+        <table className="border-collapse border border-gray-200">
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Description</th>
-              <th>State</th>
-              <th>Created At</th>
-              <th>Actions</th>
+              <th className="border border-gray-200 p-2">Type</th>
+              <th className="border border-gray-200 p-2">Description</th>
+              <th className="border border-gray-200 p-2">State</th>
+              <th className="border border-gray-200 p-2">Created At</th>
+              <th className="border border-gray-200 p-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,18 +175,18 @@ export default function Dashboard() {
               <tr><td colSpan={5}>No reports found.</td></tr>
             ) : reports.map(r => (
               <tr key={r.id}>
-                <td>{r.type}</td>
-                <td>{r.description}</td>
-                <td>{r.state}</td>
-                <td>{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-                <td>
-                  <Link href={`/event/${selectedEventSlug}`}>View Event</Link>
+                <td className="border border-gray-200 p-2">{r.type}</td>
+                <td className="border border-gray-200 p-2">{r.description}</td>
+                <td className="border border-gray-200 p-2">{r.state}</td>
+                <td className="border border-gray-200 p-2">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+                <td className="border border-gray-200 p-2">
+                  <Link href={`/event/${selectedEventSlug}/report/${r.id}`} className="text-blue-700 hover:underline">View Report</Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      ) : null}
     </div>
   );
 } 

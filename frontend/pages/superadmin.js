@@ -39,206 +39,188 @@ export default function SuperAdmin() {
   useEffect(() => {
     if (!user || !user.roles || !user.roles.includes('SuperAdmin')) return;
     fetch(API_URL + '/events', { credentials: 'include' })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to fetch events');
-      })
-      .then(data => {
-        setEvents(data.events || []);
-      })
-      .catch(() => {
-        setError('Could not load events');
-      });
+      .then(res => res.json())
+      .then(data => setEvents(data.events || []))
+      .catch(() => setEvents([]));
   }, [user]);
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!name || !slug) {
-      setError('Name and slug are required.');
+    const res = await fetch(API_URL + '/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, slug }),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Failed to create event.');
       return;
     }
-    try {
-      const res = await fetch(API_URL + '/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name, slug }),
-      });
-      if (res.ok) {
-        setName('');
-        setSlug('');
-        setSuccess('Event created!');
-        // Refresh events
-        const data = await res.json();
-        setEvents([data.event, ...events]);
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to create event');
-      }
-    } catch (err) {
-      setError('Network error');
-    }
+    setSuccess('Event created!');
+    setName('');
+    setSlug('');
+    // Refresh events list
+    fetch(API_URL + '/events', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setEvents(data.events || []))
+      .catch(() => setEvents([]));
   };
 
-  const handleView = async (eventId) => {
-    setError('');
-    setSuccess('');
-    try {
-      const res = await fetch(`${API_URL}/events/${eventId}`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setViewEvent(data.event);
-      } else {
-        setError('Failed to fetch event details');
-      }
-    } catch (err) {
-      setError('Network error');
-    }
+  const handleView = (id) => {
+    const ev = events.find(e => e.id === id);
+    setViewEvent(ev);
   };
 
-  const handleEdit = (event) => {
-    setEditEventId(event.id);
-    setEditName(event.name);
-    setEditSlug(event.slug);
-    setError('');
-    setSuccess('');
+  const handleEdit = (ev) => {
+    setEditEventId(ev.id);
+    setEditName(ev.name);
+    setEditSlug(ev.slug);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    try {
-      const res = await fetch(`${API_URL}/events/${editEventId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: editName, slug: editSlug }),
-      });
-      if (res.ok) {
-        setSuccess('Event updated!');
-        // Update event in list
-        setEvents(events.map(ev => ev.id === editEventId ? { ...ev, name: editName, slug: editSlug } : ev));
-        setEditEventId(null);
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to update event');
-      }
-    } catch (err) {
-      setError('Network error');
+    const res = await fetch(API_URL + '/events/' + editEventId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName, slug: editSlug }),
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Failed to update event.');
+      return;
     }
+    setSuccess('Event updated!');
+    setEditEventId(null);
+    // Refresh events list
+    fetch(API_URL + '/events', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setEvents(data.events || []))
+      .catch(() => setEvents([]));
   };
 
-  const handleDelete = async (eventId) => {
-    if (!window.confirm('Are you sure you want to delete this event? This cannot be undone.')) return;
+  const handleDelete = async (id) => {
     setDeleteLoading(true);
     setError('');
     setSuccess('');
-    try {
-      const res = await fetch(`${API_URL}/events/${eventId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (res.ok) {
-        setSuccess('Event deleted!');
-        setEvents(events.filter(ev => ev.id !== eventId));
-        if (viewEvent && viewEvent.id === eventId) setViewEvent(null);
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to delete event');
-      }
-    } catch (err) {
-      setError('Network error');
-    }
+    const res = await fetch(API_URL + '/events/' + id, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
     setDeleteLoading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Failed to delete event.');
+      return;
+    }
+    setSuccess('Event deleted!');
+    // Refresh events list
+    fetch(API_URL + '/events', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setEvents(data.events || []))
+      .catch(() => setEvents([]));
   };
 
-  if (loading) return <div style={{ fontFamily: 'sans-serif', padding: 40 }}><p>Loading...</p></div>;
+  if (loading) return <div className="p-4"><p>Loading...</p></div>;
   if (!user) return null;
   if (!user.roles || !user.roles.includes('SuperAdmin')) {
     return (
-      <div style={{ fontFamily: 'sans-serif', padding: 40 }}>
-        <h1>Super Admin</h1>
-        <p style={{ color: 'red' }}>You do not have permission to view this page.</p>
-        <p><Link href="/dashboard">Go to Dashboard</Link></p>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-2">Super Admin</h1>
+        <p className="text-red-500 mb-2">You do not have permission to view this page.</p>
+        <p><Link href="/dashboard" className="text-blue-700 hover:underline">Go to Dashboard</Link></p>
       </div>
     );
   }
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: 40 }}>
-      <h1>Super Admin: Event Management</h1>
-      <p><Link href="/">Home</Link> | <Link href="/dashboard">Dashboard</Link></p>
-      <h2>Create New Event</h2>
-      <form onSubmit={handleCreateEvent} style={{ maxWidth: 400, marginBottom: 32 }}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Name<br />
-            <input type="text" value={name} onChange={e => setName(e.target.value)} required style={{ width: '100%' }} />
-          </label>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Super Admin: Event Management</h1>
+        <div className="mb-4 flex gap-4 text-sm text-gray-600">
+          <Link href="/" className="hover:underline">Home</Link> |
+          <Link href="/dashboard" className="hover:underline">Dashboard</Link>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Slug<br />
-            <input type="text" value={slug} onChange={e => setSlug(e.target.value)} required style={{ width: '100%' }} />
-          </label>
+        <div className="bg-white rounded shadow p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Create New Event</h2>
+          <form onSubmit={handleCreateEvent} className="space-y-4 max-w-md">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">Name
+                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+              </label>
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">Slug
+                <input type="text" value={slug} onChange={e => setSlug(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+              </label>
+            </div>
+            {error && <div className="text-red-600 text-sm font-semibold">{error}</div>}
+            {success && <div className="text-green-600 text-sm font-semibold">{success}</div>}
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Event</button>
+          </form>
         </div>
-        {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
-        {success && <div style={{ color: 'green', marginBottom: 12 }}>{success}</div>}
-        <button type="submit">Create Event</button>
-      </form>
-      <h2>All Events</h2>
-      {events.length === 0 ? <p>No events found.</p> : (
-        <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', marginTop: 20 }}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Created At</th>
-              <th>Updated At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map(ev => (
-              <tr key={ev.id}>
-                <td>{editEventId === ev.id ? (
-                  <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%' }} />
-                ) : ev.name}</td>
-                <td>{editEventId === ev.id ? (
-                  <input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} style={{ width: '100%' }} />
-                ) : ev.slug}</td>
-                <td>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</td>
-                <td>{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</td>
-                <td>
-                  {editEventId === ev.id ? (
-                    <>
-                      <button onClick={handleEditSubmit} style={{ marginRight: 8 }}>Save</button>
-                      <button onClick={() => setEditEventId(null)}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => handleView(ev.id)} style={{ marginRight: 8 }}>View</button>
-                      <button onClick={() => handleEdit(ev)} style={{ marginRight: 8 }}>Edit</button>
-                      <button onClick={() => handleDelete(ev.id)} disabled={deleteLoading}>Delete</button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {viewEvent && (
-        <div style={{ marginTop: 32, border: '1px solid #ccc', padding: 20, maxWidth: 500 }}>
-          <h3>Event Details</h3>
-          <p><b>Name:</b> {viewEvent.name}</p>
-          <p><b>Slug:</b> {viewEvent.slug}</p>
-          <p><b>Created At:</b> {viewEvent.createdAt ? new Date(viewEvent.createdAt).toLocaleString() : ''}</p>
-          <p><b>Updated At:</b> {viewEvent.updatedAt ? new Date(viewEvent.updatedAt).toLocaleString() : ''}</p>
-          <button onClick={() => setViewEvent(null)}>Close</button>
+        <div className="bg-white rounded shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">All Events</h2>
+          {events.length === 0 ? <p className="text-gray-500">No events found.</p> : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200">
+                <thead>
+                  <tr>
+                    <th className="border border-gray-200 p-2">Name</th>
+                    <th className="border border-gray-200 p-2">Slug</th>
+                    <th className="border border-gray-200 p-2">Created At</th>
+                    <th className="border border-gray-200 p-2">Updated At</th>
+                    <th className="border border-gray-200 p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map(ev => (
+                    <tr key={ev.id}>
+                      <td className="border border-gray-200 p-2">{editEventId === ev.id ? (
+                        <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full" />
+                      ) : ev.name}</td>
+                      <td className="border border-gray-200 p-2">{editEventId === ev.id ? (
+                        <input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="w-full" />
+                      ) : ev.slug}</td>
+                      <td className="border border-gray-200 p-2">{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</td>
+                      <td className="border border-gray-200 p-2">{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</td>
+                      <td className="border border-gray-200 p-2">
+                        {editEventId === ev.id ? (
+                          <>
+                            <button onClick={handleEditSubmit} className="mr-2 text-blue-700 hover:underline">Save</button>
+                            <button onClick={() => setEditEventId(null)} className="text-gray-600 hover:underline">Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleView(ev.id)} className="mr-2 text-blue-700 hover:underline">View</button>
+                            <button onClick={() => handleEdit(ev)} className="mr-2 text-yellow-700 hover:underline">Edit</button>
+                            <button onClick={() => handleDelete(ev.id)} disabled={deleteLoading} className="text-red-700 hover:underline">Delete</button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {viewEvent && (
+            <div className="mt-6 border border-gray-200 p-4 max-w-md rounded bg-gray-50">
+              <h3 className="text-lg font-semibold mb-2">Event Details</h3>
+              <p><b>Name:</b> {viewEvent.name}</p>
+              <p><b>Slug:</b> {viewEvent.slug}</p>
+              <p><b>Created At:</b> {viewEvent.createdAt ? new Date(viewEvent.createdAt).toLocaleString() : ''}</p>
+              <p><b>Updated At:</b> {viewEvent.updatedAt ? new Date(viewEvent.updatedAt).toLocaleString() : ''}</p>
+              <button onClick={() => setViewEvent(null)} className="mt-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded">Close</button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 } 
