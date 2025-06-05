@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "refresh-dev": "./refresh-dev.sh",
-    "seed": "docker-compose exec backend npm run seed"
+    "seed": "docker-compose exec backend npm run seed",
+    "studio": "docker-compose exec backend npx prisma studio"
   }
 } 

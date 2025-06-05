@@ -20,8 +20,14 @@ export default function Login() {
       if (res.ok) {
         router.push('/');
       } else {
-        const data = await res.json();
-        setError(data.error || 'Login failed');
+        let errMsg = 'Login failed';
+        try {
+          const data = await res.json();
+          errMsg = data.error || data.message || errMsg;
+        } catch {
+          // If not JSON, keep default
+        }
+        setError(errMsg);
       }
     } catch (err) {
       setError('Network error');

@@ -100,16 +100,35 @@ app.post('/register', async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
+    const userCount = await prisma.user.count();
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { email, passwordHash, name },
     });
-    req.login(user, err => {
-      if (err) return res.status(500).json({ error: 'Login after registration failed.' });
-      res.json({ message: 'Registration successful!', user: { id: user.id, email: user.email, name: user.name } });
+    // If this is the first user, assign SuperAdmin role globally (eventId: null)
+    let madeSuperAdmin = false;
+    if (userCount === 0) {
+      let superAdminRole = await prisma.role.findUnique({ where: { name: 'SuperAdmin' } });
+      if (!superAdminRole) {
+        superAdminRole = await prisma.role.create({ data: { name: 'SuperAdmin' } });
+      }
+      await prisma.userEventRole.create({
+        data: {
+          userId: user.id,
+          eventId: null, // Global role assignment
+          roleId: superAdminRole.id,
+        },
+      });
+      madeSuperAdmin = true;
+    }
+    // Respond with success
+    return res.json({
+      message: 'Registration successful!',
+      user: { id: user.id, email: user.email, name: user.name },
+      madeSuperAdmin,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Registration failed.', details: err.message });
+    return res.status(500).json({ error: 'Registration failed.', details: err.message });
   }
 });
 
@@ -142,7 +161,12 @@ app.get('/session', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+  // Check if any users exist
+  const userCount = await prisma.user.count();
+  if (userCount === 0) {
+    return res.json({ firstUserNeeded: true });
+  }
   res.json({ message: 'Backend API is running!' });
 });
 
@@ -172,6 +196,11 @@ app.post('/events', requireSuperAdmin(), async (req, res) => {
   const { name, slug } = req.body;
   if (!name || !slug) {
     return res.status(400).json({ error: 'Name and slug are required.' });
+  }
+  // Slug validation: lowercase, url-safe (letters, numbers, hyphens), no spaces
+  const slugPattern = /^[a-z0-9-]+$/;
+  if (!slugPattern.test(slug)) {
+    return res.status(400).json({ error: 'Slug must be all lowercase, URL-safe (letters, numbers, hyphens only, no spaces).' });
   }
   try {
     const existing = await prisma.event.findUnique({ where: { slug } });

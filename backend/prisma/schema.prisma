@@ -60,8 +60,8 @@ model UserEventRole {
   id      String @id @default(uuid())
   user    User   @relation(fields: [userId], references: [id])
   userId  String
-  event   Event  @relation(fields: [eventId], references: [id])
-  eventId String
+  event   Event? @relation(fields: [eventId], references: [id])
+  eventId String?
   role    Role   @relation(fields: [roleId], references: [id])
   roleId  String
   @@unique([userId, eventId, roleId])

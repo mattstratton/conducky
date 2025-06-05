@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import '../styles.css';
 
 function Header() {
   const [user, setUser] = useState(null);
@@ -20,23 +21,23 @@ function Header() {
   };
 
   return (
-    <header style={{
-      background: '#222', color: '#fff', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.07)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <Link href="/" style={{ color: '#fff', fontWeight: 700, fontSize: 22, textDecoration: 'none', letterSpacing: 1 }}>Conducky</Link>
+    <header className="sticky top-0 z-20 bg-gray-900 text-white shadow flex items-center justify-between px-6 py-4">
+      <div className="flex items-center gap-6">
+        <Link href="/" className="font-extrabold text-2xl tracking-wide flex items-center gap-2 hover:text-yellow-300 transition">
+          <span>Conducky</span> <span role="img" aria-label="duck">🦆</span>
+        </Link>
         {user && user.roles && user.roles.includes('SuperAdmin') && (
-          <Link href="/superadmin" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 500 }}>SuperAdmin</Link>
+          <Link href="/superadmin" className="underline font-semibold hover:text-yellow-300 transition">SuperAdmin</Link>
         )}
       </div>
-      <div>
+      <div className="flex items-center gap-4">
         {user ? (
           <>
-            <span style={{ marginRight: 16 }}>Logged in as <b>{user.email}</b>{user.name && <> ({user.name})</>}</span>
-            <button onClick={handleLogout} style={{ background: '#fff', color: '#222', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer', fontWeight: 600 }}>Logout</button>
+            <span className="text-sm md:text-base">Logged in as <b>{user.email}</b>{user.name && <span className="text-gray-300"> ({user.name})</span>}</span>
+            <button onClick={handleLogout} className="ml-2 bg-white text-gray-900 hover:bg-gray-200 font-semibold py-1 px-4 rounded shadow-sm transition">Logout</button>
           </>
         ) : (
-          <Link href="/login" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 500 }}>Login</Link>
+          <Link href="/login" className="underline font-semibold hover:text-yellow-300 transition">Login</Link>
         )}
       </div>
     </header>
@@ -47,9 +48,9 @@ function MyApp({ Component, pageProps }) {
   return (
     <>
       <Header />
-      <div style={{ minHeight: '100vh', background: '#f7f7fa', paddingBottom: 40 }}>
+      <main className="min-h-screen bg-gray-50 pb-10">
         <Component {...pageProps} />
-      </div>
+      </main>
     </>
   );
 }
