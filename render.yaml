@@ -34,9 +34,7 @@ services:
 databases:
   - name: conducky-db
     plan: free
-    properties:
-      engine: postgres
-      version: 15
+    version: 15
     ipAllowList: [] # Only allow internal connections
 
 # Notes:
