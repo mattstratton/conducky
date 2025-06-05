@@ -4,4 +4,5 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 4000
+RUN ls -l /app
 ENTRYPOINT ["sh", "./entrypoint.sh"] 
