@@ -127,9 +127,16 @@ app.post('/logout', (req, res) => {
 });
 
 // Session check route
-app.get('/session', (req, res) => {
+app.get('/session', async (req, res) => {
   if (req.isAuthenticated && req.isAuthenticated()) {
-    res.json({ user: { id: req.user.id, email: req.user.email, name: req.user.name } });
+    // Fetch user roles
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true }
+    });
+    // Flatten roles to a list of role names
+    const roles = userEventRoles.map(uer => uer.role.name);
+    res.json({ user: { id: req.user.id, email: req.user.email, name: req.user.name, roles } });
   } else {
     res.status(401).json({ error: 'Not authenticated' });
   }
@@ -472,6 +479,189 @@ app.patch('/events/:eventId/reports/:reportId/state', requireRole(['Responder', 
     res.json({ report: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update report state', details: err.message });
+  }
+});
+
+// Utility: resolve event slug to eventId
+async function getEventIdBySlug(slug) {
+  const event = await prisma.event.findUnique({ where: { slug } });
+  return event ? event.id : null;
+}
+
+// Get event details by slug (public, for routing)
+app.get('/event/slug/:slug', async (req, res) => {
+  const { slug } = req.params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    res.json({ event });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch event by slug.', details: err.message });
+  }
+});
+
+// Slug-based: List all reports for an event
+app.get('/events/slug/:slug/reports', async (req, res) => {
+  const { slug } = req.params;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    const reports = await prisma.report.findMany({
+      where: { eventId },
+      include: { reporter: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ reports });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch reports', details: err.message });
+  }
+});
+
+// Slug-based: Submit a report for an event (anonymous or authenticated, with evidence upload)
+app.post('/events/slug/:slug/reports', upload.single('evidence'), async (req, res) => {
+  const { slug } = req.params;
+  const { type, description } = req.body;
+  let evidencePath = null;
+  if (req.file) {
+    evidencePath = path.relative(__dirname, req.file.path);
+  }
+  if (!type || !description) {
+    return res.status(400).json({ error: 'type and description are required.' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // If authenticated, use req.user.id as reporterId; else null
+    const reporterId = req.isAuthenticated && req.isAuthenticated() && req.user ? req.user.id : null;
+    const report = await prisma.report.create({
+      data: {
+        eventId,
+        reporterId,
+        type,
+        description,
+        state: 'submitted',
+        evidence: evidencePath,
+      },
+    });
+    res.status(201).json({ report });
+  } catch (err) {
+    console.error('Error creating report:', err);
+    res.status(500).json({ error: 'Failed to submit report.', details: err.message });
+  }
+});
+
+// Slug-based: Get a single report for an event by report ID
+app.get('/events/slug/:slug/reports/:reportId', async (req, res) => {
+  const { slug, reportId } = req.params;
+  if (!slug || !reportId) {
+    return res.status(400).json({ error: 'slug and reportId are required.' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: { reporter: true },
+    });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    res.json({ report });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch report', details: err.message });
+  }
+});
+
+// Slug-based: Change the state of a report (Responder/Admin/SuperAdmin only)
+app.patch('/events/slug/:slug/reports/:reportId/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
+  const { slug, reportId } = req.params;
+  const { state } = req.body;
+  const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
+  if (!state || !validStates.includes(state)) {
+    return res.status(400).json({ error: 'Invalid or missing state.' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // Check report exists and belongs to event
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    // Update state
+    const updated = await prisma.report.update({
+      where: { id: reportId },
+      data: { state },
+      include: { reporter: true },
+    });
+    res.json({ report: updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update report state', details: err.message });
+  }
+});
+
+// Slug-based: List all users and their roles for an event
+app.get('/events/slug/:slug/users', async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  if (!slug) {
+    return res.status(400).json({ error: 'Missing slug in params' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // Check for SuperAdmin role globally
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(uer => uer.role.name === 'SuperAdmin');
+    if (!isSuperAdmin) {
+      // Otherwise, check for allowed roles for this event
+      const userRoles = allUserRoles.filter(uer => uer.eventId === eventId);
+      const hasRole = userRoles.some(uer => ['Admin', 'SuperAdmin'].includes(uer.role.name));
+      if (!hasRole) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // --- original handler logic ---
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { eventId },
+      include: {
+        user: true,
+        role: true,
+      },
+    });
+    // Group roles by user
+    const users = {};
+    userEventRoles.forEach(uer => {
+      if (!users[uer.userId]) {
+        users[uer.userId] = {
+          id: uer.user.id,
+          email: uer.user.email,
+          name: uer.user.name,
+          roles: [],
+        };
+      }
+      users[uer.userId].roles.push(uer.role.name);
+    });
+    res.json({ users: Object.values(users) });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to list users for event.', details: err.message });
   }
 });
 

@@ -9,8 +9,9 @@ const validStates = [
   'closed',
 ];
 
-export default function ReportDetail({ initialReport, error, eventSlug }) {
+export default function ReportDetail({ initialReport, error }) {
   const router = useRouter();
+  const { 'event-slug': eventSlug, id } = router.query;
   const [report, setReport] = useState(initialReport);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(error);
@@ -45,15 +46,16 @@ export default function ReportDetail({ initialReport, error, eventSlug }) {
   }, [eventSlug, user]);
 
   useEffect(() => {
-    if (report.createdAt) {
+    if (report && report.createdAt) {
       setCreatedAtLocal(new Date(report.createdAt).toLocaleString());
     }
-    if (report.updatedAt) {
+    if (report && report.updatedAt) {
       setUpdatedAtLocal(new Date(report.updatedAt).toLocaleString());
     }
-  }, [report.createdAt, report.updatedAt]);
+  }, [report && report.createdAt, report && report.updatedAt]);
 
-  const canChangeState = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+  const isSuperAdmin = user && user.roles && user.roles.includes('SuperAdmin');
+  const canChangeState = isSuperAdmin || userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
 
   const handleStateChange = async (e) => {
     const newState = e.target.value;
@@ -61,7 +63,7 @@ export default function ReportDetail({ initialReport, error, eventSlug }) {
     setStateChangeSuccess('');
     setLoading(true);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports/${report.id}/state`, {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports/${id}/state`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -118,19 +120,18 @@ export default function ReportDetail({ initialReport, error, eventSlug }) {
         </tbody>
       </table>
       <div style={{ marginTop: 24 }}>
-        <button onClick={() => router.back()}>Back to Dashboard</button>
+        <button onClick={() => router.push(`/event/${eventSlug}`)}>Back to Event</button>
       </div>
     </div>
   );
 }
 
 export async function getServerSideProps(context) {
-  const { id } = context.params;
-  const { eventSlug } = context.query;
+  const { id, 'event-slug': eventSlug } = context.params;
   let initialReport = null;
   let error = null;
   if (!id || !eventSlug) {
-    return { props: { initialReport: null, error: 'Missing report ID or event slug.', eventSlug: eventSlug || null } };
+    return { props: { initialReport: null, error: 'Missing report ID or event slug.' } };
   }
   try {
     const fetchUrl = `${process.env.BACKEND_API_URL || 'http://localhost:4000'}/events/slug/${eventSlug}/reports/${id}`;
@@ -143,5 +144,5 @@ export async function getServerSideProps(context) {
   } catch (err) {
     error = err.message;
   }
-  return { props: { initialReport, error, eventSlug } };
+  return { props: { initialReport, error } };
 } 

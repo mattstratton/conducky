@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 This rule standardizes the feature branch workflow for collaborative development in this project.
 

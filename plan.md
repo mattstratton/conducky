@@ -53,11 +53,11 @@
 - [ ] Prepare for production deployment (security, backups, etc.)
 
 ## Phase 8: Frontend MVP (Initial UI for Testing)
-- [ ] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
-- [ ] Implement authentication UI (login/logout)
-- [ ] Add dashboard page to list reports for an event
-- [ ] Add report submission form (type, description, evidence upload)
-- [ ] Add state change controls for authorized users (Responders/Admins)
+- [X] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
+- [X] Implement authentication UI (login/logout)
+- [X] Add dashboard page to list reports for an event
+- [X] Add report submission form (type, description, evidence upload)
+- [X] Add state change controls for authorized users (Responders/Admins)
 
 ---
 

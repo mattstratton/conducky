@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
-  const [selectedEventId, setSelectedEventId] = useState('');
+  const [selectedEventSlug, setSelectedEventSlug] = useState('');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,7 +18,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Check authentication
-    fetch('/api/session', {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', {
       credentials: 'include',
     })
       .then(res => {
@@ -37,7 +37,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     // Fetch all events
-    fetch('/api/events', {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/events', {
       credentials: 'include',
     })
       .then(res => {
@@ -47,7 +47,7 @@ export default function Dashboard() {
       .then(data => {
         setEvents(data.events || []);
         if (data.events && data.events.length > 0) {
-          setSelectedEventId(data.events[0].id);
+          setSelectedEventSlug(data.events[0].slug);
         }
       })
       .catch(() => {
@@ -56,9 +56,9 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || !selectedEventId) return;
+    if (!user || !selectedEventSlug) return;
     setLoading(true);
-    fetch(`/api/events/${selectedEventId}/reports`, {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${selectedEventSlug}/reports`, {
       credentials: 'include',
     })
       .then(res => {
@@ -73,7 +73,7 @@ export default function Dashboard() {
         setError('Could not load reports');
         setLoading(false);
       });
-  }, [user, selectedEventId]);
+  }, [user, selectedEventSlug]);
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
@@ -88,7 +88,7 @@ export default function Dashboard() {
     formData.append('description', description);
     if (evidence) formData.append('evidence', evidence);
     try {
-      const res = await fetch(`/api/events/${selectedEventId}/reports`, {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${selectedEventSlug}/reports`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -99,7 +99,7 @@ export default function Dashboard() {
         setEvidence(null);
         setSubmitSuccess('Report submitted!');
         // Refresh reports
-        fetchReports(selectedEventId);
+        fetchReports(selectedEventSlug);
       } else {
         const data = await res.json();
         setSubmitError(data.error || 'Failed to submit report');
@@ -109,9 +109,9 @@ export default function Dashboard() {
     }
   };
 
-  const fetchReports = (eventId) => {
+  const fetchReports = (eventSlug) => {
     setLoading(true);
-    fetch(`/api/events/${eventId}/reports`, {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports`, {
       credentials: 'include',
     })
       .then(res => {
@@ -137,9 +137,9 @@ export default function Dashboard() {
         <div style={{ marginBottom: 20 }}>
           <label>
             Select Event:{' '}
-            <select value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
+            <select value={selectedEventSlug} onChange={e => setSelectedEventSlug(e.target.value)}>
               {events.map(ev => (
-                <option key={ev.id} value={ev.id}>{ev.name}</option>
+                <option key={ev.id} value={ev.slug}>{ev.name}</option>
               ))}
             </select>
           </label>
@@ -147,7 +147,7 @@ export default function Dashboard() {
       )}
 
       {/* Report Submission Form */}
-      {selectedEventId && (
+      {selectedEventSlug && (
         <form onSubmit={handleReportSubmit} style={{ marginBottom: 32, maxWidth: 400 }}>
           <h2>Submit a Report</h2>
           <div style={{ marginBottom: 12 }}>
@@ -189,7 +189,7 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {reports.length === 0 ? (
-              <tr><td colSpan={4}>No reports found.</td></tr>
+              <tr><td colSpan={5}>No reports found.</td></tr>
             ) : reports.map(r => (
               <tr key={r.id}>
                 <td>{r.type}</td>
@@ -197,7 +197,7 @@ export default function Dashboard() {
                 <td>{r.state}</td>
                 <td>{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
                 <td>
-                  <a href={`/dashboard/report/${r.id}?eventId=${selectedEventId}`}>View</a>
+                  <Link href={`/event/${selectedEventSlug}`}>View Event</Link>
                 </td>
               </tr>
             ))}
