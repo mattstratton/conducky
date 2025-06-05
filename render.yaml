@@ -28,11 +28,9 @@ services:
     dockerfilePath: Dockerfile
     rootDir: frontend
     envVars:
+      # IMPORTANT: After deploying, update this value to your backend's public URL (e.g., https://conducky-backend.onrender.com)
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: conducky-backend
-          type: web
-          property: host
+        value: https://conducky-backend.onrender.com
     healthCheckPath: /
     autoDeploy: true
     buildCommand: '' # Use Dockerfile
