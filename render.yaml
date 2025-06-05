@@ -29,7 +29,10 @@ services:
     rootDir: frontend
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://conducky-backend.onrender.com
+        fromService:
+          name: conducky-backend
+          type: web
+          property: host
     healthCheckPath: /
     autoDeploy: true
     buildCommand: '' # Use Dockerfile
