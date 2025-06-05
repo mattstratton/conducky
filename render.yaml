@@ -3,7 +3,8 @@ services:
     name: conducky-backend
     env: docker
     plan: free
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: Dockerfile
+    rootDir: backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
