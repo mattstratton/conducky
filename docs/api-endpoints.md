@@ -172,6 +172,32 @@ This document describes all API endpoints provided by the backend Express server
   - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
   - `parties` can be a comma-separated or freeform list of involved parties.
 
+### Report Comments (by Event ID)
+- **GET** `/events/:eventId/reports/:reportId/comments`
+  - **Description:** List comments for a report. Only authenticated users with access to the event/report can view. Only responders/admins see internal comments.
+  - **Response:** `{ comments: [...] }`
+- **POST** `/events/:eventId/reports/:reportId/comments`
+  - **Description:** Add a comment to a report. Only authenticated users with access to the event/report can add. Only responders/admins can create internal comments.
+  - **Body:** `{ body: string, visibility: 'public' | 'internal' }`
+  - **Response:** `{ comment }`
+- **PATCH** `/events/:eventId/reports/:reportId/comments/:commentId`
+  - **Description:** Edit a comment. Only the author or an admin can edit. Only responders/admins can set internal visibility.
+  - **Body:** `{ body: string, visibility?: 'public' | 'internal' }`
+  - **Response:** `{ comment }`
+- **DELETE** `/events/:eventId/reports/:reportId/comments/:commentId`
+  - **Description:** Delete a comment. Only the author or an admin can delete.
+  - **Response:** `{ message }`
+- **Notes:**
+  - `visibility: 'public'` means visible to all involved (reporter, responders, admins). `internal` means only responders/admins can see.
+  - All endpoints require authentication.
+
+### Report Comments (by Event Slug)
+- **GET** `/events/slug/:slug/reports/:reportId/comments`
+- **POST** `/events/slug/:slug/reports/:reportId/comments`
+- **PATCH** `/events/slug/:slug/reports/:reportId/comments/:commentId`
+- **DELETE** `/events/slug/:slug/reports/:reportId/comments/:commentId`
+  - **Description, body, response, and notes are the same as the eventId-based endpoints above, but use the event slug in the URL.**
+
 ---
 
 ## Invites

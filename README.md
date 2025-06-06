@@ -9,11 +9,21 @@ To run the full stack locally:
 1. Ensure you have Docker and docker-compose installed.
 2. Run:
    ```sh
-   docker-compose up --build
+   docker-compose up --build -d
    ```
 3. The frontend (Next.js) and backend (Node.js) will be available on their respective ports (see docker-compose.yml).
 
 > **Note:** Full setup, configuration, and usage documentation will be added as features are implemented.
+
+### npm scripts
+
+- `npm run seed` - seed the database with default roles, a test event, and test users
+- `npm run sample-data` - seed the database with sample data
+- `npm run studio` - open the Prisma Studio for the database
+- `npm run frontend` - rebuild and start the frontend
+- `npm run backend` - rebuild and start the backend
+- `npm run front-and-back` - rebuild and start both the frontend and backend
+- `npm run all` - rebuild and start both the frontend and backend and database containers
 
 ---
 

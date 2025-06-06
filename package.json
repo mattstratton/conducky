@@ -5,7 +5,11 @@
     "refresh-dev": "./refresh-dev.sh",
     "seed": "docker-compose exec backend npm run seed",
     "sample-data": "docker-compose exec backend npm run sample-data",
-    "studio": "docker-compose exec backend npx prisma studio"
+    "studio": "docker-compose exec backend npx prisma studio",
+    "frontend": "docker compose up -d --build frontend",
+    "backend": "docker compose up -d --build backend",
+    "front-and-back": "docker compose up -d --build frontend backend",
+    "all": "docker compose up -d --build"
   },
   "dependencies": {
   }

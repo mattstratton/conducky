@@ -1144,6 +1144,172 @@ app.post('/events/slug/:slug/logo', async (req, res, next) => {
   }
 });
 
+// Slug-based: List comments for a report
+app.get('/events/slug/:slug/reports/:reportId/comments', async (req, res) => {
+  const { slug, reportId } = req.params;
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map(uer => uer.role.name);
+    const isResponderOrAbove = roles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+    const where = { reportId };
+    if (!isResponderOrAbove) {
+      where.visibility = 'public';
+    }
+    const comments = await prisma.reportComment.findMany({
+      where,
+      include: { author: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({ comments });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch comments', details: err.message });
+  }
+});
+
+// Slug-based: Create a comment for a report
+app.post('/events/slug/:slug/reports/:reportId/comments', async (req, res) => {
+  const { slug, reportId } = req.params;
+  const { body, visibility } = req.body;
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  if (!body || body.trim().length === 0) {
+    return res.status(400).json({ error: 'Comment body is required.' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map(uer => uer.role.name);
+    const isResponderOrAbove = roles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+    const isReporter = report.reporterId && req.user.id === report.reporterId;
+    if (!isResponderOrAbove && !isReporter) {
+      return res.status(403).json({ error: 'Only responders, admins, or the original reporter can comment.' });
+    }
+    let commentVisibility = 'public';
+    if (visibility === 'internal') {
+      if (!isResponderOrAbove) {
+        return res.status(403).json({ error: 'Only responders/admins can create internal comments.' });
+      }
+      commentVisibility = 'internal';
+    }
+    const comment = await prisma.reportComment.create({
+      data: {
+        reportId,
+        authorId: req.user.id,
+        body,
+        visibility: commentVisibility,
+      },
+      include: { author: true },
+    });
+    res.status(201).json({ comment });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create comment', details: err.message });
+  }
+});
+
+// Slug-based: Edit a comment
+app.patch('/events/slug/:slug/reports/:reportId/comments/:commentId', async (req, res) => {
+  const { slug, reportId, commentId } = req.params;
+  const { body, visibility } = req.body;
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  if (!body || body.trim().length === 0) {
+    return res.status(400).json({ error: 'Comment body is required.' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    const comment = await prisma.reportComment.findUnique({ where: { id: commentId } });
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found.' });
+    }
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId || comment.reportId !== reportId) {
+      return res.status(404).json({ error: 'Report or comment not found for this event.' });
+    }
+    // Only author can edit
+    if (comment.authorId !== req.user.id) {
+      return res.status(403).json({ error: 'Only the author can edit this comment.' });
+    }
+    // Only responders/admins can set internal visibility
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map(uer => uer.role.name);
+    let commentVisibility = comment.visibility;
+    if (visibility && visibility !== comment.visibility) {
+      if (visibility === 'internal' && !roles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r))) {
+        return res.status(403).json({ error: 'Only responders/admins can set internal visibility.' });
+      }
+      commentVisibility = visibility;
+    }
+    const updated = await prisma.reportComment.update({
+      where: { id: commentId },
+      data: { body, visibility: commentVisibility },
+      include: { author: true },
+    });
+    res.json({ comment: updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update comment', details: err.message });
+  }
+});
+
+// Slug-based: Delete a comment
+app.delete('/events/slug/:slug/reports/:reportId/comments/:commentId', async (req, res) => {
+  const { slug, reportId, commentId } = req.params;
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    const comment = await prisma.reportComment.findUnique({ where: { id: commentId } });
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found.' });
+    }
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report || report.eventId !== eventId || comment.reportId !== reportId) {
+      return res.status(404).json({ error: 'Report or comment not found for this event.' });
+    }
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map(uer => uer.role.name);
+    const isAdminOrAbove = roles.some(r => ['Admin', 'SuperAdmin'].includes(r));
+    // Only author or admin can delete
+    if (comment.authorId !== req.user.id && !isAdminOrAbove) {
+      return res.status(403).json({ error: 'Only the author or an admin can delete this comment.' });
+    }
+    await prisma.reportComment.delete({ where: { id: commentId } });
+    res.json({ message: 'Comment deleted.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete comment', details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server listening on port ${PORT}`);
 });

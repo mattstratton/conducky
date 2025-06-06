@@ -184,6 +184,16 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Figure out what happens if the superadmin also needs to be a user for an event ([#14](https://github.com/mattstratton/conducky/issues/14))
 - [ ] Investigate anonymous reporting ([#12](https://github.com/mattstratton/conducky/issues/12))
 
+## Report Comments - Completed
+- [x] Slug-based comment endpoints implemented in backend
+- [x] Edit and delete permissions enforced in backend (author can edit/delete, admin can delete)
+- [x] Internal/external (visibility) comment logic enforced in backend and frontend
+- [x] Frontend UI for editing and deleting comments (inline, with confirmation)
+
+## Planned Features for Report Comments
+- [ ] If a comment has been edited, it should be marked so users know it was edited.
+- [ ] All edits or deletions of comments should be stored in the audit log (pending audit log implementation).
+
 ---
 
 **Notes:**
