@@ -53,6 +53,21 @@ This document describes all API endpoints provided by the backend Express server
 - **Description:** Get event details by slug (public)
 - **Response:** `{ event }`
 
+### List Users for Event (by Slug)
+- **GET** `/events/slug/:slug/users`
+- **Role:** Admin or SuperAdmin for the event
+- **Query Parameters:**
+  - `search` (string, optional): Filter users by name or email (case-insensitive, partial match)
+  - `sort` (string, optional): Sort by `name`, `email`, or `role` (default: `name`)
+  - `order` (string, optional): Sort order, `asc` or `desc` (default: `asc`)
+  - `page` (integer, optional): Page number for pagination (default: 1)
+  - `limit` (integer, optional): Number of users per page (default: 10)
+  - `role` (string, optional): Filter users by event role (`Admin`, `Responder`, `Reporter`)
+- **Response:** `{ users: [...], total: <number> }`
+- **Notes:**
+  - All query parameters can be combined for advanced filtering, sorting, and navigation.
+  - The `total` field gives the total number of users matching the filters (for pagination UI).
+
 ---
 
 ## User Management

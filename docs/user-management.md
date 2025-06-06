@@ -1,73 +1,21 @@
-# User Management
+## Event Admin User List Features
 
-This document describes how users are managed in the system, including registration, login, roles, event membership, and invite links.
+Event Admins can manage users for their event using a powerful user list UI with the following features:
 
----
+- **Search:** Filter users by name or email using the search box above the table. The list updates as you type.
+- **Sort:** Sort users by name, email, or role using the sort dropdown. Toggle ascending/descending order with the arrow button.
+- **Pagination:** Navigate through users with page controls below the table. Change the number of users per page (10, 20, 50) using the selector.
+- **Role Filter:** Filter users by event role (Admin, Responder, Reporter) using the role dropdown. Only users with the selected role will be shown.
 
-## User Data Model
-- Users have `id`, `email`, `name`, `passwordHash`, and timestamps.
-- Users are related to events via roles (Reporter, Responder, Admin, SuperAdmin).
-- See `User` and `UserEventRole` in `schema.prisma`.
+All these controls can be combined for advanced filtering and navigation.
 
----
+### API Details
+The backend endpoint `/events/slug/:slug/users` supports the following query parameters:
+- `search` (string): Filter by name or email
+- `sort` (name|email|role): Sort field
+- `order` (asc|desc): Sort order
+- `page` (integer): Page number
+- `limit` (integer): Users per page
+- `role` (Admin|Responder|Reporter): Filter by event role
 
-## Registration & Login
-- **Register:**
-  - `POST /register` (first user becomes SuperAdmin)
-  - `POST /register/invite/:inviteCode` (register via invite link, becomes Reporter for event)
-- **Login:**
-  - `POST /login` (email/password)
-- **Logout:**
-  - `POST /logout`
-- **Session:**
-  - `GET /session` (get current user and roles)
-
----
-
-## Roles
-- Roles: Reporter, Responder, Admin, SuperAdmin
-- Roles are assigned per event (except SuperAdmin, which is global)
-- Roles are managed via the Admin UI or API
-
----
-
-## Adding Users to Events
-- **Via UI:**
-  - Event Admins can add users to their event, assign roles, or remove users
-- **Via API:**
-  - `POST /events/:eventId/roles` (assign role)
-  - `DELETE /events/:eventId/roles` (remove role)
-  - `PATCH /events/slug/:slug/users/:userId` (edit user info/role)
-  - `DELETE /events/slug/:slug/users/:userId` (remove user from event)
-
----
-
-## Invite Links
-- Event Admins can create invite links for their event
-- Invite links can have max uses, expiration, and notes
-- **API:**
-  - `POST /events/slug/:slug/invites` (create)
-  - `GET /events/slug/:slug/invites` (list)
-  - `PATCH /events/slug/:slug/invites/:inviteId` (disable/update)
-  - `POST /register/invite/:inviteCode` (register via invite)
-  - `GET /invites/:code` (get invite details)
-- **UI:**
-  - Event Admin page has an Invite Links section
-  - Users can register via invite link and join as Reporter
-
----
-
-## Editing & Removing Users
-- Event Admins can edit user name, email, and role for their event
-- Removing a user from an event removes all their roles for that event
-
----
-
-## Global User Management
-- SuperAdmins can list, search, and create/invite users globally via `/admin/users` endpoints
-
----
-
-## Notes
-- All user actions are subject to role-based access control
-- See [API Endpoints](./api-endpoints.md) for details 
+See [API Endpoints](./api-endpoints.md) for more details. 

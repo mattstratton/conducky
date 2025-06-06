@@ -646,6 +646,9 @@ app.get('/events/slug/:slug/users', async (req, res) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   const { slug } = req.params;
+  const { search, sort = 'name', order = 'asc', page = 1, limit = 10, role } = req.query;
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
   if (!slug) {
     return res.status(400).json({ error: 'Missing slug in params' });
   }
@@ -668,9 +671,33 @@ app.get('/events/slug/:slug/users', async (req, res) => {
         return res.status(403).json({ error: 'Forbidden: insufficient role' });
       }
     }
-    // --- original handler logic ---
-    const userEventRoles = await prisma.userEventRole.findMany({
-      where: { eventId },
+    // --- handler logic with search, sort, pagination, and role filter support ---
+    let allUserEventRoles;
+    let userEventRoleWhere = { eventId };
+    if (role && role !== 'All') {
+      // Find roleId for the given role name
+      const roleRecord = await prisma.role.findUnique({ where: { name: role } });
+      if (!roleRecord) {
+        return res.status(400).json({ error: 'Invalid role filter' });
+      }
+      userEventRoleWhere.roleId = roleRecord.id;
+    }
+    if (search && search.trim() !== '') {
+      // Find users matching search (name or email)
+      const matchingUsers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      });
+      const matchingUserIds = matchingUsers.map(u => u.id);
+      userEventRoleWhere.userId = { in: matchingUserIds };
+    }
+    allUserEventRoles = await prisma.userEventRole.findMany({
+      where: userEventRoleWhere,
       include: {
         user: true,
         role: true,
@@ -678,7 +705,7 @@ app.get('/events/slug/:slug/users', async (req, res) => {
     });
     // Group roles by user
     const users = {};
-    userEventRoles.forEach(uer => {
+    allUserEventRoles.forEach(uer => {
       if (!users[uer.userId]) {
         users[uer.userId] = {
           id: uer.user.id,
@@ -689,7 +716,34 @@ app.get('/events/slug/:slug/users', async (req, res) => {
       }
       users[uer.userId].roles.push(uer.role.name);
     });
-    res.json({ users: Object.values(users) });
+    let usersArr = Object.values(users);
+    // If filtering by role, only include users who have that role
+    if (role && role !== 'All') {
+      usersArr = usersArr.filter(u => u.roles.includes(role));
+    }
+    // Sorting
+    const sortKey = ['name', 'email', 'role'].includes(sort) ? sort : 'name';
+    const sortOrder = order === 'desc' ? -1 : 1;
+    usersArr.sort((a, b) => {
+      if (sortKey === 'role') {
+        const aRole = (a.roles[0] || '').toLowerCase();
+        const bRole = (b.roles[0] || '').toLowerCase();
+        if (aRole < bRole) return -1 * sortOrder;
+        if (aRole > bRole) return 1 * sortOrder;
+        return 0;
+      } else {
+        const aVal = (a[sortKey] || '').toLowerCase();
+        const bVal = (b[sortKey] || '').toLowerCase();
+        if (aVal < bVal) return -1 * sortOrder;
+        if (aVal > bVal) return 1 * sortOrder;
+        return 0;
+      }
+    });
+    const total = usersArr.length;
+    // Pagination
+    const startIdx = (pageNum - 1) * limitNum;
+    const pagedUsers = usersArr.slice(startIdx, startIdx + limitNum);
+    res.json({ users: pagedUsers, total });
   } catch (err) {
     res.status(500).json({ error: 'Failed to list users for event.', details: err.message });
   }

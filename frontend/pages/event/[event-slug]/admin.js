@@ -21,6 +21,44 @@ export default function EventAdminPage() {
   const [newInvite, setNewInvite] = useState({ maxUses: '', expiresAt: '', note: '' });
   const inviteUrlRef = useRef(null);
 
+  // New state for search and sort
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sort, setSort] = useState('name');
+  const [order, setOrder] = useState('asc');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [roleFilter, setRoleFilter] = useState('All');
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Fetch users for this event (with search/sort/pagination)
+  const fetchEventUsers = () => {
+    if (!eventSlug) return;
+    setLoading(true);
+    let url = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
+    if (debouncedSearch.trim() !== '') url += `&search=${encodeURIComponent(debouncedSearch)}`;
+    if (roleFilter && roleFilter !== 'All') url += `&role=${encodeURIComponent(roleFilter)}`;
+    fetch(url, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : { users: [], total: 0 })
+      .then(data => {
+        setEventUsers(data.users || []);
+        setTotal(data.total || 0);
+      })
+      .catch(() => {
+        setEventUsers([]);
+        setTotal(0);
+      })
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
     if (!eventSlug) return;
     setLoading(true);
@@ -39,16 +77,26 @@ export default function EventAdminPage() {
       .then(res => res.ok ? res.json() : null)
       .then(data => setUser(data ? data.user : null))
       .catch(() => setUser(null));
-    // Fetch users for this event
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users`, {
-      credentials: 'include',
-    })
-      .then(res => res.ok ? res.json() : { users: [] })
-      .then(data => setEventUsers(data.users || []))
-      .catch(() => setEventUsers([]));
+    fetchEventUsers();
     fetchInvites();
     setLoading(false);
   }, [eventSlug]);
+
+  // Refetch users when debouncedSearch/sort/order/page/limit/roleFilter changes
+  useEffect(() => {
+    fetchEventUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, sort, order, page, limit, eventSlug, roleFilter]);
+
+  // Reset to page 1 when search, sort, or limit changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, sort, order, limit]);
+
+  // Reset to page 1 when roleFilter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, sort, order, limit, roleFilter]);
 
   function hasRole(role) {
     if (!user || !user.roles) return false;
@@ -95,12 +143,7 @@ export default function EventAdminPage() {
       setEditSuccess('User updated!');
       setEditUserId(null);
       // Refresh users
-      fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users`, {
-        credentials: 'include',
-      })
-        .then(res => res.ok ? res.json() : { users: [] })
-        .then(data => setEventUsers(data.users || []))
-        .catch(() => setEventUsers([]));
+      fetchEventUsers();
     } catch (err) {
       setEditError('Network error');
     }
@@ -118,12 +161,7 @@ export default function EventAdminPage() {
         return;
       }
       // Refresh users
-      fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users`, {
-        credentials: 'include',
-      })
-        .then(res => res.ok ? res.json() : { users: [] })
-        .then(data => setEventUsers(data.users || []))
-        .catch(() => setEventUsers([]));
+      fetchEventUsers();
     } catch (err) {
       alert('Network error');
     }
@@ -198,6 +236,9 @@ export default function EventAdminPage() {
     alert('Invite link copied to clipboard!');
   };
 
+  // Calculate total pages
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
   if (error) return <div style={{ padding: 40 }}><h2>{error}</h2></div>;
   if (loading || !event) return <div style={{ padding: 40 }}><h2>Loading event admin page...</h2></div>;
 
@@ -210,10 +251,50 @@ export default function EventAdminPage() {
 
   return (
     <div style={{ padding: 40 }}>
-      <h2>this is the admin page for {event.name}</h2>
+      <h2>this is the admin page for {event && event.name}</h2>
       <div className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">User Management</h3>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+          <div className="flex gap-2 items-center">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="border px-2 py-1 rounded pr-8"
+                style={{ minWidth: 180 }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 px-1"
+                  title="Clear search"
+                  tabIndex={0}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="border px-2 py-1 rounded">
+              <option value="All">All Roles</option>
+              <option value="Admin">Admin</option>
+              <option value="Responder">Responder</option>
+              <option value="Reporter">Reporter</option>
+            </select>
+            <select value={sort} onChange={e => setSort(e.target.value)} className="border px-2 py-1 rounded">
+              <option value="name">Sort by Name</option>
+              <option value="email">Sort by Email</option>
+              <option value="role">Sort by Role</option>
+            </select>
+            <button
+              onClick={() => setOrder(o => (o === 'asc' ? 'desc' : 'asc'))}
+              className="border px-2 py-1 rounded"
+              title="Toggle sort order"
+            >
+              {order === 'asc' ? '⬆️' : '⬇️'}
+            </button>
+          </div>
           <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add New User</button>
         </div>
         <table className="min-w-full border border-gray-200">
@@ -264,6 +345,29 @@ export default function EventAdminPage() {
             ))}
           </tbody>
         </table>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 gap-2">
+          <div className="flex gap-2 items-center">
+            <button
+              className="border px-2 py-1 rounded disabled:opacity-50"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >Prev</button>
+            <span>Page {page} of {totalPages}</span>
+            <button
+              className="border px-2 py-1 rounded disabled:opacity-50"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >Next</button>
+          </div>
+          <div className="flex gap-2 items-center">
+            <label className="text-sm">Users per page:</label>
+            <select value={limit} onChange={e => setLimit(Number(e.target.value))} className="border px-2 py-1 rounded">
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div className="mt-12">
         <h3 className="text-xl font-semibold mb-2">Invite Links</h3>

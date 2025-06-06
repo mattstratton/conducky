@@ -15,15 +15,30 @@
 - [X] Role-based access control (RBAC) middleware
 - [X] Implement registration, login, logout, and session check endpoints
 - [X] User email address needs to be unique in the database
+- [ ] User invite links for an event should be able to be set to the role (ie. Reporter, Responder, Admin)
 
 ## Phase 2.5: Event Management UI
 - [ ] The list of users on the event page should be sortable and searchable
+    - [X] Backend: Add support for search (by name/email) to /events/slug/:slug/users endpoint
+    - [X] Backend: Add support for sorting (by name/email/role) to /events/slug/:slug/users endpoint
+    - [X] Frontend: Add search input and sort controls to user list UI
+    - [ ] Frontend: Wire up search and sort controls to backend API
 - [ ] The list of users on the event page should paginate
+    - [X] Backend: Add pagination (page, limit) to /events/slug/:slug/users endpoint
+    - [X] Frontend: Add pagination controls to user list UI
+    - [X] Frontend: Wire up pagination controls to backend API
+- [X] The list of users on the event page should be filterable by role
+    - [X] Backend: Add support for filtering by role to /events/slug/:slug/users endpoint
+    - [X] Frontend: Add role filter controls to user list UI
+    - [X] Frontend: Wire up role filter controls to backend API
 - [X] The list of users on the event page should have a button to add a user
 - [X] The list of users on the event page should have a button to remove a user
 - [X] The list of users on the event page should have a button to edit a user
 - [~] The list of users on the event page should have a button to view a user
+    - [ ] Frontend: Implement "View User" button to show user details (modal or page)
 - [ ] The list of users on the event page should have a button to view a user's reports
+    - [ ] Backend: Add endpoint to fetch all reports for a given user in an event
+    - [ ] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
 
 ## Phase 3: Multi-Tenancy & Event Management
 - [X] Implement event (tenant) creation and management (Super Admin only)
@@ -38,8 +53,7 @@
 ## Phase 4: Report Submission & Management
 - [~] Design and implement report submission form (with all required fields)
 - [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
-- [ ] Allow admins to define custom report types per event ([#5](https://github.com/mattstratton/conducky/issues/5))
-- [ ] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
+- [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [ ] Admin/Responder UI for managing and responding to reports
 
 ## Phase 5: Notifications
