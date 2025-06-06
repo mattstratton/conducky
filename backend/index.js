@@ -535,13 +535,18 @@ app.get('/event/slug/:slug', async (req, res) => {
 // Slug-based: List all reports for an event
 app.get('/events/slug/:slug/reports', async (req, res) => {
   const { slug } = req.params;
+  const { userId } = req.query;
   try {
     const eventId = await getEventIdBySlug(slug);
     if (!eventId) {
       return res.status(404).json({ error: 'Event not found.' });
     }
+    const where = { eventId };
+    if (userId) {
+      where.reporterId = userId;
+    }
     const reports = await prisma.report.findMany({
-      where: { eventId },
+      where,
       include: { reporter: true },
       orderBy: { createdAt: 'desc' },
     });

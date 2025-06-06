@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 
 export default function EventAdminPage() {
   const router = useRouter();
@@ -334,7 +335,8 @@ export default function EventAdminPage() {
                       </>
                     ) : (
                       <>
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">View</button>
+                        <Link href={`/event/${eventSlug}/admin/user/${eu.id}`} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">View</Link>
+                        <Link href={`/event/${eventSlug}/admin/user/${eu.id}/reports`} className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">User's Reports</Link>
                         <button onClick={() => handleEdit(eu)} className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Edit</button>
                         <button onClick={() => handleRemove(eu)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Remove</button>
                       </>

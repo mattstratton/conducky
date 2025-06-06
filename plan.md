@@ -34,24 +34,37 @@
 - [X] The list of users on the event page should have a button to add a user
 - [X] The list of users on the event page should have a button to remove a user
 - [X] The list of users on the event page should have a button to edit a user
-- [~] The list of users on the event page should have a button to view a user
-    - [ ] Frontend: Implement "View User" button to show user details (modal or page)
-- [ ] The list of users on the event page should have a button to view a user's reports
-    - [ ] Backend: Add endpoint to fetch all reports for a given user in an event
-    - [ ] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
+- [X] The list of users on the event page should have a button to view a user
+    - [X] Frontend: Implement "View User" button to show user details (modal or page)
+- [X] The list of users on the event page should have a button to view a user's reports
+    - [X] Backend: Add endpoint to fetch all reports for a given user in an event
+    - [X] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
 
 ## Phase 3: Multi-Tenancy & Event Management
 - [X] Implement event (tenant) creation and management (Super Admin only)
 - [X] List all events (Super Admin only)
 - [X] Get event details (Admins of that event)
 - [X] Assign/remove roles for users within an event
-- [~] Enforce event scoping for all queries (users, reports, etc.)
+- [X] Enforce event scoping for all queries (users, reports, etc.)
+    - [X] /events/:eventId/users (GET)
+    - [X] /events/:eventId/roles (POST, DELETE)
+    - [X] /events/:eventId/reports (GET, POST)
+    - [X] /events/:eventId/reports/:reportId (GET, PATCH)
+    - [X] /events/slug/:slug/users (GET, PATCH, DELETE)
+    - [X] /events/slug/:slug/reports (GET, POST)
+    - [X] /events/slug/:slug/reports/:reportId (GET, PATCH)
+    - [X] /events/slug/:slug/invites (GET, POST, PATCH)
+    - [X] /event/slug/:slug (GET)
 - [X] List all users and their roles for an event
 - [X] List all reports for an event (stub/placeholder)
 - [X] Admin UI/API for managing event users and roles
 
 ## Phase 4: Report Submission & Management
 - [~] Design and implement report submission form (with all required fields)
+   - [ ] Add a date and time of incident field to the report submission form
+   - [ ] Add a field for parties involved
+- [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin
+- [ ] Reports should have a field for the resolution of the incident
 - [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [ ] Admin/Responder UI for managing and responding to reports
