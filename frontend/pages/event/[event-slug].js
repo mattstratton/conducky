@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { ModalContext } from '../../context/ModalContext';
+import { Button, Input, Card, Table } from '../../components';
 
 const validStates = [
   'submitted',
@@ -92,52 +93,93 @@ export default function EventDashboard() {
   };
 
   return (
-    <div className="font-sans p-4">
-      <h1 className="text-2xl font-bold mb-4">Event: {event.name}</h1>
-      <p className="text-sm font-medium text-gray-500"><b>Slug:</b> {event.slug}</p>
-      <Link href="/">← Back to Events</Link>
-      <hr className="my-4" />
-      {/* Submit Report Button */}
-      <div className="mb-6 flex justify-start">
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-semibold transition-colors"
-          onClick={() => openModal(event.slug, event.name)}
-        >
-          Submit Report
-        </button>
-      </div>
-      <hr className="my-4" />
-      {/* Show reports for all roles, but filter for regular users */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">{(isResponder || isAdmin || isSuperAdmin) ? 'All Reports' : 'Your Reports'}</h2>
-        {reports.length === 0 ? <p>No reports yet.</p> : (
-          <ul className="list-disc pl-8">
-            {(isResponder || isAdmin || isSuperAdmin
-              ? reports
-              : reports.filter(r => r.reporter && user && r.reporter.id === user.id)
-            ).map(report => (
-              <li key={report.id} className="mb-4">
-                <b>{report.type}</b>: {report.description} (state: {canChangeState ? (
-                  <>
-                    <select
-                      value={report.state}
-                      onChange={e => handleStateChange(report.id, e.target.value)}
-                      disabled={stateChange[report.id]?.loading}
-                      className="mr-4"
-                    >
-                      {validStates.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    {stateChange[report.id]?.error && <span className="text-red-500 ml-4">{stateChange[report.id].error}</span>}
-                    {stateChange[report.id]?.success && <span className="text-green-500 ml-4">{stateChange[report.id].success}</span>}
-                  </>
-                ) : report.state})
-                {report.reporter && <span className="text-sm text-gray-500"> — by {report.reporter.email || 'anonymous'}</span>}
-                {' '}<Link href={`/event/${event.slug}/report/${report.id}`} className="text-blue-500">View Details</Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="font-sans p-4 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+      <Card className="mb-6 max-w-4xl mx-auto p-4 sm:p-8">
+        <h1 className="text-2xl font-bold mb-4">Event: {event.name}</h1>
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-300"><b>Slug:</b> {event.slug}</p>
+        <Link href="/" className="text-blue-700 dark:text-blue-400 hover:underline">← Back to Events</Link>
+        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+        {/* Submit Report Button */}
+        <div className="mb-6 flex justify-start">
+          <Button
+            onClick={() => openModal(event.slug, event.name)}
+            className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm"
+          >
+            Submit Report
+          </Button>
+        </div>
+        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+        {/* Show reports for all roles, but filter for regular users */}
+        <div>
+          <h2 className="text-xl font-bold mb-4">{(isResponder || isAdmin || isSuperAdmin) ? 'All Reports' : 'Your Reports'}</h2>
+          {/* Card view for mobile */}
+          <div className="block sm:hidden">
+            {reports.length === 0 ? <p className="text-gray-500 dark:text-gray-400">No reports yet.</p> : (
+              <div className="grid grid-cols-1 gap-4">
+                {(isResponder || isAdmin || isSuperAdmin
+                  ? reports
+                  : reports.filter(r => r.reporter && user && r.reporter.id === user.id)
+                ).map(report => (
+                  <Card key={report.id} className="flex flex-col gap-2 p-4">
+                    <div className="font-semibold text-lg">{report.type}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">{report.description}</div>
+                    <div className="flex flex-col gap-1 text-sm">
+                      <span>State: {canChangeState ? (
+                        <>
+                          <select
+                            value={report.state}
+                            onChange={e => handleStateChange(report.id, e.target.value)}
+                            disabled={stateChange[report.id]?.loading}
+                            className="mr-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm"
+                          >
+                            {validStates.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          {stateChange[report.id]?.error && <span className="text-red-500 dark:text-red-400 ml-2">{stateChange[report.id].error}</span>}
+                          {stateChange[report.id]?.success && <span className="text-green-500 dark:text-green-400 ml-2">{stateChange[report.id].success}</span>}
+                        </>
+                      ) : report.state}</span>
+                      {report.reporter && <span className="text-xs text-gray-500 dark:text-gray-400">by {report.reporter.email || 'anonymous'}</span>}
+                    </div>
+                    <div className="mt-2">
+                      <Link href={`/event/${event.slug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">View Details</Link>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* List view for desktop */}
+          <div className="hidden sm:block">
+            {reports.length === 0 ? <p className="text-gray-500 dark:text-gray-400">No reports yet.</p> : (
+              <ul className="list-disc pl-8">
+                {(isResponder || isAdmin || isSuperAdmin
+                  ? reports
+                  : reports.filter(r => r.reporter && user && r.reporter.id === user.id)
+                ).map(report => (
+                  <li key={report.id} className="mb-4">
+                    <b>{report.type}</b>: {report.description} (state: {canChangeState ? (
+                      <>
+                        <select
+                          value={report.state}
+                          onChange={e => handleStateChange(report.id, e.target.value)}
+                          disabled={stateChange[report.id]?.loading}
+                          className="mr-4 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm"
+                        >
+                          {validStates.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {stateChange[report.id]?.error && <span className="text-red-500 dark:text-red-400 ml-4">{stateChange[report.id].error}</span>}
+                        {stateChange[report.id]?.success && <span className="text-green-500 dark:text-green-400 ml-4">{stateChange[report.id].success}</span>}
+                      </>
+                    ) : report.state})
+                    {report.reporter && <span className="text-sm text-gray-500 dark:text-gray-400"> — by {report.reporter.email || 'anonymous'}</span>}
+                    {' '}<Link href={`/event/${event.slug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400">View Details</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -180,17 +222,17 @@ function ReportForm({ eventSlug }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-xl mx-auto border border-gray-100">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800">Submit a Report</h3>
+    <Card className="max-w-xl mx-auto mt-8">
+      <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">Submit a Report</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-type">Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="report-type">Type</label>
           <select
             id="report-type"
             value={type}
             onChange={e => setType(e.target.value)}
             required
-            className="mt-1 block w-64 max-w-xs rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">Select type</option>
             {reportTypes.map(rt => (
@@ -199,24 +241,24 @@ function ReportForm({ eventSlug }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-description">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="report-description">Description</label>
           <textarea
             id="report-description"
             value={description}
             onChange={e => setDescription(e.target.value)}
             required
-            className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
+            className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-[80px]"
           />
         </div>
-        <button
+        <Button
           type="submit"
           disabled={submitting}
-          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-medium transition-colors disabled:opacity-60"
+          className="mt-2"
         >
           {submitting ? 'Submitting...' : 'Submit Report'}
-        </button>
-        {message && <p className="mt-2 text-sm text-gray-500">{message}</p>}
+        </Button>
+        {message && <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{message}</p>}
       </form>
-    </div>
+    </Card>
   );
 } 

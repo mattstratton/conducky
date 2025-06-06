@@ -1011,6 +1011,38 @@ app.get('/invites/:code', async (req, res) => {
   }
 });
 
+// PATCH: Update an event's name and/or slug (SuperAdmin only)
+app.patch('/events/slug/:slug', requireSuperAdmin(), async (req, res) => {
+  const { slug } = req.params;
+  const { name, newSlug } = req.body;
+  if (!name && !newSlug) {
+    return res.status(400).json({ error: 'Nothing to update.' });
+  }
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // If updating slug, check for conflicts
+    if (newSlug && newSlug !== slug) {
+      const existing = await prisma.event.findUnique({ where: { slug: newSlug } });
+      if (existing) {
+        return res.status(409).json({ error: 'Slug already exists.' });
+      }
+    }
+    const updated = await prisma.event.update({
+      where: { slug },
+      data: {
+        ...(name && { name }),
+        ...(newSlug && { slug: newSlug }),
+      },
+    });
+    res.json({ event: updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update event.', details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server listening on port ${PORT}`);
 });

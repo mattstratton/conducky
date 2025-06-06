@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { Button, Input, Card, Table } from '../../../components';
 
 export default function EventAdminPage() {
   const router = useRouter();
@@ -251,158 +252,202 @@ export default function EventAdminPage() {
   }
 
   return (
-    <div style={{ padding: 40 }}>
-      <h2>this is the admin page for {event && event.name}</h2>
-      <div className="mt-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4 sm:p-8">
+      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold mb-6">Admin for {event && event.name}</h2>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
             <div className="relative">
-              <input
+              <Input
                 type="text"
                 placeholder="Search users..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="border px-2 py-1 rounded pr-8"
-                style={{ minWidth: 180 }}
+                className="pr-8 min-w-[180px]"
               />
               {search && (
-                <button
+                <Button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 px-1"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 px-1 bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
                   title="Clear search"
                   tabIndex={0}
                 >
                   ×
-                </button>
+                </Button>
               )}
             </div>
-            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="border px-2 py-1 rounded">
+            <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="border px-2 py-1 rounded dark:bg-gray-800 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm">
               <option value="All">All Roles</option>
               <option value="Admin">Admin</option>
               <option value="Responder">Responder</option>
               <option value="Reporter">Reporter</option>
             </select>
-            <select value={sort} onChange={e => setSort(e.target.value)} className="border px-2 py-1 rounded">
+            <select value={sort} onChange={e => setSort(e.target.value)} className="border px-2 py-1 rounded dark:bg-gray-800 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm">
               <option value="name">Sort by Name</option>
               <option value="email">Sort by Email</option>
               <option value="role">Sort by Role</option>
             </select>
-            <button
+            <Button
               onClick={() => setOrder(o => (o === 'asc' ? 'desc' : 'asc'))}
-              className="border px-2 py-1 rounded"
+              className="border px-2 py-1 rounded bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
               title="Toggle sort order"
             >
               {order === 'asc' ? '⬆️' : '⬇️'}
-            </button>
+            </Button>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add New User</button>
+          <Button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 sm:px-3 sm:py-1.5 sm:text-sm">Add New User</Button>
         </div>
-        <table className="min-w-full border border-gray-200">
-          <thead>
-            <tr>
-              <th className="border border-gray-200 p-2">Name</th>
-              <th className="border border-gray-200 p-2">Role</th>
-              <th className="border border-gray-200 p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        {/* Responsive User List: Table for desktop, Cards for mobile */}
+        {/* Table view for sm and up */}
+        <div className="hidden sm:block">
+          <Table>
+            <thead>
+              <tr>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Name</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Role</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eventUsers.length === 0 ? (
+                <tr><td colSpan={3} className="text-center p-4">No users found for this event.</td></tr>
+              ) : eventUsers.map((eu, idx) => (
+                <tr key={idx}>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    {editUserId === eu.id ? (
+                      <Input type="text" value={editUserForm.name} onChange={e => handleEditChange('name', e.target.value)} />
+                    ) : (eu.name || eu.email || 'Unknown')}
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{eu.email}</div>
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    {editUserId === eu.id ? (
+                      <select value={editUserForm.role} onChange={e => handleEditChange('role', e.target.value)} className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100">
+                        {rolesList.map(role => <option key={role} value={role}>{role}</option>)}
+                      </select>
+                    ) : (Array.isArray(eu.roles) ? eu.roles.join(', ') : (eu.role || 'Unknown'))}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    <div className="flex flex-wrap gap-2">
+                      {editUserId === eu.id ? (
+                        <>
+                          <Input type="email" value={editUserForm.email} onChange={e => handleEditChange('email', e.target.value)} placeholder="Email" />
+                          <Button onClick={handleEditSave} className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
+                          <Button onClick={handleEditCancel} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
+                          {editError && <span className="text-red-600 dark:text-red-400 ml-2 sm:ml-3">{editError}</span>}
+                          {editSuccess && <span className="text-green-600 dark:text-green-400 ml-2 sm:ml-3">{editSuccess}</span>}
+                        </>
+                      ) : (
+                        <>
+                          <Link href={`/event/${eventSlug}/admin/user/${eu.id}`}><Button className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">View</Button></Link>
+                          <Link href={`/event/${eventSlug}/admin/user/${eu.id}/reports`}><Button className="bg-purple-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">User's Reports</Button></Link>
+                          <Button onClick={() => handleEdit(eu)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
+                          <Button onClick={() => handleRemove(eu)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white sm:px-3 sm:py-1.5 sm:text-sm">Remove</Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+        {/* Card view for mobile only */}
+        <div className="block sm:hidden">
+          <div className="grid grid-cols-1 gap-6 mt-4">
             {eventUsers.length === 0 ? (
-              <tr><td colSpan={3} className="text-center p-4">No users found for this event.</td></tr>
+              <div className="col-span-full text-center p-4">No users found for this event.</div>
             ) : eventUsers.map((eu, idx) => (
-              <tr key={idx}>
-                <td className="border border-gray-200 p-2">
-                  {editUserId === eu.id ? (
-                    <input type="text" value={editUserForm.name} onChange={e => handleEditChange('name', e.target.value)} className="border px-2 py-1 rounded w-full" />
-                  ) : (eu.name || eu.email || 'Unknown')}
-                </td>
-                <td className="border border-gray-200 p-2">
-                  {editUserId === eu.id ? (
-                    <select value={editUserForm.role} onChange={e => handleEditChange('role', e.target.value)} className="border px-2 py-1 rounded w-full">
+              <Card key={idx} className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1 mb-2">
+                  <span className="font-semibold text-lg">{editUserId === eu.id ? (
+                    <Input type="text" value={editUserForm.name} onChange={e => handleEditChange('name', e.target.value)} />
+                  ) : (eu.name || eu.email || 'Unknown')}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{eu.email}</span>
+                  <span className="text-sm">Role: {editUserId === eu.id ? (
+                    <select value={editUserForm.role} onChange={e => handleEditChange('role', e.target.value)} className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100">
                       {rolesList.map(role => <option key={role} value={role}>{role}</option>)}
                     </select>
-                  ) : (Array.isArray(eu.roles) ? eu.roles.join(', ') : (eu.role || 'Unknown'))}
-                </td>
-                <td className="border border-gray-200 p-2">
-                  <div className="flex gap-2">
-                    {editUserId === eu.id ? (
-                      <>
-                        <input type="email" value={editUserForm.email} onChange={e => handleEditChange('email', e.target.value)} className="border px-2 py-1 rounded w-full" placeholder="Email" />
-                        <button onClick={handleEditSave} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Save</button>
-                        <button onClick={handleEditCancel} className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400">Cancel</button>
-                        {editError && <span className="text-red-600 ml-2">{editError}</span>}
-                        {editSuccess && <span className="text-green-600 ml-2">{editSuccess}</span>}
-                      </>
-                    ) : (
-                      <>
-                        <Link href={`/event/${eventSlug}/admin/user/${eu.id}`} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">View</Link>
-                        <Link href={`/event/${eventSlug}/admin/user/${eu.id}/reports`} className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700">User's Reports</Link>
-                        <button onClick={() => handleEdit(eu)} className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Edit</button>
-                        <button onClick={() => handleRemove(eu)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Remove</button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
+                  ) : (Array.isArray(eu.roles) ? eu.roles.join(', ') : (eu.role || 'Unknown'))}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editUserId === eu.id ? (
+                    <>
+                      <Input type="email" value={editUserForm.email} onChange={e => handleEditChange('email', e.target.value)} placeholder="Email" />
+                      <Button onClick={handleEditSave} className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
+                      <Button onClick={handleEditCancel} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
+                      {editError && <span className="text-red-600 dark:text-red-400 ml-2 sm:ml-3">{editError}</span>}
+                      {editSuccess && <span className="text-green-600 dark:text-green-400 ml-2 sm:ml-3">{editSuccess}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <Link href={`/event/${eventSlug}/admin/user/${eu.id}`}><Button className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">View</Button></Link>
+                      <Link href={`/event/${eventSlug}/admin/user/${eu.id}/reports`}><Button className="bg-purple-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">User's Reports</Button></Link>
+                      <Button onClick={() => handleEdit(eu)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
+                      <Button onClick={() => handleRemove(eu)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white sm:px-3 sm:py-1.5 sm:text-sm">Remove</Button>
+                    </>
+                  )}
+                </div>
+              </Card>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 gap-2">
           <div className="flex gap-2 items-center">
-            <button
-              className="border px-2 py-1 rounded disabled:opacity-50"
+            <Button
+              className="border px-2 py-1 rounded disabled:opacity-50 bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-            >Prev</button>
+            >Prev</Button>
             <span>Page {page} of {totalPages}</span>
-            <button
-              className="border px-2 py-1 rounded disabled:opacity-50"
+            <Button
+              className="border px-2 py-1 rounded disabled:opacity-50 bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-            >Next</button>
+            >Next</Button>
           </div>
           <div className="flex gap-2 items-center">
             <label className="text-sm">Users per page:</label>
-            <select value={limit} onChange={e => setLimit(Number(e.target.value))} className="border px-2 py-1 rounded">
+            <select value={limit} onChange={e => setLimit(Number(e.target.value))} className="border px-2 py-1 rounded dark:bg-gray-800 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm">
               <option value={10}>10</option>
               <option value={20}>20</option>
               <option value={50}>50</option>
             </select>
           </div>
         </div>
-      </div>
-      <div className="mt-12">
+      </Card>
+      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mt-12">
         <h3 className="text-xl font-semibold mb-2">Invite Links</h3>
         <form onSubmit={handleCreateInvite} className="flex flex-wrap gap-2 items-end mb-4">
           <div>
             <label className="block text-sm font-medium">Max Uses
-              <input type="number" min="1" value={newInvite.maxUses} onChange={e => setNewInvite(f => ({ ...f, maxUses: e.target.value }))} className="border px-2 py-1 rounded w-24" />
+              <Input type="number" min="1" value={newInvite.maxUses} onChange={e => setNewInvite(f => ({ ...f, maxUses: e.target.value }))} className="w-24 sm:w-32" />
             </label>
           </div>
           <div>
             <label className="block text-sm font-medium">Expires At
-              <input type="datetime-local" value={newInvite.expiresAt} onChange={e => setNewInvite(f => ({ ...f, expiresAt: e.target.value }))} className="border px-2 py-1 rounded" />
+              <Input type="datetime-local" value={newInvite.expiresAt} onChange={e => setNewInvite(f => ({ ...f, expiresAt: e.target.value }))} className="w-40 sm:w-56" />
             </label>
           </div>
           <div>
             <label className="block text-sm font-medium">Note
-              <input type="text" value={newInvite.note} onChange={e => setNewInvite(f => ({ ...f, note: e.target.value }))} className="border px-2 py-1 rounded w-48" />
+              <Input type="text" value={newInvite.note} onChange={e => setNewInvite(f => ({ ...f, note: e.target.value }))} className="w-48 sm:w-64" />
             </label>
           </div>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create Invite</button>
+          <Button type="submit" className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">Create Invite</Button>
         </form>
         {inviteError && <div className="text-red-600 mb-2">{inviteError}</div>}
         {inviteSuccess && <div className="text-green-600 mb-2">{inviteSuccess}</div>}
         {inviteLoading ? <div>Loading...</div> : (
-          <table className="min-w-full border border-gray-200">
+          <Table>
             <thead>
               <tr>
-                <th className="border border-gray-200 p-2">Invite Link</th>
-                <th className="border border-gray-200 p-2">Status</th>
-                <th className="border border-gray-200 p-2">Uses</th>
-                <th className="border border-gray-200 p-2">Expires</th>
-                <th className="border border-gray-200 p-2">Note</th>
-                <th className="border border-gray-200 p-2">Actions</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Invite Link</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Status</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Uses</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Expires</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Note</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -410,23 +455,23 @@ export default function EventAdminPage() {
                 <tr><td colSpan={6} className="text-center p-4">No invite links found.</td></tr>
               ) : inviteLinks.map(invite => (
                 <tr key={invite.id}>
-                  <td className="border border-gray-200 p-2">
-                    <input type="text" readOnly value={invite.url} className="border px-2 py-1 rounded w-full" onFocus={e => e.target.select()} />
-                    <button onClick={() => handleCopyInviteUrl(invite.url)} className="ml-2 bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">Copy</button>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    <Input type="text" readOnly value={invite.url} className="w-full sm:w-96" onFocus={e => e.target.select()} />
+                    <Button onClick={() => handleCopyInviteUrl(invite.url)} className="ml-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 sm:px-2 sm:py-1 sm:text-sm">Copy</Button>
                   </td>
-                  <td className="border border-gray-200 p-2">{invite.disabled ? 'Disabled' : 'Active'}</td>
-                  <td className="border border-gray-200 p-2">{invite.useCount}{invite.maxUses ? ` / ${invite.maxUses}` : ''}</td>
-                  <td className="border border-gray-200 p-2">{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : '—'}</td>
-                  <td className="border border-gray-200 p-2">{invite.note || '—'}</td>
-                  <td className="border border-gray-200 p-2">
-                    {!invite.disabled && <button onClick={() => handleDisableInvite(invite.id)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Disable</button>}
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.disabled ? 'Disabled' : 'Active'}</td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.uses}/{invite.maxUses || '∞'}</td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : '—'}</td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.note || '—'}</td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    {!invite.disabled && <Button onClick={() => handleDisableInvite(invite.id)} className="bg-red-600 text-white sm:px-2 sm:py-1 sm:text-sm">Disable</Button>}
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 } 

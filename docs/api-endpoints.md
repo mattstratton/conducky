@@ -68,6 +68,17 @@ This document describes all API endpoints provided by the backend Express server
   - All query parameters can be combined for advanced filtering, sorting, and navigation.
   - The `total` field gives the total number of users matching the filters (for pagination UI).
 
+### Update Event (by Slug)
+- **PATCH** `/events/slug/:slug`
+- **Role:** SuperAdmin only
+- **Body:** `{ name, newSlug }` (at least one required)
+- **Response:** `{ event }`
+- **Notes:**
+  - Updates the event's name and/or slug.
+  - If `newSlug` is provided and already exists, returns 409 error.
+  - Returns 404 if event not found.
+  - Returns 400 if neither field is provided.
+
 ---
 
 ## User Management

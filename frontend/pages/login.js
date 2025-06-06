@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
+import { Button, Input, Card } from '../components';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -54,24 +55,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4">
+      <Card className="w-full max-w-md p-4 sm:p-8">
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-            </label>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
           </div>
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Password
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-            </label>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
           </div>
-          {error && <div className="text-red-600 text-sm font-semibold">{error}</div>}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Login</button>
+          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+          <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Login</Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 } 

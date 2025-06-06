@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ModalContext } from '../context/ModalContext';
+import { Button, Input, Card, Table } from '../components';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -128,65 +129,94 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="font-sans p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p><Link href="/">Home</Link></p>
-      {error && <p className="text-red-500">{error}</p>}
-      {events.length > 0 && (
-        <div className="mb-4">
-          <label>
-            Select Event:{' '}
-            <select value={selectedEventSlug} onChange={e => setSelectedEventSlug(e.target.value)}>
-              <option value="">-- Select an event --</option>
-              {events.map(ev => (
-                <option key={ev.id} value={ev.slug}>{ev.name}</option>
-              ))}
-            </select>
-          </label>
+    <div className="font-sans p-4 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+      <Card className="mb-6 max-w-4xl mx-auto p-4 sm:p-8">
+        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+        <p><Link href="/">Home</Link></p>
+        {error && <p className="text-red-500 dark:text-red-400">{error}</p>}
+        {events.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">
+              Select Event:
+              <select value={selectedEventSlug} onChange={e => setSelectedEventSlug(e.target.value)} className="ml-2 px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-3 sm:py-1.5 sm:text-sm">
+                <option value="">-- Select an event --</option>
+                {events.map(ev => (
+                  <option key={ev.id} value={ev.slug}>{ev.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+        {/* Submit Report Button */}
+        <div className="mb-6 flex justify-start">
+          <Button
+            disabled={!selectedEventSlug}
+            onClick={() => {
+              const selectedEvent = events.find(ev => ev.slug === selectedEventSlug);
+              openModal(selectedEventSlug, selectedEvent ? selectedEvent.name : '');
+            }}
+            className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm"
+          >
+            Submit Report
+          </Button>
         </div>
-      )}
-      {/* Submit Report Button */}
-      <div className="mb-6 flex justify-start">
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-semibold transition-colors disabled:opacity-60"
-          disabled={!selectedEventSlug}
-          onClick={() => {
-            const selectedEvent = events.find(ev => ev.slug === selectedEventSlug);
-            openModal(selectedEventSlug, selectedEvent ? selectedEvent.name : '');
-          }}
-        >
-          Submit Report
-        </button>
-      </div>
-      {/* Reports Table */}
-      {selectedEventSlug && !loading ? (
-        <table className="border-collapse border border-gray-200">
-          <thead>
-            <tr>
-              <th className="border border-gray-200 p-2">Type</th>
-              <th className="border border-gray-200 p-2">Description</th>
-              <th className="border border-gray-200 p-2">State</th>
-              <th className="border border-gray-200 p-2">Created At</th>
-              <th className="border border-gray-200 p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.length === 0 ? (
-              <tr><td colSpan={5}>No reports found.</td></tr>
-            ) : reports.map(r => (
-              <tr key={r.id}>
-                <td className="border border-gray-200 p-2">{r.type}</td>
-                <td className="border border-gray-200 p-2">{r.description}</td>
-                <td className="border border-gray-200 p-2">{r.state}</td>
-                <td className="border border-gray-200 p-2">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-                <td className="border border-gray-200 p-2">
-                  <Link href={`/event/${selectedEventSlug}/report/${r.id}`} className="text-blue-700 hover:underline">View Report</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : null}
+        {/* Reports Table or Cards */}
+        {selectedEventSlug && !loading ? (
+          <>
+            {/* Card view for mobile */}
+            <div className="block sm:hidden">
+              {reports.length === 0 ? (
+                <div className="text-center py-4">No reports found.</div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {reports.map(r => (
+                    <Card key={r.id} className="flex flex-col gap-2 p-4">
+                      <div className="font-semibold text-lg">{r.type}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">{r.description}</div>
+                      <div className="flex flex-col gap-1 text-sm">
+                        <span>State: {r.state}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Created: {r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</span>
+                      </div>
+                      <div className="mt-2">
+                        <Link href={`/event/${selectedEventSlug}/report/${r.id}`} className="text-blue-500 dark:text-blue-400 underline">View Report</Link>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Table view for desktop */}
+            <div className="hidden sm:block">
+              <Table>
+                <thead>
+                  <tr>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Type</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Description</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">State</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Created At</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-4">No reports found.</td></tr>
+                  ) : reports.map(r => (
+                    <tr key={r.id}>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{r.type}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{r.description}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{r.state}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">
+                        <Link href={`/event/${selectedEventSlug}/report/${r.id}`} className="text-blue-700 dark:text-blue-400 hover:underline">View Report</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </>
+        ) : null}
+      </Card>
     </div>
   );
 } 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Button, Input, Card, Table } from '../components';
 
 export default function GlobalAdmin() {
   const [user, setUser] = useState(null);
@@ -86,10 +87,10 @@ export default function GlobalAdmin() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    const res = await fetch(API_URL + '/events/' + editEventId, {
+    const res = await fetch(API_URL + '/events/slug/' + editSlug, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName, slug: editSlug }),
+      body: JSON.stringify({ name: editName }),
       credentials: 'include',
     });
     if (!res.ok) {
@@ -141,73 +142,101 @@ export default function GlobalAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Global Admin: Event Management</h1>
-        <div className="mb-4 flex gap-4 text-sm text-gray-600">
-          <Link href="/" className="hover:underline">Home</Link> |
-          <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-        </div>
-        <div className="bg-white rounded shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Create New Event</h2>
-          <form onSubmit={handleCreateEvent} className="space-y-4 max-w-md">
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Name
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-              </label>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4 transition-colors duration-200">
+      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mb-8 p-4 sm:p-8">
+        <h2 className="text-xl font-semibold mb-4">Create New Event</h2>
+        <form onSubmit={handleCreateEvent} className="space-y-4 max-w-md">
+          <div>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Name</label>
+            <Input type="text" value={name} onChange={e => setName(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+          </div>
+          <div>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Slug</label>
+            <Input type="text" value={slug} onChange={e => setSlug(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+          </div>
+          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+          {success && <div className="text-green-600 dark:text-green-400 text-sm font-semibold">{success}</div>}
+          <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create Event</Button>
+        </form>
+      </Card>
+      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto p-4 sm:p-8">
+        <h2 className="text-xl font-semibold mb-4">All Events</h2>
+        {events.length === 0 ? <p className="text-gray-500 dark:text-gray-400">No events found.</p> : (
+          <>
+            {/* Card view for mobile */}
+            <div className="block sm:hidden">
+              <div className="grid grid-cols-1 gap-4">
+                {events.map(ev => (
+                  <Card key={ev.id} className="flex flex-col gap-2 p-4">
+                    <div className="font-semibold text-lg">{editEventId === ev.id ? (
+                      <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+                    ) : (
+                      <Link href={`/event/${ev.slug}`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
+                    )}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Slug: {editEventId === ev.id ? (
+                      <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
+                    ) : ev.slug}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Created: {ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Updated: {ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {editEventId === ev.id ? (
+                        <>
+                          <Button onClick={handleEditSubmit} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
+                          <Button onClick={() => setEditEventId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
+                          <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                          <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
+                          <Link href={`/event/${ev.slug}/admin`} passHref legacyBehavior>
+                            <Button as="a" className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm w-full">Admin</Button>
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Slug
-                <input type="text" value={slug} onChange={e => setSlug(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-              </label>
-            </div>
-            {error && <div className="text-red-600 text-sm font-semibold">{error}</div>}
-            {success && <div className="text-green-600 text-sm font-semibold">{success}</div>}
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Event</button>
-          </form>
-        </div>
-        <div className="bg-white rounded shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">All Events</h2>
-          {events.length === 0 ? <p className="text-gray-500">No events found.</p> : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-200">
+            {/* Table view for desktop */}
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
                 <thead>
                   <tr>
-                    <th className="border border-gray-200 p-2">Name</th>
-                    <th className="border border-gray-200 p-2">Slug</th>
-                    <th className="border border-gray-200 p-2">Created At</th>
-                    <th className="border border-gray-200 p-2">Updated At</th>
-                    <th className="border border-gray-200 p-2">Actions</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Name</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Slug</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Created At</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Updated At</th>
+                    <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {events.map(ev => (
                     <tr key={ev.id}>
-                      <td className="border border-gray-200 p-2">{editEventId === ev.id ? (
-                        <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full" />
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
+                        <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
                       ) : (
-                        <Link href={`/event/${ev.slug}`} className="text-blue-700 hover:underline font-medium">{ev.name}</Link>
+                        <Link href={`/event/${ev.slug}`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
                       )}</td>
-                      <td className="border border-gray-200 p-2">{editEventId === ev.id ? (
-                        <input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="w-full" />
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
+                        <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
                       ) : ev.slug}</td>
-                      <td className="border border-gray-200 p-2">{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</td>
-                      <td className="border border-gray-200 p-2">{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</td>
-                      <td className="border border-gray-200 p-2">
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</td>
+                      <td className="border border-gray-200 dark:border-gray-700 p-2">
                         {editEventId === ev.id ? (
-                          <>
-                            <button onClick={handleEditSubmit} className="mr-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Save</button>
-                            <button onClick={() => setEditEventId(null)} className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400">Cancel</button>
-                          </>
+                          <div className="flex gap-2">
+                            <Button onClick={handleEditSubmit} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
+                            <Button onClick={() => setEditEventId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
+                          </div>
                         ) : (
                           <div className="flex gap-2">
-                            <Link href={`/event/${ev.slug}`}>
-                              <button className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">View</button>
-                            </Link>
-                            <button onClick={() => handleEdit(ev)} className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Edit</button>
-                            <button onClick={() => handleDelete(ev.id)} disabled={deleteLoading} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
-                            <Link href={`/event/${ev.slug}/admin`}>
-                              <button className="bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-900">Admin</button>
+                            <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
+                            <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                            <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
+                            <Link href={`/event/${ev.slug}/admin`} passHref legacyBehavior>
+                              <Button as="a" className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Admin</Button>
                             </Link>
                           </div>
                         )}
@@ -215,21 +244,21 @@ export default function GlobalAdmin() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
-          )}
-          {viewEvent && (
-            <div className="mt-6 border border-gray-200 p-4 max-w-md rounded bg-gray-50">
-              <h3 className="text-lg font-semibold mb-2">Event Details</h3>
-              <p><b>Name:</b> {viewEvent.name}</p>
-              <p><b>Slug:</b> {viewEvent.slug}</p>
-              <p><b>Created At:</b> {viewEvent.createdAt ? new Date(viewEvent.createdAt).toLocaleString() : ''}</p>
-              <p><b>Updated At:</b> {viewEvent.updatedAt ? new Date(viewEvent.updatedAt).toLocaleString() : ''}</p>
-              <button onClick={() => setViewEvent(null)} className="mt-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded">Close</button>
-            </div>
-          )}
-        </div>
-      </div>
+          </>
+        )}
+      </Card>
+      {viewEvent && (
+        <Card className="mt-6 border border-gray-200 dark:border-gray-700 max-w-md bg-gray-50 dark:bg-gray-800 p-4 sm:p-8">
+          <h3 className="text-lg font-semibold mb-2">Event Details</h3>
+          <p><b>Name:</b> {viewEvent.name}</p>
+          <p><b>Slug:</b> {viewEvent.slug}</p>
+          <p><b>Created At:</b> {viewEvent.createdAt ? new Date(viewEvent.createdAt).toLocaleString() : ''}</p>
+          <p><b>Updated At:</b> {viewEvent.updatedAt ? new Date(viewEvent.updatedAt).toLocaleString() : ''}</p>
+          <Button onClick={() => setViewEvent(null)} className="mt-2 bg-blue-600 text-white hover:bg-blue-700 font-semibold px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Close</Button>
+        </Card>
+      )}
     </div>
   );
 }
@@ -265,24 +294,22 @@ function LoginForm() {
     }
   };
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+      <Card className="w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-            </label>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
           </div>
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Password
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-            </label>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
-          {error && <div className="text-red-600 text-sm font-semibold">{error}</div>}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Login</button>
+          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+          <Button type="submit" className="w-full">Login</Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 } 

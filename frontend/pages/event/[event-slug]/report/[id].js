@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { Button, Card, Table } from '../../../../components';
 
 const validStates = [
   'submitted',
@@ -91,38 +92,86 @@ export default function ReportDetail({ initialReport, error }) {
   }
 
   return (
-    <div className="max-w-600 mx-auto p-4 border border-gray-300 rounded-lg">
+    <Card className="max-w-2xl mx-auto p-4 sm:p-8 mt-8">
       <h2 className="text-2xl font-bold mb-4">Report Detail</h2>
-      <table className="w-full border-collapse">
-        <tbody>
-          <tr><td className="font-bold"><b>ID</b></td><td>{report.id}</td></tr>
-          <tr><td className="font-bold"><b>Type</b></td><td>{report.type}</td></tr>
-          <tr><td className="font-bold"><b>Description</b></td><td>{report.description}</td></tr>
-          <tr>
-            <td className="font-bold"><b>State</b></td>
-            <td>
+      {/* Mobile: stacked details */}
+      <div className="block sm:hidden">
+        <dl className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">ID</dt>
+            <dd>{report.id}</dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">Type</dt>
+            <dd>{report.type}</dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">Description</dt>
+            <dd>{report.description}</dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">State</dt>
+            <dd>
               {canChangeState ? (
                 <>
-                  <select value={report.state} onChange={handleStateChange} disabled={loading} className="p-2 border border-gray-300 rounded">
+                  <select value={report.state} onChange={handleStateChange} disabled={loading} className="px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-full sm:px-2 sm:py-1 sm:text-sm">
                     {validStates.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {stateChangeError && <span className="text-red-500 ml-2">{stateChangeError}</span>}
-                  {stateChangeSuccess && <span className="text-green-500 ml-2">{stateChangeSuccess}</span>}
+                  {stateChangeError && <span className="text-red-500 dark:text-red-400 mt-1 block">{stateChangeError}</span>}
+                  {stateChangeSuccess && <span className="text-green-500 dark:text-green-400 mt-1 block">{stateChangeSuccess}</span>}
                 </>
               ) : (
                 report.state
               )}
-            </td>
-          </tr>
-          <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500">Download</a> : 'None'}</td></tr>
-          <tr><td className="font-bold"><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
-          <tr><td className="font-bold"><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
-        </tbody>
-      </table>
-      <div className="mt-4">
-        <button onClick={() => router.push(`/event/${eventSlug}`)} className="px-4 py-2 bg-blue-500 text-white rounded">Back to Event</button>
+            </dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">Evidence</dt>
+            <dd>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">Download</a> : 'None'}</dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">Created At</dt>
+            <dd>{createdAtLocal || report.createdAt}</dd>
+          </div>
+          <div className="py-2 flex flex-col">
+            <dt className="font-bold">Reporter</dt>
+            <dd>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</dd>
+          </div>
+        </dl>
       </div>
-    </div>
+      {/* Desktop: table */}
+      <div className="hidden sm:block">
+        <Table>
+          <tbody>
+            <tr><td className="font-bold"><b>ID</b></td><td>{report.id}</td></tr>
+            <tr><td className="font-bold"><b>Type</b></td><td>{report.type}</td></tr>
+            <tr><td className="font-bold"><b>Description</b></td><td>{report.description}</td></tr>
+            <tr>
+              <td className="font-bold"><b>State</b></td>
+              <td>
+                {canChangeState ? (
+                  <>
+                    <select value={report.state} onChange={handleStateChange} disabled={loading} className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm">
+                      {validStates.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {stateChangeError && <span className="text-red-500 dark:text-red-400 ml-2">{stateChangeError}</span>}
+                    {stateChangeSuccess && <span className="text-green-500 dark:text-green-400 ml-2">{stateChangeSuccess}</span>}
+                  </>
+                ) : (
+                  report.state
+                )}
+              </td>
+            </tr>
+            <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400">Download</a> : 'None'}</td></tr>
+            <tr><td className="font-bold"><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
+            <tr><td className="font-bold"><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
+          </tbody>
+        </Table>
+      </div>
+      <div className="mt-4">
+        <Button onClick={() => router.push(`/event/${eventSlug}`)} className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Back to Event</Button>
+      </div>
+    </Card>
   );
 }
 

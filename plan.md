@@ -58,6 +58,10 @@
 - [X] List all users and their roles for an event
 - [X] List all reports for an event (stub/placeholder)
 - [X] Admin UI/API for managing event users and roles
+- [ ] Add metadata to the event (name, description, logo, etc.)
+  - [ ] Events should have their code of conduct available (markdown)
+  - [ ] Events shoudl have their dates of the event
+  - [ ] Events should have a field for the website for the event
 
 ## Phase 4: Report Submission & Management
 - [~] Design and implement report submission form (with all required fields)
@@ -67,6 +71,8 @@
 - [ ] Reports should have a field for the resolution of the incident
 - [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
+- [ ] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
+  - [ ] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design
 - [ ] Admin/Responder UI for managing and responding to reports
 
 ## Phase 5: Notifications
@@ -81,12 +87,13 @@
 
 ## Phase 7: Deployment, Hosting & Documentation
 - [ ] Finalize Docker image and deployment scripts
+- [ ] Create solution for publshing docker images to docker hub
+- [ ] Create process for releases and versioning
 - [ ] Evaluate and recommend good, easy, and cheap/free hosting options (e.g., Fly.io, Railway, Render, DigitalOcean, etc.)
 - [ ] Document step-by-step setup for each recommended hosting provider
 - [ ] Write comprehensive setup documentation (installation, configuration, environment variables, database, email, file storage, etc.)
 - [ ] Write user documentation (how to use the system, submit/manage reports, admin features, etc.)
 - [ ] Write detailed local development documentation (using Docker, docker-compose, local environment setup, troubleshooting, etc.)
-- [ ] Prepare for production deployment (security, backups, etc.)
 
 ## Phase 8: Frontend MVP (Initial UI for Testing)
 - [X] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
@@ -95,6 +102,40 @@
 - [X] Add report submission form (type, description, evidence upload)
 - [X] Add state change controls for authorized users (Responders/Admins)
 
+## Phase 9: UI/UX Improvements
+- [X] Add a dark mode option using best practices (toggle, system preference, etc.)
+  - [X] Review the dark mode text colors and make sure they are the proper contrast against the background color
+  - [X] simplfy the dark mode toggle to be a simple toggle button
+- [X] Update the entire look and feel to be more elegant and modern (typography, spacing, colors, buttons, etc.)
+  - [X] All main pages now use shared Card, Button, Input, and Table components with full dark/light mode support
+  - [X] Login, home, dashboard, admin, event, user management, and report detail pages refactored for consistency
+  - [X] Dark mode readability improved for all major UI
+- [ ] Make the navigation more elegant and user-friendly (improved layout, icons, responsive design) (IN PROGRESS)
+  - [X] (Future polish) Add icons to navigation links for visual clarity
+  - [X] (Future polish) Animate the mobile menu for a smoother feel
+  - [X] (Future polish) Improve spacing, font sizes, and touch targets for even better mobile UX
+  - [ ] (Future polish) Add user avatar or profile menu for account actions
+  - [ ] (Future polish) Consider sticky/fixed improvements for better scroll behavior
+- [X] Add a footer to the bottom of the app with useful information (e.g., version, copyright, GitHub link)
+- [ ] Make sure the UI is responsive and works on mobile devices (IN PROGRESS)
+  - [X] Audit and update all major pages for mobile (login, home, dashboard, event, admin, user management, report detail)
+  - [X] Audit and update all shared components (Card, Table, Button, Input) for mobile
+  - [X] Make tables horizontally scrollable on small screens if needed
+  - [X] Ensure forms and buttons are touch-friendly
+  - [ ] Adjust font sizes and spacing for readability
+  - [X] Make modals and overlays usable on mobile
+  - [ ] Test navigation and all actions on mobile
+- [ ] Ensure we are using best practices for accessibility (aria-labels, focus management, keyboard navigation, etc.) (to be done later)
+
+## UI/UX Responsive Design Standards (for all new pages)
+
+- Use **Card layout** for lists and data on mobile (below `sm:`), and **Table layout** for desktop (`sm:` and up) for data-heavy views.
+- All Card containers should use responsive padding: `p-4 sm:p-8`.
+- All buttons and inputs should use responsive sizing: `px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm` for comfortable touch targets on mobile and compactness on desktop.
+- Ensure all forms, tables, and actions are touch-friendly and readable on mobile (adequate spacing, font size, and tap targets).
+- Make tables horizontally scrollable on small screens if needed.
+- When adding new pages or layouts, always audit for these standards to ensure a consistent, modern, and accessible experience across devices.
+
 ---
 
 **Notes:**
@@ -102,3 +143,6 @@
 - Each phase can be broken down further as needed.
 - We will iterate and adjust the plan as requirements evolve or new needs are discovered.
 - Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting. 
+- Documentation should be written in markdown and stored in the docs directory
+- Documentation should be separated into user and developer documentation
+

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
+import { Button, Input, Card } from '../components';
 
 export default function Home() {
   const [firstUserNeeded, setFirstUserNeeded] = useState(false);
@@ -33,10 +34,10 @@ export default function Home() {
 
   if (firstUserNeeded) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4">
+        <Card className="w-full max-w-md p-4 sm:p-8">
           <h1 className="text-2xl font-bold mb-4 text-center">Welcome! Set Up Your First User</h1>
-          <p className="mb-4 text-gray-700">No users exist yet. Create the first user (will be Global Admin):</p>
+          <p className="mb-4 text-gray-700 dark:text-gray-200">No users exist yet. Create the first user (will be Global Admin):</p>
           <form onSubmit={async e => {
             e.preventDefault();
             setFirstUserError('');
@@ -57,38 +58,35 @@ export default function Home() {
             setFirstUserNeeded(false);
           }}>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Email
-                <input type="email" required value={firstUserForm.email} onChange={e => setFirstUserForm(f => ({ ...f, email: e.target.value }))} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-              </label>
+              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
+              <Input type="email" required value={firstUserForm.email} onChange={e => setFirstUserForm(f => ({ ...f, email: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Name
-                <input type="text" value={firstUserForm.name} onChange={e => setFirstUserForm(f => ({ ...f, name: e.target.value }))} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-              </label>
+              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Name</label>
+              <Input type="text" value={firstUserForm.name} onChange={e => setFirstUserForm(f => ({ ...f, name: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Password
-                <input type="password" required value={firstUserForm.password} onChange={e => setFirstUserForm(f => ({ ...f, password: e.target.value }))} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-              </label>
+              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
+              <Input type="password" required value={firstUserForm.password} onChange={e => setFirstUserForm(f => ({ ...f, password: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
             </div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">Create First User</button>
+            <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create First User</Button>
           </form>
-          {firstUserError && <p className="text-red-600 mt-2">{firstUserError}</p>}
-          {firstUserSuccess && <p className="text-green-600 mt-2">{firstUserSuccess}</p>}
-        </div>
+          {firstUserError && <p className="text-red-600 dark:text-red-400 mt-2">{firstUserError}</p>}
+          {firstUserSuccess && <p className="text-green-600 dark:text-green-400 mt-2">{firstUserSuccess}</p>}
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4">
+      <Card className="w-full max-w-md text-center p-4 sm:p-8">
         <h1 className="text-3xl font-bold mb-4">Hello!</h1>
-        <p className="mb-6 text-gray-700">This is a self-hosted installation of Conducky, your free and open source code of conduct report management system.</p>
-        <p className="mb-6 text-gray-700">If you're looking to configure this installation, please head over here:</p>
-        <Link href="/admin" className="text-blue-700 hover:underline font-semibold">Configure this installation</Link>
-        <p className="mt-8 text-xs text-gray-400">powered by Conducky</p>
-      </div>
+        <p className="mb-6 text-gray-700 dark:text-gray-200">This is a self-hosted installation of Conducky, your free and open source code of conduct report management system.</p>
+        <p className="mb-6 text-gray-700 dark:text-gray-200">If you're looking to configure this installation, please head over here:</p>
+        <Link href="/admin" className="text-blue-700 dark:text-blue-400 hover:underline font-semibold">Configure this installation</Link>
+        <p className="mt-8 text-xs text-gray-400 dark:text-gray-500">powered by Conducky</p>
+      </Card>
     </div>
   );
 } 
