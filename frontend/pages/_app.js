@@ -179,9 +179,6 @@ function Header() {
     { href: '/', label: 'Home', icon: (
       <svg className="w-5 h-5 mr-1.5 inline-block align-text-bottom" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6" /></svg>
     ), show: true },
-    { href: '/dashboard', label: 'Dashboard', icon: (
-      <svg className="w-5 h-5 mr-1.5 inline-block align-text-bottom" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h6v6H3V7zm0 8h6v6H3v-6zm8-8h10v6H11V7zm0 8h10v6H11v-6z" /></svg>
-    ), show: !!user },
     { href: '/admin', label: 'Global Admin', icon: (
       <svg className="w-5 h-5 mr-1.5 inline-block align-text-bottom" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
     ), show: user && user.roles && user.roles.includes('SuperAdmin') },

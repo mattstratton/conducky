@@ -71,8 +71,8 @@
 - [ ] Reports should have a field for the resolution of the incident
 - [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
-- [ ] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
-  - [ ] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design
+- [X] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
+  - [X] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design
 - [ ] Admin/Responder UI for managing and responding to reports
 
 ## Phase 5: Notifications
