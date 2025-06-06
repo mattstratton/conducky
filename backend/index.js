@@ -872,7 +872,11 @@ app.get('/events/slug/:slug/invites', async (req, res) => {
       const hasRole = userRoles.some(uer => uer.role.name === 'Admin');
       if (!hasRole) return res.status(403).json({ error: 'Forbidden: insufficient role' });
     }
-    const invites = await prisma.eventInviteLink.findMany({ where: { eventId }, orderBy: { createdAt: 'desc' } });
+    const invites = await prisma.eventInviteLink.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+      include: { role: true },
+    });
     const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
     const invitesWithUrl = invites.map(invite => ({
       ...invite,
@@ -890,7 +894,7 @@ app.post('/events/slug/:slug/invites', async (req, res) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   const { slug } = req.params;
-  const { maxUses, expiresAt, note } = req.body;
+  const { maxUses, expiresAt, note, role } = req.body;
   try {
     const eventId = await getEventIdBySlug(slug);
     if (!eventId) return res.status(404).json({ error: 'Event not found.' });
@@ -902,6 +906,10 @@ app.post('/events/slug/:slug/invites', async (req, res) => {
       const hasRole = userRoles.some(uer => uer.role.name === 'Admin');
       if (!hasRole) return res.status(403).json({ error: 'Forbidden: insufficient role' });
     }
+    // Look up role
+    const roleName = role || 'Reporter';
+    const roleRecord = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!roleRecord) return res.status(400).json({ error: 'Invalid role' });
     const code = generateInviteCode(8);
     const invite = await prisma.eventInviteLink.create({
       data: {
@@ -911,6 +919,7 @@ app.post('/events/slug/:slug/invites', async (req, res) => {
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         maxUses: maxUses ? Number(maxUses) : null,
         note: note || null,
+        roleId: roleRecord.id,
       },
     });
     const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
@@ -980,13 +989,13 @@ app.post('/register/invite/:inviteCode', async (req, res) => {
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({ data: { email, passwordHash, name } });
-    // Assign Reporter role for the event
-    const reporterRole = await prisma.role.findUnique({ where: { name: 'Reporter' } });
+    // Assign role for the event from invite
+    const roleId = invite.roleId;
     await prisma.userEventRole.create({
       data: {
         userId: user.id,
         eventId: invite.eventId,
-        roleId: reporterRole.id,
+        roleId,
       },
     });
     // Increment useCount

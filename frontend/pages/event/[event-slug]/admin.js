@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Button, Input, Card, Table } from '../../../components';
+import { ClipboardIcon } from '@heroicons/react/24/outline';
 
 export default function EventAdminPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function EventAdminPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [newInvite, setNewInvite] = useState({ maxUses: '', expiresAt: '', note: '' });
+  const [newInvite, setNewInvite] = useState({ maxUses: '', expiresAt: '', note: '', role: 'Reporter' });
   const inviteUrlRef = useRef(null);
 
   // New state for search and sort
@@ -201,11 +202,12 @@ export default function EventAdminPage() {
           maxUses: newInvite.maxUses || undefined,
           expiresAt: newInvite.expiresAt || undefined,
           note: newInvite.note || undefined,
+          role: newInvite.role || 'Reporter',
         }),
       });
       if (!res.ok) throw new Error('Failed to create invite');
       setInviteSuccess('Invite link created!');
-      setNewInvite({ maxUses: '', expiresAt: '', note: '' });
+      setNewInvite({ maxUses: '', expiresAt: '', note: '', role: 'Reporter' });
       fetchInvites();
     } catch (err) {
       setInviteError('Failed to create invite link');
@@ -395,13 +397,13 @@ export default function EventAdminPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 gap-2">
           <div className="flex gap-2 items-center">
             <Button
-              className="border px-2 py-1 rounded disabled:opacity-50 bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
+              className="sm:px-2 sm:py-1 sm:text-sm"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
             >Prev</Button>
             <span>Page {page} of {totalPages}</span>
             <Button
-              className="border px-2 py-1 rounded disabled:opacity-50 bg-transparent shadow-none sm:px-2 sm:py-1 sm:text-sm"
+              className="sm:px-2 sm:py-1 sm:text-sm"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
             >Next</Button>
@@ -418,23 +420,37 @@ export default function EventAdminPage() {
       </Card>
       <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mt-12">
         <h3 className="text-xl font-semibold mb-2">Invite Links</h3>
-        <form onSubmit={handleCreateInvite} className="flex flex-wrap gap-2 items-end mb-4">
-          <div>
-            <label className="block text-sm font-medium">Max Uses
-              <Input type="number" min="1" value={newInvite.maxUses} onChange={e => setNewInvite(f => ({ ...f, maxUses: e.target.value }))} className="w-24 sm:w-32" />
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Expires At
-              <Input type="datetime-local" value={newInvite.expiresAt} onChange={e => setNewInvite(f => ({ ...f, expiresAt: e.target.value }))} className="w-40 sm:w-56" />
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Note
-              <Input type="text" value={newInvite.note} onChange={e => setNewInvite(f => ({ ...f, note: e.target.value }))} className="w-48 sm:w-64" />
-            </label>
-          </div>
-          <Button type="submit" className="bg-blue-600 text-white sm:px-3 sm:py-1.5 sm:text-sm">Create Invite</Button>
+        <form onSubmit={handleCreateInvite} className="flex flex-col sm:flex-row gap-2 items-center mb-4">
+          <Input
+            type="number"
+            min="1"
+            placeholder="Max Uses"
+            value={newInvite.maxUses}
+            onChange={e => setNewInvite(inv => ({ ...inv, maxUses: e.target.value }))}
+            className="w-28"
+          />
+          <Input
+            type="date"
+            placeholder="Expires At"
+            value={newInvite.expiresAt}
+            onChange={e => setNewInvite(inv => ({ ...inv, expiresAt: e.target.value }))}
+            className="w-40"
+          />
+          <Input
+            type="text"
+            placeholder="Note (optional)"
+            value={newInvite.note}
+            onChange={e => setNewInvite(inv => ({ ...inv, note: e.target.value }))}
+            className="w-40"
+          />
+          <select
+            value={newInvite.role}
+            onChange={e => setNewInvite(inv => ({ ...inv, role: e.target.value }))}
+            className="border px-2 py-1 rounded dark:bg-gray-800 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm"
+          >
+            {rolesList.map(role => <option key={role} value={role}>{role}</option>)}
+          </select>
+          <Button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 sm:px-3 sm:py-1.5 sm:text-sm" disabled={inviteLoading}>Create Invite</Button>
         </form>
         {inviteError && <div className="text-red-600 mb-2">{inviteError}</div>}
         {inviteSuccess && <div className="text-green-600 mb-2">{inviteSuccess}</div>}
@@ -443,6 +459,7 @@ export default function EventAdminPage() {
             <thead>
               <tr>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Invite Link</th>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Role</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Status</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Uses</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Expires</th>
@@ -452,13 +469,24 @@ export default function EventAdminPage() {
             </thead>
             <tbody>
               {inviteLinks.length === 0 ? (
-                <tr><td colSpan={6} className="text-center p-4">No invite links found.</td></tr>
+                <tr><td colSpan={7} className="text-center p-4">No invite links found.</td></tr>
               ) : inviteLinks.map(invite => (
                 <tr key={invite.id}>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">
-                    <Input type="text" readOnly value={invite.url} className="w-full sm:w-96" onFocus={e => e.target.select()} />
-                    <Button onClick={() => handleCopyInviteUrl(invite.url)} className="ml-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 sm:px-2 sm:py-1 sm:text-sm">Copy</Button>
+                    <div className="flex items-center gap-2">
+                      <Input type="text" readOnly value={invite.url} className="w-full sm:w-96" onFocus={e => e.target.select()} />
+                      <Button
+                        noDefaultStyle
+                        onClick={() => handleCopyInviteUrl(invite.url)}
+                        className="bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:active:bg-blue-600 p-0 h-10 w-10 flex items-center justify-center rounded"
+                        title="Copy invite link"
+                        aria-label="Copy invite link"
+                      >
+                        <ClipboardIcon className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </td>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.role?.name || invite.role || '—'}</td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.disabled ? 'Disabled' : 'Active'}</td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.uses}/{invite.maxUses || '∞'}</td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : '—'}</td>

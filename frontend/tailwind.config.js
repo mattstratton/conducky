@@ -5,7 +5,11 @@ module.exports = {
   ],
   darkMode: 'class', // enables dark mode via a class
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: require('tailwindcss/colors').blue,
+      },
+    },
   },
   variants: {
     extend: {},
