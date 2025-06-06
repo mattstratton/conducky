@@ -87,6 +87,26 @@ async function main() {
     });
   }
 
+  // Add 50+ additional users for Ponyville
+  for (let i = 1; i <= 50; i++) {
+    const name = `User${i}`;
+    const email = `user${i}@example.com`;
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        email,
+        name,
+        passwordHash,
+      },
+    });
+    await prisma.userEventRole.upsert({
+      where: { userId_eventId_roleId: { userId: user.id, eventId: eventRecords['ponyville'].id, roleId: roleMap['Reporter'].id } },
+      update: {},
+      create: { userId: user.id, eventId: eventRecords['ponyville'].id, roleId: roleMap['Reporter'].id },
+    });
+  }
+
   // DuckCon
   await prisma.userEventRole.upsert({
     where: { userId_eventId_roleId: { userId: userRecords['Ivan'].id, eventId: eventRecords['duckcon'].id, roleId: roleMap['Admin'].id } },
