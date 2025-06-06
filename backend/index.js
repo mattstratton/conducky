@@ -37,6 +37,22 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Multer setup for event logo uploads
+const logoUploadDir = path.join(uploadDir, 'event-logos');
+if (!fs.existsSync(logoUploadDir)) {
+  fs.mkdirSync(logoUploadDir);
+}
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, logoUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const uploadLogo = multer({ storage: logoStorage });
+
 // CORS middleware (allow frontend dev server)
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
@@ -53,6 +69,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
 }));
+
+// Serve uploads directory as static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Passport.js setup
 app.use(passport.initialize());
@@ -357,7 +376,7 @@ app.get('/events/:eventId/users', async (req, res) => {
 app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res) => {
   console.log('Received report submission:', req.body, req.file);
   const { eventId } = req.params;
-  const { type, description } = req.body;
+  const { type, description, incidentAt, parties } = req.body;
   let evidencePath = null;
   if (req.file) {
     evidencePath = path.relative(__dirname, req.file.path);
@@ -381,6 +400,8 @@ app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res)
         description,
         state: 'submitted',
         evidence: evidencePath,
+        incidentAt: incidentAt ? new Date(incidentAt) : undefined,
+        parties: parties || undefined,
       },
     });
     res.status(201).json({ report });
@@ -559,7 +580,7 @@ app.get('/events/slug/:slug/reports', async (req, res) => {
 // Slug-based: Submit a report for an event (anonymous or authenticated, with evidence upload)
 app.post('/events/slug/:slug/reports', upload.single('evidence'), async (req, res) => {
   const { slug } = req.params;
-  const { type, description } = req.body;
+  const { type, description, incidentAt, parties } = req.body;
   let evidencePath = null;
   if (req.file) {
     evidencePath = path.relative(__dirname, req.file.path);
@@ -582,6 +603,8 @@ app.post('/events/slug/:slug/reports', upload.single('evidence'), async (req, re
         description,
         state: 'submitted',
         evidence: evidencePath,
+        incidentAt: incidentAt ? new Date(incidentAt) : undefined,
+        parties: parties || undefined,
       },
     });
     res.status(201).json({ report });
@@ -1020,17 +1043,31 @@ app.get('/invites/:code', async (req, res) => {
   }
 });
 
-// PATCH: Update an event's name and/or slug (SuperAdmin only)
-app.patch('/events/slug/:slug', requireSuperAdmin(), async (req, res) => {
+// PATCH: Update an event's metadata (SuperAdmin or Admin for the event)
+app.patch('/events/slug/:slug', async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
   const { slug } = req.params;
-  const { name, newSlug } = req.body;
-  if (!name && !newSlug) {
+  const { name, newSlug, description, logo, startDate, endDate, website, codeOfConduct } = req.body;
+  if (!name && !newSlug && !description && !logo && !startDate && !endDate && !website && !codeOfConduct) {
     return res.status(400).json({ error: 'Nothing to update.' });
   }
   try {
     const event = await prisma.event.findUnique({ where: { slug } });
     if (!event) {
       return res.status(404).json({ error: 'Event not found.' });
+    }
+    // RBAC: allow SuperAdmin or Admin for this event
+    const allUserRoles = await prisma.userEventRole.findMany({ where: { userId: req.user.id }, include: { role: true } });
+    const isSuperAdmin = allUserRoles.some(uer => uer.role.name === 'SuperAdmin');
+    let isEventAdmin = false;
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter(uer => uer.eventId === event.id);
+      isEventAdmin = userRoles.some(uer => uer.role.name === 'Admin');
+      if (!isEventAdmin) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
     }
     // If updating slug, check for conflicts
     if (newSlug && newSlug !== slug) {
@@ -1039,16 +1076,71 @@ app.patch('/events/slug/:slug', requireSuperAdmin(), async (req, res) => {
         return res.status(409).json({ error: 'Slug already exists.' });
       }
     }
+    // Build update data
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (newSlug) updateData.slug = newSlug;
+    if (description !== undefined) updateData.description = description;
+    if (logo !== undefined) updateData.logo = logo;
+    if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
+    if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
+    if (website !== undefined) updateData.website = website;
+    if (codeOfConduct !== undefined) updateData.codeOfConduct = codeOfConduct;
     const updated = await prisma.event.update({
       where: { slug },
-      data: {
-        ...(name && { name }),
-        ...(newSlug && { slug: newSlug }),
-      },
+      data: updateData,
     });
     res.json({ event: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update event.', details: err.message });
+  }
+});
+
+/**
+ * Upload a new logo for an event (Admins/SuperAdmins only)
+ * POST /events/slug/:slug/logo
+ * Body: multipart/form-data { logo: file }
+ * Updates the event's logo field with the uploaded file path
+ */
+app.post('/events/slug/:slug/logo', async (req, res, next) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // RBAC: allow SuperAdmin or Admin for this event
+    const allUserRoles = await prisma.userEventRole.findMany({ where: { userId: req.user.id }, include: { role: true } });
+    const isSuperAdmin = allUserRoles.some(uer => uer.role.name === 'SuperAdmin');
+    let isEventAdmin = false;
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter(uer => uer.eventId === event.id);
+      isEventAdmin = userRoles.some(uer => uer.role.name === 'Admin');
+      if (!isEventAdmin) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // Use multer to handle file upload
+    uploadLogo.single('logo')(req, res, async function (err) {
+      if (err) {
+        return res.status(400).json({ error: 'File upload failed', details: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+      }
+      // Save relative path to DB
+      const logoPath = path.relative(__dirname, req.file.path);
+      const updated = await prisma.event.update({
+        where: { slug },
+        data: { logo: logoPath },
+      });
+      res.status(200).json({ event: updated });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to upload logo.', details: err.message });
   }
 });
 

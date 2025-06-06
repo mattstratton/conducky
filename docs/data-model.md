@@ -39,6 +39,8 @@ This document describes the main data models used in the system, based on the Pr
 - **description**: Report details
 - **state**: Report state (submitted, acknowledged, investigating, resolved, closed)
 - **evidence**: Optional file path
+- **incidentAt**: Optional date/time of the incident (ISO 8601 string)
+- **parties**: Optional string listing parties involved (comma-separated or freeform)
 - **createdAt, updatedAt**: Timestamps
 
 ## AuditLog

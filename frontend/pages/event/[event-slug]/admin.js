@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Button, Input, Card, Table } from '../../../components';
-import { ClipboardIcon } from '@heroicons/react/24/outline';
+import { ClipboardIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function EventAdminPage() {
   const router = useRouter();
@@ -23,7 +23,6 @@ export default function EventAdminPage() {
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [newInvite, setNewInvite] = useState({ maxUses: '', expiresAt: '', note: '', role: 'Reporter' });
   const inviteUrlRef = useRef(null);
-
   // New state for search and sort
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -33,6 +32,23 @@ export default function EventAdminPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [roleFilter, setRoleFilter] = useState('All');
+  const [metaForm, setMetaForm] = useState({
+    name: '',
+    logo: '',
+    startDate: '',
+    endDate: '',
+    website: '',
+    description: '',
+    codeOfConduct: '',
+  });
+  const [metaEditError, setMetaEditError] = useState('');
+  const [metaEditSuccess, setMetaEditSuccess] = useState('');
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoUploadLoading, setLogoUploadLoading] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -126,6 +142,8 @@ export default function EventAdminPage() {
     setEditUserForm({ name: '', email: '', role: '' });
     setEditError('');
     setEditSuccess('');
+    setLogoFile(null);
+    setLogoPreview(null);
   };
 
   const handleEditSave = async () => {
@@ -243,6 +261,156 @@ export default function EventAdminPage() {
   // Calculate total pages
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
+  // Place after all hooks, before return
+  const handleMetaChange = (field, value) => {
+    setMetaForm(f => ({ ...f, [field]: value }));
+  };
+
+  const handleMetaSave = async () => {
+    setMetaEditError('');
+    setMetaEditSuccess('');
+    let patchBody = {};
+    if (editingField) {
+      patchBody[editingField] = editValue;
+    }
+    // Special case: logo file upload
+    if (editingField === 'logo' && logoFile) {
+      setLogoUploadLoading(true);
+      const formData = new FormData();
+      formData.append('logo', logoFile);
+      try {
+        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setMetaEditError(data.error || 'Failed to upload logo.');
+          setLogoUploadLoading(false);
+          return;
+        }
+        setMetaEditSuccess('Logo uploaded!');
+        const data = await res.json();
+        setEvent(data.event);
+        setEditingField(null);
+        setLogoUploadLoading(false);
+        return;
+      } catch (err) {
+        setMetaEditError('Network error');
+        setLogoUploadLoading(false);
+        return;
+      }
+    }
+    try {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}` , {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(patchBody),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMetaEditError(data.error || 'Failed to update event metadata.');
+        return;
+      }
+      setMetaEditSuccess('Event metadata updated!');
+      const data = await res.json();
+      setEvent(data.event);
+      setEditingField(null);
+    } catch (err) {
+      setMetaEditError('Network error');
+    }
+  };
+
+  // Handler to start editing
+  const startEdit = (field, value) => {
+    setEditingField(field);
+    setEditValue(value);
+    if (field === 'logo') {
+      setLogoFile(null);
+      setLogoPreview(null);
+    }
+  };
+
+  // Handler to save event name
+  const saveEdit = async () => {
+    setMetaEditError('');
+    setMetaEditSuccess('');
+    let patchBody = {};
+    if (editingField) {
+      patchBody[editingField] = editValue;
+    }
+    // Special case: logo file upload
+    if (editingField === 'logo' && logoFile) {
+      setLogoUploadLoading(true);
+      const formData = new FormData();
+      formData.append('logo', logoFile);
+      try {
+        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setMetaEditError(data.error || 'Failed to upload logo.');
+          setLogoUploadLoading(false);
+          return;
+        }
+        setMetaEditSuccess('Logo uploaded!');
+        const data = await res.json();
+        setEvent(data.event);
+        setEditingField(null);
+        setLogoUploadLoading(false);
+        return;
+      } catch (err) {
+        setMetaEditError('Network error');
+        setLogoUploadLoading(false);
+        return;
+      }
+    }
+    try {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}` , {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(patchBody),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMetaEditError(data.error || 'Failed to update event metadata.');
+        return;
+      }
+      setMetaEditSuccess('Event metadata updated!');
+      const data = await res.json();
+      setEvent(data.event);
+      setEditingField(null);
+    } catch (err) {
+      setMetaEditError('Network error');
+    }
+  };
+
+  // Handler to cancel editing
+  const cancelEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  // Handle logo file selection
+  const handleLogoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    } else {
+      setLogoFile(null);
+      setLogoPreview(null);
+    }
+  };
+
   if (error) return <div style={{ padding: 40 }}><h2>{error}</h2></div>;
   if (loading || !event) return <div style={{ padding: 40 }}><h2>Loading event admin page...</h2></div>;
 
@@ -255,6 +423,189 @@ export default function EventAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4 sm:p-8">
+      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mb-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          Admin for
+          {editingField === 'name' ? (
+            <>
+              <input
+                type="text"
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                className="ml-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xl font-bold"
+                style={{ minWidth: 120 }}
+              />
+              <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save event name"><CheckIcon className="h-5 w-5" /></button>
+              <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+            </>
+          ) : (
+            <>
+              <span className="ml-2">{event && event.name}</span>
+              <button type="button" onClick={() => startEdit('name', event?.name || '')} className="ml-2 text-blue-600" aria-label="Edit event name"><PencilIcon className="h-5 w-5" /></button>
+            </>
+          )}
+        </h2>
+        <div className="space-y-4">
+          {/* Logo URL */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Logo:</span>
+            {(() => {
+              const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+              let logoSrc = logoPreview || event?.logo;
+              if (logoSrc && (logoSrc.startsWith('uploads/') || logoSrc.startsWith('event-logos/'))) {
+                logoSrc = `${backendBaseUrl}/${logoSrc.replace(/^\\/, '')}`;
+              }
+              return logoSrc ? (
+                <img src={logoSrc} alt="Event Logo" className="w-16 h-16 object-contain rounded bg-white border border-gray-200 dark:border-gray-700" />
+              ) : null;
+            })()}
+            {editingField === 'logo' ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-200">Upload Logo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoFileChange}
+                  className="block w-full text-xs text-gray-700 dark:text-gray-200"
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">or</span>
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-full text-xs"
+                  placeholder="Logo URL"
+                  disabled={!!logoFile}
+                />
+                <div className="flex gap-1 mt-2">
+                  <button type="button" onClick={saveEdit} className="text-green-600" aria-label="Save logo" disabled={logoUploadLoading}><CheckIcon className="h-5 w-5" /></button>
+                  <button type="button" onClick={cancelEdit} className="text-gray-500" aria-label="Cancel edit" disabled={logoUploadLoading}><XMarkIcon className="h-5 w-5" /></button>
+                </div>
+                {logoUploadLoading && <span className="text-xs text-gray-500 mt-1">Uploading...</span>}
+              </div>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{event?.logo || <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('logo', event?.logo || '')} className="ml-2 text-blue-600" aria-label="Edit logo"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* Start Date */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Start Date:</span>
+            {editingField === 'startDate' ? (
+              <>
+                <input
+                  type="date"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save start date"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{event?.startDate ? new Date(event.startDate).toLocaleDateString() : <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('startDate', event?.startDate ? event.startDate.slice(0, 10) : '')} className="ml-2 text-blue-600" aria-label="Edit start date"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* End Date */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">End Date:</span>
+            {editingField === 'endDate' ? (
+              <>
+                <input
+                  type="date"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save end date"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{event?.endDate ? new Date(event.endDate).toLocaleDateString() : <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('endDate', event?.endDate ? event.endDate.slice(0, 10) : '')} className="ml-2 text-blue-600" aria-label="Edit end date"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* Website */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Website:</span>
+            {editingField === 'website' ? (
+              <>
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  style={{ minWidth: 180 }}
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save website"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{event?.website || <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('website', event?.website || '')} className="ml-2 text-blue-600" aria-label="Edit website"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* Description */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Description:</span>
+            {editingField === 'description' ? (
+              <>
+                <textarea
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-full min-h-[60px]"
+                  style={{ minWidth: 180 }}
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save description"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200">{event?.description || <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('description', event?.description || '')} className="ml-2 text-blue-600" aria-label="Edit description"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* Code of Conduct (Markdown) */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Code of Conduct:</span>
+            {editingField === 'codeOfConduct' ? (
+              <>
+                <textarea
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-full min-h-[100px] font-mono"
+                  style={{ minWidth: 180 }}
+                  placeholder="Enter code of conduct in markdown..."
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save code of conduct"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="ml-2 text-gray-700 dark:text-gray-200 whitespace-pre-line">{event?.codeOfConduct || <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('codeOfConduct', event?.codeOfConduct || '')} className="ml-2 text-blue-600" aria-label="Edit code of conduct"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
+          {/* Success/Error messages */}
+          {(metaEditSuccess || metaEditError) && (
+            <div className="mt-2">
+              {metaEditSuccess && <span className="text-green-600 dark:text-green-400">{metaEditSuccess}</span>}
+              {metaEditError && <span className="text-red-600 dark:text-red-400 ml-4">{metaEditError}</span>}
+            </div>
+          )}
+        </div>
+      </Card>
       <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Admin for {event && event.name}</h2>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">

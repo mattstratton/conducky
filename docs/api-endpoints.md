@@ -79,6 +79,18 @@ This document describes all API endpoints provided by the backend Express server
   - Returns 404 if event not found.
   - Returns 400 if neither field is provided.
 
+### Upload Event Logo
+- **POST** `/events/slug/:slug/logo`
+- **Role:** Admin or SuperAdmin for the event
+- **Description:** Upload a new logo image for the event. Stores the file and updates the event's `logo` field with the file path.
+- **Body:** `multipart/form-data` with a `logo` file field
+- **Response:** `{ event }` (updated event object)
+- **Notes:**
+  - Only Admins/SuperAdmins can upload/change the logo.
+  - The file is stored on the backend server in `/uploads/event-logos/`.
+  - The `logo` field in the event will be set to the relative file path.
+  - In the future, this may be extended to support external storage (S3, etc).
+
 ---
 
 ## User Management
@@ -129,8 +141,11 @@ This document describes all API endpoints provided by the backend Express server
 ### Submit Report (by Event ID)
 - **POST** `/events/:eventId/reports`
 - **Description:** Submit a report (anonymous or authenticated). Supports file upload (`evidence`).
-- **Body:** `type`, `description`, `evidence` (multipart/form-data)
+- **Body:** `type`, `description`, `evidence` (multipart/form-data), `incidentAt` (optional, ISO date string), `parties` (optional, string)
 - **Response:** `{ report }`
+- **Notes:**
+  - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
+  - `parties` can be a comma-separated or freeform list of involved parties.
 
 ### List Reports (by Event ID)
 - **GET** `/events/:eventId/reports`
@@ -147,6 +162,15 @@ This document describes all API endpoints provided by the backend Express server
 - **Response:** `{ report }`
 
 #### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`).
+
+### Submit Report (by Event Slug)
+- **POST** `/events/slug/:slug/reports`
+- **Description:** Submit a report (anonymous or authenticated). Supports file upload (`evidence`).
+- **Body:** `type`, `description`, `evidence` (multipart/form-data), `incidentAt` (optional, ISO date string), `parties` (optional, string)
+- **Response:** `{ report }`
+- **Notes:**
+  - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
+  - `parties` can be a comma-separated or freeform list of involved parties.
 
 ---
 

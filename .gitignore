@@ -3,3 +3,4 @@ backend/.env
 frontend/.env 
 cursor_clarifying_requirements_for_syst.md
 backend/uploads/
+node_modules/

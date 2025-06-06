@@ -1,5 +1,7 @@
 # Project Plan: Code of Conduct Report Management System
 
+_Checklist items with a GitHub issue are now linked for traceability._
+
 ## Phase 1: Project Setup & Core Infrastructure
 - [X] Initialize monorepo/project structure (Next.js frontend, Node.js backend)
 - [X] Set up Dockerfile and docker-compose for local development (all services run locally in containers)
@@ -15,15 +17,18 @@
 - [X] Role-based access control (RBAC) middleware
 - [X] Implement registration, login, logout, and session check endpoints
 - [X] User email address needs to be unique in the database
-- [ ] User invite links for an event should be able to be set to the role (ie. Reporter, Responder, Admin)
+- [X] User invite links for an event should be able to be set to the role (ie. Reporter, Responder, Admin)
+- [ ] Once email system is implemented, we should be able to send invites to users
+- [ ] Once email system is implemented, we should send email validation to new users who register with user/password
+- [ ] Users need abilty to reset password (via email)
 
 ## Phase 2.5: Event Management UI
-- [ ] The list of users on the event page should be sortable and searchable
+- [X] The list of users on the event page should be sortable and searchable
     - [X] Backend: Add support for search (by name/email) to /events/slug/:slug/users endpoint
     - [X] Backend: Add support for sorting (by name/email/role) to /events/slug/:slug/users endpoint
     - [X] Frontend: Add search input and sort controls to user list UI
-    - [ ] Frontend: Wire up search and sort controls to backend API
-- [ ] The list of users on the event page should paginate
+    - [X] Frontend: Wire up search and sort controls to backend API
+- [X] The list of users on the event page should paginate
     - [X] Backend: Add pagination (page, limit) to /events/slug/:slug/users endpoint
     - [X] Frontend: Add pagination controls to user list UI
     - [X] Frontend: Wire up pagination controls to backend API
@@ -39,6 +44,8 @@
 - [X] The list of users on the event page should have a button to view a user's reports
     - [X] Backend: Add endpoint to fetch all reports for a given user in an event
     - [X] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
+- [X] The event logo should be able to be uploaded and displayed on the event page
+- [X] UI/UX for user list search/sort/pagination is polished and fully wired up
 
 ## Phase 3: Multi-Tenancy & Event Management
 - [X] Implement event (tenant) creation and management (Super Admin only)
@@ -58,28 +65,40 @@
 - [X] List all users and their roles for an event
 - [X] List all reports for an event (stub/placeholder)
 - [X] Admin UI/API for managing event users and roles
-- [ ] Add metadata to the event (name, description, logo, etc.)
-  - [ ] Events should have their code of conduct available (markdown)
-  - [ ] Events shoudl have their dates of the event
-  - [ ] Events should have a field for the website for the event
+- [X] Add metadata to the event (name, description, logo, code of conduct, dates, website)
+    - [X] Events have their code of conduct available (markdown)
+    - [X] Events have their dates of the event
+    - [X] Events have a field for the website for the event
+    - [X] All metadata fields are editable by Admins/SuperAdmins, with inline UI and PATCH endpoints
+    - [X] Features are implemented, tested, and documented
+- [ ] Events should store their code of conduct as a field ([#2](https://github.com/mattstratton/conducky/issues/2))
 
 ## Phase 4: Report Submission & Management
-- [~] Design and implement report submission form (with all required fields)
-   - [ ] Add a date and time of incident field to the report submission form
-   - [ ] Add a field for parties involved
-- [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin
-- [ ] Reports should have a field for the resolution of the incident
-- [~] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
+- [X] Design and implement report submission form (with all required fields)
+   - [X] Add a date and time of incident field to the report submission form
+   - [X] Add a field for parties involved
+   - [X] Both fields are present in both inline and modal forms, tested, and documented
+- [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin ([#24](https://github.com/mattstratton/conducky/issues/24))
+- [ ] Reports should have a field for the resolution of the incident ([#25](https://github.com/mattstratton/conducky/issues/25))
+- [ ] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [X] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
   - [X] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design
 - [ ] Admin/Responder UI for managing and responding to reports
+- [ ] Ability to search reports ([#27](https://github.com/mattstratton/conducky/issues/27))
+- [ ] Ability to assign a responder to an incident ([#22](https://github.com/mattstratton/conducky/issues/22))
+- [ ] Add support for severity and/or priority ([#21](https://github.com/mattstratton/conducky/issues/21))
+- [ ] Add support for tagging reports ([#20](https://github.com/mattstratton/conducky/issues/20))
+- [ ] Add support for events to limit report fields ([#19](https://github.com/mattstratton/conducky/issues/19))
+- [ ] Comments on reports should be able to be privacy-scoped ([#24](https://github.com/mattstratton/conducky/issues/24))
+- [ ] Metrics/Reporting Feature ([#26](https://github.com/mattstratton/conducky/issues/26))
 
 ## Phase 5: Notifications
 - [ ] Integrate flexible transactional email service (supporting multiple providers)
 - [ ] Document setup for each supported email provider (e.g., SendGrid, Mailgun, SMTP, etc.)
 - [ ] Notify submitters on report submission, acknowledgment, resolution, and updates
 - [ ] Notify responders/admins on new/updated reports
+- [ ] Make sure the notification template for a new incident includes SLA etc ([#23](https://github.com/mattstratton/conducky/issues/23))
 
 ## Phase 6: Audit Logs & Admin Tools
 - [ ] Log all actions (who, what, when) to the database
@@ -94,6 +113,8 @@
 - [ ] Write comprehensive setup documentation (installation, configuration, environment variables, database, email, file storage, etc.)
 - [ ] Write user documentation (how to use the system, submit/manage reports, admin features, etc.)
 - [ ] Write detailed local development documentation (using Docker, docker-compose, local environment setup, troubleshooting, etc.)
+- [ ] Set up publishing of docker images on releases ([#11](https://github.com/mattstratton/conducky/issues/11))
+- [ ] Set up for deploy on Render ([#1](https://github.com/mattstratton/conducky/issues/1))
 
 ## Phase 8: Frontend MVP (Initial UI for Testing)
 - [X] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
@@ -101,6 +122,7 @@
 - [X] Add dashboard page to list reports for an event
 - [X] Add report submission form (type, description, evidence upload)
 - [X] Add state change controls for authorized users (Responders/Admins)
+- [ ] Event page needs to list who the admins and responders are for that event ([#10](https://github.com/mattstratton/conducky/issues/10))
 
 ## Phase 9: UI/UX Improvements
 - [X] Add a dark mode option using best practices (toggle, system preference, etc.)
@@ -126,6 +148,7 @@
   - [X] Make modals and overlays usable on mobile
   - [ ] Test navigation and all actions on mobile
 - [ ] Ensure we are using best practices for accessibility (aria-labels, focus management, keyboard navigation, etc.) (to be done later)
+- [ ] Ensure a delightful mobile experience ([#13](https://github.com/mattstratton/conducky/issues/13))
 
 ## UI/UX Responsive Design Standards (for all new pages)
 
@@ -136,10 +159,38 @@
 - Make tables horizontally scrollable on small screens if needed.
 - When adding new pages or layouts, always audit for these standards to ensure a consistent, modern, and accessible experience across devices.
 
+## Event Metadata Display & UX Improvements
+- [X] Display event metadata at the top of the event page (logo, name, dates, website, description, code of conduct link)
+- [X] Render logo as an image if present
+- [X] Show 'View Code of Conduct' link that opens a modal with rendered markdown
+- [X] If user is Admin or SuperAdmin, show pencil icons for inline editing of each field
+- [X] Allow inline editing and PATCH updates for all fields on the event page
+- [ ] Extract shared component for metadata display/edit if needed
+- [X] Ensure layout is responsive and accessible
+- [X] Update documentation in /docs to reflect new metadata editing features
+
+## Suggested Next Task
+- [X] Enhance the report submission form
+  - [X] Add a date and time of incident field
+  - [X] Add a field for parties involved
+  - [X] Update backend and frontend to support new fields
+  - [X] Update docs for report submission changes
+
+## Other/Architecture
+- [ ] Consider adding support for "orgs" ([#18](https://github.com/mattstratton/conducky/issues/18))
+- [ ] Remove Superadmin access to reports etc ([#17](https://github.com/mattstratton/conducky/issues/17))
+- [ ] Remove event constraint ([#16](https://github.com/mattstratton/conducky/issues/16))
+- [ ] Should event slugs be editable? ([#15](https://github.com/mattstratton/conducky/issues/15))
+- [ ] Figure out what happens if the superadmin also needs to be a user for an event ([#14](https://github.com/mattstratton/conducky/issues/14))
+- [ ] Investigate anonymous reporting ([#12](https://github.com/mattstratton/conducky/issues/12))
+
 ---
 
 **Notes:**
 - Local development will be done using Docker and docker-compose, running all services locally in containers for consistency and ease of onboarding.
+- **When installing new npm packages or running dev commands, always use Docker Compose (e.g., `docker compose exec frontend npm install <package>`) to ensure the container environment is up to date. Do not run npm install directly on the host.**
+- Be sure to remember that we always want to optimize for mobile experience
+- We also want to make sure that everything is styled properly for dark mode
 - Each phase can be broken down further as needed.
 - We will iterate and adjust the plan as requirements evolve or new needs are discovered.
 - Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting. 

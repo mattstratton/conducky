@@ -67,6 +67,8 @@ function SimpleModal({ open, onClose, children }) {
 function ReportForm({ eventSlug, eventName, onSuccess }) {
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
+  const [incidentAt, setIncidentAt] = useState('');
+  const [parties, setParties] = useState('');
   const [evidence, setEvidence] = useState(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -82,6 +84,8 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
     const formData = new FormData();
     formData.append('type', type);
     formData.append('description', description);
+    if (incidentAt) formData.append('incidentAt', new Date(incidentAt).toISOString());
+    if (parties) formData.append('parties', parties);
     if (evidence) formData.append('evidence', evidence);
     const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports`, {
       method: 'POST',
@@ -92,6 +96,8 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
       setMessage('Report submitted!');
       setType('');
       setDescription('');
+      setIncidentAt('');
+      setParties('');
       setEvidence(null);
       if (onSuccess) onSuccess();
     } else {
@@ -125,6 +131,29 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
           required
           className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
         />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="incident-at">Date/Time of Incident (optional)</label>
+        <input
+          id="incident-at"
+          type="datetime-local"
+          value={incidentAt}
+          onChange={e => setIncidentAt(e.target.value)}
+          className="mt-1 block w-64 max-w-xs rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+        />
+        <span className="text-xs text-gray-500">If known, please provide when the incident occurred.</span>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="parties">Involved Parties (optional)</label>
+        <input
+          id="parties"
+          type="text"
+          value={parties}
+          onChange={e => setParties(e.target.value)}
+          className="mt-1 block w-full rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="List names, emails, or descriptions (comma-separated or freeform)"
+        />
+        <span className="text-xs text-gray-500">List anyone involved, if known. Separate multiple names with commas.</span>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-evidence">Evidence (optional)</label>
@@ -216,7 +245,7 @@ function Header() {
         {user ? (
           <>
             <span className="text-sm md:text-base">Logged in as <b>{user.email}</b>{user.name && <span className="text-gray-300"> ({user.name})</span>}</span>
-            <Button onClick={handleLogout} className="ml-2 bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 font-semibold py-1 px-4 rounded shadow-sm transition">Logout</Button>
+            <Button onClick={handleLogout} className="ml-2">Logout</Button>
           </>
         ) : (
           <Link href="/login" className="underline font-semibold hover:text-yellow-300 transition">Login</Link>
@@ -251,7 +280,7 @@ function Header() {
           {user ? (
             <>
               <span className="text-sm">Logged in as <b>{user.email}</b>{user.name && <span className="text-gray-300"> ({user.name})</span>}</span>
-              <Button onClick={handleLogout} className="mt-2 bg-gray-800 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 font-semibold py-1 px-4 rounded shadow-sm transition w-full">Logout</Button>
+              <Button onClick={handleLogout} className="mt-2">Logout</Button>
             </>
           ) : (
             <Link href="/login" className="underline font-semibold hover:text-yellow-300 transition py-2" onClick={() => setMobileMenuOpen(false)}>Login</Link>

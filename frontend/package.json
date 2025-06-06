@@ -9,11 +9,13 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@tailwindcss/typography": "^0.5.16",
     "autoprefixer": "^10.4.21",
     "next": "latest",
     "postcss": "^8.5.4",
     "react": "latest",
     "react-dom": "latest",
+    "react-markdown": "^10.1.0",
     "tailwindcss": "^3.4.17"
   }
 }

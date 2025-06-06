@@ -43,6 +43,12 @@ model Event {
   id             String   @id @default(uuid())
   name           String
   slug           String   @unique
+  description    String?
+  logo           String?
+  startDate      DateTime?
+  endDate        DateTime?
+  website        String?
+  codeOfConduct  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   userEventRoles UserEventRole[]
@@ -79,6 +85,8 @@ model Report {
   description String
   state       ReportState   // submitted, acknowledged, investigating, resolved, closed
   evidence    String?  // file path of uploaded evidence (optional)
+  incidentAt  DateTime? // date and time of the incident (optional)
+  parties     String?   // comma-separated or freeform list of parties involved (optional)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   // Add more fields as needed (e.g., involved parties)
