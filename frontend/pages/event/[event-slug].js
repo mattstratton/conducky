@@ -34,6 +34,7 @@ export default function EventDashboard() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
+  const [userRoles, setUserRoles] = useState([]);
 
   // Fetch event details and user session
   useEffect(() => {
@@ -66,10 +67,17 @@ export default function EventDashboard() {
     setLoading(false);
   }, [eventSlug, stateChange]); // refetch on state change
 
+  // Fetch user roles for this event
+  useEffect(() => {
+    if (!eventSlug) return;
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/my-roles`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : { roles: [] })
+      .then(data => setUserRoles(data.roles || []));
+  }, [eventSlug]);
+
   // Helper: check user role for this event
   function hasRole(role) {
-    if (!user || !user.roles) return false;
-    return user.roles.includes(role);
+    return userRoles.includes(role);
   }
 
   if (error) return <div style={{ padding: 40 }}><h2>{error}</h2></div>;

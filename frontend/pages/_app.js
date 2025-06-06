@@ -176,6 +176,50 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
   );
 }
 
+function MyEventsDropdown() {
+  const [open, setOpen] = useState(false);
+  const [events, setEvents] = useState([]);
+  const dropdownRef = useRef();
+  useEffect(() => {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/users/me/events', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : { events: [] })
+      .then(data => setEvents(data.events || []));
+  }, []);
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button onClick={() => setOpen(o => !o)} className="px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400">
+        My Events <svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
+          <div className="p-2 text-gray-700 dark:text-gray-100 font-semibold border-b border-gray-200 dark:border-gray-700">My Events</div>
+          {events.length === 0 ? (
+            <div className="p-3 text-gray-500 text-sm">No events found.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {events.map(ev => (
+                <li key={ev.id}>
+                  <Link href={`/event/${ev.slug}`} className="block px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{ev.name}</span> <span className="text-xs text-gray-500">({ev.roles.join(', ')})</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Header() {
   const { user, setUser } = useContext(UserContext);
   const router = useRouter();
@@ -245,6 +289,7 @@ function Header() {
         {user ? (
           <>
             <span className="text-sm md:text-base">Logged in as <b>{user.email}</b>{user.name && <span className="text-gray-300"> ({user.name})</span>}</span>
+            <MyEventsDropdown />
             <Button onClick={handleLogout} className="ml-2">Logout</Button>
           </>
         ) : (
@@ -280,6 +325,7 @@ function Header() {
           {user ? (
             <>
               <span className="text-sm">Logged in as <b>{user.email}</b>{user.name && <span className="text-gray-300"> ({user.name})</span>}</span>
+              <MyEventsDropdown />
               <Button onClick={handleLogout} className="mt-2">Logout</Button>
             </>
           ) : (

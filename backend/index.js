@@ -1310,6 +1310,59 @@ app.delete('/events/slug/:slug/reports/:reportId/comments/:commentId', async (re
   }
 });
 
+// Get current user's roles for an event by slug
+app.get('/events/slug/:slug/my-roles', async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map(uer => uer.role.name);
+    res.json({ roles });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user roles for event.', details: err.message });
+  }
+});
+
+// Get all events the current user has a role on
+app.get('/users/me/events', async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId: { not: null } },
+      include: { event: true, role: true },
+    });
+    // Group by event
+    const eventsMap = {};
+    userEventRoles.forEach(uer => {
+      if (!uer.event) return;
+      if (!eventsMap[uer.event.id]) {
+        eventsMap[uer.event.id] = {
+          id: uer.event.id,
+          name: uer.event.name,
+          slug: uer.event.slug,
+          roles: [],
+        };
+      }
+      eventsMap[uer.event.id].roles.push(uer.role.name);
+    });
+    const events = Object.values(eventsMap);
+    res.json({ events });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user events.', details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server listening on port ${PORT}`);
 });

@@ -3,6 +3,7 @@
 _Checklist items with a GitHub issue are now linked for traceability._
 
 ## Phase 1: Project Setup & Core Infrastructure
+
 - [X] Initialize monorepo/project structure (Next.js frontend, Node.js backend)
 - [X] Set up Dockerfile and docker-compose for local development (all services run locally in containers)
 - [X] Document local development workflow using Docker (how to start, stop, debug, etc.)
@@ -11,6 +12,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [X] Implement basic audit logging infrastructure
 
 ## Phase 2: Authentication & User Management
+
 - [X] Implement email/password authentication (including magic link)
 - [ ] Integrate social login (Google, GitHub) ([#3](https://github.com/mattstratton/conducky/issues/3))
 - [X] Implement user roles: Reporter, Responder, Admin, Super Admin
@@ -23,61 +25,64 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Users need abilty to reset password (via email)
 
 ## Phase 2.5: Event Management UI
+
 - [X] The list of users on the event page should be sortable and searchable
-    - [X] Backend: Add support for search (by name/email) to /events/slug/:slug/users endpoint
-    - [X] Backend: Add support for sorting (by name/email/role) to /events/slug/:slug/users endpoint
-    - [X] Frontend: Add search input and sort controls to user list UI
-    - [X] Frontend: Wire up search and sort controls to backend API
+  - [X] Backend: Add support for search (by name/email) to /events/slug/:slug/users endpoint
+  - [X] Backend: Add support for sorting (by name/email/role) to /events/slug/:slug/users endpoint
+  - [X] Frontend: Add search input and sort controls to user list UI
+  - [X] Frontend: Wire up search and sort controls to backend API
 - [X] The list of users on the event page should paginate
-    - [X] Backend: Add pagination (page, limit) to /events/slug/:slug/users endpoint
-    - [X] Frontend: Add pagination controls to user list UI
-    - [X] Frontend: Wire up pagination controls to backend API
+  - [X] Backend: Add pagination (page, limit) to /events/slug/:slug/users endpoint
+  - [X] Frontend: Add pagination controls to user list UI
+  - [X] Frontend: Wire up pagination controls to backend API
 - [X] The list of users on the event page should be filterable by role
-    - [X] Backend: Add support for filtering by role to /events/slug/:slug/users endpoint
-    - [X] Frontend: Add role filter controls to user list UI
-    - [X] Frontend: Wire up role filter controls to backend API
+  - [X] Backend: Add support for filtering by role to /events/slug/:slug/users endpoint
+  - [X] Frontend: Add role filter controls to user list UI
+  - [X] Frontend: Wire up role filter controls to backend API
 - [X] The list of users on the event page should have a button to add a user
 - [X] The list of users on the event page should have a button to remove a user
 - [X] The list of users on the event page should have a button to edit a user
 - [X] The list of users on the event page should have a button to view a user
-    - [X] Frontend: Implement "View User" button to show user details (modal or page)
+  - [X] Frontend: Implement "View User" button to show user details (modal or page)
 - [X] The list of users on the event page should have a button to view a user's reports
-    - [X] Backend: Add endpoint to fetch all reports for a given user in an event
-    - [X] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
+  - [X] Backend: Add endpoint to fetch all reports for a given user in an event
+  - [X] Frontend: Implement "View User's Reports" button (link to filtered report list or modal)
 - [X] The event logo should be able to be uploaded and displayed on the event page
 - [X] UI/UX for user list search/sort/pagination is polished and fully wired up
 
 ## Phase 3: Multi-Tenancy & Event Management
+
 - [X] Implement event (tenant) creation and management (Super Admin only)
 - [X] List all events (Super Admin only)
 - [X] Get event details (Admins of that event)
 - [X] Assign/remove roles for users within an event
 - [X] Enforce event scoping for all queries (users, reports, etc.)
-    - [X] /events/:eventId/users (GET)
-    - [X] /events/:eventId/roles (POST, DELETE)
-    - [X] /events/:eventId/reports (GET, POST)
-    - [X] /events/:eventId/reports/:reportId (GET, PATCH)
-    - [X] /events/slug/:slug/users (GET, PATCH, DELETE)
-    - [X] /events/slug/:slug/reports (GET, POST)
-    - [X] /events/slug/:slug/reports/:reportId (GET, PATCH)
-    - [X] /events/slug/:slug/invites (GET, POST, PATCH)
-    - [X] /event/slug/:slug (GET)
+  - [X] /events/:eventId/users (GET)
+  - [X] /events/:eventId/roles (POST, DELETE)
+  - [X] /events/:eventId/reports (GET, POST)
+  - [X] /events/:eventId/reports/:reportId (GET, PATCH)
+  - [X] /events/slug/:slug/users (GET, PATCH, DELETE)
+  - [X] /events/slug/:slug/reports (GET, POST)
+  - [X] /events/slug/:slug/reports/:reportId (GET, PATCH)
+  - [X] /events/slug/:slug/invites (GET, POST, PATCH)
+  - [X] /event/slug/:slug (GET)
 - [X] List all users and their roles for an event
 - [X] List all reports for an event (stub/placeholder)
 - [X] Admin UI/API for managing event users and roles
 - [X] Add metadata to the event (name, description, logo, code of conduct, dates, website)
-    - [X] Events have their code of conduct available (markdown)
-    - [X] Events have their dates of the event
-    - [X] Events have a field for the website for the event
-    - [X] All metadata fields are editable by Admins/SuperAdmins, with inline UI and PATCH endpoints
-    - [X] Features are implemented, tested, and documented
+  - [X] Events have their code of conduct available (markdown)
+  - [X] Events have their dates of the event
+  - [X] Events have a field for the website for the event
+  - [X] All metadata fields are editable by Admins/SuperAdmins, with inline UI and PATCH endpoints
+  - [X] Features are implemented, tested, and documented
 - [ ] Events should store their code of conduct as a field ([#2](https://github.com/mattstratton/conducky/issues/2))
 
 ## Phase 4: Report Submission & Management
+
 - [X] Design and implement report submission form (with all required fields)
-   - [X] Add a date and time of incident field to the report submission form
-   - [X] Add a field for parties involved
-   - [X] Both fields are present in both inline and modal forms, tested, and documented
+  - [X] Add a date and time of incident field to the report submission form
+  - [X] Add a field for parties involved
+  - [X] Both fields are present in both inline and modal forms, tested, and documented
 - [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin ([#24](https://github.com/mattstratton/conducky/issues/24))
 - [ ] Reports should have a field for the resolution of the incident ([#25](https://github.com/mattstratton/conducky/issues/25))
 - [ ] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
@@ -94,6 +99,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Metrics/Reporting Feature ([#26](https://github.com/mattstratton/conducky/issues/26))
 
 ## Phase 5: Notifications
+
 - [ ] Integrate flexible transactional email service (supporting multiple providers)
 - [ ] Document setup for each supported email provider (e.g., SendGrid, Mailgun, SMTP, etc.)
 - [ ] Notify submitters on report submission, acknowledgment, resolution, and updates
@@ -101,10 +107,12 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Make sure the notification template for a new incident includes SLA etc ([#23](https://github.com/mattstratton/conducky/issues/23))
 
 ## Phase 6: Audit Logs & Admin Tools
+
 - [ ] Log all actions (who, what, when) to the database
 - [ ] Admin UI to view full audit log for an event
 
 ## Phase 7: Deployment, Hosting & Documentation
+
 - [ ] Finalize Docker image and deployment scripts
 - [ ] Create solution for publshing docker images to docker hub
 - [ ] Create process for releases and versioning
@@ -117,6 +125,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Set up for deploy on Render ([#1](https://github.com/mattstratton/conducky/issues/1))
 
 ## Phase 8: Frontend MVP (Initial UI for Testing)
+
 - [X] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
 - [X] Implement authentication UI (login/logout)
 - [X] Add dashboard page to list reports for an event
@@ -125,6 +134,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Event page needs to list who the admins and responders are for that event ([#10](https://github.com/mattstratton/conducky/issues/10))
 
 ## Phase 9: UI/UX Improvements
+
 - [X] Add a dark mode option using best practices (toggle, system preference, etc.)
   - [X] Review the dark mode text colors and make sure they are the proper contrast against the background color
   - [X] simplfy the dark mode toggle to be a simple toggle button
@@ -160,6 +170,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - When adding new pages or layouts, always audit for these standards to ensure a consistent, modern, and accessible experience across devices.
 
 ## Event Metadata Display & UX Improvements
+
 - [X] Display event metadata at the top of the event page (logo, name, dates, website, description, code of conduct link)
 - [X] Render logo as an image if present
 - [X] Show 'View Code of Conduct' link that opens a modal with rendered markdown
@@ -170,6 +181,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [X] Update documentation in /docs to reflect new metadata editing features
 
 ## Suggested Next Task
+
 - [X] Enhance the report submission form
   - [X] Add a date and time of incident field
   - [X] Add a field for parties involved
@@ -177,6 +189,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
   - [X] Update docs for report submission changes
 
 ## Other/Architecture
+
 - [ ] Consider adding support for "orgs" ([#18](https://github.com/mattstratton/conducky/issues/18))
 - [ ] Remove Superadmin access to reports etc ([#17](https://github.com/mattstratton/conducky/issues/17))
 - [ ] Remove event constraint ([#16](https://github.com/mattstratton/conducky/issues/16))
@@ -185,18 +198,21 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Investigate anonymous reporting ([#12](https://github.com/mattstratton/conducky/issues/12))
 
 ## Report Comments - Completed
+
 - [x] Slug-based comment endpoints implemented in backend
 - [x] Edit and delete permissions enforced in backend (author can edit/delete, admin can delete)
 - [x] Internal/external (visibility) comment logic enforced in backend and frontend
 - [x] Frontend UI for editing and deleting comments (inline, with confirmation)
 
 ## Planned Features for Report Comments
+
 - [ ] If a comment has been edited, it should be marked so users know it was edited.
 - [ ] All edits or deletions of comments should be stored in the audit log (pending audit log implementation).
 
 ---
 
 **Notes:**
+
 - Local development will be done using Docker and docker-compose, running all services locally in containers for consistency and ease of onboarding.
 - **When installing new npm packages or running dev commands, always use Docker Compose (e.g., `docker compose exec frontend npm install <package>`) to ensure the container environment is up to date. Do not run npm install directly on the host.**
 - Be sure to remember that we always want to optimize for mobile experience
@@ -206,4 +222,3 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting. 
 - Documentation should be written in markdown and stored in the docs directory
 - Documentation should be separated into user and developer documentation
-

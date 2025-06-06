@@ -53,13 +53,10 @@ export default function ReportDetail({ initialReport, error }) {
   // Fetch user roles for this event after user is set
   useEffect(() => {
     if (eventSlug && user) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users`, { credentials: 'include' })
+      fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/my-roles`, { credentials: 'include' })
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          if (data && data.users && user) {
-            const u = data.users.find(u => u.id === user.id);
-            setUserRoles(u ? u.roles : []);
-          }
+          if (data && data.roles) setUserRoles(data.roles);
         });
     }
   }, [eventSlug, user]);
