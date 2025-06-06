@@ -11,10 +11,19 @@
 ## Phase 2: Authentication & User Management
 - [X] Implement email/password authentication (including magic link)
 - [ ] Integrate social login (Google, GitHub) ([#3](https://github.com/mattstratton/conducky/issues/3))
-- [ ] Support anonymous report submission (with optional email) ([#4](https://github.com/mattstratton/conducky/issues/4))
 - [X] Implement user roles: Reporter, Responder, Admin, Super Admin
 - [X] Role-based access control (RBAC) middleware
 - [X] Implement registration, login, logout, and session check endpoints
+- [X] User email address needs to be unique in the database
+
+## Phase 2.5: Event Management UI
+- [ ] The list of users on the event page should be sortable and searchable
+- [ ] The list of users on the event page should paginate
+- [X] The list of users on the event page should have a button to add a user
+- [X] The list of users on the event page should have a button to remove a user
+- [X] The list of users on the event page should have a button to edit a user
+- [~] The list of users on the event page should have a button to view a user
+- [ ] The list of users on the event page should have a button to view a user's reports
 
 ## Phase 3: Multi-Tenancy & Event Management
 - [X] Implement event (tenant) creation and management (Super Admin only)

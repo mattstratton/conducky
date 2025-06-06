@@ -48,6 +48,7 @@ model Event {
   userEventRoles UserEventRole[]
   reports        Report[]
   auditLogs      AuditLog[]
+  inviteLinks    EventInviteLink[]
 }
 
 model Role {
@@ -92,4 +93,18 @@ model AuditLog {
   targetType String
   targetId   String
   timestamp  DateTime @default(now())
+}
+
+model EventInviteLink {
+  id              String   @id @default(uuid())
+  eventId         String
+  event           Event    @relation(fields: [eventId], references: [id])
+  code            String   @unique
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime?
+  maxUses         Int?
+  useCount        Int      @default(0)
+  disabled        Boolean  @default(false)
+  note            String?
 }

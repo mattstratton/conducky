@@ -1,0 +1,186 @@
+# Backend API Endpoints
+
+This document describes all API endpoints provided by the backend Express server.
+
+---
+
+## Authentication
+
+### Register
+- **POST** `/register`
+- **Description:** Register a new user. The first user becomes Global Admin (SuperAdmin).
+- **Body:** `{ email, password, name }`
+- **Response:** `{ message, user, madeSuperAdmin }`
+
+### Login
+- **POST** `/login`
+- **Description:** Log in with email and password.
+- **Body:** `{ email, password }`
+- **Response:** `{ message, user }`
+
+### Logout
+- **POST** `/logout`
+- **Description:** Log out the current user.
+- **Response:** `{ message }`
+
+### Session Check
+- **GET** `/session`
+- **Description:** Get current session user and roles.
+- **Response:** `{ user: { id, email, name, roles } }` or 401 if not authenticated
+
+---
+
+## Events
+
+### Create Event
+- **POST** `/events`
+- **Role:** SuperAdmin only
+- **Body:** `{ name, slug }`
+- **Response:** `{ event }`
+
+### List Events
+- **GET** `/events`
+- **Role:** SuperAdmin only
+- **Response:** `{ events }`
+
+### Get Event Details
+- **GET** `/events/:eventId`
+- **Role:** Admin or SuperAdmin for the event
+- **Response:** `{ event }`
+
+### Get Event by Slug
+- **GET** `/event/slug/:slug`
+- **Description:** Get event details by slug (public)
+- **Response:** `{ event }`
+
+---
+
+## User Management
+
+### List Users for Event
+- **GET** `/events/:eventId/users`
+- **Role:** Admin or SuperAdmin for the event
+- **Response:** `{ users }`
+
+### Assign Role to User
+- **POST** `/events/:eventId/roles`
+- **Role:** Admin or SuperAdmin for the event
+- **Body:** `{ userId, roleName }`
+- **Response:** `{ message, userEventRole }`
+
+### Remove Role from User
+- **DELETE** `/events/:eventId/roles`
+- **Role:** Admin or SuperAdmin for the event
+- **Body:** `{ userId, roleName }`
+- **Response:** `{ message }`
+
+### List All Users (Global)
+- **GET** `/admin/users`
+- **Role:** SuperAdmin only
+- **Response:** `{ users }`
+
+### Create/Invite User (Global)
+- **POST** `/admin/users`
+- **Role:** SuperAdmin only
+- **Body:** `{ email, name }`
+- **Response:** `{ message, user }`
+
+### Update User for Event
+- **PATCH** `/events/slug/:slug/users/:userId`
+- **Role:** Admin or SuperAdmin for the event
+- **Body:** `{ name, email, role }`
+- **Response:** `{ message }`
+
+### Remove User from Event
+- **DELETE** `/events/slug/:slug/users/:userId`
+- **Role:** Admin or SuperAdmin for the event
+- **Response:** `{ message }`
+
+---
+
+## Reports
+
+### Submit Report (by Event ID)
+- **POST** `/events/:eventId/reports`
+- **Description:** Submit a report (anonymous or authenticated). Supports file upload (`evidence`).
+- **Body:** `type`, `description`, `evidence` (multipart/form-data)
+- **Response:** `{ report }`
+
+### List Reports (by Event ID)
+- **GET** `/events/:eventId/reports`
+- **Response:** `{ reports }`
+
+### Get Report by ID
+- **GET** `/events/:eventId/reports/:reportId`
+- **Response:** `{ report }`
+
+### Change Report State
+- **PATCH** `/events/:eventId/reports/:reportId/state`
+- **Role:** Responder, Admin, or SuperAdmin
+- **Body:** `{ state }`
+- **Response:** `{ report }`
+
+#### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`).
+
+---
+
+## Invites
+
+### List Invite Links for Event
+- **GET** `/events/slug/:slug/invites`
+- **Role:** Admin or SuperAdmin for the event
+- **Response:** `{ invites }`
+
+### Create Invite Link
+- **POST** `/events/slug/:slug/invites`
+- **Role:** Admin or SuperAdmin for the event
+- **Body:** `{ maxUses, expiresAt, note }`
+- **Response:** `{ invite }`
+
+### Disable/Update Invite Link
+- **PATCH** `/events/slug/:slug/invites/:inviteId`
+- **Role:** Admin or SuperAdmin for the event
+- **Body:** `{ disabled, note, expiresAt, maxUses }`
+- **Response:** `{ invite }`
+
+### Redeem Invite Link (Register)
+- **POST** `/register/invite/:inviteCode`
+- **Description:** Register a new user using an invite link.
+- **Body:** `{ name, email, password }`
+- **Response:** `{ message, user }`
+
+### Get Invite Details
+- **GET** `/invites/:code`
+- **Description:** Get invite and event info for a code.
+- **Response:** `{ invite, event }`
+
+---
+
+## Roles
+
+### List All Roles
+- **GET** `/admin/roles`
+- **Role:** SuperAdmin only
+- **Response:** `{ roles }`
+
+---
+
+## Miscellaneous
+
+### Audit Test
+- **GET** `/audit-test`
+- **Description:** Triggers a test audit event (for development).
+- **Response:** `{ message }`
+
+### Admin-Only Test
+- **GET** `/admin-only`
+- **Role:** Admin for any event
+- **Response:** `{ message, user }`
+
+---
+
+## Notes
+- All endpoints return JSON.
+- Most endpoints require authentication; some require specific roles.
+- For file uploads, use `multipart/form-data`.
+- For more details, see the code or ask the maintainers. 

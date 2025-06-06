@@ -54,8 +54,8 @@ export default function ReportDetail({ initialReport, error }) {
     }
   }, [report && report.createdAt, report && report.updatedAt]);
 
-  const isSuperAdmin = user && user.roles && user.roles.includes('SuperAdmin');
-  const canChangeState = isSuperAdmin || userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+  const isSuperAdmin = user && user.roles && user.roles.includes('Global Admin');
+  const canChangeState = isSuperAdmin || userRoles.some(r => ['Responder', 'Admin', 'Global Admin'].includes(r));
 
   const handleStateChange = async (e) => {
     const newState = e.target.value;

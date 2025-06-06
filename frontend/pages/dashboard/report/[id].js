@@ -53,7 +53,7 @@ export default function ReportDetail({ initialReport, error, eventSlug }) {
     }
   }, [report.createdAt, report.updatedAt]);
 
-  const canChangeState = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+  const canChangeState = userRoles.some(r => ['Responder', 'Admin', 'Global Admin'].includes(r));
 
   const handleStateChange = async (e) => {
     const newState = e.target.value;

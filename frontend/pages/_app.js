@@ -4,6 +4,9 @@ import '../styles.css';
 import { useRouter } from 'next/router';
 import { ModalContext } from '../context/ModalContext';
 
+// User context for global user state
+export const UserContext = createContext({ user: null, setUser: () => {} });
+
 function SimpleModal({ open, onClose, children }) {
   if (!open) return null;
   return (
@@ -100,7 +103,7 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
 }
 
 function Header() {
-  const [user, setUser] = useState(null);
+  const { user, setUser } = useContext(UserContext);
   const router = useRouter();
   const path = router.asPath;
   // Extract event slug if on event page
@@ -112,6 +115,8 @@ function Header() {
       .then(res => res.ok ? res.json() : null)
       .then(data => setUser(data ? data.user : null))
       .catch(() => setUser(null));
+    // Only run on mount
+    // eslint-disable-next-line
   }, []);
 
   const handleLogout = async () => {
@@ -131,7 +136,7 @@ function Header() {
           <span>Conducky</span> <span role="img" aria-label="duck">🦆</span>
         </Link>
         {user && user.roles && user.roles.includes('SuperAdmin') && (
-          <Link href="/superadmin" className="underline font-semibold hover:text-yellow-300 transition">SuperAdmin</Link>
+          <Link href="/admin" className="underline font-semibold hover:text-yellow-300 transition">Global Admin</Link>
         )}
         {/* Show Submit Report button only on event page */}
         {eventSlug && (
@@ -173,6 +178,7 @@ function MyApp({ Component, pageProps }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [eventName, setEventName] = useState('');
   const [eventSlugForModal, setEventSlugForModal] = useState(null);
+  const [user, setUser] = useState(null);
   // Fetch event name when modal opens
   useEffect(() => {
     if (modalOpen && eventSlugForModal) {
@@ -188,23 +194,25 @@ function MyApp({ Component, pageProps }) {
     setModalOpen(true);
   };
   return (
-    <ModalContext.Provider value={{ openModal }}>
-      <Header />
-      <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
-        <div className="text-gray-800">
-          <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
-          {eventSlugForModal && (
-            <div className="text-sm mb-2 text-gray-500">For event: <b>{eventName || eventSlugForModal}</b></div>
-          )}
-          {eventSlugForModal ? (
-            <ReportForm eventSlug={eventSlugForModal} eventName={eventName} onSuccess={() => setModalOpen(false)} />
-          ) : <div className="text-gray-500">No event selected.</div>}
-        </div>
-      </SimpleModal>
-      <main className="min-h-screen bg-gray-50 pb-10">
-        <Component {...pageProps} />
-      </main>
-    </ModalContext.Provider>
+    <UserContext.Provider value={{ user, setUser }}>
+      <ModalContext.Provider value={{ openModal }}>
+        <Header />
+        <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
+          <div className="text-gray-800">
+            <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
+            {eventSlugForModal && (
+              <div className="text-sm mb-2 text-gray-500">For event: <b>{eventName || eventSlugForModal}</b></div>
+            )}
+            {eventSlugForModal ? (
+              <ReportForm eventSlug={eventSlugForModal} eventName={eventName} onSuccess={() => setModalOpen(false)} />
+            ) : <div className="text-gray-500">No event selected.</div>}
+          </div>
+        </SimpleModal>
+        <main className="min-h-screen bg-gray-50 pb-10">
+          <Component {...pageProps} />
+        </main>
+      </ModalContext.Provider>
+    </UserContext.Provider>
   );
 }
 

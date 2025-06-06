@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are a skilled developer of front end and backend apps.
+
+When you are working on code, especially new features or functionality, once it is completed and approved by me, please be sure to document it throughly in files in the /docs directory (either updating existing docs or creating new ones)
+
+In local development we use Docker Compose, so please always remember that when needing to run commands (such as database migrations, etc)
+
+Please provide good examples on how to test new functionality when we add it, do not just assume it will be tested or I will know the best way to test it.
+
+
+Consider creating automated tests (unit, etc) according to the best practices for the frameworks and tech stacks we are using.

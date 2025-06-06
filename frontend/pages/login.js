@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
+import { UserContext } from './_app';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const [nextUrl, setNextUrl] = useState('/');
+  const { setUser } = useContext(UserContext);
+
+  useEffect(() => {
+    // Prefer ?next=... in query, else use document.referrer if it's from the same origin
+    if (router.query.next) {
+      setNextUrl(router.query.next);
+    } else if (typeof document !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
+      const refPath = document.referrer.replace(window.location.origin, '');
+      setNextUrl(refPath || '/');
+    }
+  }, [router.query.next]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +31,13 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        router.push('/');
+        // Fetch user info and update context
+        const sessionRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', { credentials: 'include' });
+        if (sessionRes.ok) {
+          const data = await sessionRes.json();
+          setUser(data.user);
+        }
+        router.push(nextUrl);
       } else {
         let errMsg = 'Login failed';
         try {
