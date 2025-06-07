@@ -116,5 +116,3 @@ Both the frontend and backend use `.env` files to manage environment variables a
     - Assigned the `SuperAdmin` role for the test event (for demo purposes)
 
 You can use these credentials to log in and test the application immediately after seeding.
-
- 
