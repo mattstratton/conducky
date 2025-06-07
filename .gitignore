@@ -4,3 +4,6 @@ frontend/.env
 cursor_clarifying_requirements_for_syst.md
 backend/uploads/
 node_modules/
+
+# Test coverage output
+**/coverage/

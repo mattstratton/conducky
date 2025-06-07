@@ -11,5 +11,6 @@ In local development we use Docker Compose, so please always remember that when 
 
 Please provide good examples on how to test new functionality when we add it, do not just assume it will be tested or I will know the best way to test it.
 
+Always add import React from "react"; at the top of any new .js or .jsx file that uses JSX, especially in the pages/ and components/ directories.
 
-Consider creating automated tests (unit, etc) according to the best practices for the frameworks and tech stacks we are using.
+If you see a "React is not defined" error, check for a missing import at the top of the file.

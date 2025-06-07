@@ -1,8 +1,27 @@
-const { requireRole } = require('../../utils/rbac');
+const { requireRole, requireSuperAdmin } = require('../../utils/rbac');
+
+// Mock PrismaClient
+jest.mock('@prisma/client', () => {
+  const mPrisma = {
+    userEventRole: {
+      findMany: jest.fn(),
+    },
+    report: {
+      findUnique: jest.fn(),
+    },
+    event: {
+      findUnique: jest.fn(),
+    },
+  };
+  return { PrismaClient: jest.fn(() => mPrisma) };
+});
+
+const mPrisma = new (require('@prisma/client').PrismaClient)();
 
 describe('requireRole middleware', () => {
+  afterEach(() => jest.clearAllMocks());
+
   it('should return 401 if not authenticated', async () => {
-    // Arrange
     const allowedRoles = ['Admin'];
     const middleware = requireRole(allowedRoles);
     const req = {
@@ -12,18 +31,106 @@ describe('requireRole middleware', () => {
       query: {},
       body: {},
     };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
-
-    // Act
     await middleware(req, res, next);
-
-    // Assert
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Not authenticated' });
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 403 if user lacks required role', async () => {
+    const allowedRoles = ['Admin'];
+    const middleware = requireRole(allowedRoles);
+    const req = {
+      isAuthenticated: () => true,
+      user: { id: 'user1' },
+      params: { eventId: 'event1' },
+      query: {},
+      body: {},
+    };
+    mPrisma.userEventRole.findMany.mockResolvedValue([{ eventId: 'event1', role: { name: 'Responder' } }]);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden: insufficient role' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 if eventId missing', async () => {
+    const allowedRoles = ['Admin'];
+    const middleware = requireRole(allowedRoles);
+    const req = {
+      isAuthenticated: () => true,
+      user: { id: 'user1' },
+      params: {},
+      query: {},
+      body: {},
+    };
+    mPrisma.userEventRole.findMany.mockResolvedValue([]);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: expect.stringContaining('Missing eventId') }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 500 on Prisma error', async () => {
+    const allowedRoles = ['Admin'];
+    const middleware = requireRole(allowedRoles);
+    const req = {
+      isAuthenticated: () => true,
+      user: { id: 'user1' },
+      params: { eventId: 'event1' },
+      query: {},
+      body: {},
+    };
+    mPrisma.userEventRole.findMany.mockRejectedValue(new Error('Prisma error'));
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'RBAC check failed' }));
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe('requireSuperAdmin middleware', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('should return 401 if not authenticated', async () => {
+    const middleware = requireSuperAdmin();
+    const req = { isAuthenticated: () => false, user: null };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Not authenticated' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should return 403 if not SuperAdmin', async () => {
+    const middleware = requireSuperAdmin();
+    const req = { isAuthenticated: () => true, user: { id: 'user1' } };
+    mPrisma.userEventRole.findMany.mockResolvedValue([{ role: { name: 'Admin' } }]);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden: Super Admins only' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should call next() if SuperAdmin', async () => {
+    const middleware = requireSuperAdmin();
+    const req = { isAuthenticated: () => true, user: { id: 'user1' } };
+    mPrisma.userEventRole.findMany.mockResolvedValue([{ role: { name: 'SuperAdmin' } }]);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 }); 
