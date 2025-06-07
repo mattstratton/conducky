@@ -58,7 +58,7 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 - [x] Plan and document a GitHub Actions workflow to run all tests on PRs
 - [ ] Add coverage badge/reporting to README (optional)
-- [ ] Configure Codecov for coverage reporting
+- [ ] TODO: Add Codecov badge to README after verifying Codecov integration
 
 ---
 
