@@ -147,12 +147,14 @@ This document describes all API endpoints provided by the backend Express server
 
 ### Submit Report (by Event ID)
 - **POST** `/events/:eventId/reports`
-- **Description:** Submit a report (anonymous or authenticated). Supports file upload (`evidence`).
-- **Body:** `type`, `description`, `evidence` (multipart/form-data), `incidentAt` (optional, ISO date string), `parties` (optional, string)
+- **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
+- **Body:** `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
 - **Response:** `{ report }`
 - **Notes:**
+  - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
   - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
   - `parties` can be a comma-separated or freeform list of involved parties.
+  - Each evidence file is associated with the uploader (if authenticated).
 
 ### List Reports (by Event ID)
 - **GET** `/events/:eventId/reports`
@@ -170,14 +172,30 @@ This document describes all API endpoints provided by the backend Express server
 
 #### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`).
 
+### List Evidence Files for a Report
+- **GET** `/reports/:reportId/evidence`
+- **Description:** List all evidence files for a report (metadata only).
+- **Response:** `{ files: [ { id, filename, mimetype, size, createdAt, uploader: { id, name, email } } ] }`
+
+### Add Evidence Files to a Report
+- **POST** `/reports/:reportId/evidence`
+- **Description:** Upload one or more additional evidence files to an existing report (multipart/form-data, field: `evidence[]`).
+- **Role:** Reporter, Responder, or Admin for the event
+- **Response:** `{ files: [...] }`
+
+### Download Evidence File
+- **GET** `/evidence/:evidenceId/download`
+- **Description:** Download a specific evidence file by its ID.
+- **Response:** Binary file data with correct content-type and filename.
+
 ### Submit Report (by Event Slug)
 - **POST** `/events/slug/:slug/reports`
-- **Description:** Submit a report (anonymous or authenticated). Supports file upload (`evidence`).
-- **Body:** `type`, `description`, `evidence` (multipart/form-data), `incidentAt` (optional, ISO date string), `parties` (optional, string)
+- **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
+- **Body:** `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
 - **Response:** `{ report }`
 - **Notes:**
-  - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
-  - `parties` can be a comma-separated or freeform list of involved parties.
+  - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
+  - Each evidence file is associated with the uploader (if authenticated).
 
 ### Report Comments (by Event ID)
 - **GET** `/events/:eventId/reports/:reportId/comments`

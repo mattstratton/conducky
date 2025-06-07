@@ -117,6 +117,16 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 
 ---
 
+## Evidence File Uploads
+
+- Reports can have multiple evidence files attached.
+- Evidence files can be uploaded when submitting a report, or added later from the report detail page (if you are the reporter, responder, or admin).
+- Each evidence file records the uploader (name/email if authenticated).
+- All evidence files are listed on the report detail page, with download links and uploader info.
+- See [API Endpoints](./api-endpoints.md) for technical details on uploading, listing, and downloading evidence files.
+
+---
+
 ## Related Endpoints
 - See [API Endpoints](./api-endpoints.md) for full details.
 - Key endpoints:

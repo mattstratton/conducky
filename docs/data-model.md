@@ -38,10 +38,21 @@ This document describes the main data models used in the system, based on the Pr
 - **type**: Report type (harassment, safety, other)
 - **description**: Report details
 - **state**: Report state (submitted, acknowledged, investigating, resolved, closed)
-- **evidence**: Optional file path
+- **evidenceFiles**: Array of evidence files (see below)
 - **incidentAt**: Optional date/time of the incident (ISO 8601 string)
 - **parties**: Optional string listing parties involved (comma-separated or freeform)
 - **createdAt, updatedAt**: Timestamps
+
+## EvidenceFile
+- **id**: UUID, primary key
+- **reportId**: Report reference
+- **filename**: Original file name
+- **mimetype**: File MIME type
+- **size**: File size (bytes)
+- **data**: File data (BLOB)
+- **createdAt**: Timestamp
+- **uploaderId**: User reference (nullable, for anonymous uploads)
+- **uploader**: User object (id, name, email)
 
 ## AuditLog
 - **id**: UUID, primary key
