@@ -38,10 +38,15 @@ This document describes the main data models used in the system, based on the Pr
 - **type**: Report type (harassment, safety, other)
 - **description**: Report details
 - **state**: Report state (submitted, acknowledged, investigating, resolved, closed)
-- **evidenceFiles**: Array of evidence files (see below)
 - **incidentAt**: Optional date/time of the incident (ISO 8601 string)
 - **parties**: Optional string listing parties involved (comma-separated or freeform)
+- **assignedResponderId**: string (nullable, UUID) — the user ID of the assigned responder (if any)
+- **assignedResponder**: User (nullable) — the assigned responder user object (if any)
+- **severity**: enum (`low`, `medium`, `high`, `critical`, nullable) — severity/priority of the report
+- **resolution**: string (optional) — freeform text describing the resolution of the report
 - **createdAt, updatedAt**: Timestamps
+- **comments**: ReportComment[]
+- **evidenceFiles**: Array of evidence files (see below)
 
 ## EvidenceFile
 - **id**: UUID, primary key

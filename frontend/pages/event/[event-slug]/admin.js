@@ -89,7 +89,8 @@ export default function EventAdminPage() {
         return res.json();
       })
       .then(data => setEvent(data.event))
-      .catch(() => setError('Event not found'));
+      .catch(() => setError('Event not found'))
+      .finally(() => setLoading(false));
     // Fetch user session
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', {
       credentials: 'include',
@@ -103,7 +104,6 @@ export default function EventAdminPage() {
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, { method: 'HEAD' })
       .then(res => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
-    setLoading(false);
   }, [eventSlug]);
 
   // Refetch users when debouncedSearch/sort/order/page/limit/roleFilter changes

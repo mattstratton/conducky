@@ -32,6 +32,13 @@ enum CommentVisibility {
   internal    // visible only to responders/admins
 }
 
+enum ReportSeverity {
+  low
+  medium
+  high
+  critical
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -44,6 +51,7 @@ model User {
   auditLogs      AuditLog[]
   reportComments ReportComment[]
   evidenceFilesUploaded EvidenceFile[] @relation("EvidenceFileUploader")
+  assignedReports Report[] @relation("AssignedResponder")
 }
 
 model Event {
@@ -97,6 +105,10 @@ model Report {
   updatedAt   DateTime @updatedAt
   comments    ReportComment[]
   evidenceFiles EvidenceFile[]
+  assignedResponderId String?
+  assignedResponder   User?    @relation("AssignedResponder", fields: [assignedResponderId], references: [id])
+  severity            ReportSeverity?
+  resolution          String?
   // Add more fields as needed (e.g., involved parties)
 }
 

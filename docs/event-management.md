@@ -127,6 +127,15 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 
 ---
 
+## Report Assignment, Severity, and Resolution
+
+- Reports can now be assigned to a responder (Admin/Responder/SuperAdmin can assign).
+- Each report can have a severity (low, medium, high, critical) set and updated by authorized users.
+- When a report is resolved or closed, a resolution field can be filled in to describe the outcome.
+- These fields are managed via the Admin/Responder UI and the PATCH /events/slug/:slug/reports/:reportId API endpoint.
+
+---
+
 ## Related Endpoints
 - See [API Endpoints](./api-endpoints.md) for full details.
 - Key endpoints:

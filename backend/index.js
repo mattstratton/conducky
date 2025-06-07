@@ -564,6 +564,7 @@ app.get('/events/slug/:slug/reports', async (req, res) => {
       where,
       include: {
         reporter: true,
+        assignedResponder: true,
         evidenceFiles: { include: { uploader: { select: { id: true, name: true, email: true } } } },
       },
       orderBy: { createdAt: 'desc' },
@@ -638,6 +639,7 @@ app.get('/events/slug/:slug/reports/:reportId', async (req, res) => {
       where: { id: reportId },
       include: {
         reporter: true,
+        assignedResponder: true,
         evidenceFiles: { include: { uploader: { select: { id: true, name: true, email: true } } } },
       },
     });
@@ -651,32 +653,33 @@ app.get('/events/slug/:slug/reports/:reportId', async (req, res) => {
 });
 
 // Slug-based: Change the state of a report (Responder/Admin/SuperAdmin only)
-app.patch('/events/slug/:slug/reports/:reportId/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
+app.patch('/events/slug/:slug/reports/:reportId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req, res) => {
   const { slug, reportId } = req.params;
-  const { state } = req.body;
-  const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
-  if (!state || !validStates.includes(state)) {
-    return res.status(400).json({ error: 'Invalid or missing state.' });
-  }
+  const { assignedResponderId, severity, resolution, state } = req.body;
   try {
     const eventId = await getEventIdBySlug(slug);
-    if (!eventId) {
-      return res.status(404).json({ error: 'Event not found.' });
-    }
-    // Check report exists and belongs to event
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
     const report = await prisma.report.findUnique({ where: { id: reportId } });
     if (!report || report.eventId !== eventId) {
       return res.status(404).json({ error: 'Report not found for this event.' });
     }
-    // Update state
+    const data = {};
+    if (assignedResponderId !== undefined) data.assignedResponderId = assignedResponderId;
+    if (severity !== undefined) data.severity = severity;
+    if (resolution !== undefined) data.resolution = resolution;
+    if (state !== undefined) data.state = state;
     const updated = await prisma.report.update({
       where: { id: reportId },
-      data: { state },
-      include: { reporter: true },
+      data,
+      include: {
+        reporter: true,
+        assignedResponder: true,
+        evidenceFiles: { include: { uploader: { select: { id: true, name: true, email: true } } } },
+      },
     });
     res.json({ report: updated });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update report state', details: err.message });
+    res.status(500).json({ error: 'Failed to update report', details: err.message });
   }
 });
 
@@ -706,46 +709,36 @@ app.get('/events/slug/:slug/users', async (req, res) => {
     if (!isSuperAdmin) {
       // Otherwise, check for allowed roles for this event
       const userRoles = allUserRoles.filter(uer => uer.eventId === eventId);
-      const hasRole = userRoles.some(uer => ['Admin', 'SuperAdmin'].includes(uer.role.name));
+      const hasRole = userRoles.some(uer => ['Admin', 'Responder', 'SuperAdmin'].includes(uer.role.name));
       if (!hasRole) {
         return res.status(403).json({ error: 'Forbidden: insufficient role' });
       }
     }
-    // --- handler logic with search, sort, pagination, and role filter support ---
-    let allUserEventRoles;
-    let userEventRoleWhere = { eventId };
-    if (role && role !== 'All') {
-      // Find roleId for the given role name
-      const roleRecord = await prisma.role.findUnique({ where: { name: role } });
-      if (!roleRecord) {
-        return res.status(400).json({ error: 'Invalid role filter' });
-      }
-      userEventRoleWhere.roleId = roleRecord.id;
+    // Handler logic: fetch users for the event
+    const userEventRoleWhere = { eventId };
+    if (role) {
+      userEventRoleWhere.role = { name: role };
     }
-    if (search && search.trim() !== '') {
-      // Find users matching search (name or email)
-      const matchingUsers = await prisma.user.findMany({
-        where: {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        },
-        select: { id: true },
-      });
-      const matchingUserIds = matchingUsers.map(u => u.id);
-      userEventRoleWhere.userId = { in: matchingUserIds };
+    if (search) {
+      userEventRoleWhere.user = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      };
     }
-    allUserEventRoles = await prisma.userEventRole.findMany({
+    const userEventRoles = await prisma.userEventRole.findMany({
       where: userEventRoleWhere,
-      include: {
-        user: true,
-        role: true,
-      },
+      include: { user: true, role: true },
+      orderBy: [
+        { user: { [sort]: order } }
+      ],
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
     });
     // Group roles by user
     const users = {};
-    allUserEventRoles.forEach(uer => {
+    userEventRoles.forEach(uer => {
       if (!users[uer.userId]) {
         users[uer.userId] = {
           id: uer.user.id,
@@ -756,34 +749,11 @@ app.get('/events/slug/:slug/users', async (req, res) => {
       }
       users[uer.userId].roles.push(uer.role.name);
     });
-    let usersArr = Object.values(users);
-    // If filtering by role, only include users who have that role
-    if (role && role !== 'All') {
-      usersArr = usersArr.filter(u => u.roles.includes(role));
-    }
-    // Sorting
-    const sortKey = ['name', 'email', 'role'].includes(sort) ? sort : 'name';
-    const sortOrder = order === 'desc' ? -1 : 1;
-    usersArr.sort((a, b) => {
-      if (sortKey === 'role') {
-        const aRole = (a.roles[0] || '').toLowerCase();
-        const bRole = (b.roles[0] || '').toLowerCase();
-        if (aRole < bRole) return -1 * sortOrder;
-        if (aRole > bRole) return 1 * sortOrder;
-        return 0;
-      } else {
-        const aVal = (a[sortKey] || '').toLowerCase();
-        const bVal = (b[sortKey] || '').toLowerCase();
-        if (aVal < bVal) return -1 * sortOrder;
-        if (aVal > bVal) return 1 * sortOrder;
-        return 0;
-      }
+    // For pagination: count total matching users
+    const total = await prisma.userEventRole.count({
+      where: userEventRoleWhere,
     });
-    const total = usersArr.length;
-    // Pagination
-    const startIdx = (pageNum - 1) * limitNum;
-    const pagedUsers = usersArr.slice(startIdx, startIdx + limitNum);
-    res.json({ users: pagedUsers, total });
+    res.json({ users: Object.values(users), total });
   } catch (err) {
     res.status(500).json({ error: 'Failed to list users for event.', details: err.message });
   }

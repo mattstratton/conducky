@@ -223,6 +223,17 @@ This document describes all API endpoints provided by the backend Express server
 - **DELETE** `/events/slug/:slug/reports/:reportId/comments/:commentId`
   - **Description, body, response, and notes are the same as the eventId-based endpoints above, but use the event slug in the URL.**
 
+### Update Report Metadata (Assignment, Severity, Resolution)
+- **PATCH** `/events/slug/:slug/reports/:reportId`
+- **Role:** Responder, Admin, or SuperAdmin for the event
+- **Body:** `{ assignedResponderId?, severity?, resolution? }`
+- **Response:** `{ report }`
+- **Notes:**
+  - Any or all fields may be provided. Only provided fields are updated.
+  - `severity` must be one of: `low`, `medium`, `high`, `critical`.
+  - `assignedResponderId` must be a valid user ID for a responder/admin in the event.
+  - `resolution` is a freeform text field.
+
 ---
 
 ## Invites

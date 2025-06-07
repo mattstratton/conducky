@@ -91,6 +91,24 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [X] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
   - [X] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design
 - [ ] Admin/Responder UI for managing and responding to reports
+  - [ ] Create Admin/Responder Reports List page (table view, responsive, dark mode)
+  - [ ] Add filters and search to reports list (by state, type, reporter, responder, date, severity)
+  - [ ] Add pagination to reports list
+  - [X] Show evidence count, assigned responder(s), severity in list
+  - [X] Link to report detail page from list
+  - [ ] Build Report Detail UI for admins/responders (full metadata, evidence, comments, state, assignment, resolution)
+  - [X] Add assignment controls (assign/unassign responders)
+  - [X] Add state change controls (with allowed transitions)
+  - [X] Add/require resolution field when state is resolved/closed
+  - [X] Add comments section with markdown support, internal/external toggle, edit/delete
+  - [X] Add evidence section with upload, download, and (if allowed) delete
+  - [ ] Add audit log/history display (if available)
+  - [ ] Ensure all actions are RBAC-protected and UI is role-aware
+  - [ ] Add loading, error, and success feedback for all actions
+  - [ ] Make UI fully responsive and accessible (ARIA, keyboard, color contrast)
+  - [ ] Plan for future bulk actions (bulk state/assignment changes)
+  - [ ] Trigger notifications on assignment, state change, new comments (future)
+  - [ ] Test and polish for mobile and desktop
 - [ ] Ability to search reports ([#27](https://github.com/mattstratton/conducky/issues/27))
 - [ ] Ability to assign a responder to an incident ([#22](https://github.com/mattstratton/conducky/issues/22))
 - [ ] Add support for severity and/or priority ([#21](https://github.com/mattstratton/conducky/issues/21))
@@ -98,6 +116,15 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Add support for events to limit report fields ([#19](https://github.com/mattstratton/conducky/issues/19))
 - [ ] Comments on reports should be able to be privacy-scoped ([#24](https://github.com/mattstratton/conducky/issues/24))
 - [ ] Metrics/Reporting Feature ([#26](https://github.com/mattstratton/conducky/issues/26))
+
+## Phase 4.5: Planned/Requested Enhancements
+
+- [ ] Consider having direct links to a specific comment on an incident ([#39](https://github.com/mattstratton/conducky/issues/39))
+- [ ] Comments should support markdown and basic formatting ([#37](https://github.com/mattstratton/conducky/issues/37))
+- [ ] add filtering, pagination, and possibly search for comments on an incident ([#36](https://github.com/mattstratton/conducky/issues/36))
+- [ ] Add ability to add avatars ([#32](https://github.com/mattstratton/conducky/issues/32))
+- [ ] At limits for file uploads ([#31](https://github.com/mattstratton/conducky/issues/31))
+- [ ] Make sure there is a public path to the code of conduct of the event ([#28](https://github.com/mattstratton/conducky/issues/28))
 
 ## Phase 5: Notifications
 
@@ -209,6 +236,10 @@ _Checklist items with a GitHub issue are now linked for traceability._
 
 - [ ] If a comment has been edited, it should be marked so users know it was edited.
 - [ ] All edits or deletions of comments should be stored in the audit log (pending audit log implementation).
+
+## Future Refactors & Technical Debt
+
+- [ ] Refactor report detail pages (reporter and admin/responder) to use shared components for report metadata, evidence, and comments. Minimize code duplication and use role-based conditional rendering where possible, while keeping security and clarity. (Add after initial admin/responder UI is complete)
 
 ---
 
