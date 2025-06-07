@@ -6,12 +6,13 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 ## Backend (Node.js/Express/Prisma)
 
-- [X] Add Jest and supertest as dev dependencies
-- [X] Create `backend/tests/` directory
-- [ ] Add sample unit test for `utils/rbac.js`
-- [ ] Add sample integration test for `/audit-test` endpoint
-- [ ] Configure Jest for coverage reporting
-- [ ] Add `test` and `test:coverage` scripts to `backend/package.json`
+- [x] Add Jest and supertest as dev dependencies
+- [x] Create `backend/tests/` directory
+- [x] Add sample unit test for `utils/rbac.js`
+- [x] Add sample integration test for `/audit-test` endpoint
+  - [ ] **Note:** Currently, we mock DB dependencies for fast feedback. In the future, set up full stack integration tests with a test database and seeded data for true end-to-end coverage.
+- [x] Configure Jest for coverage reporting
+- [x] Add `test` and `test:coverage` scripts to `backend/package.json`
 - [ ] Document backend test setup and running in `/docs/testing.md`
 
 ---

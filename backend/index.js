@@ -1470,6 +1470,10 @@ app.delete('/evidence/:evidenceId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server listening on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Backend server listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
