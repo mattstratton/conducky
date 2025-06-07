@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState, useRef, createContext, useContext } from 'react';
 import Link from 'next/link';
 import '../styles.css';
