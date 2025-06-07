@@ -11,7 +11,7 @@ services:
       - key: PORT
         value: 4000
       - key: CORS_ORIGIN
-        value: ${RENDER_EXTERNAL_URL}
+        value: https://conducky-frontend.onrender.com
     healthCheckPath: /
     autoDeploy: true
     buildCommand: '' # Use Dockerfile
