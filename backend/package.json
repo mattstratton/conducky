@@ -6,7 +6,9 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "seed": "node prisma/seed.js",
-    "sample-data": "node prisma/sample-data-seed.js"
+    "sample-data": "node prisma/sample-data-seed.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -19,7 +21,9 @@
     "passport-local": "^1.0.0"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^3.1.10",
-    "prisma": "^6.9.0"
+    "prisma": "^6.9.0",
+    "supertest": "^7.1.1"
   }
 }
