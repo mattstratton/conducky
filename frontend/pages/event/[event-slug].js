@@ -35,6 +35,7 @@ export default function EventDashboard() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
   const [userRoles, setUserRoles] = useState([]);
+  const [logoExists, setLogoExists] = useState(false);
 
   // Fetch event details and user session
   useEffect(() => {
@@ -79,6 +80,14 @@ export default function EventDashboard() {
   function hasRole(role) {
     return userRoles.includes(role);
   }
+
+  useEffect(() => {
+    if (!eventSlug) return;
+    // Check if logo exists
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, { method: 'HEAD' })
+      .then(res => setLogoExists(res.ok))
+      .catch(() => setLogoExists(false));
+  }, [eventSlug, logoPreview]);
 
   if (error) return <div style={{ padding: 40 }}><h2>{error}</h2></div>;
   if (loading || !event) return <div style={{ padding: 40 }}><h2>Loading event...</h2></div>;
@@ -213,10 +222,7 @@ export default function EventDashboard() {
           <div className="relative">
             {(() => {
               const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-              let logoSrc = logoPreview || event.logo;
-              if (logoSrc && (logoSrc.startsWith('uploads/') || logoSrc.startsWith('event-logos/'))) {
-                logoSrc = `${backendBaseUrl}/${logoSrc.replace(/^\\/, '')}`;
-              }
+              let logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
               return logoSrc ? (
                 <img src={logoSrc} alt="Event Logo" className="w-24 h-24 object-contain rounded bg-white border border-gray-200 dark:border-gray-700" />
               ) : null;

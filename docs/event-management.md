@@ -96,15 +96,18 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 
 ### How to Upload (API)
 - Use the endpoint `POST /events/slug/:slug/logo` with `multipart/form-data` and a `logo` file field.
-- On success, the event's `logo` field will be updated with the file path.
+- On success, the event's `logo` field will be updated to the GET endpoint URL.
 
 ### Where Files Are Stored
-- Uploaded logo files are stored on the backend server in `/uploads/event-logos/`.
-- The event's `logo` field contains the relative path to the file.
+- Uploaded logo files are stored in the database as BLOBs in the `EventLogo` table.
+- The event's `logo` field contains the URL `/events/slug/:slug/logo` to fetch the logo.
+
+### How to Fetch/Display
+- Use the endpoint `GET /events/slug/:slug/logo` to fetch the logo image for display.
+- If no logo exists, the endpoint returns 404.
 
 ### Future Extensibility
-- In the future, logo uploads may be stored in external storage (e.g., S3) instead of the local filesystem.
-- The API and UI are designed to allow for this change with minimal disruption.
+- The API and UI are designed to allow for future changes to storage (e.g., S3) with minimal disruption.
 
 ---
 

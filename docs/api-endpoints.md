@@ -82,14 +82,21 @@ This document describes all API endpoints provided by the backend Express server
 ### Upload Event Logo
 - **POST** `/events/slug/:slug/logo`
 - **Role:** Admin or SuperAdmin for the event
-- **Description:** Upload a new logo image for the event. Stores the file and updates the event's `logo` field with the file path.
+- **Description:** Upload a new logo image for the event. Stores the file in the database and updates the event's `logo` field with the GET endpoint URL.
 - **Body:** `multipart/form-data` with a `logo` file field
 - **Response:** `{ event }` (updated event object)
 - **Notes:**
   - Only Admins/SuperAdmins can upload/change the logo.
-  - The file is stored on the backend server in `/uploads/event-logos/`.
-  - The `logo` field in the event will be set to the relative file path.
-  - In the future, this may be extended to support external storage (S3, etc).
+  - The file is stored in the database as a BLOB in the `EventLogo` table.
+  - The `logo` field in the event will be set to `/events/slug/:slug/logo`.
+
+### Get Event Logo
+- **GET** `/events/slug/:slug/logo`
+- **Role:** Public
+- **Description:** Fetch the event logo image for display. Returns the image as a binary response with the correct content-type.
+- **Response:** Binary image data (or 404 if not found)
+- **Notes:**
+  - Use this endpoint as the `src` for event logo images in the frontend.
 
 ---
 

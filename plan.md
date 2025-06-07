@@ -75,7 +75,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
   - [X] Events have a field for the website for the event
   - [X] All metadata fields are editable by Admins/SuperAdmins, with inline UI and PATCH endpoints
   - [X] Features are implemented, tested, and documented
-- [ ] Events should store their code of conduct as a field ([#2](https://github.com/mattstratton/conducky/issues/2))
+- [X] Events should store their code of conduct as a field ([#2](https://github.com/mattstratton/conducky/issues/2))
 
 ## Phase 4: Report Submission & Management
 
@@ -85,7 +85,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
   - [X] Both fields are present in both inline and modal forms, tested, and documented
 - [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin ([#24](https://github.com/mattstratton/conducky/issues/24))
 - [ ] Reports should have a field for the resolution of the incident ([#25](https://github.com/mattstratton/conducky/issues/25))
-- [ ] Support evidence file uploads (currently one file per report; will add multiple files and cloud storage options such as S3 in the future)
+- [ ] Support evidence file uploads (currently one file per report; will add multiple files in the future)
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [X] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
   - [X] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design

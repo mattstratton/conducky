@@ -259,7 +259,7 @@ export default function ReportDetail({ initialReport, error }) {
           </div>
           <div className="py-2 flex flex-col">
             <dt className="font-bold">Evidence</dt>
-            <dd>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">Download</a> : 'None'}</dd>
+            <dd>{report.evidenceFile ? <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/reports/${report.id}/evidence`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">Download</a> : 'None'}</dd>
           </div>
           <div className="py-2 flex flex-col">
             <dt className="font-bold">Created At</dt>
@@ -294,7 +294,7 @@ export default function ReportDetail({ initialReport, error }) {
                 )}
               </td>
             </tr>
-            <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidence ? <a href={report.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400">Download</a> : 'None'}</td></tr>
+            <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidenceFile ? <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/reports/${report.id}/evidence`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400">Download</a> : 'None'}</td></tr>
             <tr><td className="font-bold"><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
             <tr><td className="font-bold"><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
           </tbody>

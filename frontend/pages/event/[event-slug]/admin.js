@@ -49,6 +49,7 @@ export default function EventAdminPage() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
+  const [logoExists, setLogoExists] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -98,6 +99,10 @@ export default function EventAdminPage() {
       .catch(() => setUser(null));
     fetchEventUsers();
     fetchInvites();
+    // Check if logo exists
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, { method: 'HEAD' })
+      .then(res => setLogoExists(res.ok))
+      .catch(() => setLogoExists(false));
     setLoading(false);
   }, [eventSlug]);
 
@@ -116,6 +121,14 @@ export default function EventAdminPage() {
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, sort, order, limit, roleFilter]);
+
+  useEffect(() => {
+    if (!eventSlug) return;
+    // Check if logo exists
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/logo`, { method: 'HEAD' })
+      .then(res => setLogoExists(res.ok))
+      .catch(() => setLogoExists(false));
+  }, [eventSlug, logoPreview]);
 
   function hasRole(role) {
     if (!user || !user.roles) return false;
@@ -451,10 +464,7 @@ export default function EventAdminPage() {
             <span className="font-medium">Logo:</span>
             {(() => {
               const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-              let logoSrc = logoPreview || event?.logo;
-              if (logoSrc && (logoSrc.startsWith('uploads/') || logoSrc.startsWith('event-logos/'))) {
-                logoSrc = `${backendBaseUrl}/${logoSrc.replace(/^\\/, '')}`;
-              }
+              let logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
               return logoSrc ? (
                 <img src={logoSrc} alt="Event Logo" className="w-16 h-16 object-contain rounded bg-white border border-gray-200 dark:border-gray-700" />
               ) : null;
