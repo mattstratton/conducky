@@ -9,7 +9,8 @@
     "frontend": "docker compose up -d --build frontend",
     "backend": "docker compose up -d --build backend",
     "front-and-back": "docker compose up -d --build frontend backend",
-    "all": "docker compose up -d --build"
+    "all": "docker compose up -d --build",
+    "test:all": "cd backend && npm test && cd ../frontend && npm test && cd .."
   },
   "dependencies": {
   }

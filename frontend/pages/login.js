@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
@@ -60,12 +61,22 @@ export default function Login() {
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+            <label
+              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
+              htmlFor="email"
+            >
+              Email
+            </label>
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="email" />
           </div>
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+            <label
+              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
+              htmlFor="password"
+            >
+              Password
+            </label>
+            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="password" />
           </div>
           {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
           <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Login</Button>

@@ -13,19 +13,19 @@ A step-by-step checklist for implementing robust, automated testing for the proj
   - [ ] **Note:** Currently, we mock DB dependencies for fast feedback. In the future, set up full stack integration tests with a test database and seeded data for true end-to-end coverage.
 - [x] Configure Jest for coverage reporting
 - [x] Add `test` and `test:coverage` scripts to `backend/package.json`
-- [ ] Document backend test setup and running in `/docs/testing.md`
+- [x] Document backend test setup and running in `/docs/testing.md`
 
 ---
 
 ## Frontend (Next.js/React)
 
-- [ ] Add Jest and React Testing Library as dev dependencies
-- [ ] Create `frontend/__tests__/` directory (or colocate tests with components)
-- [ ] Add sample test for `Button.js` component
-- [ ] Add sample test for `login.js` page
-- [ ] Configure Jest for coverage reporting
-- [ ] Add `test` and `test:coverage` scripts to `frontend/package.json`
-- [ ] Document frontend test setup and running in `/docs/testing.md`
+- [x] Add Jest and React Testing Library as dev dependencies
+- [x] Create `frontend/__tests__/` directory (or colocate tests with components)
+- [x] Add sample test for `Button.js` component
+- [x] Add sample test for `login.js` page
+- [x] Configure Jest for coverage reporting
+- [x] Add `test` and `test:coverage` scripts to `frontend/package.json`
+- [x] Document frontend test setup and running in `/docs/testing.md`
 
 ---
 
@@ -35,21 +35,30 @@ A step-by-step checklist for implementing robust, automated testing for the proj
   - [ ] How to run backend and frontend tests (with and without Docker Compose)
   - [ ] How to write new tests
   - [ ] How to interpret coverage reports
+- [x] Document how to run all tests together
 
 ---
 
 ## Local Automation
 
-- [ ] Add a root-level script or Makefile to run both backend and frontend tests
-- [ ] Document how to run all tests together
+- [x] Add a root-level script or package.json script to run both backend and frontend tests
 - [ ] Document how to run tests in Docker Compose
 
 ---
 
-## CI/CD (Future)
+## Cursor rules
 
-- [ ] Plan and document a GitHub Actions workflow to run all tests on PRs
+- [ ] Create/update cursor rules to clarify the testing process
+- [ ] Create/update cursor rules to ensure that tests are created for new features
+- [ ] Create/update cursor rules to ensure that tests are run before determining a feature is complete
+
+---
+
+## CI/CD
+
+- [x] Plan and document a GitHub Actions workflow to run all tests on PRs
 - [ ] Add coverage badge/reporting to README (optional)
+- [ ] Configure Codecov for coverage reporting
 
 ---
 
