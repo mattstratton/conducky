@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/mattstratton/conducky/graph/badge.svg?token=J126AJDPXH)](https://codecov.io/gh/mattstratton/conducky)
+
 # Conducky 🦆
 
 This project is a web application for managing Code of Conduct reports for conferences and events. It is designed for easy deployment and multi-tenancy, supporting both anonymous and authenticated report submissions.
