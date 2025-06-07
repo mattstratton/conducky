@@ -525,6 +525,7 @@ function ReportForm({ eventSlug }) {
   const [parties, setParties] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [evidence, setEvidence] = useState([]);
 
   // Report types from schema
   const reportTypes = [
@@ -542,7 +543,11 @@ function ReportForm({ eventSlug }) {
     formData.append('description', description);
     if (incidentAt) formData.append('incidentAt', new Date(incidentAt).toISOString());
     if (parties) formData.append('parties', parties);
-    // TODO: Add evidence upload if needed
+    if (evidence && evidence.length > 0) {
+      for (let i = 0; i < evidence.length; i++) {
+        formData.append('evidence', evidence[i]);
+      }
+    }
     const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports`, {
       method: 'POST',
       body: formData,
@@ -554,6 +559,7 @@ function ReportForm({ eventSlug }) {
       setDescription('');
       setIncidentAt('');
       setParties('');
+      setEvidence([]);
     } else {
       setMessage('Failed to submit report.');
     }
@@ -611,6 +617,16 @@ function ReportForm({ eventSlug }) {
             placeholder="List names, emails, or descriptions (comma-separated or freeform)"
           />
           <span className="text-xs text-gray-500 dark:text-gray-400">List anyone involved, if known. Separate multiple names with commas.</span>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="report-evidence">Evidence (optional)</label>
+          <input
+            id="report-evidence"
+            type="file"
+            multiple
+            onChange={e => setEvidence(Array.from(e.target.files))}
+            className="mt-1 block w-full"
+          />
         </div>
         <Button
           type="submit"

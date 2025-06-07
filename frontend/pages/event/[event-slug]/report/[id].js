@@ -40,6 +40,11 @@ export default function ReportDetail({ initialReport, error }) {
   const [editCommentVisibility, setEditCommentVisibility] = useState('public');
   const [editError, setEditError] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState(null);
+  // Add state for evidence upload
+  const [evidenceFiles, setEvidenceFiles] = useState(report.evidenceFiles || []);
+  const [newEvidence, setNewEvidence] = useState([]);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [evidenceUploadMsg, setEvidenceUploadMsg] = useState('');
 
   // Fetch user info
   useEffect(() => {
@@ -216,6 +221,37 @@ export default function ReportDetail({ initialReport, error }) {
     }
   };
 
+  // Add a function to upload more evidence files
+  const canUploadEvidence = user && (user.id === report.reporterId || isAdminOrSuperAdmin);
+  const handleEvidenceUpload = async (e) => {
+    e.preventDefault();
+    if (!newEvidence.length) return;
+    setUploadingEvidence(true);
+    setEvidenceUploadMsg('');
+    const formData = new FormData();
+    for (let i = 0; i < newEvidence.length; i++) {
+      formData.append('evidence', newEvidence[i]);
+    }
+    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/reports/${report.id}/evidence`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    if (res.ok) {
+      setEvidenceUploadMsg('Evidence uploaded!');
+      setNewEvidence([]);
+      // Refetch evidence files
+      const filesRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/reports/${report.id}/evidence`, { credentials: 'include' });
+      if (filesRes.ok) {
+        const data = await filesRes.json();
+        setEvidenceFiles(data.files);
+      }
+    } else {
+      setEvidenceUploadMsg('Failed to upload evidence.');
+    }
+    setUploadingEvidence(false);
+  };
+
   if (fetchError) {
     return <div>Error: {fetchError}</div>;
   }
@@ -259,7 +295,25 @@ export default function ReportDetail({ initialReport, error }) {
           </div>
           <div className="py-2 flex flex-col">
             <dt className="font-bold">Evidence</dt>
-            <dd>{report.evidenceFile ? <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/reports/${report.id}/evidence`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">Download</a> : 'None'}</dd>
+            <dd>
+              {evidenceFiles.length === 0 ? 'None' : (
+                <ul className="space-y-1">
+                  {evidenceFiles.map(file => (
+                    <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/evidence/${file.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">{file.filename}</a>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{file.uploader ? `${file.uploader.name || file.uploader.email || 'Unknown'}` : 'Unknown'} • {new Date(file.createdAt).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canUploadEvidence && (
+                <form onSubmit={handleEvidenceUpload} className="mt-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <input type="file" multiple onChange={e => setNewEvidence(Array.from(e.target.files))} className="block" />
+                  <Button type="submit" disabled={uploadingEvidence || !newEvidence.length} className="px-3 py-1 text-sm">{uploadingEvidence ? 'Uploading...' : 'Add Evidence'}</Button>
+                  {evidenceUploadMsg && <span className="text-xs ml-2">{evidenceUploadMsg}</span>}
+                </form>
+              )}
+            </dd>
           </div>
           <div className="py-2 flex flex-col">
             <dt className="font-bold">Created At</dt>
@@ -294,7 +348,28 @@ export default function ReportDetail({ initialReport, error }) {
                 )}
               </td>
             </tr>
-            <tr><td className="font-bold"><b>Evidence</b></td><td>{report.evidenceFile ? <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/reports/${report.id}/evidence`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400">Download</a> : 'None'}</td></tr>
+            <tr>
+              <td className="font-bold"><b>Evidence</b></td>
+              <td>
+                {evidenceFiles.length === 0 ? 'None' : (
+                  <ul className="space-y-1">
+                    {evidenceFiles.map(file => (
+                      <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/evidence/${file.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">{file.filename}</a>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{file.uploader ? `${file.uploader.name || file.uploader.email || 'Unknown'}` : 'Unknown'} • {new Date(file.createdAt).toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {canUploadEvidence && (
+                  <form onSubmit={handleEvidenceUpload} className="mt-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <input type="file" multiple onChange={e => setNewEvidence(Array.from(e.target.files))} className="block" />
+                    <Button type="submit" disabled={uploadingEvidence || !newEvidence.length} className="px-3 py-1 text-sm">{uploadingEvidence ? 'Uploading...' : 'Add Evidence'}</Button>
+                    {evidenceUploadMsg && <span className="text-xs ml-2">{evidenceUploadMsg}</span>}
+                  </form>
+                )}
+              </td>
+            </tr>
             <tr><td className="font-bold"><b>Created At</b></td><td>{createdAtLocal || report.createdAt}</td></tr>
             <tr><td className="font-bold"><b>Reporter</b></td><td>{report.reporter ? `${report.reporter.name || ''} (${report.reporter.email || 'Anonymous'})` : 'Anonymous'}</td></tr>
           </tbody>

@@ -69,7 +69,7 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
   const [description, setDescription] = useState('');
   const [incidentAt, setIncidentAt] = useState('');
   const [parties, setParties] = useState('');
-  const [evidence, setEvidence] = useState(null);
+  const [evidence, setEvidence] = useState([]);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const reportTypes = [
@@ -86,7 +86,11 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
     formData.append('description', description);
     if (incidentAt) formData.append('incidentAt', new Date(incidentAt).toISOString());
     if (parties) formData.append('parties', parties);
-    if (evidence) formData.append('evidence', evidence);
+    if (evidence && evidence.length > 0) {
+      for (let i = 0; i < evidence.length; i++) {
+        formData.append('evidence', evidence[i]);
+      }
+    }
     const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/reports`, {
       method: 'POST',
       body: formData,
@@ -98,7 +102,7 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
       setDescription('');
       setIncidentAt('');
       setParties('');
-      setEvidence(null);
+      setEvidence([]);
       if (onSuccess) onSuccess();
     } else {
       setMessage('Failed to submit report.');
@@ -160,7 +164,8 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
         <input
           id="report-evidence"
           type="file"
-          onChange={e => setEvidence(e.target.files[0])}
+          multiple
+          onChange={e => setEvidence(Array.from(e.target.files))}
           className="mt-1 block w-full"
         />
       </div>

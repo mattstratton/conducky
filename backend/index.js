@@ -30,6 +30,12 @@ const upload = multer({
 // Multer setup for event logo uploads (now using memory storage)
 const uploadLogo = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
 
+// Multer setup for multi-file evidence upload (memory storage, 50MB per file)
+const multiUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
+
 // CORS middleware (allow frontend dev server)
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
@@ -350,7 +356,7 @@ app.get('/events/:eventId/users', async (req, res) => {
 });
 
 // Submit a report for an event (anonymous or authenticated, with evidence upload)
-app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res) => {
+app.post('/events/:eventId/reports', upload.array('evidence', 10), async (req, res) => {
   const { eventId } = req.params;
   const { type, description, incidentAt, parties } = req.body;
   if (!type || !description) {
@@ -376,17 +382,21 @@ app.post('/events/:eventId/reports', upload.single('evidence'), async (req, res)
         parties: parties || undefined,
       },
     });
-    // If evidence file is uploaded, store in DB
-    if (req.file) {
-      await prisma.evidenceFile.create({
-        data: {
-          reportId: report.id,
-          filename: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size,
-          data: req.file.buffer,
-        },
-      });
+    // If evidence files are uploaded, store in DB
+    const uploaderId = reporterId;
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        await prisma.evidenceFile.create({
+          data: {
+            reportId: report.id,
+            filename: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            data: file.buffer,
+            uploaderId,
+          },
+        });
+      }
     }
     res.status(201).json({ report });
   } catch (err) {
@@ -462,7 +472,7 @@ app.get('/events/:eventId/reports', async (req, res) => {
   try {
     const reports = await prisma.report.findMany({
       where: { eventId },
-      include: { reporter: true },
+      include: { reporter: true, evidenceFiles: true },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ reports });
@@ -480,7 +490,7 @@ app.get('/events/:eventId/reports/:reportId', async (req, res) => {
   try {
     const report = await prisma.report.findUnique({
       where: { id: reportId },
-      include: { reporter: true },
+      include: { reporter: true, evidenceFiles: true },
     });
     if (!report || report.eventId !== eventId) {
       return res.status(404).json({ error: 'Report not found for this event.' });
@@ -552,7 +562,10 @@ app.get('/events/slug/:slug/reports', async (req, res) => {
     }
     const reports = await prisma.report.findMany({
       where,
-      include: { reporter: true, evidenceFile: true },
+      include: {
+        reporter: true,
+        evidenceFiles: { include: { uploader: { select: { id: true, name: true, email: true } } } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ reports });
@@ -562,7 +575,7 @@ app.get('/events/slug/:slug/reports', async (req, res) => {
 });
 
 // Slug-based: Submit a report for an event (anonymous or authenticated, with evidence upload)
-app.post('/events/slug/:slug/reports', upload.single('evidence'), async (req, res) => {
+app.post('/events/slug/:slug/reports', upload.array('evidence', 10), async (req, res) => {
   const { slug } = req.params;
   const { type, description, incidentAt, parties } = req.body;
   if (!type || !description) {
@@ -587,17 +600,21 @@ app.post('/events/slug/:slug/reports', upload.single('evidence'), async (req, re
         parties: parties || undefined,
       },
     });
-    // If evidence file is uploaded, store in DB
-    if (req.file) {
-      await prisma.evidenceFile.create({
-        data: {
-          reportId: report.id,
-          filename: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size,
-          data: req.file.buffer,
-        },
-      });
+    // If evidence files are uploaded, store in DB
+    const uploaderId = reporterId;
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        await prisma.evidenceFile.create({
+          data: {
+            reportId: report.id,
+            filename: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            data: file.buffer,
+            uploaderId,
+          },
+        });
+      }
     }
     res.status(201).json({ report });
   } catch (err) {
@@ -619,7 +636,10 @@ app.get('/events/slug/:slug/reports/:reportId', async (req, res) => {
     }
     const report = await prisma.report.findUnique({
       where: { id: reportId },
-      include: { reporter: true, evidenceFile: true },
+      include: {
+        reporter: true,
+        evidenceFiles: { include: { uploader: { select: { id: true, name: true, email: true } } } },
+      },
     });
     if (!report || report.eventId !== eventId) {
       return res.status(404).json({ error: 'Report not found for this event.' });
@@ -1394,6 +1414,89 @@ app.get('/reports/:reportId/evidence', async (req, res) => {
     res.send(evidence.data);
   } catch (err) {
     res.status(500).json({ error: 'Failed to download evidence file.', details: err.message });
+  }
+});
+
+// Upload one or more evidence files to a report
+app.post('/reports/:reportId/evidence', multiUpload.array('evidence', 10), async (req, res) => {
+  const { reportId } = req.params;
+  // TODO: Auth check: only reporter, responder, or admin can upload
+  try {
+    const report = await prisma.report.findUnique({ where: { id: reportId } });
+    if (!report) return res.status(404).json({ error: 'Report not found.' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+    const uploaderId = req.isAuthenticated && req.isAuthenticated() && req.user ? req.user.id : null;
+    const created = [];
+    for (const file of req.files) {
+      const evidence = await prisma.evidenceFile.create({
+        data: {
+          reportId: report.id,
+          filename: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer,
+          uploaderId,
+        },
+        include: { uploader: { select: { id: true, name: true, email: true } } },
+      });
+      created.push({
+        id: evidence.id,
+        filename: evidence.filename,
+        mimetype: evidence.mimetype,
+        size: evidence.size,
+        createdAt: evidence.createdAt,
+        uploader: evidence.uploader,
+      });
+    }
+    res.status(201).json({ files: created });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to upload evidence files.', details: err.message });
+  }
+});
+
+// List all evidence files for a report (metadata only)
+app.get('/reports/:reportId/evidence', async (req, res) => {
+  const { reportId } = req.params;
+  try {
+    const files = await prisma.evidenceFile.findMany({
+      where: { reportId },
+      select: { id: true, filename: true, mimetype: true, size: true, createdAt: true, uploader: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({ files });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to list evidence files.', details: err.message });
+  }
+});
+
+// Download a specific evidence file by its ID
+app.get('/evidence/:evidenceId/download', async (req, res) => {
+  const { evidenceId } = req.params;
+  try {
+    const evidence = await prisma.evidenceFile.findUnique({ where: { id: evidenceId } });
+    if (!evidence) return res.status(404).json({ error: 'Evidence file not found.' });
+    res.setHeader('Content-Disposition', `attachment; filename="${evidence.filename}"`);
+    res.setHeader('Content-Type', evidence.mimetype);
+    res.setHeader('Content-Length', evidence.size);
+    res.send(evidence.data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to download evidence file.', details: err.message });
+  }
+});
+
+// (Optional) Delete an evidence file
+app.delete('/evidence/:evidenceId', async (req, res) => {
+  const { evidenceId } = req.params;
+  // TODO: Auth check: only reporter or admin can delete
+  try {
+    const evidence = await prisma.evidenceFile.findUnique({ where: { id: evidenceId } });
+    if (!evidence) return res.status(404).json({ error: 'Evidence file not found.' });
+    await prisma.evidenceFile.delete({ where: { id: evidenceId } });
+    res.json({ message: 'Evidence file deleted.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete evidence file.', details: err.message });
   }
 });
 

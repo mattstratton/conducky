@@ -83,9 +83,10 @@ _Checklist items with a GitHub issue are now linked for traceability._
   - [X] Add a date and time of incident field to the report submission form
   - [X] Add a field for parties involved
   - [X] Both fields are present in both inline and modal forms, tested, and documented
-- [ ] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin ([#24](https://github.com/mattstratton/conducky/issues/24))
+- [X] Reports need the ability to have ongoing updates in text from the reporter, responder, and admin ([#24](https://github.com/mattstratton/conducky/issues/24))
 - [ ] Reports should have a field for the resolution of the incident ([#25](https://github.com/mattstratton/conducky/issues/25))
-- [ ] Support evidence file uploads (currently one file per report; will add multiple files in the future)
+- [X] Support evidence file uploads (currently one file per report; will add multiple files in the future)
+- [X] Add support for multiple files per report
 - [X] Implement report state machine (submitted, acknowledged, investigating, resolved, closed) ([#6](https://github.com/mattstratton/conducky/issues/6))
 - [X] Dashboard as currently implemented is not appropriate, we should remove the dashboard and have a page for each event that shows the reports for that event
   - [X] The report page seems to be under a directory called dashboard/report/[id] and that doesn't seem right in the new design

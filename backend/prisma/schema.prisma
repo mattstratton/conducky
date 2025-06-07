@@ -43,6 +43,7 @@ model User {
   reports        Report[] @relation("ReporterReports")
   auditLogs      AuditLog[]
   reportComments ReportComment[]
+  evidenceFilesUploaded EvidenceFile[] @relation("EvidenceFileUploader")
 }
 
 model Event {
@@ -95,7 +96,7 @@ model Report {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   comments    ReportComment[]
-  evidenceFile EvidenceFile?
+  evidenceFiles EvidenceFile[]
   // Add more fields as needed (e.g., involved parties)
 }
 
@@ -142,12 +143,14 @@ model ReportComment {
 model EvidenceFile {
   id        String   @id @default(uuid())
   report    Report   @relation(fields: [reportId], references: [id])
-  reportId  String   @unique
+  reportId  String
   filename  String
   mimetype  String
   size      Int
   data      Bytes
   createdAt DateTime @default(now())
+  uploader   User?   @relation("EvidenceFileUploader", fields: [uploaderId], references: [id])
+  uploaderId String?
 }
 
 model EventLogo {
