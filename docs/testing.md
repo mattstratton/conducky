@@ -4,6 +4,34 @@ This guide explains how to set up, run, and write automated tests for the backen
 
 ---
 
+## Running Tests with Docker Compose
+
+You can run backend and frontend tests inside their respective Docker containers using Docker Compose. This ensures your tests run in the same environment as production and CI.
+
+### Run Backend Tests in Docker Compose
+```sh
+docker compose run --rm backend npm test
+```
+
+### Run Backend Tests with Coverage in Docker Compose
+```sh
+docker compose run --rm backend npm run test:coverage
+```
+
+### Run Frontend Tests in Docker Compose
+```sh
+docker compose run --rm frontend npm test
+```
+
+### Run Frontend Tests with Coverage in Docker Compose
+```sh
+docker compose run --rm frontend npm run test:coverage
+```
+
+> **Tip:** Use Docker Compose for testing when you want to ensure consistency with CI/CD or when you don't want to install Node/npm locally.
+
+---
+
 ## Continuous Integration (CI) with GitHub Actions
 
 All pull requests and pushes to the `main` branch automatically run backend and frontend tests using GitHub Actions.

@@ -42,7 +42,7 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 ## Local Automation
 
 - [x] Add a root-level script or package.json script to run both backend and frontend tests
-- [ ] Document how to run tests in Docker Compose
+- [x] Document how to run tests in Docker Compose
 
 ---
 
