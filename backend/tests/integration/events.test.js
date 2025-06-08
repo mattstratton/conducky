@@ -1,8 +1,3 @@
-const request = require('supertest');
-const app = require('../../index');
-const { inMemoryStore } = require('@prisma/client');
-
-// Patch RBAC middleware for tests
 jest.mock('../../utils/rbac', () => ({
   requireSuperAdmin: () => (req, res, next) => {
     req.isAuthenticated = () => true;
@@ -15,6 +10,10 @@ jest.mock('../../utils/rbac', () => ({
     next();
   },
 }));
+
+const request = require('supertest');
+const app = require('../../index');
+const { inMemoryStore } = require('@prisma/client');
 
 beforeEach(() => {
   // Reset the inMemoryStore for test isolation
@@ -34,6 +33,7 @@ describe('Event endpoints', () => {
       const res = await request(app)
         .post('/events')
         .send({ name: 'Test Event', slug: 'test-event' });
+      console.log('DEBUG: Assertion line, expecting [200, 201], got:', res.statusCode);
       expect([200, 201]).toContain(res.statusCode);
       expect(res.body).toHaveProperty('event');
       expect(res.body.event).toHaveProperty('slug', 'test-event');
@@ -63,6 +63,8 @@ describe('Event endpoints', () => {
       const res = await request(app)
         .post(`/events/${eventId}/roles`)
         .send({ userId: '1', roleName: 'Admin' });
+      console.log('DEBUG: assign a role to a user, response body:', res.body);
+      console.log('DEBUG: assign a role to a user, expecting [200, 201], got:', res.statusCode);
       expect([200, 201]).toContain(res.statusCode);
       expect(res.body).toHaveProperty('message', 'Role assigned.');
     });
@@ -130,6 +132,8 @@ describe('Event endpoints', () => {
   describe('GET /events/:eventId/users', () => {
     it('should list users and their roles for an event (success)', async () => {
       const res = await request(app).get('/events/1/users');
+      console.log('DEBUG: list users and their roles, response body:', res.body);
+      console.log('DEBUG: list users and their roles, expecting [200, 201], got:', res.statusCode);
       expect([200, 201]).toContain(res.statusCode);
       expect(res.body).toHaveProperty('users');
       expect(Array.isArray(res.body.users)).toBe(true);

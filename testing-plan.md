@@ -34,6 +34,8 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 - [ ] Confirm that all RBAC rules are covered (for all roles, not just superadmin)
 
+- [ ] Expand backend mock and tests to include users with roles: admin (not superadmin), responder, and reporter, to ensure RBAC and role-based logic are covered (future improvement)
+
 ---
 
 ## Frontend (Next.js/React)

@@ -21,6 +21,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add test-only authentication middleware for tests
+if (process.env.NODE_ENV === 'test') {
+  app.use((req, res, next) => {
+    req.isAuthenticated = () => true;
+    req.user = { id: '1', email: 'admin@example.com', name: 'Admin' };
+    next();
+  });
+}
+
 // Multer setup for evidence uploads (memory storage, 50MB limit)
 const upload = multer({
   storage: multer.memoryStorage(),

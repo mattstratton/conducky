@@ -95,6 +95,22 @@ class PrismaClient {
         });
         return { count: before - inMemoryStore.userEventRoles.length };
       }),
+      upsert: jest.fn(async ({ where, update, create }) => {
+        // Find by unique keys (simulate composite unique constraint)
+        const idx = inMemoryStore.userEventRoles.findIndex(
+          (uer) => uer.userId === where.userId && uer.eventId === where.eventId && uer.roleId === where.roleId
+        );
+        if (idx !== -1) {
+          // Update existing
+          inMemoryStore.userEventRoles[idx] = { ...inMemoryStore.userEventRoles[idx], ...update };
+          return inMemoryStore.userEventRoles[idx];
+        } else {
+          // Create new
+          const newRole = { ...create };
+          inMemoryStore.userEventRoles.push(newRole);
+          return newRole;
+        }
+      }),
     };
     this.report = {
       findUnique: jest.fn(({ where }) => inMemoryStore.reports.find(r => r.id === where.id) || null),
