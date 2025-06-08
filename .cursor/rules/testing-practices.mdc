@@ -6,6 +6,7 @@ alwaysApply: true
 ## Testing Rules (Cursor)
 
 - All new features must include appropriate automated tests (unit, integration, or both) as part of the implementation.
+- Any new API endpoints much include automated tests
 - Bug fixes should include regression tests to prevent recurrence.
 - Tests must be run and pass before a feature or bugfix is considered complete.
 - Pull requests should not be merged unless all required tests pass in CI.

@@ -1,13 +1,15 @@
-const { logAudit } = require('../../utils/audit');
-
-jest.mock('../../utils/audit', () => {
-  const original = jest.requireActual('../../utils/audit');
+jest.mock('@prisma/client', () => {
+  const mockCreate = jest.fn();
   return {
-    ...original,
-    __esModule: true,
-    logAudit: jest.fn(),
+    PrismaClient: jest.fn(() => ({
+      auditLog: { create: mockCreate },
+    })),
+    __mockCreate: mockCreate,
   };
 });
+
+const { logAudit } = require('../../utils/audit');
+const { __mockCreate } = require('@prisma/client');
 
 describe('logAudit', () => {
   afterEach(() => {
@@ -15,6 +17,7 @@ describe('logAudit', () => {
   });
 
   it('should call prisma.auditLog.create with correct data', async () => {
+    __mockCreate.mockResolvedValue({ id: 'log1' });
     const params = {
       eventId: 'event1',
       userId: 'user1',
@@ -22,22 +25,19 @@ describe('logAudit', () => {
       targetType: 'Test',
       targetId: 'target1',
     };
-    const mockResult = { id: 'log1', ...params };
-    require('../../utils/audit').logAudit.mockResolvedValue(mockResult);
     const result = await logAudit(params);
-    expect(logAudit).toHaveBeenCalledWith(params);
-    expect(result).toEqual(mockResult);
+    expect(__mockCreate).toHaveBeenCalledWith({ data: params });
+    expect(result).toEqual({ id: 'log1' });
   });
 
   it('should throw if required fields are missing', async () => {
-    require('../../utils/audit').logAudit.mockImplementation(() => {
-      throw new Error('Missing required fields');
-    });
     await expect(logAudit({})).rejects.toThrow('Missing required fields');
   });
 
   it('should propagate Prisma errors', async () => {
-    require('../../utils/audit').logAudit.mockRejectedValue(new Error('Prisma error'));
-    await expect(logAudit({ eventId: 'e', action: 'a', targetType: 't', targetId: 'id' })).rejects.toThrow('Prisma error');
+    __mockCreate.mockRejectedValue(new Error('Prisma error'));
+    await expect(
+      logAudit({ eventId: 'e', action: 'a', targetType: 't', targetId: 'id' })
+    ).rejects.toThrow('Prisma error');
   });
 }); 

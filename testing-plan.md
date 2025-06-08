@@ -48,17 +48,17 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 ## Cursor rules
 
-- [ ] Create/update cursor rules to clarify the testing process
-- [ ] Create/update cursor rules to ensure that tests are created for new features
-- [ ] Create/update cursor rules to ensure that tests are run before determining a feature is complete
+- [X] Create/update cursor rules to clarify the testing process
+- [X] Create/update cursor rules to ensure that tests are created for new features
+- [X] Create/update cursor rules to ensure that tests are run before determining a feature is complete
 
 ---
 
 ## CI/CD
 
 - [x] Plan and document a GitHub Actions workflow to run all tests on PRs
-- [ ] Add coverage badge/reporting to README (optional)
-- [ ] TODO: Add Codecov badge to README after verifying Codecov integration
+- [X] Add coverage badge/reporting to README (optional)
+- [X] TODO: Add Codecov badge to README after verifying Codecov integration
 
 ---
 

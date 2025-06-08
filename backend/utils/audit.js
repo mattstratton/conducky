@@ -11,6 +11,9 @@ const prisma = new PrismaClient();
  * @param {string} params.targetId - The ID of the entity affected
  */
 async function logAudit({ eventId, userId, action, targetType, targetId }) {
+  if (!eventId || !action || !targetType || !targetId) {
+    throw new Error('Missing required fields');
+  }
   return prisma.auditLog.create({
     data: {
       eventId,

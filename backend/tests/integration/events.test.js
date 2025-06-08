@@ -1,3 +1,17 @@
+// Patch RBAC middleware for tests
+jest.mock('../../utils/rbac', () => ({
+  requireSuperAdmin: () => (req, res, next) => {
+    req.isAuthenticated = () => true;
+    req.user = { id: '1', email: 'admin@example.com', name: 'Admin' };
+    next();
+  },
+  requireRole: () => (req, res, next) => {
+    req.isAuthenticated = () => true;
+    req.user = { id: '1', email: 'admin@example.com', name: 'Admin' };
+    next();
+  },
+}));
+
 const request = require('supertest');
 const app = require('../../index');
 
@@ -41,19 +55,11 @@ jest.mock('@prisma/client', () => {
   };
 });
 
-// Helper to mock SuperAdmin authentication
-function superAdminSession(req) {
-  req.isAuthenticated = () => true;
-  req.user = { id: '1', email: 'admin@example.com', name: 'Admin' };
-}
-
 describe('Event endpoints', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('POST /events', () => {
     it('should create an event as SuperAdmin', async () => {
-      // Mock SuperAdmin
-      superAdminSession(request(app));
       const res = await request(app)
         .post('/events')
         .send({ name: 'Test Event', slug: 'test-event' });
@@ -62,31 +68,25 @@ describe('Event endpoints', () => {
       expect(res.body.event).toHaveProperty('slug', 'test-event');
     });
     it('should fail if missing fields', async () => {
-      superAdminSession(request(app));
       const res = await request(app).post('/events').send({ name: '' });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error');
     });
     it('should fail if slug is invalid', async () => {
-      superAdminSession(request(app));
       const res = await request(app).post('/events').send({ name: 'Event', slug: 'Invalid Slug!' });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error');
     });
     it('should fail if slug already exists', async () => {
-      superAdminSession(request(app));
       await request(app).post('/events').send({ name: 'Event1', slug: 'dupe' });
       const res = await request(app).post('/events').send({ name: 'Event2', slug: 'dupe' });
       expect(res.statusCode).toBe(409);
       expect(res.body).toHaveProperty('error', 'Slug already exists.');
     });
-    // Not SuperAdmin case would require more advanced session mocking
   });
 
   describe('POST /events/:eventId/roles', () => {
     it('should assign a role to a user', async () => {
-      superAdminSession(request(app));
-      // Assume event and user exist
       const eventRes = await request(app).post('/events').send({ name: 'Role Event', slug: 'role-event' });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
@@ -96,7 +96,6 @@ describe('Event endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Role assigned.');
     });
     it('should fail if missing fields', async () => {
-      superAdminSession(request(app));
       const eventRes = await request(app).post('/events').send({ name: 'Role Event2', slug: 'role-event2' });
       const eventId = eventRes.body.event.id;
       const res = await request(app).post(`/events/${eventId}/roles`).send({});
@@ -104,7 +103,6 @@ describe('Event endpoints', () => {
       expect(res.body).toHaveProperty('error');
     });
     it('should fail if user does not exist', async () => {
-      superAdminSession(request(app));
       const eventRes = await request(app).post('/events').send({ name: 'Role Event3', slug: 'role-event3' });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
@@ -114,7 +112,6 @@ describe('Event endpoints', () => {
       expect(res.body).toHaveProperty('error', 'User does not exist.');
     });
     it('should fail if role does not exist', async () => {
-      superAdminSession(request(app));
       const eventRes = await request(app).post('/events').send({ name: 'Role Event4', slug: 'role-event4' });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
@@ -123,6 +120,5 @@ describe('Event endpoints', () => {
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error', 'Role does not exist.');
     });
-    // Not Admin/SuperAdmin case would require more advanced session mocking
   });
 }); 
