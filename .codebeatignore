@@ -1,0 +1,6 @@
+# Prisma files
+backend/generated/**
+backend/tests/**
+backend/__mocks__/**
+frontend/__tests__/**
+frontend/__mocks__/**
