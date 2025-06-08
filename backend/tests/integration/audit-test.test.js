@@ -1,5 +1,16 @@
 const request = require('supertest');
 const app = require('../../index');
+const { inMemoryStore } = require('@prisma/client');
+
+beforeEach(() => {
+  // Reset the inMemoryStore for test isolation
+  inMemoryStore.events.length = 1;
+  inMemoryStore.roles.length = 3;
+  inMemoryStore.users.length = 1;
+  inMemoryStore.userEventRoles.length = 1;
+  inMemoryStore.reports.length = 1;
+  inMemoryStore.auditLogs.length = 0;
+});
 
 jest.mock('../../utils/audit', () => ({
   logAudit: jest.fn().mockResolvedValue({}),

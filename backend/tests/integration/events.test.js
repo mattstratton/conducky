@@ -1,3 +1,7 @@
+const request = require('supertest');
+const app = require('../../index');
+const { inMemoryStore } = require('@prisma/client');
+
 // Patch RBAC middleware for tests
 jest.mock('../../utils/rbac', () => ({
   requireSuperAdmin: () => (req, res, next) => {
@@ -12,47 +16,14 @@ jest.mock('../../utils/rbac', () => ({
   },
 }));
 
-const request = require('supertest');
-const app = require('../../index');
-
-jest.mock('@prisma/client', () => {
-  let events = [];
-  let roles = [{ id: '1', name: 'SuperAdmin' }, { id: '2', name: 'Admin' }];
-  let users = [{ id: '1', email: 'admin@example.com', name: 'Admin' }];
-  let userEventRoles = [];
-  return {
-    PrismaClient: jest.fn(() => ({
-      event: {
-        findUnique: jest.fn(({ where }) => events.find(e => e.slug === where.slug || e.id === where.id) || null),
-        create: jest.fn(({ data }) => {
-          const event = { ...data, id: String(events.length + 1) };
-          events.push(event);
-          return event;
-        }),
-      },
-      role: {
-        findUnique: jest.fn(({ where }) => roles.find(r => r.name === where.name) || null),
-        create: jest.fn(({ data }) => {
-          const role = { ...data, id: String(roles.length + 1) };
-          roles.push(role);
-          return role;
-        }),
-      },
-      user: {
-        findUnique: jest.fn(({ where }) => users.find(u => u.id === where.id || u.email === where.email) || null),
-      },
-      userEventRole: {
-        upsert: jest.fn(({ where, create }) => {
-          const found = userEventRoles.find(uer => uer.userId === where.userId_eventId_roleId.userId && uer.eventId === where.userId_eventId_roleId.eventId && uer.roleId === where.userId_eventId_roleId.roleId);
-          if (found) return found;
-          const newRole = { ...create };
-          userEventRoles.push(newRole);
-          return newRole;
-        }),
-        findMany: jest.fn(({ where }) => userEventRoles.filter(uer => uer.userId === where.userId)),
-      },
-    })),
-  };
+beforeEach(() => {
+  // Reset the inMemoryStore for test isolation
+  inMemoryStore.events.length = 1;
+  inMemoryStore.roles.length = 3;
+  inMemoryStore.users.length = 1;
+  inMemoryStore.userEventRoles.length = 1;
+  inMemoryStore.reports.length = 1;
+  inMemoryStore.auditLogs.length = 0;
 });
 
 describe('Event endpoints', () => {
@@ -119,6 +90,73 @@ describe('Event endpoints', () => {
         .send({ userId: '1', roleName: 'NotARole' });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error', 'Role does not exist.');
+    });
+  });
+
+  describe('GET /events/:eventId', () => {
+    it('should return event details (success)', async () => {
+      const res = await request(app).get('/events/1');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('event');
+      expect(res.body.event).toHaveProperty('id', '1');
+    });
+    it('should return 404 if event not found', async () => {
+      const res = await request(app).get('/events/999');
+      expect(res.statusCode).toBe(404);
+    });
+    // Forbidden case is handled by RBAC middleware mock (always allows)
+  });
+
+  describe('DELETE /events/:eventId/roles', () => {
+    it('should remove a role from a user (success)', async () => {
+      const res = await request(app)
+        .delete('/events/1/roles')
+        .send({ userId: '1', roleName: 'SuperAdmin' });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Role removed.');
+    });
+    it('should fail if missing fields', async () => {
+      const res = await request(app).delete('/events/1/roles').send({});
+      expect(res.statusCode).toBe(400);
+    });
+    it('should fail if user or role not found', async () => {
+      const res = await request(app)
+        .delete('/events/1/roles')
+        .send({ userId: '999', roleName: 'NotARole' });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  describe('GET /events/:eventId/users', () => {
+    it('should list users and their roles for an event (success)', async () => {
+      const res = await request(app).get('/events/1/users');
+      expect([200, 201]).toContain(res.statusCode);
+      expect(res.body).toHaveProperty('users');
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+    // Not authenticated and forbidden cases are handled by RBAC mock
+  });
+
+  describe('PATCH /events/:eventId/reports/:reportId/state', () => {
+    it('should update report state (success)', async () => {
+      const res = await request(app)
+        .patch('/events/1/reports/r1/state')
+        .send({ state: 'acknowledged' });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('report');
+      expect(res.body.report).toHaveProperty('state', 'acknowledged');
+    });
+    it('should fail if invalid state', async () => {
+      const res = await request(app)
+        .patch('/events/1/reports/r1/state')
+        .send({ state: 'not-a-state' });
+      expect(res.statusCode).toBe(400);
+    });
+    it('should fail if report not found', async () => {
+      const res = await request(app)
+        .patch('/events/1/reports/doesnotexist/state')
+        .send({ state: 'acknowledged' });
+      expect(res.statusCode).toBe(404);
     });
   });
 }); 

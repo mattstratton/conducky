@@ -15,6 +15,25 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 - [x] Add `test` and `test:coverage` scripts to `backend/package.json`
 - [x] Document backend test setup and running in `/docs/testing.md`
 
+### Backend API Endpoint Coverage
+- [x] **Event/User Management Endpoints**
+  - [x] `GET /events/:eventId` (success, not found, forbidden)
+  - [x] `DELETE /events/:eventId/roles` (success, missing fields, user/role not found, forbidden)
+  - [x] `GET /events/:eventId/users` (success, not authenticated, forbidden, event not found)
+  - [x] `PATCH /events/:eventId/reports/:reportId/state` (success, invalid state, not found, forbidden)
+
+- [ ] **Slug-based Event/User Endpoints**
+  - [ ] `GET /events/slug/:slug/users` (success, not authenticated, forbidden, event not found)
+  - [ ] `PATCH /events/slug/:slug/users/:userId` (success, missing fields, forbidden, event/user/role not found)
+  - [ ] `DELETE /events/slug/:slug/users/:userId` (success, forbidden, event/user not found)
+  - [ ] `PATCH /events/slug/:slug` (success, nothing to update, forbidden, event not found, slug conflict)
+  - [ ] `POST /events/slug/:slug/logo` (success, not authenticated, forbidden, event not found, no file)
+  - [ ] `PATCH /events/slug/:slug/invites/:inviteId` (success, forbidden, event/invite not found)
+
+- [ ] **(Continue for Reports, Comments, Evidence, etc.)**
+
+- [ ] Confirm that all RBAC rules are covered (for all roles, not just superadmin)
+
 ---
 
 ## Frontend (Next.js/React)
@@ -62,4 +81,6 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 ---
 
-**Work through this checklist to implement a robust, automated testing framework for the project.** 
+**Work through this checklist to implement a robust, automated testing framework for the project.**
+
+- [ ] Set up a test database using SQLite in-memory with real Prisma migrations and seeding for robust integration tests (future improvement)

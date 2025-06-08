@@ -4,3 +4,5 @@ backend/tests/**
 backend/__mocks__/**
 frontend/__tests__/**
 frontend/__mocks__/**
+frontend/coverage/**
+backend/coverage/**

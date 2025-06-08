@@ -1,28 +1,15 @@
 const request = require('supertest');
 const app = require('../../index');
+const { inMemoryStore } = require('@prisma/client');
 
-jest.mock('@prisma/client', () => {
-  const users = [];
-  return {
-    PrismaClient: jest.fn(() => ({
-      user: {
-        findUnique: jest.fn(({ where }) => users.find(u => u.email === where.email || u.id === where.id) || null),
-        count: jest.fn(() => users.length),
-        create: jest.fn(({ data }) => {
-          const user = { ...data, id: String(users.length + 1) };
-          users.push(user);
-          return user;
-        }),
-      },
-      role: {
-        findUnique: jest.fn(({ where }) => (where.name === 'SuperAdmin' ? { id: '1', name: 'SuperAdmin' } : null)),
-        create: jest.fn(({ data }) => ({ id: '1', ...data })),
-      },
-      userEventRole: {
-        create: jest.fn(() => ({})),
-      },
-    })),
-  };
+beforeEach(() => {
+  // Reset the inMemoryStore for test isolation
+  inMemoryStore.events.length = 1;
+  inMemoryStore.roles.length = 3;
+  inMemoryStore.users.length = 1;
+  inMemoryStore.userEventRoles.length = 1;
+  inMemoryStore.reports.length = 1;
+  inMemoryStore.auditLogs.length = 0;
 });
 
 describe('Auth endpoints', () => {
