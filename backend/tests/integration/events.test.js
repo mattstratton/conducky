@@ -163,4 +163,69 @@ describe('Event endpoints', () => {
       expect(res.statusCode).toBe(404);
     });
   });
+});
+
+describe('Slug-based Event/User Endpoints', () => {
+  const slug = 'event1';
+  beforeEach(() => {
+    // Remove all roles for user 1 and event 2
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.eventId === '2')
+    );
+    // Ensure the event with slug exists in the inMemoryStore
+    if (!inMemoryStore.events.find(e => e.slug === slug)) {
+      inMemoryStore.events.push({ id: '2', name: 'Event1', slug });
+    }
+    // Add SuperAdmin role for user 1 and event 2 for default tests
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '1',
+      role: { name: 'SuperAdmin' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+  });
+
+  it('should list users and their roles for an event by slug (success)', async () => {
+    const res = await request(app).get(`/events/slug/${slug}/users`);
+    expect([200, 201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('users');
+    expect(Array.isArray(res.body.users)).toBe(true);
+  });
+
+  it('should return 404 if event not found', async () => {
+    const res = await request(app).get('/events/slug/doesnotexist/users');
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 403 if user does not have sufficient role', async () => {
+    // Remove all SuperAdmin roles for this user (across all events)
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.role.name === 'SuperAdmin')
+    );
+    // Remove all privileged roles for this event
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer =>
+        !(
+          uer.userId === '1' &&
+          uer.eventId === '2' &&
+          ['Admin', 'Responder'].includes(uer.role.name)
+        )
+    );
+    // Add a non-privileged role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    // Debug log
+    const rolesForUserEvent = inMemoryStore.userEventRoles.filter(
+      uer => uer.userId === '1' && uer.eventId === '2'
+    ).map(uer => uer.role.name);
+    console.log('DEBUG: Roles for user 1, event 2 before request:', rolesForUserEvent);
+    const res = await request(app).get(`/events/slug/${slug}/users`);
+    expect(res.statusCode).toBe(403);
+  });
 }); 

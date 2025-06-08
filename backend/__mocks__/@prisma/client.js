@@ -62,16 +62,60 @@ class PrismaClient {
     };
     this.userEventRole = {
       findMany: jest.fn(({ where }) => {
-        if (where && where.userId && where.eventId) {
-          return inMemoryStore.userEventRoles.filter(uer => uer.userId === where.userId && uer.eventId === where.eventId);
+        let results = inMemoryStore.userEventRoles;
+        if (where) {
+          if (where.userId) {
+            results = results.filter(uer => uer.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter(uer => uer.eventId === where.eventId);
+          }
+          if (where.role && where.role.name) {
+            results = results.filter(uer => uer.role && uer.role.name === where.role.name);
+          }
+          if (where.user && where.user.OR) {
+            results = results.filter(uer => {
+              return where.user.OR.some(cond => {
+                if (cond.name && cond.name.contains) {
+                  if (!uer.user.name || !uer.user.name.toLowerCase().includes(cond.name.contains.toLowerCase())) return false;
+                }
+                if (cond.email && cond.email.contains) {
+                  if (!uer.user.email || !uer.user.email.toLowerCase().includes(cond.email.contains.toLowerCase())) return false;
+                }
+                return true;
+              });
+            });
+          }
         }
-        if (where && where.userId) {
-          return inMemoryStore.userEventRoles.filter(uer => uer.userId === where.userId);
+        return results;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = inMemoryStore.userEventRoles;
+        if (where) {
+          if (where.userId) {
+            results = results.filter(uer => uer.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter(uer => uer.eventId === where.eventId);
+          }
+          if (where.role && where.role.name) {
+            results = results.filter(uer => uer.role && uer.role.name === where.role.name);
+          }
+          if (where.user && where.user.OR) {
+            results = results.filter(uer => {
+              return where.user.OR.some(cond => {
+                if (cond.name && cond.name.contains) {
+                  if (!uer.user.name || !uer.user.name.toLowerCase().includes(cond.name.contains.toLowerCase())) return false;
+                }
+                if (cond.email && cond.email.contains) {
+                  if (!uer.user.email || !uer.user.email.toLowerCase().includes(cond.email.contains.toLowerCase())) return false;
+                }
+                return true;
+              });
+            });
+          }
         }
-        if (where && where.eventId) {
-          return inMemoryStore.userEventRoles.filter(uer => uer.eventId === where.eventId);
-        }
-        return inMemoryStore.userEventRoles;
+        return results.length;
       }),
       create: jest.fn(({ data }) => {
         const newUER = { ...data, role: inMemoryStore.roles.find(r => r.id === data.roleId), user: inMemoryStore.users.find(u => u.id === data.userId) };
