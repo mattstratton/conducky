@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/mattstratton/conducky/graph/badge.svg?token=J126AJDPXH)](https://codecov.io/gh/mattstratton/conducky)
+[![codecov](https://codecov.io/gh/mattstratton/conducky/graph/badge.svg?token=J126AJDPXH)](https://codecov.io/gh/mattstratton/conducky) [![codebeat badge](https://codebeat.co/badges/bb45abf8-51e4-488c-9f08-679d53c5cb10)](https://codebeat.co/projects/github-com-mattstratton-conducky-main)
 
 # Conducky 🦆
 
