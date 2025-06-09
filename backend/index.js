@@ -400,7 +400,7 @@ app.get("/events/:eventId/users", async (req, res) => {
       // Otherwise, check for allowed roles for this event
       const userRoles = allUserRoles.filter((uer) => uer.eventId === eventId);
       const hasRole = userRoles.some((uer) =>
-        ["Admin", "SuperAdmin"].includes(uer.role.name),
+        ["Admin", "Responder", "SuperAdmin"].includes(uer.role.name),
       );
       if (!hasRole) {
         return res.status(403).json({ error: "Forbidden: insufficient role" });
@@ -891,7 +891,7 @@ app.get("/events/slug/:slug/users", async (req, res) => {
       const userRoles = allUserRoles.filter((uer) => uer.eventId === eventId);
       console.log("[DEBUG] userRoles for event", eventId, ":", userRoles);
       const hasRole = userRoles.some((uer) =>
-        ["Admin", "Responder", "SuperAdmin"].includes(uer.role.name),
+        ["Admin", "Responder", "SuperAdmin", "Reporter"].includes(uer.role.name),
       );
       if (!hasRole) {
         return res.status(403).json({ error: "Forbidden: insufficient role" });

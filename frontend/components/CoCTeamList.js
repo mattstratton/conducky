@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { UserContext } from "../pages/_app";
 
 export default function CoCTeamList({ eventSlug, showTitle = true }) {
+  const { user } = useContext(UserContext);
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || !user) return;
     setLoading(true);
     setError("");
     fetch(
@@ -44,7 +46,9 @@ export default function CoCTeamList({ eventSlug, showTitle = true }) {
         setError("Failed to load Code of Conduct Team.");
         setLoading(false);
       });
-  }, [eventSlug]);
+  }, [eventSlug, user]);
+
+  if (!user) return null;
 
   return (
     <div className="mt-6">
