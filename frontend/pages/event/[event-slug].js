@@ -1,12 +1,12 @@
 import React from "react";
-import { useRouter } from 'next/router';
-import { useEffect, useState, useContext } from 'react';
-import Link from 'next/link';
-import { ModalContext } from '../../context/ModalContext';
-import { Button, Input, Card, Table } from '../../components';
-import ReactMarkdown from 'react-markdown';
-import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import CoCTeamList from '../../components/CoCTeamList';
+import { useRouter } from "next/router";
+import { useEffect, useState, useContext } from "react";
+import Link from "next/link";
+import { ModalContext } from "../../context/ModalContext";
+import { Button, Input, Card, Table } from "../../components";
+import ReactMarkdown from "react-markdown";
+import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import CoCTeamList from "../../components/CoCTeamList";
 
 const validStates = [
   "submitted",
