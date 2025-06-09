@@ -1,0 +1,15 @@
+version = 1
+test_patterns = ["__tests__/**"]
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  plugins = ["react"]
+  environment = [
+    "browser",
+    "jest"
+  ]
+
+[[transformers]]
+name = "prettier"
