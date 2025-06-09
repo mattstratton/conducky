@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-ctrf-report
-          path: ctrf/*.json
+          path: /home/runner/work/conducky/conducky/backend/ctrf/ctrf-report.json
           if-no-files-found: error
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
@@ -88,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-ctrf-report
-          path: ctrf/ctrf-report.json
+          path: /home/runner/work/conducky/conducky/frontend/ctrf/ctrf-report.json
           if-no-files-found: error
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
