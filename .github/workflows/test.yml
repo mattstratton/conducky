@@ -28,6 +28,7 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
+        continue-on-error: true
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
@@ -61,6 +62,7 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
+        continue-on-error: true
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
