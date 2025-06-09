@@ -228,4 +228,220 @@ describe('Slug-based Event/User Endpoints', () => {
     const res = await request(app).get(`/events/slug/${slug}/users`);
     expect(res.statusCode).toBe(403);
   });
+
+  it('should update a user for an event by slug (success)', async () => {
+    // Ensure user exists and has a Reporter role
+    inMemoryStore.users.push({ id: '2', email: 'user2@example.com', name: 'User2' });
+    inMemoryStore.userEventRoles.push({
+      userId: '2',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '2', email: 'user2@example.com', name: 'User2' },
+    });
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/users/2`)
+      .send({ name: 'User2 Updated', email: 'user2updated@example.com', role: 'Responder' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'User updated.');
+  });
+
+  it('should fail to update user if missing fields', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/users/2`)
+      .send({ name: 'User2 Updated' }); // missing email and role
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should return 404 if event not found on update', async () => {
+    const res = await request(app)
+      .patch('/events/slug/doesnotexist/users/2')
+      .send({ name: 'User2', email: 'user2@example.com', role: 'Responder' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 403 if user does not have sufficient role to update', async () => {
+    // Remove all SuperAdmin roles for this user (across all events)
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.role.name === 'SuperAdmin')
+    );
+    // Remove all Admin roles for this event
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.eventId === '2' && uer.role.name === 'Admin')
+    );
+    // Add only Reporter role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/users/2`)
+      .send({ name: 'User2', email: 'user2@example.com', role: 'Responder' });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('should remove a user from an event by slug (success)', async () => {
+    // Ensure user exists and has a role
+    inMemoryStore.users.push({ id: '3', email: 'user3@example.com', name: 'User3' });
+    inMemoryStore.userEventRoles.push({
+      userId: '3',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '3', email: 'user3@example.com', name: 'User3' },
+    });
+    const res = await request(app)
+      .delete(`/events/slug/${slug}/users/3`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'User removed from event.');
+  });
+
+  it('should return 404 if event not found on delete', async () => {
+    const res = await request(app)
+      .delete('/events/slug/doesnotexist/users/3');
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 403 if user does not have sufficient role to delete', async () => {
+    // Remove all SuperAdmin roles for this user (across all events)
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.role.name === 'SuperAdmin')
+    );
+    // Remove all Admin roles for this event
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.eventId === '2' && uer.role.name === 'Admin')
+    );
+    // Add only Reporter role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    const res = await request(app)
+      .delete(`/events/slug/${slug}/users/3`);
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+describe('Slug-based Event Endpoints', () => {
+  const slug = 'event1';
+  beforeEach(() => {
+    // Remove all roles for user 1 and event 2
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.eventId === '2')
+    );
+    // Ensure the event with slug exists in the inMemoryStore
+    if (!inMemoryStore.events.find(e => e.slug === slug)) {
+      inMemoryStore.events.push({ id: '2', name: 'Event1', slug });
+    }
+    // Add SuperAdmin role for user 1 and event 2 for default tests
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '1',
+      role: { name: 'SuperAdmin' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+  });
+
+  it('should update event metadata by slug (success)', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}`)
+      .send({ name: 'Updated Event', description: 'Updated desc' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('event');
+    expect(res.body.event).toHaveProperty('name', 'Updated Event');
+  });
+
+  it('should fail with 400 if nothing to update', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}`)
+      .send({});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Nothing to update.');
+  });
+
+  it('should return 404 if event not found', async () => {
+    const res = await request(app)
+      .patch('/events/slug/doesnotexist')
+      .send({ name: 'No Event' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 409 if newSlug already exists', async () => {
+    // Add a conflicting event
+    inMemoryStore.events.push({ id: '3', name: 'Other', slug: 'conflict' });
+    const res = await request(app)
+      .patch(`/events/slug/${slug}`)
+      .send({ newSlug: 'conflict' });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toHaveProperty('error', 'Slug already exists.');
+  });
+
+  it('should return 403 if user does not have sufficient role to update event', async () => {
+    // Remove all SuperAdmin and Admin roles for this user
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && ['SuperAdmin', 'Admin'].includes(uer.role.name))
+    );
+    // Add only Reporter role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    const res = await request(app)
+      .patch(`/events/slug/${slug}`)
+      .send({ name: 'Should Fail' });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('should upload a logo for an event (success)', async () => {
+    // Mock file upload
+    const res = await request(app)
+      .post(`/events/slug/${slug}/logo`)
+      .attach('logo', Buffer.from('fake image data'), 'logo.png');
+    expect([200, 201]).toContain(res.statusCode);
+    expect(res.body).toHaveProperty('event');
+  });
+
+  it('should return 400 if no file uploaded', async () => {
+    const res = await request(app)
+      .post(`/events/slug/${slug}/logo`);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'No file uploaded.');
+  });
+
+  it('should return 404 if event not found for logo upload', async () => {
+    const res = await request(app)
+      .post('/events/slug/doesnotexist/logo')
+      .attach('logo', Buffer.from('fake image data'), 'logo.png');
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 403 if user does not have sufficient role to upload logo', async () => {
+    // Remove all SuperAdmin and Admin roles for this user
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && ['SuperAdmin', 'Admin'].includes(uer.role.name))
+    );
+    // Add only Reporter role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    const res = await request(app)
+      .post(`/events/slug/${slug}/logo`)
+      .attach('logo', Buffer.from('fake image data'), 'logo.png');
+    expect(res.statusCode).toBe(403);
+  });
 }); 

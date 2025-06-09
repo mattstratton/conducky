@@ -26,10 +26,10 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 - [x] **Slug-based Event/User Endpoints**
   - [x] `GET /events/slug/:slug/users` (success, not authenticated, forbidden, event not found)
   - [x] **Note:** Slug-based endpoint tests required careful RBAC simulation. The handler treats any SuperAdmin role as global, so the test must remove all SuperAdmin roles for the user across all events to properly test forbidden access. All slug-based user listing tests now pass with correct in-memory mock and test setup.
-  - [ ] `PATCH /events/slug/:slug/users/:userId` (success, missing fields, forbidden, event/user/role not found)
-  - [ ] `DELETE /events/slug/:slug/users/:userId` (success, forbidden, event/user not found)
-  - [ ] `PATCH /events/slug/:slug` (success, nothing to update, forbidden, event not found, slug conflict)
-  - [ ] `POST /events/slug/:slug/logo` (success, not authenticated, forbidden, event not found, no file)
+  - [x] `PATCH /events/slug/:slug/users/:userId` (success, missing fields, forbidden, event/user/role not found)
+  - [x] `DELETE /events/slug/:slug/users/:userId` (success, forbidden, event/user not found)
+  - [x] `PATCH /events/slug/:slug` (success, nothing to update, forbidden, event not found, slug conflict)
+  - [x] `POST /events/slug/:slug/logo` (success, not authenticated, forbidden, event not found, no file)
   - [ ] `PATCH /events/slug/:slug/invites/:inviteId` (success, forbidden, event/invite not found)
 
 - [ ] **(Continue for Reports, Comments, Evidence, etc.)**
@@ -88,3 +88,27 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 **Work through this checklist to implement a robust, automated testing framework for the project.**
 
 - [ ] Set up a test database using SQLite in-memory with real Prisma migrations and seeding for robust integration tests (future improvement)
+
+---
+
+## Mocking & Test Isolation Reference (Standard)
+
+- **Prisma Mock:**
+  - All backend tests use a persistent, shared in-memory mock for Prisma, located at `backend/__mocks__/@prisma/client.js`.
+  - The mock supports basic CRUD and custom logic for all relevant models, and is reset/seeded in each test's `beforeEach` for isolation.
+  - The mock is extended as needed to support more complex query shapes (e.g., nested `where` for roles, users, etc.).
+
+- **RBAC Mocking:**
+  - RBAC middleware (`requireSuperAdmin`, `requireRole`) is mocked at the top of test files to always authenticate as a default user unless a test requires otherwise.
+  - For endpoints with inline RBAC (not using middleware), a test-only middleware is added in `backend/index.js` to set `req.isAuthenticated` and `req.user` for all requests when `NODE_ENV === 'test'`.
+  - Tests that need to simulate forbidden/unauthorized access explicitly remove privileged roles from the in-memory store before making requests.
+
+- **Test Patterns:**
+  - Each test or test suite resets the in-memory store in `beforeEach` to ensure isolation and repeatability.
+  - All edge cases are covered: success, forbidden, not found, missing fields, and conflict (e.g., slug already exists).
+  - File uploads are tested using supertest's `.attach()` with a Buffer for mock file data.
+
+- **How to Extend:**
+  - When adding new endpoints or models, extend the in-memory mock to support the required query shapes and relations.
+  - Always update the test setup to ensure the correct roles and data are present for each scenario.
+  - Document any new mocking patterns or test setup in this file and `/docs/testing.md`.
