@@ -1,3 +1,6 @@
+---
+sidebar_position: 5
+---
 # Testing Guide
 
 This guide explains how to set up, run, and write automated tests for the backend and frontend of this project.

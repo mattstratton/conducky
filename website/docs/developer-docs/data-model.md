@@ -1,3 +1,6 @@
+---
+sidebar_position: 3
+---
 # Data Model
 
 This document describes the main data models used in the system, based on the Prisma schema.

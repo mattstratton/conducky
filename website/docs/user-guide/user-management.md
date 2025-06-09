@@ -1,4 +1,7 @@
-## Event Admin User List Features
+---
+sidebar_position: 6
+---
+# User Management
 
 Event Admins can manage users for their event using a powerful user list UI with the following features:
 
@@ -9,7 +12,7 @@ Event Admins can manage users for their event using a powerful user list UI with
 
 All these controls can be combined for advanced filtering and navigation.
 
-### API Details
+## API Details
 The backend endpoint `/events/slug/:slug/users` supports the following query parameters:
 - `search` (string): Filter by name or email
 - `sort` (name|email|role): Sort field
@@ -18,4 +21,4 @@ The backend endpoint `/events/slug/:slug/users` supports the following query par
 - `limit` (integer): Users per page
 - `role` (Admin|Responder|Reporter): Filter by event role
 
-See [API Endpoints](./api-endpoints.md) for more details. 
+See [API Endpoints](../developer-docs/api-endpoints.md) for more details. 

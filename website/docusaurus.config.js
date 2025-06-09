@@ -27,8 +27,8 @@ const config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  // organizationName: 'facebook', // Usually your GitHub org/user name.
+  // projectName: 'docusaurus', // Usually your repo name.
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -68,17 +68,23 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'My Site',
+        title: 'Conducky',
         logo: {
-          alt: 'My Site Logo',
-          src: 'img/logo.svg',
+          alt: 'Conducky Logo',
+          src: 'img/conducky-logo.svg',
         },
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            sidebarId: 'userGuideSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'User Guide',
+          },
+          {
+            type: 'docSidebar',
+            sidebarId: 'developerDocsSidebar',
+            position: 'left',
+            label: 'Developer Docs',
           },
           {
             href: 'https://github.com/mattstratton/conducky',
@@ -94,26 +100,15 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/intro',
+                label: 'User Guide ',
+                to: '/docs/user-guide/intro',
               },
             ],
           },
           {
             title: 'Community',
             items: [
-              {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
-              },
-              {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'X',
-                href: 'https://x.com/docusaurus',
-              },
+ 
             ],
           },
           {
@@ -127,7 +122,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Matty Stratton. Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,
