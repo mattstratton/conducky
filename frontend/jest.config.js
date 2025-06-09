@@ -11,4 +11,8 @@ module.exports = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  reporters: [
+    'default',
+    ['jest-ctrf-json-reporter', { outputDir: 'ctrf', outputFile: 'ctrf-report.json' }]
+  ]
 }; 

@@ -10,5 +10,9 @@ module.exports = {
   modulePathIgnorePatterns: [
     "<rootDir>/generated/"
   ],
-  verbose: true
+  verbose: true,
+  reporters: [
+    "default",
+    ["jest-ctrf-json-reporter", { outputDir: "ctrf", outputFile: "ctrf-report.json" }]
+  ]
 }; 

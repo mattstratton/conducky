@@ -27,11 +27,5 @@
     "prisma": "^6.9.0",
     "supertest": "^7.1.1",
     "jest-ctrf-json-reporter": "^0.0.9"
-  },
-  "jest": {
-    "reporters": [
-      "default",
-      ["jest-ctrf-json-reporter", { "outputDir": "ctrf", "outputFile": "ctrf-report.json" }]
-    ]
   }
 }
