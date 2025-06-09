@@ -29,18 +29,24 @@ jobs:
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
       - name: Check reports
-        run: ls ctrf
+        run: ls -l ctrf
       - name: Show CTRF report absolute path
         run: find $PWD -name 'ctrf-report.json'
       - name: Check file permissions
         run: ls -l ctrf/ctrf-report.json
       - name: Show CTRF report contents
         run: cat ctrf/ctrf-report.json || echo "No report found"
+      - name: Fail if CTRF report is missing
+        run: |
+          if [ ! -f ctrf/ctrf-report.json ]; then
+            echo "ctrf-report.json is missing!"
+            exit 1
+          fi
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-ctrf-report
-          path: ctrf/ctrf-report.json
+          path: ctrf/*.json
           if-no-files-found: error
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
