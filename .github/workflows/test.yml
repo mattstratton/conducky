@@ -26,6 +26,8 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
+      - name: Check reportd
+        run: ls
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
