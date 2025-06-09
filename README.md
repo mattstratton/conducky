@@ -2,6 +2,8 @@
 
 # Conducky 🦆
 
+![conducky logo](/images/conducky-logo.png)
+
 This project is a web application for managing Code of Conduct reports for conferences and events. It is designed for easy deployment and multi-tenancy, supporting both anonymous and authenticated report submissions.
 
 ## Local Development (Docker)
