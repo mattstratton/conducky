@@ -1,6 +1,9 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import CoCTeamList from "./CoCTeamList";
+import { UserContext } from "../pages/_app";
+
+const mockUser = { id: "test", email: "test@example.com" };
 
 // Mock fetch
 beforeEach(() => {
@@ -13,13 +16,21 @@ afterEach(() => {
 describe("CoCTeamList", () => {
   it("shows loading state", () => {
     fetch.mockReturnValue(new Promise(() => {})); // never resolves
-    render(<CoCTeamList eventSlug="test-event" />);
+    render(
+      <UserContext.Provider value={{ user: mockUser }}>
+        <CoCTeamList eventSlug="test-event" />
+      </UserContext.Provider>
+    );
     expect(screen.getByText(/loading team/i)).toBeInTheDocument();
   });
 
   it("shows error state", async () => {
     fetch.mockRejectedValueOnce(new Error("fail"));
-    render(<CoCTeamList eventSlug="test-event" />);
+    render(
+      <UserContext.Provider value={{ user: mockUser }}>
+        <CoCTeamList eventSlug="test-event" />
+      </UserContext.Provider>
+    );
     await waitFor(() =>
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument(),
     );
@@ -34,7 +45,11 @@ describe("CoCTeamList", () => {
       ok: true,
       json: async () => ({ users: [] }),
     });
-    render(<CoCTeamList eventSlug="test-event" />);
+    render(
+      <UserContext.Provider value={{ user: mockUser }}>
+        <CoCTeamList eventSlug="test-event" />
+      </UserContext.Provider>
+    );
     await waitFor(() =>
       expect(screen.getByText(/no responders or admins/i)).toBeInTheDocument(),
     );
@@ -53,7 +68,11 @@ describe("CoCTeamList", () => {
         users: [{ id: "2", name: "Bob", email: "bob@example.com" }],
       }),
     });
-    render(<CoCTeamList eventSlug="test-event" />);
+    render(
+      <UserContext.Provider value={{ user: mockUser }}>
+        <CoCTeamList eventSlug="test-event" />
+      </UserContext.Provider>
+    );
     await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
     expect(screen.getByText("Bob")).toBeInTheDocument();
     expect(screen.getByText("(alice@example.com)")).toBeInTheDocument();
@@ -73,7 +92,11 @@ describe("CoCTeamList", () => {
         users: [{ id: "1", name: "Alice", email: "alice@example.com" }],
       }),
     });
-    render(<CoCTeamList eventSlug="test-event" />);
+    render(
+      <UserContext.Provider value={{ user: mockUser }}>
+        <CoCTeamList eventSlug="test-event" />
+      </UserContext.Provider>
+    );
     await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
     // Should only appear once
     expect(screen.getAllByText("Alice").length).toBe(1);
