@@ -6,6 +6,7 @@ import { ModalContext } from '../../context/ModalContext';
 import { Button, Input, Card, Table } from '../../components';
 import ReactMarkdown from 'react-markdown';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import CoCTeamList from '../../components/CoCTeamList';
 
 const validStates = [
   'submitted',
@@ -37,6 +38,9 @@ export default function EventDashboard() {
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
   const [userRoles, setUserRoles] = useState([]);
   const [logoExists, setLogoExists] = useState(false);
+  const [cocTeam, setCocTeam] = useState([]);
+  const [cocTeamLoading, setCocTeamLoading] = useState(false);
+  const [cocTeamError, setCocTeamError] = useState('');
 
   // Fetch event details and user session
   useEffect(() => {
@@ -76,6 +80,38 @@ export default function EventDashboard() {
       .then(res => res.ok ? res.json() : { roles: [] })
       .then(data => setUserRoles(data.roles || []));
   }, [eventSlug]);
+
+  // Fetch Code of Conduct Team (Responders/Admins) for this event
+  useEffect(() => {
+    if (!user || !eventSlug) return;
+    setCocTeamLoading(true);
+    setCocTeamError('');
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Responder`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        // Fetch Admins as well
+        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Admin`, { credentials: 'include' })
+          .then(res2 => res2.ok ? res2.json() : Promise.reject(res2))
+          .then(data2 => {
+            // Combine and dedupe by user id
+            const all = [...(data.users || []), ...(data2.users || [])];
+            const deduped = Object.values(all.reduce((acc, u) => {
+              acc[u.id] = u;
+              return acc;
+            }, {}));
+            setCocTeam(deduped);
+            setCocTeamLoading(false);
+          })
+          .catch(() => {
+            setCocTeamError('Failed to load Code of Conduct Team.');
+            setCocTeamLoading(false);
+          });
+      })
+      .catch(() => {
+        setCocTeamError('Failed to load Code of Conduct Team.');
+        setCocTeamLoading(false);
+      });
+  }, [user, eventSlug]);
 
   // Helper: check user role for this event
   function hasRole(role) {
@@ -474,6 +510,8 @@ export default function EventDashboard() {
             )}
           </div>
         </div>
+        {/* Code of Conduct Team Section (only for logged-in users) */}
+        {user && <CoCTeamList eventSlug={eventSlug} />}
       </Card>
       {/* Code of Conduct Modal */}
       {showCodeModal && (

@@ -5,6 +5,7 @@ import '../styles.css';
 import { useRouter } from 'next/router';
 import { ModalContext } from '../context/ModalContext';
 import { Button, Card } from '../components';
+import CoCTeamList from '../components/CoCTeamList';
 
 // User context for global user state
 export const UserContext = createContext({ user: null, setUser: () => {} });
@@ -111,74 +112,77 @@ function ReportForm({ eventSlug, eventName, onSuccess }) {
     setSubmitting(false);
   };
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-type">Type</label>
-        <select
-          id="report-type"
-          value={type}
-          onChange={e => setType(e.target.value)}
-          required
-          className="mt-1 block w-64 max-w-xs rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+    <>
+      {eventSlug && <CoCTeamList eventSlug={eventSlug} />}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-type">Type</label>
+          <select
+            id="report-type"
+            value={type}
+            onChange={e => setType(e.target.value)}
+            required
+            className="mt-1 block w-64 max-w-xs rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">Select type</option>
+            {reportTypes.map(rt => (
+              <option key={rt.value} value={rt.value}>{rt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-description">Description</label>
+          <textarea
+            id="report-description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            required
+            className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="incident-at">Date/Time of Incident (optional)</label>
+          <input
+            id="incident-at"
+            type="datetime-local"
+            value={incidentAt}
+            onChange={e => setIncidentAt(e.target.value)}
+            className="mt-1 block w-64 max-w-xs rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          />
+          <span className="text-xs text-gray-500">If known, please provide when the incident occurred.</span>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="parties">Involved Parties (optional)</label>
+          <input
+            id="parties"
+            type="text"
+            value={parties}
+            onChange={e => setParties(e.target.value)}
+            className="mt-1 block w-full rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            placeholder="List names, emails, or descriptions (comma-separated or freeform)"
+          />
+          <span className="text-xs text-gray-500">List anyone involved, if known. Separate multiple names with commas.</span>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-evidence">Evidence (optional)</label>
+          <input
+            id="report-evidence"
+            type="file"
+            multiple
+            onChange={e => setEvidence(Array.from(e.target.files))}
+            className="mt-1 block w-full"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-medium transition-colors disabled:opacity-60"
         >
-          <option value="">Select type</option>
-          {reportTypes.map(rt => (
-            <option key={rt.value} value={rt.value}>{rt.label}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-description">Description</label>
-        <textarea
-          id="report-description"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          required
-          className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="incident-at">Date/Time of Incident (optional)</label>
-        <input
-          id="incident-at"
-          type="datetime-local"
-          value={incidentAt}
-          onChange={e => setIncidentAt(e.target.value)}
-          className="mt-1 block w-64 max-w-xs rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-        />
-        <span className="text-xs text-gray-500">If known, please provide when the incident occurred.</span>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="parties">Involved Parties (optional)</label>
-        <input
-          id="parties"
-          type="text"
-          value={parties}
-          onChange={e => setParties(e.target.value)}
-          className="mt-1 block w-full rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          placeholder="List names, emails, or descriptions (comma-separated or freeform)"
-        />
-        <span className="text-xs text-gray-500">List anyone involved, if known. Separate multiple names with commas.</span>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="report-evidence">Evidence (optional)</label>
-        <input
-          id="report-evidence"
-          type="file"
-          multiple
-          onChange={e => setEvidence(Array.from(e.target.files))}
-          className="mt-1 block w-full"
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-medium transition-colors disabled:opacity-60"
-      >
-        {submitting ? 'Submitting...' : 'Submit Report'}
-      </button>
-      {message && <p className="mt-2 text-sm text-gray-500">{message}</p>}
-    </form>
+          {submitting ? 'Submitting...' : 'Submit Report'}
+        </button>
+        {message && <p className="mt-2 text-sm text-gray-500">{message}</p>}
+      </form>
+    </>
   );
 }
 
