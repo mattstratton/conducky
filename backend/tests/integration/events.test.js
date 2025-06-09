@@ -444,4 +444,76 @@ describe('Slug-based Event Endpoints', () => {
       .attach('logo', Buffer.from('fake image data'), 'logo.png');
     expect(res.statusCode).toBe(403);
   });
+});
+
+describe('Slug-based Invite Endpoints', () => {
+  const slug = 'event1';
+  let inviteId;
+  beforeEach(() => {
+    // Remove all roles for user 1 and event 2
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && uer.eventId === '2')
+    );
+    // Ensure the event with slug exists in the inMemoryStore
+    if (!inMemoryStore.events.find(e => e.slug === slug)) {
+      inMemoryStore.events.push({ id: '2', name: 'Event1', slug });
+    }
+    // Add SuperAdmin role for user 1 and event 2 for default tests
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '1',
+      role: { name: 'SuperAdmin' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    // Add an invite for the event
+    if (!inMemoryStore.eventInvites) inMemoryStore.eventInvites = [];
+    inMemoryStore.eventInvites.length = 0;
+    inviteId = 'i1';
+    inMemoryStore.eventInvites.push({ id: inviteId, eventId: '2', disabled: false, note: '', expiresAt: null, maxUses: null });
+  });
+
+  it('should update an invite (success)', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/invites/${inviteId}`)
+      .send({ disabled: true, note: 'Disabled for testing', maxUses: 5 });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('invite');
+    expect(res.body.invite).toHaveProperty('disabled', true);
+    expect(res.body.invite).toHaveProperty('note', 'Disabled for testing');
+    expect(res.body.invite).toHaveProperty('maxUses', 5);
+  });
+
+  it('should return 404 if event not found', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/doesnotexist/invites/${inviteId}`)
+      .send({ disabled: true });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 404 if invite not found', async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/invites/doesnotexist`)
+      .send({ disabled: true });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('should return 403 if user does not have sufficient role', async () => {
+    // Remove all SuperAdmin and Admin roles for this user
+    inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+      uer => !(uer.userId === '1' && ['SuperAdmin', 'Admin'].includes(uer.role.name))
+    );
+    // Add only Reporter role
+    inMemoryStore.userEventRoles.push({
+      userId: '1',
+      eventId: '2',
+      roleId: '3',
+      role: { name: 'Reporter' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    });
+    const res = await request(app)
+      .patch(`/events/slug/${slug}/invites/${inviteId}`)
+      .send({ disabled: true });
+    expect(res.statusCode).toBe(403);
+  });
 }); 

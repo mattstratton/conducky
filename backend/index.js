@@ -976,6 +976,9 @@ app.patch('/events/slug/:slug/invites/:inviteId', async (req, res) => {
     const invite = await prisma.eventInviteLink.update({ where: { id: inviteId }, data: updateData });
     res.json({ invite });
   } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Invite not found.' });
+    }
     res.status(500).json({ error: 'Failed to update invite.', details: err.message });
   }
 });

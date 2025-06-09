@@ -30,7 +30,7 @@ A step-by-step checklist for implementing robust, automated testing for the proj
   - [x] `DELETE /events/slug/:slug/users/:userId` (success, forbidden, event/user not found)
   - [x] `PATCH /events/slug/:slug` (success, nothing to update, forbidden, event not found, slug conflict)
   - [x] `POST /events/slug/:slug/logo` (success, not authenticated, forbidden, event not found, no file)
-  - [ ] `PATCH /events/slug/:slug/invites/:inviteId` (success, forbidden, event/invite not found)
+  - [x] `PATCH /events/slug/:slug/invites/:inviteId` (success, forbidden, event/invite not found)
 
 - [ ] **(Continue for Reports, Comments, Evidence, etc.)**
 
@@ -97,6 +97,7 @@ A step-by-step checklist for implementing robust, automated testing for the proj
   - All backend tests use a persistent, shared in-memory mock for Prisma, located at `backend/__mocks__/@prisma/client.js`.
   - The mock supports basic CRUD and custom logic for all relevant models, and is reset/seeded in each test's `beforeEach` for isolation.
   - The mock is extended as needed to support more complex query shapes (e.g., nested `where` for roles, users, etc.).
+  - **2024-06-07:** Added support for `event.update` and `eventLogo` (with `deleteMany`, `create`, `findFirst`) to enable full coverage of event metadata and logo upload endpoints.
 
 - **RBAC Mocking:**
   - RBAC middleware (`requireSuperAdmin`, `requireRole`) is mocked at the top of test files to always authenticate as a default user unless a test requires otherwise.

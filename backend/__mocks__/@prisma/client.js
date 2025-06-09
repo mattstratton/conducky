@@ -20,6 +20,8 @@ const inMemoryStore = {
   ],
   reports: [{ id: 'r1', eventId: '1', state: 'submitted' }],
   auditLogs: [],
+  eventLogos: [],
+  eventInvites: [],
 };
 
 class PrismaClient {
@@ -35,6 +37,13 @@ class PrismaClient {
         const newEvent = { id: (inMemoryStore.events.length + 1).toString(), ...data };
         inMemoryStore.events.push(newEvent);
         return newEvent;
+      }),
+      update: jest.fn(({ where, data }) => {
+        // Support update by slug or id
+        const idx = inMemoryStore.events.findIndex(e => (where.id && e.id === where.id) || (where.slug && e.slug === where.slug));
+        if (idx === -1) throw new Error('Event not found');
+        inMemoryStore.events[idx] = { ...inMemoryStore.events[idx], ...data };
+        return inMemoryStore.events[idx];
       }),
     };
     this.role = {
@@ -169,6 +178,39 @@ class PrismaClient {
         const log = { id: String(inMemoryStore.auditLogs.length + 1), ...data };
         inMemoryStore.auditLogs.push(log);
         return log;
+      }),
+    };
+    this.eventLogo = {
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.eventLogos.length;
+        inMemoryStore.eventLogos = inMemoryStore.eventLogos.filter(l => {
+          if (where && where.eventId && l.eventId !== where.eventId) return true;
+          return false;
+        });
+        return { count: before - inMemoryStore.eventLogos.length };
+      }),
+      create: jest.fn(({ data }) => {
+        const logo = { id: String(inMemoryStore.eventLogos.length + 1), ...data };
+        inMemoryStore.eventLogos.push(logo);
+        return logo;
+      }),
+      findFirst: jest.fn(({ where }) => {
+        return inMemoryStore.eventLogos.find(l => l.eventId === where.eventId) || null;
+      }),
+    };
+    this.eventInviteLink = {
+      findUnique: jest.fn(({ where }) => {
+        return (inMemoryStore.eventInvites || []).find(i => i.id === where.id) || null;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = (inMemoryStore.eventInvites || []).findIndex(i => i.id === where.id);
+        if (idx === -1) {
+          const err = new Error('Invite not found');
+          err.code = 'P2025';
+          throw err;
+        }
+        inMemoryStore.eventInvites[idx] = { ...inMemoryStore.eventInvites[idx], ...data };
+        return inMemoryStore.eventInvites[idx];
       }),
     };
   }
