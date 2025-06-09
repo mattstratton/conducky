@@ -7,7 +7,7 @@ import { Button, Input, Card, Table } from "../../components";
 import ReactMarkdown from "react-markdown";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import CoCTeamList from "../../components/CoCTeamList";
-import EventMetaCard from '../../components/EventMetaCard';
+import EventMetaCard from "../../components/EventMetaCard";
 
 const validStates = [
   "submitted",
@@ -296,7 +296,7 @@ export default function EventDashboard() {
         editingField={editingField}
         editValue={editValue}
         onEditStart={startEdit}
-        onEditChange={e => setEditValue(e.target.value)}
+        onEditChange={(e) => setEditValue(e.target.value)}
         onEditSave={saveEdit}
         onEditCancel={cancelEdit}
         metaEditError={metaEditError}
