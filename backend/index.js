@@ -486,6 +486,9 @@ app.get('/events/:eventId/reports', async (req, res) => {
     });
     res.json({ reports });
   } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
     res.status(500).json({ error: 'Failed to fetch reports', details: err.message });
   }
 });

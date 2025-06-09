@@ -60,18 +60,25 @@ function requireRole(allowedRoles) {
         where: { userId: req.user.id },
         include: { role: true },
       });
+      console.log('[RBAC DEBUG] allUserRoles:', JSON.stringify(allUserRoles, null, 2));
       const isSuperAdmin = allUserRoles.some(uer => uer.role.name === 'SuperAdmin');
       if (allowedRoles.includes('SuperAdmin') && isSuperAdmin) {
+        console.log('[RBAC DEBUG] User is SuperAdmin, access granted');
         return next();
       }
       // For non-SuperAdmin, require eventId
       if (!eventId) {
+        console.log('[RBAC DEBUG] Missing eventId, returning 400');
         return res.status(400).json({ error: 'Missing eventId (checked req.query, req.body, req.params, or derived from reportId or slug)' });
       }
       // Otherwise, check for allowed roles for this event
       const userRoles = allUserRoles.filter(uer => uer.eventId === eventId);
+      console.log('[RBAC DEBUG] userRoles for event', eventId, ':', JSON.stringify(userRoles, null, 2));
+      console.log('[RBAC DEBUG] allowedRoles:', allowedRoles);
       const hasRole = userRoles.some(uer => allowedRoles.includes(uer.role.name));
+      console.log('[RBAC DEBUG] hasRole:', hasRole);
       if (!hasRole) {
+        console.log('[RBAC DEBUG] Forbidden: insufficient role');
         return res.status(403).json({ error: 'Forbidden: insufficient role' });
       }
       next();

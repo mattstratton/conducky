@@ -1,3 +1,7 @@
+const { inMemoryStore } = require('../../__mocks__/@prisma/client');
+const request = require('supertest');
+const app = require('../../index');
+
 jest.mock('../../utils/rbac', () => ({
   requireSuperAdmin: () => (req, res, next) => {
     req.isAuthenticated = () => true;
@@ -11,18 +15,30 @@ jest.mock('../../utils/rbac', () => ({
   },
 }));
 
-const request = require('supertest');
-const app = require('../../index');
-const { inMemoryStore } = require('@prisma/client');
-
 beforeEach(() => {
-  // Reset the inMemoryStore for test isolation
-  inMemoryStore.events.length = 1;
-  inMemoryStore.roles.length = 3;
-  inMemoryStore.users.length = 1;
-  inMemoryStore.userEventRoles.length = 1;
-  inMemoryStore.reports.length = 1;
-  inMemoryStore.auditLogs.length = 0;
+  // Reset inMemoryStore to a clean state for each test
+  inMemoryStore.events = [{ id: '1', name: 'Event1', slug: 'event1' }];
+  inMemoryStore.roles = [
+    { id: '1', name: 'SuperAdmin' },
+    { id: '2', name: 'Admin' },
+    { id: '3', name: 'Responder' },
+    { id: '4', name: 'Reporter' },
+  ];
+  inMemoryStore.users = [{ id: '1', email: 'admin@example.com', name: 'Admin' }];
+  inMemoryStore.userEventRoles = [
+    {
+      userId: '1',
+      eventId: '1',
+      roleId: '1',
+      role: { name: 'SuperAdmin' },
+      user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+    },
+  ];
+  inMemoryStore.reports = [];
+  inMemoryStore.auditLogs = [];
+  inMemoryStore.eventLogos = [];
+  inMemoryStore.eventInvites = [];
+  inMemoryStore.evidenceFiles = [];
 });
 
 describe('Event endpoints', () => {
@@ -143,23 +159,135 @@ describe('Event endpoints', () => {
 
   describe('PATCH /events/:eventId/reports/:reportId/state', () => {
     it('should update report state (success)', async () => {
+      // Ensure a report exists for event 1
+      inMemoryStore.reports.push({ id: 'r4', eventId: '1', type: 'harassment', description: 'Report 4', state: 'submitted' });
       const res = await request(app)
-        .patch('/events/1/reports/r1/state')
+        .patch('/events/1/reports/r4/state')
         .send({ state: 'acknowledged' });
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty('report');
       expect(res.body.report).toHaveProperty('state', 'acknowledged');
     });
-    it('should fail if invalid state', async () => {
+
+    it('should return 400 if invalid state', async () => {
+      inMemoryStore.reports.push({ id: 'r5', eventId: '1', type: 'harassment', description: 'Report 5', state: 'submitted' });
       const res = await request(app)
-        .patch('/events/1/reports/r1/state')
+        .patch('/events/1/reports/r5/state')
         .send({ state: 'not-a-state' });
       expect(res.statusCode).toBe(400);
     });
-    it('should fail if report not found', async () => {
+
+    it('should return 404 if report not found', async () => {
       const res = await request(app)
         .patch('/events/1/reports/doesnotexist/state')
         .send({ state: 'acknowledged' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('should return 403 if user does not have required role', async () => {
+      // Ensure Reporter role exists
+      if (!inMemoryStore.roles.find(r => r.name === 'Reporter')) {
+        inMemoryStore.roles.push({ id: '4', name: 'Reporter' });
+      }
+      // Remove all privileged roles for this user
+      inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
+        uer => !(uer.userId === '1' && ['SuperAdmin', 'Admin', 'Responder'].includes(uer.role.name))
+      );
+      // Add only Reporter role
+      inMemoryStore.userEventRoles.push({
+        userId: '1',
+        eventId: '1',
+        roleId: '4',
+        role: { name: 'Reporter' },
+        user: { id: '1', email: 'admin@example.com', name: 'Admin' },
+      });
+      inMemoryStore.reports.push({ id: 'r6', eventId: '1', type: 'harassment', description: 'Report 6', state: 'submitted' });
+      // Debug output
+      console.log('DEBUG: userEventRoles for user 1, event 1:', JSON.stringify(inMemoryStore.userEventRoles.filter(uer => uer.userId === '1' && uer.eventId === '1'), null, 2));
+      console.log('DEBUG: roles:', JSON.stringify(inMemoryStore.roles, null, 2));
+      const res = await request(app)
+        .patch('/events/1/reports/r6/state')
+        .send({ state: 'acknowledged' });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('POST /events/:eventId/reports', () => {
+    it('should create a report (success)', async () => {
+      const res = await request(app)
+        .post('/events/1/reports')
+        .send({ type: 'harassment', description: 'Test report' });
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('report');
+      expect(res.body.report).toHaveProperty('type', 'harassment');
+      expect(res.body.report).toHaveProperty('description', 'Test report');
+    });
+
+    it('should fail if missing required fields', async () => {
+      const res = await request(app)
+        .post('/events/1/reports')
+        .send({ type: 'harassment' }); // missing description
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should return 404 if event not found', async () => {
+      const res = await request(app)
+        .post('/events/999/reports')
+        .send({ type: 'harassment', description: 'Test report' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('should create a report with evidence file upload', async () => {
+      const res = await request(app)
+        .post('/events/1/reports')
+        .attach('evidence', Buffer.from('fake evidence data'), 'evidence.txt')
+        .field('type', 'harassment')
+        .field('description', 'Test with file');
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('report');
+    });
+  });
+
+  describe('GET /events/:eventId/reports', () => {
+    it('should return reports for an event (success)', async () => {
+      // Ensure at least one report exists for event 1
+      inMemoryStore.reports.push({ id: 'r2', eventId: '1', type: 'harassment', description: 'Report 2', state: 'submitted' });
+      const res = await request(app)
+        .get('/events/1/reports');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('reports');
+      expect(Array.isArray(res.body.reports)).toBe(true);
+      expect(res.body.reports.length).toBeGreaterThan(0);
+    });
+
+    it('should return 404 if event not found', async () => {
+      const res = await request(app)
+        .get('/events/999/reports');
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('GET /events/:eventId/reports/:reportId', () => {
+    it('should return a report for an event (success)', async () => {
+      // Ensure a report exists for event 1
+      inMemoryStore.reports.push({ id: 'r3', eventId: '1', type: 'harassment', description: 'Report 3', state: 'submitted' });
+      const res = await request(app)
+        .get('/events/1/reports/r3');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('report');
+      expect(res.body.report).toHaveProperty('id', 'r3');
+    });
+
+    it('should return 400 or 404 if missing eventId', async () => {
+      const res = await request(app)
+        .get('/events//reports/r1');
+      expect([400, 404]).toContain(res.statusCode);
+    });
+
+    it('should return 404 if report not found', async () => {
+      const res = await request(app)
+        .get('/events/1/reports/doesnotexist');
       expect(res.statusCode).toBe(404);
     });
   });

@@ -70,14 +70,15 @@ class PrismaClient {
       }),
     };
     this.userEventRole = {
-      findMany: jest.fn(({ where }) => {
+      findMany: jest.fn(({ where, include }) => {
         let results = inMemoryStore.userEventRoles;
         if (where) {
           if (where.userId) {
             results = results.filter(uer => uer.userId === where.userId);
           }
           if (where.eventId) {
-            results = results.filter(uer => uer.eventId === where.eventId);
+            // Ensure type-safe comparison (always string)
+            results = results.filter(uer => String(uer.eventId) === String(where.eventId));
           }
           if (where.role && where.role.name) {
             results = results.filter(uer => uer.role && uer.role.name === where.role.name);
@@ -95,6 +96,13 @@ class PrismaClient {
               });
             });
           }
+        }
+        // If include.role is true, populate the role property from inMemoryStore.roles
+        if (include && include.role) {
+          results = results.map(uer => ({
+            ...uer,
+            role: inMemoryStore.roles.find(r => r.id === uer.roleId) || uer.role,
+          }));
         }
         return results;
       }),
@@ -172,6 +180,21 @@ class PrismaClient {
         if (report) Object.assign(report, data);
         return { ...report, reporter: inMemoryStore.users[0] };
       }),
+      create: jest.fn(({ data }) => {
+        const newReport = { id: `r${inMemoryStore.reports.length + 1}`, ...data };
+        inMemoryStore.reports.push(newReport);
+        return newReport;
+      }),
+      findMany: jest.fn(({ where }) => {
+        if (!where || !where.eventId) return [];
+        const eventExists = inMemoryStore.events.some(e => e.id === where.eventId);
+        if (!eventExists) {
+          const err = new Error('Event not found');
+          err.code = 'P2025';
+          throw err;
+        }
+        return inMemoryStore.reports.filter(r => r.eventId === where.eventId);
+      }),
     };
     this.auditLog = {
       create: jest.fn(({ data }) => {
@@ -211,6 +234,22 @@ class PrismaClient {
         }
         inMemoryStore.eventInvites[idx] = { ...inMemoryStore.eventInvites[idx], ...data };
         return inMemoryStore.eventInvites[idx];
+      }),
+    };
+    this.evidenceFile = {
+      create: jest.fn(({ data }) => {
+        if (!inMemoryStore.evidenceFiles) inMemoryStore.evidenceFiles = [];
+        const newEvidence = { id: `e${inMemoryStore.evidenceFiles.length + 1}`, ...data };
+        inMemoryStore.evidenceFiles.push(newEvidence);
+        return newEvidence;
+      }),
+      findUnique: jest.fn(({ where }) => {
+        if (!inMemoryStore.evidenceFiles) return null;
+        return inMemoryStore.evidenceFiles.find(e => e.reportId === where.reportId) || null;
+      }),
+      findMany: jest.fn(({ where }) => {
+        if (!inMemoryStore.evidenceFiles) return [];
+        return inMemoryStore.evidenceFiles.filter(e => e.reportId === where.reportId);
       }),
     };
   }
