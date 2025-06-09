@@ -81,6 +81,7 @@ jobs:
   publish-test-report:
     needs: [backend, frontend]
     runs-on: ubuntu-latest
+    if: always()
     permissions:
       pull-requests: write
     steps:
@@ -114,4 +115,3 @@ jobs:
           report-path: 'combined-ctrf/*.json'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: always()
