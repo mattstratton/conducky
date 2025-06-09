@@ -38,6 +38,7 @@ jobs:
         with:
           name: backend-ctrf-report
           path: ctrf/ctrf-report.json
+          if-no-files-found: error
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
