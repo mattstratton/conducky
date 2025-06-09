@@ -19,7 +19,7 @@ describe("CoCTeamList", () => {
     render(
       <UserContext.Provider value={{ user: mockUser }}>
         <CoCTeamList eventSlug="test-event" />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     expect(screen.getByText(/loading team/i)).toBeInTheDocument();
   });
@@ -29,7 +29,7 @@ describe("CoCTeamList", () => {
     render(
       <UserContext.Provider value={{ user: mockUser }}>
         <CoCTeamList eventSlug="test-event" />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     await waitFor(() =>
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument(),
@@ -48,7 +48,7 @@ describe("CoCTeamList", () => {
     render(
       <UserContext.Provider value={{ user: mockUser }}>
         <CoCTeamList eventSlug="test-event" />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     await waitFor(() =>
       expect(screen.getByText(/no responders or admins/i)).toBeInTheDocument(),
@@ -71,7 +71,7 @@ describe("CoCTeamList", () => {
     render(
       <UserContext.Provider value={{ user: mockUser }}>
         <CoCTeamList eventSlug="test-event" />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
     expect(screen.getByText("Bob")).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe("CoCTeamList", () => {
     render(
       <UserContext.Provider value={{ user: mockUser }}>
         <CoCTeamList eventSlug="test-event" />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
     // Should only appear once
