@@ -25,7 +25,7 @@ export default function CoCTeamList({ eventSlug, showTitle = true }) {
           .then((data2) => {
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(
-              all.reduce((acc, u) => {
+              all.filter(u => u && u.id).reduce((acc, u) => {
                 acc[u.id] = u;
                 return acc;
               }, {}),
