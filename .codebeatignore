@@ -6,3 +6,4 @@ frontend/__tests__/**
 frontend/__mocks__/**
 frontend/coverage/**
 backend/coverage/**
+website/**
