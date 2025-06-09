@@ -79,16 +79,8 @@ export default function RedeemInvitePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
-      // Log in the user (simulate session)
-      const loginRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: regEmail, password: regPassword }),
-      });
-      if (!loginRes.ok) throw new Error('Registration succeeded but login failed. Please sign in.');
-      refreshUser && refreshUser();
-      setSuccess('You have joined the event!');
+      // Do NOT auto-login. Show success and prompt to login.
+      setSuccess('Registration successful! Please log in to continue.');
     } catch (err) {
       setRegError(err.message || 'Registration failed');
     }
@@ -103,15 +95,24 @@ export default function RedeemInvitePage() {
         <p className="mb-4">You must be logged in or register to redeem this invite link.</p>
         <div className="flex flex-col gap-6">
           <a href={`/login?next=/invite/${code}`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-center">Sign In (Existing Users)</a>
-          <form onSubmit={handleRegister} className="flex flex-col gap-2 border-t pt-6">
-            <div className="font-semibold mb-2">Register as a New User</div>
-            <input type="text" placeholder="Name" value={regName} onChange={e => setRegName(e.target.value)} className="border px-2 py-1 rounded" />
-            <input type="email" placeholder="Email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="border px-2 py-1 rounded" />
-            <input type="password" placeholder="Password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="border px-2 py-1 rounded" />
-            <input type="password" placeholder="Confirm Password" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} className="border px-2 py-1 rounded" />
-            <button type="submit" disabled={regLoading} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2 disabled:opacity-50">{regLoading ? 'Registering...' : 'Register & Join Event'}</button>
-            {regError && <div className="text-red-600 mt-2">{regError}</div>}
-          </form>
+          {success ? (
+            <div className="text-green-700 font-semibold mt-4">
+              {success}
+              <div className="mt-4">
+                <a href={`/login?next=/invite/${code}`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go to Login</a>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleRegister} className="flex flex-col gap-2 border-t pt-6">
+              <div className="font-semibold mb-2">Register as a New User</div>
+              <input type="text" placeholder="Name" value={regName} onChange={e => setRegName(e.target.value)} className="border px-2 py-1 rounded" />
+              <input type="email" placeholder="Email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="border px-2 py-1 rounded" />
+              <input type="password" placeholder="Password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="border px-2 py-1 rounded" />
+              <input type="password" placeholder="Confirm Password" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} className="border px-2 py-1 rounded" />
+              <button type="submit" disabled={regLoading} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2 disabled:opacity-50">{regLoading ? 'Registering...' : 'Register & Join Event'}</button>
+              {regError && <div className="text-red-600 mt-2">{regError}</div>}
+            </form>
+          )}
         </div>
       </div>
     );

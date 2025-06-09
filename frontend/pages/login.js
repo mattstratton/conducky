@@ -39,6 +39,25 @@ export default function Login() {
           const data = await sessionRes.json();
           setUser(data.user);
         }
+        // If nextUrl is an invite redeem page, redirect to the event page instead
+        if (nextUrl && nextUrl.startsWith('/invite/')) {
+          // Extract invite code from nextUrl
+          const code = nextUrl.split('/invite/')[1]?.split('/')[0];
+          if (code) {
+            // Fetch invite details to get event slug
+            try {
+              const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/invites/${code}`);
+              if (inviteRes.ok) {
+                const inviteData = await inviteRes.json();
+                const eventSlug = inviteData?.event?.slug;
+                if (eventSlug) {
+                  router.push(`/event/${eventSlug}`);
+                  return;
+                }
+              }
+            } catch {}
+          }
+        }
         router.push(nextUrl);
       } else {
         let errMsg = 'Login failed';
