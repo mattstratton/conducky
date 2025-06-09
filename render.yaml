@@ -32,11 +32,11 @@ services:
     buildCommand: '' # Use Dockerfile
     startCommand: '' # Use Dockerfile
 
-databases:
-  - name: conducky-db
-    plan: free
-    postgresMajorVersion: '16'
-    ipAllowList: [] # Only allow internal connections
+# databases:
+#   - name: conducky-db
+#     plan: free
+#     postgresMajorVersion: '16'
+#     ipAllowList: [] # Only allow internal connections
 
 # Notes:
 # - The backend and frontend are deployed as separate web services using their respective Dockerfiles.
