@@ -1,0 +1,17 @@
+version = 1
+
+test_patterns = ["tests/**"]
+
+exclude_patterns = ["generated/**"]
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  environment = [
+    "nodejs",
+    "jest"
+  ]
+
+[[transformers]]
+name = "prettier"
