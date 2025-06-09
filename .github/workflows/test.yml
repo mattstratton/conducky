@@ -28,11 +28,14 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
-      - name: Show CTRF report path and contents
-        run: |
-          pwd
-          ls -l ctrf
-          cat ctrf/ctrf-report.json || echo "No report found"
+      - name: Check reports
+        run: ls ctrf
+      - name: Show CTRF report absolute path
+        run: find $PWD -name 'ctrf-report.json'
+      - name: Check file permissions
+        run: ls -l ctrf/ctrf-report.json
+      - name: Show CTRF report contents
+        run: cat ctrf/ctrf-report.json || echo "No report found"
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,11 +72,18 @@ jobs:
         run: npm run test:ctrf
       - name: Check reports
         run: ls ctrf
+      - name: Show CTRF report absolute path
+        run: find $PWD -name 'ctrf-report.json'
+      - name: Check file permissions
+        run: ls -l ctrf/ctrf-report.json
+      - name: Show CTRF report contents
+        run: cat ctrf/ctrf-report.json || echo "No report found"
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-ctrf-report
           path: ctrf/ctrf-report.json
+          if-no-files-found: error
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -98,11 +108,18 @@ jobs:
         with:
           name: frontend-ctrf-report
           path: frontend-ctrf
+      - name: List downloaded artifacts
+        run: |
+          echo "Backend artifact:"
+          ls -l backend-ctrf
+          echo "Frontend artifact:"
+          ls -l frontend-ctrf
       - name: Combine CTRF reports
         run: |
           mkdir -p combined-ctrf
           cp backend-ctrf/ctrf-report.json combined-ctrf/backend-ctrf-report.json
           cp frontend-ctrf/ctrf-report.json combined-ctrf/frontend-ctrf-report.json
+          ls -l combined-ctrf
       - name: Publish Combined Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
