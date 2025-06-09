@@ -28,8 +28,11 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
-      - name: Check reports
-        run: ls ctrf
+      - name: Show CTRF report path and contents
+        run: |
+          pwd
+          ls -l ctrf
+          cat ctrf/ctrf-report.json || echo "No report found"
       - name: Upload CTRF report artifact
         uses: actions/upload-artifact@v4
         with:
