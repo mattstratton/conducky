@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 /**
@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
  */
 async function logAudit({ eventId, userId, action, targetType, targetId }) {
   if (!eventId || !action || !targetType || !targetId) {
-    throw new Error('Missing required fields');
+    throw new Error("Missing required fields");
   }
   return prisma.auditLog.create({
     data: {
@@ -25,4 +25,4 @@ async function logAudit({ eventId, userId, action, targetType, targetId }) {
   });
 }
 
-module.exports = { logAudit }; 
+module.exports = { logAudit };
