@@ -274,7 +274,7 @@ function LoginForm() {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
