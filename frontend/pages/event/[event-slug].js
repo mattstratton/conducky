@@ -93,6 +93,65 @@ export default function EventDashboard() {
   if (error) return <div style={{ padding: 40 }}><h2>{error}</h2></div>;
   if (loading || !event) return <div style={{ padding: 40 }}><h2>Loading event...</h2></div>;
 
+  // If user is not logged in, only show the event meta section
+  if (!user) {
+    return (
+      <div className="font-sans p-4 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+        <Card className="mb-6 max-w-4xl mx-auto p-4 sm:p-8">
+          {/* Event Metadata Display (copied from above) */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-4">
+            {/* Logo */}
+            {(() => {
+              const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+              let logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
+              return logoSrc ? (
+                <img src={logoSrc} alt="Event Logo" className="w-24 h-24 object-contain rounded bg-white border border-gray-200 dark:border-gray-700" />
+              ) : null;
+            })()}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h1 className="text-2xl font-bold">{event.name}</h1>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-gray-200 mb-2">
+                <span className="flex items-center gap-1">
+                  <b>Start:</b> {event.startDate ? new Date(event.startDate).toLocaleDateString() : <span className="italic text-gray-400">(none)</span>}
+                </span>
+                <span className="flex items-center gap-1">
+                  <b>End:</b> {event.endDate ? new Date(event.endDate).toLocaleDateString() : <span className="italic text-gray-400">(none)</span>}
+                </span>
+                <span className="flex items-center gap-1">
+                  <b>Website:</b> {event.website ? (
+                    <a href={event.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">{event.website}</a>
+                  ) : <span className="italic text-gray-400">(none)</span>}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium">Description:</span>
+                <span className="ml-2 text-gray-800 dark:text-gray-100">{event.description || <span className="italic text-gray-400">(none)</span>}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium">Code of Conduct:</span>
+                <button onClick={() => setShowCodeModal(true)} className="text-blue-600 dark:text-blue-400 underline font-medium">View Code of Conduct</button>
+              </div>
+            </div>
+          </div>
+        </Card>
+        {/* Code of Conduct Modal for anonymous users */}
+        {showCodeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
+              <button onClick={() => setShowCodeModal(false)} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-2xl" aria-label="Close">&times;</button>
+              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Code of Conduct</h2>
+              <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto">
+                <ReactMarkdown>{event.codeOfConduct}</ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Determine what to show based on user role
   const isSuperAdmin = hasRole('SuperAdmin');
   const isAdmin = hasRole('Admin');

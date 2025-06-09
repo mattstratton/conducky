@@ -346,11 +346,12 @@ function Header() {
 
 function SubmitReportNavButton() {
   const { openModal } = useContext(ModalContext);
+  const { user } = useContext(UserContext);
   const router = useRouter();
   const path = router.asPath;
   const eventSlugMatch = path.match(/^\/event\/([^\/]+)/);
   const eventSlug = eventSlugMatch ? eventSlugMatch[1] : null;
-  // We'll fetch the event name in the modal itself
+  if (!user) return null;
   return (
     <Button
       onClick={() => openModal(eventSlug)}
