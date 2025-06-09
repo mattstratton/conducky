@@ -1,52 +1,66 @@
 import React from "react";
-import { useState, useEffect, useContext } from 'react';
-import { useRouter } from 'next/router';
-import { UserContext } from './_app';
-import { Button, Input, Card } from '../components';
+import { useState, useEffect, useContext } from "react";
+import { useRouter } from "next/router";
+import { UserContext } from "./_app";
+import { Button, Input, Card } from "../components";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
-  const [nextUrl, setNextUrl] = useState('/');
+  const [nextUrl, setNextUrl] = useState("/");
   const { setUser } = useContext(UserContext);
 
   useEffect(() => {
     // Prefer ?next=... in query, else use document.referrer if it's from the same origin
     if (router.query.next) {
       setNextUrl(router.query.next);
-    } else if (typeof document !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
-      const refPath = document.referrer.replace(window.location.origin, '');
-      setNextUrl(refPath || '/');
+    } else if (
+      typeof document !== "undefined" &&
+      document.referrer &&
+      document.referrer.startsWith(window.location.origin)
+    ) {
+      const refPath = document.referrer.replace(window.location.origin, "");
+      setNextUrl(refPath || "/");
     }
   }, [router.query.next]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(
+        (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        },
+      );
       if (res.ok) {
         // Fetch user info and update context
-        const sessionRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', { credentials: 'include' });
+        const sessionRes = await fetch(
+          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+            "/session",
+          { credentials: "include" },
+        );
         if (sessionRes.ok) {
           const data = await sessionRes.json();
           setUser(data.user);
         }
         // If nextUrl is an invite redeem page, redirect to the event page instead
-        if (nextUrl && nextUrl.startsWith('/invite/')) {
+        if (nextUrl && nextUrl.startsWith("/invite/")) {
           // Extract invite code from nextUrl
-          const code = nextUrl.split('/invite/')[1]?.split('/')[0];
+          const code = nextUrl.split("/invite/")[1]?.split("/")[0];
           if (code) {
             // Fetch invite details to get event slug
             try {
-              const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/invites/${code}`);
+              const inviteRes = await fetch(
+                (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+                  `/invites/${code}`,
+              );
               if (inviteRes.ok) {
                 const inviteData = await inviteRes.json();
                 const eventSlug = inviteData?.event?.slug;
@@ -60,7 +74,7 @@ export default function Login() {
         }
         router.push(nextUrl);
       } else {
-        let errMsg = 'Login failed';
+        let errMsg = "Login failed";
         try {
           const data = await res.json();
           errMsg = data.error || data.message || errMsg;
@@ -70,7 +84,7 @@ export default function Login() {
         setError(errMsg);
       }
     } catch (err) {
-      setError('Network error');
+      setError("Network error");
     }
   };
 
@@ -86,7 +100,15 @@ export default function Login() {
             >
               Email
             </label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="email" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+              className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              id="email"
+            />
           </div>
           <div>
             <label
@@ -95,12 +117,28 @@ export default function Login() {
             >
               Password
             </label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="password" />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm"
+              id="password"
+            />
           </div>
-          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
-          <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Login</Button>
+          {error && (
+            <div className="text-red-600 dark:text-red-400 text-sm font-semibold">
+              {error}
+            </div>
+          )}
+          <Button
+            type="submit"
+            className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm"
+          >
+            Login
+          </Button>
         </form>
       </Card>
     </div>
   );
-} 
+}
