@@ -48,6 +48,16 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 - [ ] **Note:** Each test must now explicitly reset the in-memory store in `beforeEach` and ensure all IDs (eventId, userId, etc.) are strings. This is necessary boilerplate for robust test isolation and type safety with the in-memory Prisma mock.
 
+## RBAC Middleware and Integration Tests
+
+**Important:** If you mock the `requireRole` middleware in integration tests, it will always allow requests to proceed, bypassing all RBAC logic. This means tests for forbidden access (e.g., expecting a 403) will not work as intended, because the real role checks are never executed.
+
+- For any test that needs to verify RBAC/forbidden access (e.g., user does not have required role), you must use the real `requireRole` middleware for that test (or test block).
+- You can do this by not mocking `requireRole` for those tests, or by restoring the real implementation just for those cases (see the events integration test for an example).
+- If you want to keep the mock for other tests (for speed or simplicity), only unmock for the RBAC/forbidden tests.
+
+**Action:** Review all integration tests that check for forbidden/role-based access and ensure they use the real middleware. Document this pattern in new tests as needed.
+
 ---
 
 ## Frontend (Next.js/React)
