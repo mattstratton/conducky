@@ -223,7 +223,7 @@ export default function ReportDetail({ initialReport, error }) {
   };
 
   // Add a function to upload more evidence files
-  const canUploadEvidence = user && (user.id === report.reporterId || isAdminOrSuperAdmin);
+  const canUploadEvidence = user && report && report.reporterId && (user.id === report.reporterId || isAdminOrSuperAdmin);
   const handleEvidenceUpload = async (e) => {
     e.preventDefault();
     if (!newEvidence.length) return;
