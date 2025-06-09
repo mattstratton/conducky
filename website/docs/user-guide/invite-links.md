@@ -1,3 +1,6 @@
+---
+sidebar_position: 5
+---
 # Invite Links
 
 This document explains how the invite link system works for onboarding users to events.
@@ -52,4 +55,4 @@ This document explains how the invite link system works for onboarding users to 
 ## Notes
 - Invite links are a secure way to onboard users without manual admin intervention.
 - All invite actions are subject to event and role permissions.
-- For more, see [API Endpoints](./api-endpoints.md) and [User Management](./user-management.md). 
+- For more, see [API Endpoints](../developer-docs/api-endpoints.md) and [User Management](./user-management.md). 

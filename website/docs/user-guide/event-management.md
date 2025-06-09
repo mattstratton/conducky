@@ -1,3 +1,6 @@
+---
+sidebar_position: 4
+---
 # Event Management
 
 This document explains how events are managed in the system, both via the API and the UI.
@@ -123,7 +126,7 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 - Evidence files can be uploaded when submitting a report, or added later from the report detail page (if you are the reporter, responder, or admin).
 - Each evidence file records the uploader (name/email if authenticated).
 - All evidence files are listed on the report detail page, with download links and uploader info.
-- See [API Endpoints](./api-endpoints.md) for technical details on uploading, listing, and downloading evidence files.
+- See [API Endpoints](../developer-docs/api-endpoints.md) for technical details on uploading, listing, and downloading evidence files.
 
 ---
 
@@ -137,7 +140,7 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 ---
 
 ## Related Endpoints
-- See [API Endpoints](./api-endpoints.md) for full details.
+- See [API Endpoints](../developer-docs/api-endpoints.md) for full details.
 - Key endpoints:
   - `POST /events` (create)
   - `GET /events` (list)
