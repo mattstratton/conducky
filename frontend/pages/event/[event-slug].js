@@ -1,12 +1,12 @@
 import React from "react";
-import { useRouter } from 'next/router';
-import { useEffect, useState, useContext } from 'react';
-import Link from 'next/link';
-import { ModalContext } from '../../context/ModalContext';
-import { Button, Input, Card, Table } from '../../components';
-import ReactMarkdown from 'react-markdown';
-import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import CoCTeamList from '../../components/CoCTeamList';
+import { useRouter } from "next/router";
+import { useEffect, useState, useContext } from "react";
+import Link from "next/link";
+import { ModalContext } from "../../context/ModalContext";
+import { Button, Input, Card, Table } from "../../components";
+import ReactMarkdown from "react-markdown";
+import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import CoCTeamList from "../../components/CoCTeamList";
 
 const validStates = [
   "submitted",
@@ -40,7 +40,7 @@ export default function EventDashboard() {
   const [logoExists, setLogoExists] = useState(false);
   const [cocTeam, setCocTeam] = useState([]);
   const [cocTeamLoading, setCocTeamLoading] = useState(false);
-  const [cocTeamError, setCocTeamError] = useState('');
+  const [cocTeamError, setCocTeamError] = useState("");
 
   // Fetch event details and user session
   useEffect(() => {
@@ -98,30 +98,40 @@ export default function EventDashboard() {
   useEffect(() => {
     if (!user || !eventSlug) return;
     setCocTeamLoading(true);
-    setCocTeamError('');
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Responder`, { credentials: 'include' })
-      .then(res => res.ok ? res.json() : Promise.reject(res))
-      .then(data => {
+    setCocTeamError("");
+    fetch(
+      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+        `/events/slug/${eventSlug}/users?role=Responder`,
+      { credentials: "include" },
+    )
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
         // Fetch Admins as well
-        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Admin`, { credentials: 'include' })
-          .then(res2 => res2.ok ? res2.json() : Promise.reject(res2))
-          .then(data2 => {
+        fetch(
+          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+            `/events/slug/${eventSlug}/users?role=Admin`,
+          { credentials: "include" },
+        )
+          .then((res2) => (res2.ok ? res2.json() : Promise.reject(res2)))
+          .then((data2) => {
             // Combine and dedupe by user id
             const all = [...(data.users || []), ...(data2.users || [])];
-            const deduped = Object.values(all.reduce((acc, u) => {
-              acc[u.id] = u;
-              return acc;
-            }, {}));
+            const deduped = Object.values(
+              all.reduce((acc, u) => {
+                acc[u.id] = u;
+                return acc;
+              }, {}),
+            );
             setCocTeam(deduped);
             setCocTeamLoading(false);
           })
           .catch(() => {
-            setCocTeamError('Failed to load Code of Conduct Team.');
+            setCocTeamError("Failed to load Code of Conduct Team.");
             setCocTeamLoading(false);
           });
       })
       .catch(() => {
-        setCocTeamError('Failed to load Code of Conduct Team.');
+        setCocTeamError("Failed to load Code of Conduct Team.");
         setCocTeamLoading(false);
       });
   }, [user, eventSlug]);
