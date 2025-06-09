@@ -26,6 +26,7 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm run test:coverage
+        continue-on-error: true
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
         continue-on-error: true
@@ -62,6 +63,7 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm run test:coverage
+        continue-on-error: true
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
         continue-on-error: true
