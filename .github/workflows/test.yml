@@ -31,7 +31,7 @@ jobs:
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: './ctrf/ctrf-report.json'
+          report-path: 'ctrf/ctrf-report.json'
         if: always()
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
