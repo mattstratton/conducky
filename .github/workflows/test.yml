@@ -8,6 +8,8 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     defaults:
       run:
         working-directory: backend
@@ -26,10 +28,16 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
+      - name: Check reports
+        run: ls ctrf
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: './ctrf/ctrf-report.json'
+          pull-request: true
+          github-report: true
+          report-path: 'backend/ctrf/ctrf-report.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: always()
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
@@ -62,7 +70,11 @@ jobs:
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: './ctrf/ctrf-report.json'
+          pull-request: true
+          github-report: true
+          report-path: '/frontend/ctrf/ctrf-report.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: always()
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
