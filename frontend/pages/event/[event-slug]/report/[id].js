@@ -42,7 +42,7 @@ export default function ReportDetail({ initialReport, error }) {
   const [editError, setEditError] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState(null);
   // Add state for evidence upload
-  const [evidenceFiles, setEvidenceFiles] = useState(report.evidenceFiles || []);
+  const [evidenceFiles, setEvidenceFiles] = useState((report && report.evidenceFiles) ? report.evidenceFiles : []);
   const [newEvidence, setNewEvidence] = useState([]);
   const [uploadingEvidence, setUploadingEvidence] = useState(false);
   const [evidenceUploadMsg, setEvidenceUploadMsg] = useState('');
@@ -297,7 +297,7 @@ export default function ReportDetail({ initialReport, error }) {
           <div className="py-2 flex flex-col">
             <dt className="font-bold">Evidence</dt>
             <dd>
-              {evidenceFiles.length === 0 ? 'None' : (
+              {!report || !evidenceFiles ? 'None' : evidenceFiles.length === 0 ? 'None' : (
                 <ul className="space-y-1">
                   {evidenceFiles.map(file => (
                     <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -352,7 +352,7 @@ export default function ReportDetail({ initialReport, error }) {
             <tr>
               <td className="font-bold"><b>Evidence</b></td>
               <td>
-                {evidenceFiles.length === 0 ? 'None' : (
+                {!report || !evidenceFiles ? 'None' : evidenceFiles.length === 0 ? 'None' : (
                   <ul className="space-y-1">
                     {evidenceFiles.map(file => (
                       <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">

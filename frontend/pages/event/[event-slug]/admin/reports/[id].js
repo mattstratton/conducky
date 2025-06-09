@@ -453,7 +453,9 @@ export default function AdminReportDetail() {
       </form>
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Evidence Files</h3>
-        {report.evidenceFiles && report.evidenceFiles.length > 0 ? (
+        {(!report || !report.evidenceFiles) ? (
+          <div className="text-gray-500 dark:text-gray-400">No evidence files.</div>
+        ) : report.evidenceFiles.length > 0 ? (
           <ul className="space-y-1">
             {report.evidenceFiles.map(file => (
               <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
