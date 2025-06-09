@@ -24,6 +24,13 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm run test:coverage
+      - name: Run tests and generate CTRF report
+        run: npm run test:ctrf
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: './ctrf/ctrf-report.json'
+        if: always()
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -50,6 +57,13 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm run test:coverage
+      - name: Run tests and generate CTRF report
+        run: npm run test:ctrf
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: './ctrf/ctrf-report.json'
+        if: always()
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
