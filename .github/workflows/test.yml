@@ -29,11 +29,13 @@ jobs:
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
       - name: Upload CTRF report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-ctrf-report
           path: backend/ctrf/ctrf-report.json
       - name: Upload results to Codecov
+        if: always()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -62,11 +64,13 @@ jobs:
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
       - name: Upload CTRF report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-ctrf-report
           path: frontend/ctrf/ctrf-report.json
       - name: Upload results to Codecov
+        if: always()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -77,6 +81,7 @@ jobs:
   publish-test-report:
     needs: [backend, frontend]
     runs-on: ubuntu-latest
+    if: always()
     permissions:
       pull-requests: write
     steps:
@@ -110,4 +115,3 @@ jobs:
           report-path: 'combined-ctrf/*.json'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: always()

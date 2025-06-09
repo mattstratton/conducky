@@ -32,11 +32,31 @@ A step-by-step checklist for implementing robust, automated testing for the proj
   - [x] `POST /events/slug/:slug/logo` (success, not authenticated, forbidden, event not found, no file)
   - [x] `PATCH /events/slug/:slug/invites/:inviteId` (success, forbidden, event/invite not found)
 
-- [ ] **(Continue for Reports, Comments, Evidence, etc.)**
+- [x] **Report Endpoints**
+  - [x] `POST /events/:eventId/reports` (success, missing fields, event not found, file upload)
+  - [x] `GET /events/:eventId/reports` (success, event not found)
+  - [x] `GET /events/:eventId/reports/:reportId` (success, missing eventId, not found)
+  - [ ] `PATCH /events/:eventId/reports/:reportId/state` (success, invalid state, not found, forbidden)
+  - [ ] `GET /events/slug/:slug/reports` (success, event not found, filter by userId)
+  - [ ] `POST /events/slug/:slug/reports` (success, missing fields, event not found, file upload)
+  - [ ] `GET /events/slug/:slug/reports/:reportId` (success, missing fields, event/report not found)
+  - [ ] `PATCH /events/slug/:slug/reports/:reportId` (success, forbidden, event/report not found, update fields)
 
 - [ ] Confirm that all RBAC rules are covered (for all roles, not just superadmin)
 
 - [ ] Expand backend mock and tests to include users with roles: admin (not superadmin), responder, and reporter, to ensure RBAC and role-based logic are covered (future improvement)
+
+- [ ] **Note:** Each test must now explicitly reset the in-memory store in `beforeEach` and ensure all IDs (eventId, userId, etc.) are strings. This is necessary boilerplate for robust test isolation and type safety with the in-memory Prisma mock.
+
+## RBAC Middleware and Integration Tests
+
+**Important:** If you mock the `requireRole` middleware in integration tests, it will always allow requests to proceed, bypassing all RBAC logic. This means tests for forbidden access (e.g., expecting a 403) will not work as intended, because the real role checks are never executed.
+
+- For any test that needs to verify RBAC/forbidden access (e.g., user does not have required role), you must use the real `requireRole` middleware for that test (or test block).
+- You can do this by not mocking `requireRole` for those tests, or by restoring the real implementation just for those cases (see the events integration test for an example).
+- If you want to keep the mock for other tests (for speed or simplicity), only unmock for the RBAC/forbidden tests.
+
+**Action:** Review all integration tests that check for forbidden/role-based access and ensure they use the real middleware. Document this pattern in new tests as needed.
 
 ---
 
@@ -54,7 +74,7 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 
 ## Documentation
 
-- [ ] Create `/docs/testing.md` with:
+- [ ] Update `/website/docs/developer-docs/testing.md` with:
   - [ ] How to run backend and frontend tests (with and without Docker Compose)
   - [ ] How to write new tests
   - [ ] How to interpret coverage reports
@@ -112,4 +132,4 @@ A step-by-step checklist for implementing robust, automated testing for the proj
 - **How to Extend:**
   - When adding new endpoints or models, extend the in-memory mock to support the required query shapes and relations.
   - Always update the test setup to ensure the correct roles and data are present for each scenario.
-  - Document any new mocking patterns or test setup in this file and `/docs/testing.md`.
+  - Document any new mocking patterns or test setup in this file and `/website/docs/developer-docs/testing.md`.
