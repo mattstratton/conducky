@@ -25,10 +25,12 @@ export default function CoCTeamList({ eventSlug, showTitle = true }) {
           .then((data2) => {
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(
-              all.filter(u => u && u.id).reduce((acc, u) => {
-                acc[u.id] = u;
-                return acc;
-              }, {}),
+              all
+                .filter((u) => u && u.id)
+                .reduce((acc, u) => {
+                  acc[u.id] = u;
+                  return acc;
+                }, {}),
             );
             setTeam(deduped);
             setLoading(false);
