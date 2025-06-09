@@ -28,17 +28,11 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
-      - name: Check reports
-        run: ls ctrf
-      - name: Publish Test Report
-        uses: ctrf-io/github-test-reporter@v1
+      - name: Upload CTRF report artifact
+        uses: actions/upload-artifact@v4
         with:
-          pull-request: true
-          github-report: true
-          report-path: 'backend/ctrf/ctrf-report.json'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: always()
+          name: backend-ctrf-report
+          path: backend/ctrf/ctrf-report.json
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -67,19 +61,53 @@ jobs:
         run: npm run test:coverage
       - name: Run tests and generate CTRF report
         run: npm run test:ctrf
-      - name: Publish Test Report
-        uses: ctrf-io/github-test-reporter@v1
+      - name: Upload CTRF report artifact
+        uses: actions/upload-artifact@v4
         with:
-          pull-request: true
-          github-report: true
-          report-path: '/frontend/ctrf/ctrf-report.json'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: always()
+          name: frontend-ctrf-report
+          path: frontend/ctrf/ctrf-report.json
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: frontend
           files: ./coverage/lcov.info
-          name: frontend-coverage 
+          name: frontend-coverage
+
+  publish-test-report:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download backend CTRF report
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-ctrf-report
+          path: backend-ctrf
+      - name: Download frontend CTRF report
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-ctrf-report
+          path: frontend-ctrf
+      - name: List downloaded artifacts
+        run: |
+          echo "Backend artifact:"
+          ls -l backend-ctrf
+          echo "Frontend artifact:"
+          ls -l frontend-ctrf
+      - name: Combine CTRF reports
+        run: |
+          mkdir -p combined-ctrf
+          cp backend-ctrf/ctrf-report.json combined-ctrf/backend-ctrf-report.json
+          cp frontend-ctrf/ctrf-report.json combined-ctrf/frontend-ctrf-report.json
+          ls -l combined-ctrf
+      - name: Publish Combined Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          pull-request: true
+          github-report: true
+          report-path: 'combined-ctrf/*.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: always()
