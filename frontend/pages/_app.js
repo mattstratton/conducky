@@ -9,6 +9,7 @@ import CoCTeamList from "../components/CoCTeamList";
 import ReportForm from "../components/ReportForm";
 import Avatar from "../components/Avatar";
 import EventNavBar from "../components/EventNavBar";
+import Head from "next/head";
 
 // User context for global user state
 export const UserContext = createContext({ user: null, setUser: () => {} });
@@ -482,66 +483,74 @@ function MyApp({ Component, pageProps }) {
   };
   const darkModeValue = useDarkMode();
   return (
-    <UserContext.Provider value={{ user, setUser }}>
-      <DarkModeContext.Provider value={darkModeValue}>
-        <ModalContext.Provider value={{ openModal }}>
-          <Header />
-          {eventSlug && (
-            <EventNavBar
-              eventSlug={eventSlug}
-              eventName={eventName}
-              user={user}
-              userRoles={userRoles}
-              openReportModal={() => openModal(eventSlug, eventName)}
-            />
-          )}
-          <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
-            <div className="text-gray-800">
-              <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
-              {eventSlugForModal && (
-                <div className="text-sm mb-2 text-gray-500">
-                  For event: <b>{eventName || eventSlugForModal}</b>
-                </div>
-              )}
-              {eventSlugForModal ? (
-                <ReportForm
-                  eventSlug={eventSlugForModal}
-                  eventName={eventName}
-                  onSuccess={() => {
-                    setModalOpen(false);
-                    const eventUrl = `/event/${eventSlugForModal}`;
-                    if (router.asPath === eventUrl) {
-                      router.reload();
-                    } else {
-                      router.push(eventUrl);
-                    }
-                  }}
-                />
-              ) : (
-                <div className="text-gray-500">No event selected.</div>
-              )}
-            </div>
-          </SimpleModal>
-          <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-10">
-            <Component {...pageProps} />
-          </main>
-          <footer className="w-full mt-8 flex flex-col items-center justify-center px-4 py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center justify-center">
-              <span>© {new Date().getFullYear()} Conducky</span>
-              <span>v1.0.0</span>
-              <a
-                href="https://github.com/mattstratton/conducky"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                GitHub
-              </a>
-            </div>
-          </footer>
-        </ModalContext.Provider>
-      </DarkModeContext.Provider>
-    </UserContext.Provider>
+    <>
+      <Head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+      </Head>
+      <UserContext.Provider value={{ user, setUser }}>
+        <DarkModeContext.Provider value={darkModeValue}>
+          <ModalContext.Provider value={{ openModal }}>
+            <Header />
+            {eventSlug && (
+              <EventNavBar
+                eventSlug={eventSlug}
+                eventName={eventName}
+                user={user}
+                userRoles={userRoles}
+                openReportModal={() => openModal(eventSlug, eventName)}
+              />
+            )}
+            <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
+              <div className="text-gray-800">
+                <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
+                {eventSlugForModal && (
+                  <div className="text-sm mb-2 text-gray-500">
+                    For event: <b>{eventName || eventSlugForModal}</b>
+                  </div>
+                )}
+                {eventSlugForModal ? (
+                  <ReportForm
+                    eventSlug={eventSlugForModal}
+                    eventName={eventName}
+                    onSuccess={() => {
+                      setModalOpen(false);
+                      const eventUrl = `/event/${eventSlugForModal}`;
+                      if (router.asPath === eventUrl) {
+                        router.reload();
+                      } else {
+                        router.push(eventUrl);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="text-gray-500">No event selected.</div>
+                )}
+              </div>
+            </SimpleModal>
+            <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-10">
+              <Component {...pageProps} />
+            </main>
+            <footer className="w-full mt-8 flex flex-col items-center justify-center px-4 py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center justify-center">
+                <span>© {new Date().getFullYear()} Conducky</span>
+                <span>v1.0.0</span>
+                <a
+                  href="https://github.com/mattstratton/conducky"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  GitHub
+                </a>
+              </div>
+            </footer>
+          </ModalContext.Provider>
+        </DarkModeContext.Provider>
+      </UserContext.Provider>
+    </>
   );
 }
 
