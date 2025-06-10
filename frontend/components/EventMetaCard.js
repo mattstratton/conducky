@@ -283,14 +283,23 @@ export default function EventMetaCard({
               ) : (
                 <>
                   {event.website ? (
-                    <a href={event.website} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 dark:text-blue-400">{event.website}</a>
+                    <a
+                      href={event.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-blue-600 dark:text-blue-400"
+                    >
+                      {event.website}
+                    </a>
                   ) : (
                     <span className="italic text-gray-400">(none)</span>
                   )}
                   {showEdit && (
                     <button
                       type="button"
-                      onClick={() => onEditStart && onEditStart("website", event.website)}
+                      onClick={() =>
+                        onEditStart && onEditStart("website", event.website)
+                      }
                       className="text-blue-600 ml-1"
                       aria-label="Edit website"
                     >
@@ -304,7 +313,12 @@ export default function EventMetaCard({
             {event.contactEmail && (
               <span className="flex items-center gap-1">
                 <b>Contact Email:</b>
-                <a href={`mailto:${event.contactEmail}`} className="underline text-blue-600 dark:text-blue-400">{event.contactEmail}</a>
+                <a
+                  href={`mailto:${event.contactEmail}`}
+                  className="underline text-blue-600 dark:text-blue-400"
+                >
+                  {event.contactEmail}
+                </a>
               </span>
             )}
           </div>
