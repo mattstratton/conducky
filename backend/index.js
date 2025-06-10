@@ -1414,9 +1414,8 @@ app.post("/events/slug/:slug/logo", async (req, res) => {
       res.status(200).json({ event });
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Failed to upload logo.", details: err.message });
+    console.error("Failed to fetch logo:", err);
+    res.status(500).send(`Failed to fetch logo: ${err.message}`);
   }
 });
 
@@ -1437,7 +1436,8 @@ app.get("/events/slug/:slug/logo", async (req, res) => {
     res.setHeader("Content-Disposition", `inline; filename="${logo.filename}"`);
     res.send(logo.data);
   } catch (err) {
-    res.status(500).send("Failed to fetch logo");
+    console.error("Failed to fetch logo:", err);
+    res.status(500).send(`Failed to fetch logo: ${err.message}`);
   }
 });
 

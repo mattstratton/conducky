@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import Card from "./Card";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import CoCTeamList from "./CoCTeamList";
+import PropTypes from "prop-types";
 
 export default function EventMetaCard({
   event,
@@ -438,3 +439,27 @@ export default function EventMetaCard({
     </Card>
   );
 }
+
+EventMetaCard.propTypes = {
+  event: PropTypes.object.isRequired,
+  logoPreview: PropTypes.string,
+  logoExists: PropTypes.bool,
+  eventSlug: PropTypes.string,
+  showCodeButton: PropTypes.bool,
+  showEdit: PropTypes.bool,
+  editingField: PropTypes.string,
+  editValue: PropTypes.any,
+  onEditStart: PropTypes.func,
+  onEditChange: PropTypes.func,
+  onEditSave: PropTypes.func,
+  onEditCancel: PropTypes.func,
+  metaEditError: PropTypes.string,
+  metaEditSuccess: PropTypes.string,
+  logoUploadLoading: PropTypes.bool,
+  handleLogoFileChange: PropTypes.func,
+  logoFile: PropTypes.any,
+  setLogoFile: PropTypes.func,
+  setLogoPreview: PropTypes.func,
+  showCodeModal: PropTypes.bool,
+  setShowCodeModal: PropTypes.func,
+};

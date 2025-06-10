@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
-import { useEffect, useState, useContext } from "react";
 import Link from "next/link";
 import { ModalContext } from "../../context/ModalContext";
 import { Button, Input, Card, Table } from "../../components";
@@ -178,9 +177,16 @@ export default function EventDashboard() {
         }));
       }
     } catch (err) {
+      console.error("Failed to change report state:", err);
       setStateChange((prev) => ({
         ...prev,
-        [reportId]: { loading: false, error: "Network error", success: "" },
+        [reportId]: {
+          loading: false,
+          error: err?.message
+            ? `Network error: ${err.message}`
+            : "An unexpected network error occurred.",
+          success: "",
+        },
       }));
     }
   };

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import CoCTeamList from "./CoCTeamList";
 import Card from "./Card";
 import Button from "./Button";
+import PropTypes from "prop-types";
 
 export default function ReportForm({ eventSlug, eventName, onSuccess }) {
   const [type, setType] = useState("");
@@ -179,3 +180,9 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
     </Card>
   );
 }
+
+ReportForm.propTypes = {
+  eventSlug: PropTypes.string.isRequired,
+  eventName: PropTypes.string,
+  onSuccess: PropTypes.func,
+};
