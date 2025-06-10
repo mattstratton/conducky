@@ -619,8 +619,10 @@ export default function EventAdminPage() {
                     type="button"
                     onClick={saveEdit}
                     className="text-green-600"
-                    aria-label="Save logo"
-                    disabled={logoUploadLoading}
+                  style={{ minWidth: 180 }}
+                  pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                  title="Please enter a valid email address"
+                />
                   >
                     <CheckIcon className="h-5 w-5" />
                   </button>
