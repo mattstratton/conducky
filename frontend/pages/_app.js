@@ -287,7 +287,11 @@ function Header() {
         {user ? (
           <>
             <Link href="/profile" className="flex items-center gap-2 group">
-              <Avatar user={user} size={36} className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" />
+              <Avatar
+                user={user}
+                size={36}
+                className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
+              />
               <span className="text-sm md:text-base">
                 Logged in as <b>{user.email}</b>
                 {user.name && (
@@ -371,8 +375,15 @@ function Header() {
         <div className="px-4 py-2 border-t border-gray-800 flex flex-col gap-2">
           {user ? (
             <>
-              <Link href="/profile" className="flex items-center gap-2 group mb-2">
-                <Avatar user={user} size={36} className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" />
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 group mb-2"
+              >
+                <Avatar
+                  user={user}
+                  size={36}
+                  className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
+                />
                 <span className="text-sm">
                   Logged in as <b>{user.email}</b>
                   {user.name && (

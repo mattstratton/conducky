@@ -24,7 +24,7 @@ describe("ProfilePage", () => {
     render(
       <UserContext.Provider value={{ user: mockUser, setUser }}>
         <ProfilePage />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     expect(screen.getByText("Your Profile")).toBeInTheDocument();
     expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe("ProfilePage", () => {
     render(
       <UserContext.Provider value={{ user, setUser }}>
         <ProfilePage />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     expect(screen.getByText("TU")).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();
@@ -48,12 +48,18 @@ describe("ProfilePage", () => {
     const user = { ...mockUser, avatarUrl: null };
     const newUser = { ...user, avatarUrl: "/users/u1/avatar" };
     fetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, avatarId: "a1" }) }) // upload
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ user: newUser }) }); // session
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, avatarId: "a1" }),
+      }) // upload
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user: newUser }),
+      }); // session
     const { container } = render(
       <UserContext.Provider value={{ user, setUser }}>
         <ProfilePage />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     const file = new File(["avatar"], "avatar.png", { type: "image/png" });
     const inputEl = container.querySelector('input[type="file"]');
@@ -66,11 +72,14 @@ describe("ProfilePage", () => {
   it("handles avatar removal", async () => {
     fetch
       .mockResolvedValueOnce({ ok: true, status: 204 }) // delete
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ user: { ...mockUser, avatarUrl: null } }) }); // session
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user: { ...mockUser, avatarUrl: null } }),
+      }); // session
     render(
       <UserContext.Provider value={{ user: mockUser, setUser }}>
         <ProfilePage />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     fireEvent.click(screen.getByText("Remove Avatar"));
     await waitFor(() => expect(fetch).toHaveBeenCalled());
@@ -79,11 +88,14 @@ describe("ProfilePage", () => {
   });
 
   it("shows error on upload failure", async () => {
-    fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: "fail" }) });
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: "fail" }),
+    });
     const { container } = render(
       <UserContext.Provider value={{ user: mockUser, setUser }}>
         <ProfilePage />
-      </UserContext.Provider>
+      </UserContext.Provider>,
     );
     const file = new File(["avatar"], "avatar.png", { type: "image/png" });
     const inputEl = container.querySelector('input[type="file"]');
@@ -91,4 +103,4 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText(/fail/i)).toBeInTheDocument());
   });
-}); 
+});

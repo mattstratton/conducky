@@ -12,7 +12,11 @@ export default function ProfilePage() {
   const fileInputRef = useRef();
 
   if (!user) {
-    return <div className="p-8 text-center">You must be logged in to view your profile.</div>;
+    return (
+      <div className="p-8 text-center">
+        You must be logged in to view your profile.
+      </div>
+    );
   }
 
   const handleFileChange = async (e) => {
@@ -44,7 +48,9 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar updated!");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, { credentials: "include" });
+        const sessionRes = await fetch(`${apiUrl}/session`, {
+          credentials: "include",
+        });
         const sessionData = await sessionRes.json();
         setUser(sessionData.user);
       }
@@ -73,7 +79,9 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar removed.");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, { credentials: "include" });
+        const sessionRes = await fetch(`${apiUrl}/session`, {
+          credentials: "include",
+        });
         const sessionData = await sessionRes.json();
         setUser(sessionData.user);
       }
@@ -87,7 +95,9 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 sm:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">Your Profile</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+        Your Profile
+      </h1>
       <div className="flex flex-col items-center gap-4 mb-6">
         <Avatar user={user} size={56} className="sm:size-20" />
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch sm:items-center">
@@ -109,16 +119,36 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">PNG or JPG, max 2MB</div>
-        {error && <div className="text-red-600 dark:text-red-400 text-sm w-full text-center">{error}</div>}
-        {success && <div className="text-green-600 dark:text-green-400 text-sm w-full text-center">{success}</div>}
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          PNG or JPG, max 2MB
+        </div>
+        {error && (
+          <div className="text-red-600 dark:text-red-400 text-sm w-full text-center">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="text-green-600 dark:text-green-400 text-sm w-full text-center">
+            {success}
+          </div>
+        )}
       </div>
       <div className="mt-8">
-        <div className="font-medium mb-2 text-gray-800 dark:text-gray-200">Name:</div>
-        <div className="mb-4 text-gray-900 dark:text-gray-100">{user.name || <span className="italic text-gray-400 dark:text-gray-500">(none)</span>}</div>
-        <div className="font-medium mb-2 text-gray-800 dark:text-gray-200">Email:</div>
+        <div className="font-medium mb-2 text-gray-800 dark:text-gray-200">
+          Name:
+        </div>
+        <div className="mb-4 text-gray-900 dark:text-gray-100">
+          {user.name || (
+            <span className="italic text-gray-400 dark:text-gray-500">
+              (none)
+            </span>
+          )}
+        </div>
+        <div className="font-medium mb-2 text-gray-800 dark:text-gray-200">
+          Email:
+        </div>
         <div className="text-gray-900 dark:text-gray-100">{user.email}</div>
       </div>
     </div>
   );
-} 
+}

@@ -18,7 +18,10 @@ describe("Avatar", () => {
     render(<Avatar user={user} />);
     const img = screen.getByRole("img");
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute("src", "http://localhost:3001/users/123/avatar");
+    expect(img).toHaveAttribute(
+      "src",
+      "http://localhost:3001/users/123/avatar",
+    );
   });
 
   it("renders initials and color fallback if no avatarUrl", () => {
@@ -34,4 +37,4 @@ describe("Avatar", () => {
     render(<Avatar user={user} />);
     expect(screen.getByText("?"));
   });
-}); 
+});

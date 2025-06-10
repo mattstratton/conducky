@@ -44,4 +44,4 @@ export default function Avatar({ user, size = 40, className = "" }) {
       {initials}
     </div>
   );
-} 
+}
