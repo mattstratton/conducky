@@ -449,6 +449,9 @@ function MyApp({ Component, pageProps }) {
             const thisUser = data.users.find((u) => u.id === user.id);
             setUserRoles(thisUser?.roles || []);
           }
+        })
+        .catch(() => {
+          setUserRoles([]);
         });
     } else {
       setEventName("");
