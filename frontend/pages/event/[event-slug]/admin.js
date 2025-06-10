@@ -182,7 +182,7 @@ export default function EventAdminPage() {
           setShowCodeModal(false);
         } else if (e.key === "Tab" && codeModalRef.current) {
           const focusableEls = codeModalRef.current.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
           );
           const firstEl = focusableEls[0];
           const lastEl = focusableEls[focusableEls.length - 1];
