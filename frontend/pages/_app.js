@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { ModalContext } from "../context/ModalContext";
 import { Button, Card } from "../components";
 import CoCTeamList from "../components/CoCTeamList";
+import ReportForm from "../components/ReportForm";
 
 // User context for global user state
 export const UserContext = createContext({ user: null, setUser: () => {} });
@@ -71,162 +72,6 @@ function SimpleModal({ open, onClose, children }) {
         {children}
       </Card>
     </div>
-  );
-}
-
-function ReportForm({ eventSlug, eventName, onSuccess }) {
-  const [type, setType] = useState("");
-  const [description, setDescription] = useState("");
-  const [incidentAt, setIncidentAt] = useState("");
-  const [parties, setParties] = useState("");
-  const [evidence, setEvidence] = useState([]);
-  const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const reportTypes = [
-    { value: "harassment", label: "Harassment" },
-    { value: "safety", label: "Safety" },
-    { value: "other", label: "Other" },
-  ];
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setMessage("");
-    const formData = new FormData();
-    formData.append("type", type);
-    formData.append("description", description);
-    if (incidentAt)
-      formData.append("incidentAt", new Date(incidentAt).toISOString());
-    if (parties) formData.append("parties", parties);
-    if (evidence && evidence.length > 0) {
-      for (let i = 0; i < evidence.length; i++) {
-        formData.append("evidence", evidence[i]);
-      }
-    }
-    const res = await fetch(
-      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/reports`,
-      {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      },
-    );
-    if (res.ok) {
-      setMessage("Report submitted!");
-      setType("");
-      setDescription("");
-      setIncidentAt("");
-      setParties("");
-      setEvidence([]);
-      if (onSuccess) onSuccess();
-    } else {
-      setMessage("Failed to submit report.");
-    }
-    setSubmitting(false);
-  };
-  return (
-    <>
-      {eventSlug && <CoCTeamList eventSlug={eventSlug} />}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 mb-1"
-            htmlFor="report-type"
-          >
-            Type
-          </label>
-          <select
-            id="report-type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            required
-            className="mt-1 block w-64 max-w-xs rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">Select type</option>
-            {reportTypes.map((rt) => (
-              <option key={rt.value} value={rt.value}>
-                {rt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 mb-1"
-            htmlFor="report-description"
-          >
-            Description
-          </label>
-          <textarea
-            id="report-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            className="mt-1 block w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
-          />
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 mb-1"
-            htmlFor="incident-at"
-          >
-            Date/Time of Incident (optional)
-          </label>
-          <input
-            id="incident-at"
-            type="datetime-local"
-            value={incidentAt}
-            onChange={(e) => setIncidentAt(e.target.value)}
-            className="mt-1 block w-64 max-w-xs rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          />
-          <span className="text-xs text-gray-500">
-            If known, please provide when the incident occurred.
-          </span>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 mb-1"
-            htmlFor="parties"
-          >
-            Involved Parties (optional)
-          </label>
-          <input
-            id="parties"
-            type="text"
-            value={parties}
-            onChange={(e) => setParties(e.target.value)}
-            className="mt-1 block w-full rounded border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-            placeholder="List names, emails, or descriptions (comma-separated or freeform)"
-          />
-          <span className="text-xs text-gray-500">
-            List anyone involved, if known. Separate multiple names with commas.
-          </span>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 mb-1"
-            htmlFor="report-evidence"
-          >
-            Evidence (optional)
-          </label>
-          <input
-            id="report-evidence"
-            type="file"
-            multiple
-            onChange={(e) => setEvidence(Array.from(e.target.files))}
-            className="mt-1 block w-full"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow-sm font-medium transition-colors disabled:opacity-60"
-        >
-          {submitting ? "Submitting..." : "Submit Report"}
-        </button>
-        {message && <p className="mt-2 text-sm text-gray-500">{message}</p>}
-      </form>
-    </>
   );
 }
 
@@ -569,6 +414,7 @@ function MyApp({ Component, pageProps }) {
   const [eventName, setEventName] = useState("");
   const [eventSlugForModal, setEventSlugForModal] = useState(null);
   const [user, setUser] = useState(null);
+  const router = useRouter();
   // Fetch event name when modal opens
   useEffect(() => {
     if (modalOpen && eventSlugForModal) {
@@ -608,7 +454,15 @@ function MyApp({ Component, pageProps }) {
                 <ReportForm
                   eventSlug={eventSlugForModal}
                   eventName={eventName}
-                  onSuccess={() => setModalOpen(false)}
+                  onSuccess={() => {
+                    setModalOpen(false);
+                    const eventUrl = `/event/${eventSlugForModal}`;
+                    if (router.asPath === eventUrl) {
+                      router.reload();
+                    } else {
+                      router.push(eventUrl);
+                    }
+                  }}
                 />
               ) : (
                 <div className="text-gray-500">No event selected.</div>
