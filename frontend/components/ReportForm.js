@@ -60,7 +60,8 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
         router.push(eventUrl);
       }
     } else {
-      setMessage("Failed to submit report.");
+      const errorText = await res.text().catch(() => "Unknown error");
+      setMessage(`Failed to submit report: ${res.status} ${errorText}`);
     }
     setSubmitting(false);
   };
