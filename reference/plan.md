@@ -278,6 +278,6 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - We also want to make sure that everything is styled properly for dark mode
 - Each phase can be broken down further as needed.
 - We will iterate and adjust the plan as requirements evolve or new needs are discovered.
-- Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting. 
+- Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting.
 - Documentation should be written in markdown and stored in the docs directory
 - Documentation should be separated into user and developer documentation

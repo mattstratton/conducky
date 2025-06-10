@@ -891,7 +891,9 @@ app.get("/events/slug/:slug/users", async (req, res) => {
       const userRoles = allUserRoles.filter((uer) => uer.eventId === eventId);
       console.log("[DEBUG] userRoles for event", eventId, ":", userRoles);
       const hasRole = userRoles.some((uer) =>
-        ["Admin", "Responder", "SuperAdmin", "Reporter"].includes(uer.role.name),
+        ["Admin", "Responder", "SuperAdmin", "Reporter"].includes(
+          uer.role.name,
+        ),
       );
       if (!hasRole) {
         return res.status(403).json({ error: "Forbidden: insufficient role" });
@@ -1414,9 +1416,8 @@ app.post("/events/slug/:slug/logo", async (req, res) => {
       res.status(200).json({ event });
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Failed to upload logo.", details: err.message });
+    console.error("Failed to upload logo:", err);
+    res.status(500).send(`Failed to upload logo: ${err.message}`);
   }
 });
 
@@ -1437,7 +1438,8 @@ app.get("/events/slug/:slug/logo", async (req, res) => {
     res.setHeader("Content-Disposition", `inline; filename="${logo.filename}"`);
     res.send(logo.data);
   } catch (err) {
-    res.status(500).send("Failed to fetch logo");
+    console.error("Failed to fetch logo:", err);
+    res.status(500).send(`Failed to fetch logo: ${err.message}`);
   }
 });
 

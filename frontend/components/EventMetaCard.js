@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import Card from "./Card";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import CoCTeamList from "./CoCTeamList";
+import PropTypes from "prop-types";
 
 export default function EventMetaCard({
   event,
@@ -438,3 +439,42 @@ export default function EventMetaCard({
     </Card>
   );
 }
+
+EventMetaCard.propTypes = {
+  event: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    startDate: PropTypes.string,
+    endDate: PropTypes.string,
+    website: PropTypes.string,
+    contactEmail: PropTypes.string,
+    description: PropTypes.string,
+    codeOfConduct: PropTypes.string,
+    logo: PropTypes.string,
+    slug: PropTypes.string,
+  }).isRequired,
+  logoPreview: PropTypes.string,
+  logoExists: PropTypes.bool,
+  eventSlug: PropTypes.string,
+  showCodeButton: PropTypes.bool,
+  showEdit: PropTypes.bool,
+  editingField: PropTypes.string,
+  editValue: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.instanceOf(Date),
+  ]),
+  onEditStart: PropTypes.func,
+  onEditChange: PropTypes.func,
+  onEditSave: PropTypes.func,
+  onEditCancel: PropTypes.func,
+  metaEditError: PropTypes.string,
+  metaEditSuccess: PropTypes.string,
+  logoUploadLoading: PropTypes.bool,
+  handleLogoFileChange: PropTypes.func,
+  logoFile:
+    typeof File !== "undefined" ? PropTypes.instanceOf(File) : PropTypes.any,
+  setLogoFile: PropTypes.func,
+  setLogoPreview: PropTypes.func,
+  showCodeModal: PropTypes.bool,
+  setShowCodeModal: PropTypes.func,
+};
