@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 4000;
 const { logAudit } = require("./utils/audit");
 const { requireRole, requireSuperAdmin } = require("./utils/rbac");
 const crypto = require("crypto");
-const { createUploadMiddleware } = require('./utils/upload');
+const { createUploadMiddleware } = require("./utils/upload");
 const avatarUpload = createUploadMiddleware({
-  allowedMimeTypes: ['image/png', 'image/jpeg'],
+  allowedMimeTypes: ["image/png", "image/jpeg"],
   maxSizeMB: 2,
 });
 
@@ -41,7 +41,11 @@ if (process.env.NODE_ENV === "test") {
     const testUserId = req.headers["x-test-user-id"];
     if (testUserId) {
       req.isAuthenticated = () => true;
-      req.user = { id: testUserId, email: `${testUserId}@example.com`, name: `User${testUserId}` };
+      req.user = {
+        id: testUserId,
+        email: `${testUserId}@example.com`,
+        name: `User${testUserId}`,
+      };
     }
     next();
   });
@@ -203,7 +207,9 @@ app.get("/session", async (req, res) => {
     // Flatten roles to a list of role names
     const roles = userEventRoles.map((uer) => uer.role.name);
     // Check for avatar
-    const avatar = await prisma.userAvatar.findUnique({ where: { userId: req.user.id } });
+    const avatar = await prisma.userAvatar.findUnique({
+      where: { userId: req.user.id },
+    });
     res.json({
       user: {
         id: req.user.id,
@@ -439,7 +445,9 @@ app.get("/events/:eventId/users", async (req, res) => {
     for (const uer of userEventRoles) {
       if (!users[uer.userId]) {
         // Fetch avatar for each user
-        const avatar = await prisma.userAvatar.findUnique({ where: { userId: uer.user.id } });
+        const avatar = await prisma.userAvatar.findUnique({
+          where: { userId: uer.user.id },
+        });
         users[uer.userId] = {
           id: uer.user.id,
           email: uer.user.email,
@@ -947,7 +955,9 @@ app.get("/events/slug/:slug/users", async (req, res) => {
     for (const uer of userEventRoles) {
       if (!users[uer.userId]) {
         // Fetch avatar for each user
-        const avatar = await prisma.userAvatar.findUnique({ where: { userId: uer.user.id } });
+        const avatar = await prisma.userAvatar.findUnique({
+          where: { userId: uer.user.id },
+        });
         users[uer.userId] = {
           id: uer.user.id,
           email: uer.user.email,
@@ -1502,16 +1512,20 @@ app.get("/events/slug/:slug/reports/:reportId/comments", async (req, res) => {
       orderBy: { createdAt: "asc" },
     });
     // Add avatarUrl to each comment's author
-    const comments = await Promise.all(commentsRaw.map(async (comment) => {
-      const avatar = await prisma.userAvatar.findUnique({ where: { userId: comment.author.id } });
-      return {
-        ...comment,
-        author: {
-          ...comment.author,
-          avatarUrl: avatar ? `/users/${comment.author.id}/avatar` : null,
-        },
-      };
-    }));
+    const comments = await Promise.all(
+      commentsRaw.map(async (comment) => {
+        const avatar = await prisma.userAvatar.findUnique({
+          where: { userId: comment.author.id },
+        });
+        return {
+          ...comment,
+          author: {
+            ...comment.author,
+            avatarUrl: avatar ? `/users/${comment.author.id}/avatar` : null,
+          },
+        };
+      }),
+    );
     res.json({ comments });
   } catch (err) {
     res
@@ -1909,60 +1923,91 @@ app.delete("/evidence/:evidenceId", async (req, res) => {
 });
 
 // User avatar endpoints
-app.post('/users/:userId/avatar', avatarUpload.single('avatar'), async (req, res) => {
-  if (!req.isAuthenticated() || !req.user || req.user.id !== req.params.userId) {
-    console.error("[Avatar Upload] Not authorized", { userId: req.user?.id, paramsUserId: req.params.userId });
-    return res.status(401).json({ error: 'Not authorized' });
-  }
-  if (!req.file) {
-    console.error("[Avatar Upload] No file uploaded");
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  try {
-    await prisma.userAvatar.deleteMany({ where: { userId: req.user.id } });
-    const avatar = await prisma.userAvatar.create({
-      data: {
-        userId: req.user.id,
-        filename: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        data: req.file.buffer,
-      },
-    });
-    res.status(200).json({ success: true, avatarId: avatar.id });
-  } catch (err) {
-    console.error("[Avatar Upload] Failed to upload avatar", err);
-    res.status(500).json({ error: "Failed to upload avatar.", details: err.message });
-  }
-});
+app.post(
+  "/users/:userId/avatar",
+  avatarUpload.single("avatar"),
+  async (req, res) => {
+    if (
+      !req.isAuthenticated() ||
+      !req.user ||
+      req.user.id !== req.params.userId
+    ) {
+      console.error("[Avatar Upload] Not authorized", {
+        userId: req.user?.id,
+        paramsUserId: req.params.userId,
+      });
+      return res.status(401).json({ error: "Not authorized" });
+    }
+    if (!req.file) {
+      console.error("[Avatar Upload] No file uploaded");
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    try {
+      await prisma.userAvatar.deleteMany({ where: { userId: req.user.id } });
+      const avatar = await prisma.userAvatar.create({
+        data: {
+          userId: req.user.id,
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          data: req.file.buffer,
+        },
+      });
+      res.status(200).json({ success: true, avatarId: avatar.id });
+    } catch (err) {
+      console.error("[Avatar Upload] Failed to upload avatar", err);
+      res
+        .status(500)
+        .json({ error: "Failed to upload avatar.", details: err.message });
+    }
+  },
+);
 
-app.delete('/users/:userId/avatar', async (req, res) => {
-  if (!req.isAuthenticated() || !req.user || req.user.id !== req.params.userId) {
-    console.error("[Avatar Delete] Not authorized", { userId: req.user?.id, paramsUserId: req.params.userId });
-    return res.status(401).json({ error: 'Not authorized' });
+app.delete("/users/:userId/avatar", async (req, res) => {
+  if (
+    !req.isAuthenticated() ||
+    !req.user ||
+    req.user.id !== req.params.userId
+  ) {
+    console.error("[Avatar Delete] Not authorized", {
+      userId: req.user?.id,
+      paramsUserId: req.params.userId,
+    });
+    return res.status(401).json({ error: "Not authorized" });
   }
   try {
     await prisma.userAvatar.deleteMany({ where: { userId: req.user.id } });
     res.status(204).send();
   } catch (err) {
     console.error("[Avatar Delete] Failed to delete avatar", err);
-    res.status(500).json({ error: "Failed to delete avatar.", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to delete avatar.", details: err.message });
   }
 });
 
-app.get('/users/:userId/avatar', async (req, res) => {
+app.get("/users/:userId/avatar", async (req, res) => {
   try {
-    const avatar = await prisma.userAvatar.findUnique({ where: { userId: req.params.userId } });
+    const avatar = await prisma.userAvatar.findUnique({
+      where: { userId: req.params.userId },
+    });
     if (!avatar) {
-      console.error("[Avatar Fetch] No avatar found", { userId: req.params.userId });
-      return res.status(404).send('No avatar');
+      console.error("[Avatar Fetch] No avatar found", {
+        userId: req.params.userId,
+      });
+      return res.status(404).send("No avatar");
     }
-    res.setHeader('Content-Type', avatar.mimetype);
-    res.setHeader('Content-Disposition', `inline; filename="${avatar.filename}"`);
+    res.setHeader("Content-Type", avatar.mimetype);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${avatar.filename}"`,
+    );
     res.send(avatar.data);
   } catch (err) {
     console.error("[Avatar Fetch] Failed to fetch avatar", err);
-    res.status(500).json({ error: "Failed to fetch avatar.", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch avatar.", details: err.message });
   }
 });
 

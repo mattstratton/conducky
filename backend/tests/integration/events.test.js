@@ -531,7 +531,10 @@ describe("Slug-based Event Endpoints", () => {
       .send({ contactEmail: "contact@example.com" });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("event");
-    expect(res.body.event).toHaveProperty("contactEmail", "contact@example.com");
+    expect(res.body.event).toHaveProperty(
+      "contactEmail",
+      "contact@example.com",
+    );
   });
 
   it("should fail with 400 if nothing to update", async () => {
@@ -708,13 +711,18 @@ describe("Slug-based Invite Endpoints", () => {
 
 describe("User Avatar endpoints", () => {
   const userId = "1";
-  const avatarPng = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]); // PNG header
+  const avatarPng = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]); // PNG header
   const avatarJpg = Buffer.from([0xff, 0xd8, 0xff, 0xdb]); // JPG header
 
   it("should upload a valid PNG avatar", async () => {
     const res = await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", avatarPng, { filename: "avatar.png", contentType: "image/png" });
+      .attach("avatar", avatarPng, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("success", true);
     expect(res.body).toHaveProperty("avatarId");
@@ -723,7 +731,10 @@ describe("User Avatar endpoints", () => {
   it("should upload a valid JPG avatar", async () => {
     const res = await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", avatarJpg, { filename: "avatar.jpg", contentType: "image/jpeg" });
+      .attach("avatar", avatarJpg, {
+        filename: "avatar.jpg",
+        contentType: "image/jpeg",
+      });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("success", true);
     expect(res.body).toHaveProperty("avatarId");
@@ -732,14 +743,20 @@ describe("User Avatar endpoints", () => {
   it("should reject an invalid file type", async () => {
     const res = await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", Buffer.from([0x00, 0x01]), { filename: "avatar.gif", contentType: "image/gif" });
+      .attach("avatar", Buffer.from([0x00, 0x01]), {
+        filename: "avatar.gif",
+        contentType: "image/gif",
+      });
     expect([400, 415, 500]).toContain(res.statusCode);
   });
 
   it("should fetch the uploaded avatar", async () => {
     await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", avatarPng, { filename: "avatar.png", contentType: "image/png" });
+      .attach("avatar", avatarPng, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
     const res = await request(app).get(`/users/${userId}/avatar`);
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toMatch(/image\/png/);
@@ -754,7 +771,10 @@ describe("User Avatar endpoints", () => {
   it("should delete the avatar", async () => {
     await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", avatarPng, { filename: "avatar.png", contentType: "image/png" });
+      .attach("avatar", avatarPng, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
     const delRes = await request(app).delete(`/users/${userId}/avatar`);
     expect([200, 204]).toContain(delRes.statusCode);
     const getRes = await request(app).get(`/users/${userId}/avatar`);
@@ -764,11 +784,18 @@ describe("User Avatar endpoints", () => {
   it("should not allow another user to upload/delete avatar", async () => {
     // Simulate a different user
     const otherUserId = "2";
-    inMemoryStore.users.push({ id: otherUserId, email: "other@example.com", name: "Other" });
+    inMemoryStore.users.push({
+      id: otherUserId,
+      email: "other@example.com",
+      name: "Other",
+    });
     const res = await request(app)
       .post(`/users/${userId}/avatar`)
       .set("x-test-user-id", otherUserId)
-      .attach("avatar", avatarPng, { filename: "avatar.png", contentType: "image/png" });
+      .attach("avatar", avatarPng, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
     expect([401, 403]).toContain(res.statusCode);
     const delRes = await request(app)
       .delete(`/users/${userId}/avatar`)
@@ -780,7 +807,10 @@ describe("User Avatar endpoints", () => {
     // Upload avatar
     await request(app)
       .post(`/users/${userId}/avatar`)
-      .attach("avatar", avatarPng, { filename: "avatar.png", contentType: "image/png" });
+      .attach("avatar", avatarPng, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
     // /session
     const sessionRes = await request(app).get("/session");
     expect(sessionRes.statusCode).toBe(200);
