@@ -970,10 +970,12 @@ export default function EventAdminPage() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="coc-modal-title"
+              onClick={() => setShowCodeModal(false)}
             >
               <div
                 className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-2xl w-full p-6 relative"
                 ref={codeModalRef}
+                onClick={(e) => e.stopPropagation()}
               >
                 <button
                   onClick={() => setShowCodeModal(false)}
