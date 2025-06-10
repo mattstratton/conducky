@@ -370,7 +370,7 @@ export default function EventAdminPage() {
           setMetaEditError(
             data.error
               ? `Network error: ${data.error}`
-              : "An unexpected network error occurred."
+              : "An unexpected network error occurred.",
           );
           setLogoUploadLoading(false);
           return;
@@ -386,7 +386,7 @@ export default function EventAdminPage() {
         setMetaEditError(
           err?.message
             ? `Network error: ${err.message}`
-            : "An unexpected network error occurred."
+            : "An unexpected network error occurred.",
         );
         setLogoUploadLoading(false);
         return;
@@ -456,7 +456,7 @@ export default function EventAdminPage() {
           setMetaEditError(
             data.error
               ? `Network error: ${data.error}`
-              : "An unexpected network error occurred."
+              : "An unexpected network error occurred.",
           );
           setLogoUploadLoading(false);
           return;
@@ -472,7 +472,7 @@ export default function EventAdminPage() {
         setMetaEditError(
           err?.message
             ? `Network error: ${err.message}`
-            : "An unexpected network error occurred."
+            : "An unexpected network error occurred.",
         );
         setLogoUploadLoading(false);
         return;
