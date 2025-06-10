@@ -8,6 +8,7 @@ import { Button, Card } from "../components";
 import CoCTeamList from "../components/CoCTeamList";
 import ReportForm from "../components/ReportForm";
 import Avatar from "../components/Avatar";
+import EventNavBar from "../components/EventNavBar";
 
 // User context for global user state
 export const UserContext = createContext({ user: null, setUser: () => {} });
@@ -280,7 +281,6 @@ function Header() {
               {l.label}
             </Link>
           ))}
-        {eventSlug && <SubmitReportNavButton />}
       </nav>
       {/* Right: Actions */}
       <div className="hidden md:flex items-center gap-4">
@@ -366,11 +366,6 @@ function Header() {
                 {l.label}
               </Link>
             ))}
-          {eventSlug && (
-            <div className="py-2">
-              <SubmitReportNavButton />
-            </div>
-          )}
         </nav>
         <div className="px-4 py-2 border-t border-gray-800 flex flex-col gap-2">
           {user ? (
@@ -432,8 +427,39 @@ function MyApp({ Component, pageProps }) {
   const [eventName, setEventName] = useState("");
   const [eventSlugForModal, setEventSlugForModal] = useState(null);
   const [user, setUser] = useState(null);
+  const [userRoles, setUserRoles] = useState([]);
   const router = useRouter();
-  // Fetch event name when modal opens
+  // Extract eventSlug from route
+  const eventSlugMatch = router.asPath.match(/^\/event\/([^\/?#]+)/);
+  const eventSlug = eventSlugMatch ? eventSlugMatch[1] : null;
+
+  // Fetch event name and user roles if on event page
+  useEffect(() => {
+    if (eventSlug) {
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.event) setEventName(data.event.name);
+        });
+      // Fetch user roles for this event
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users`, { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : { users: [] }))
+        .then((data) => {
+          if (data && data.users && user) {
+            const thisUser = data.users.find((u) => u.id === user.id);
+            setUserRoles(thisUser?.roles || []);
+          }
+        })
+        .catch(() => {
+          setUserRoles([]);
+        });
+    } else {
+      setEventName("");
+      setUserRoles([]);
+    }
+  }, [eventSlug, user]);
+
+  // Fetch event name when modal opens (for submit report)
   useEffect(() => {
     if (modalOpen && eventSlugForModal) {
       fetch(
@@ -460,6 +486,15 @@ function MyApp({ Component, pageProps }) {
       <DarkModeContext.Provider value={darkModeValue}>
         <ModalContext.Provider value={{ openModal }}>
           <Header />
+          {eventSlug && (
+            <EventNavBar
+              eventSlug={eventSlug}
+              eventName={eventName}
+              user={user}
+              userRoles={userRoles}
+              openReportModal={() => openModal(eventSlug, eventName)}
+            />
+          )}
           <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
             <div className="text-gray-800">
               <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
