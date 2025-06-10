@@ -9,6 +9,7 @@ import {
   CheckIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import ReactMarkdown from "react-markdown";
 
 export default function EventAdminPage() {
   const router = useRouter();
@@ -69,6 +70,9 @@ export default function EventAdminPage() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
   const [logoExists, setLogoExists] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const codeModalRef = useRef(null);
+  const closeCodeModalBtnRef = useRef(null);
 
   // Debounce search input
   useEffect(() => {
@@ -166,6 +170,35 @@ export default function EventAdminPage() {
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
   }, [eventSlug, logoPreview]);
+
+  // Accessibility: focus management and Escape key
+  useEffect(() => {
+    if (showCodeModal) {
+      // Focus the close button
+      closeCodeModalBtnRef.current?.focus();
+      // Trap focus inside modal
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          setShowCodeModal(false);
+        } else if (e.key === "Tab" && codeModalRef.current) {
+          const focusableEls = codeModalRef.current.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          );
+          const firstEl = focusableEls[0];
+          const lastEl = focusableEls[focusableEls.length - 1];
+          if (!e.shiftKey && document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          } else if (e.shiftKey && document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [showCodeModal]);
 
   function hasRole(role) {
     if (!user || !user.roles) return false;
@@ -902,11 +935,21 @@ export default function EventAdminPage() {
               </>
             ) : (
               <>
-                <span className="ml-2 text-gray-700 dark:text-gray-200 whitespace-pre-line">
-                  {event?.codeOfConduct || (
-                    <span className="italic text-gray-400">(none)</span>
-                  )}
-                </span>
+                {event?.codeOfConduct ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowCodeModal(true)}
+                      className="text-blue-600 dark:text-blue-400 underline font-medium ml-2"
+                    >
+                      View Code of Conduct
+                    </button>
+                  </>
+                ) : (
+                  <span className="italic text-gray-400 ml-2">
+                    No code of conduct added. Please add one.
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() =>
@@ -920,6 +963,43 @@ export default function EventAdminPage() {
               </>
             )}
           </div>
+          {/* Code of Conduct Modal */}
+          {showCodeModal && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="coc-modal-title"
+              onClick={() => setShowCodeModal(false)}
+            >
+              <div
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-2xl w-full p-6 relative"
+                ref={codeModalRef}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowCodeModal(false)}
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                  aria-label="Close code of conduct modal"
+                  ref={closeCodeModalBtnRef}
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+                <h2
+                  id="coc-modal-title"
+                  className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100"
+                >
+                  Code of Conduct
+                </h2>
+                <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto">
+                  <ReactMarkdown>
+                    {event?.codeOfConduct ||
+                      "No code of conduct provided for this event."}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Contact Email */}
           <div className="flex items-center gap-2">
             <span className="font-medium">Contact Email:</span>
