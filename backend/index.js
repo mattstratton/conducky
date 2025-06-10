@@ -1414,8 +1414,8 @@ app.post("/events/slug/:slug/logo", async (req, res) => {
       res.status(200).json({ event });
     });
   } catch (err) {
-    console.error("Failed to fetch logo:", err);
-    res.status(500).send(`Failed to fetch logo: ${err.message}`);
+    console.error("Failed to upload logo:", err);
+    res.status(500).send(`Failed to upload logo: ${err.message}`);
   }
 });
 

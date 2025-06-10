@@ -368,9 +368,7 @@ export default function EventAdminPage() {
           const data = await res.json().catch(() => ({}));
           console.error("Failed to upload logo:", data.error);
           setMetaEditError(
-            data.error
-              ? `Network error: ${data.error}`
-              : "An unexpected network error occurred."
+            data.error || "An unexpected error occurred."
           );
           setLogoUploadLoading(false);
           return;
@@ -405,7 +403,7 @@ export default function EventAdminPage() {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setMetaEditError(data.error || "Failed to update event metadata.");
+        setMetaEditError(data.error || "An unexpected error occurred.");
         return;
       }
       setMetaEditSuccess("Event metadata updated!");
@@ -454,9 +452,7 @@ export default function EventAdminPage() {
           const data = await res.json().catch(() => ({}));
           console.error("Failed to upload logo:", data.error);
           setMetaEditError(
-            data.error
-              ? `Network error: ${data.error}`
-              : "An unexpected network error occurred."
+            data.error || "An unexpected error occurred."
           );
           setLogoUploadLoading(false);
           return;
@@ -491,7 +487,7 @@ export default function EventAdminPage() {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setMetaEditError(data.error || "Failed to update event metadata.");
+        setMetaEditError(data.error || "An unexpected error occurred.");
         return;
       }
       setMetaEditSuccess("Event metadata updated!");
