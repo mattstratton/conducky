@@ -608,6 +608,29 @@ export default function EventAdminPage() {
               </>
             )}
           </div>
+          {/* Contact Email */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Contact Email:</span>
+            {editingField === 'contactEmail' ? (
+              <>
+                <input
+                  type="email"
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+                  placeholder="contact@example.com"
+                  style={{ minWidth: 180 }}
+                />
+                <button type="button" onClick={saveEdit} className="ml-2 text-green-600" aria-label="Save contact email"><CheckIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={cancelEdit} className="ml-1 text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <>
+                <span>{event.contactEmail ? event.contactEmail : <span className="italic text-gray-400">(none)</span>}</span>
+                <button type="button" onClick={() => startEdit('contactEmail', event.contactEmail || '')} className="ml-2 text-blue-600" aria-label="Edit contact email"><PencilIcon className="h-5 w-5" /></button>
+              </>
+            )}
+          </div>
           {/* Success/Error messages */}
           {(metaEditSuccess || metaEditError) && (
             <div className="mt-2">

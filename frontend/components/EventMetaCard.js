@@ -262,7 +262,6 @@ export default function EventMetaCard({
                     value={editValue}
                     onChange={onEditChange}
                     className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-                    placeholder="https://example.com"
                   />
                   <button
                     type="button"
@@ -284,23 +283,14 @@ export default function EventMetaCard({
               ) : (
                 <>
                   {event.website ? (
-                    <a
-                      href={event.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 dark:text-blue-400 underline"
-                    >
-                      {event.website}
-                    </a>
+                    <a href={event.website} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 dark:text-blue-400">{event.website}</a>
                   ) : (
                     <span className="italic text-gray-400">(none)</span>
                   )}
                   {showEdit && (
                     <button
                       type="button"
-                      onClick={() =>
-                        onEditStart && onEditStart("website", event.website)
-                      }
+                      onClick={() => onEditStart && onEditStart("website", event.website)}
                       className="text-blue-600 ml-1"
                       aria-label="Edit website"
                     >
@@ -310,6 +300,13 @@ export default function EventMetaCard({
                 </>
               )}
             </span>
+            {/* Contact Email */}
+            {event.contactEmail && (
+              <span className="flex items-center gap-1">
+                <b>Contact Email:</b>
+                <a href={`mailto:${event.contactEmail}`} className="underline text-blue-600 dark:text-blue-400">{event.contactEmail}</a>
+              </span>
+            )}
           </div>
           {/* Description */}
           <div className="flex items-center gap-2 mb-2">
