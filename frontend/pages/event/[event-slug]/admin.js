@@ -367,9 +367,7 @@ export default function EventAdminPage() {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           console.error("Failed to upload logo:", data.error);
-          setMetaEditError(
-            data.error || "An unexpected error occurred."
-          );
+          setMetaEditError(data.error || "An unexpected error occurred.");
           setLogoUploadLoading(false);
           return;
         }
@@ -451,9 +449,7 @@ export default function EventAdminPage() {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           console.error("Failed to upload logo:", data.error);
-          setMetaEditError(
-            data.error || "An unexpected error occurred."
-          );
+          setMetaEditError(data.error || "An unexpected error occurred.");
           setLogoUploadLoading(false);
           return;
         }

@@ -471,7 +471,8 @@ EventMetaCard.propTypes = {
   metaEditSuccess: PropTypes.string,
   logoUploadLoading: PropTypes.bool,
   handleLogoFileChange: PropTypes.func,
-  logoFile: typeof File !== 'undefined' ? PropTypes.instanceOf(File) : PropTypes.any,
+  logoFile:
+    typeof File !== "undefined" ? PropTypes.instanceOf(File) : PropTypes.any,
   setLogoFile: PropTypes.func,
   setLogoPreview: PropTypes.func,
   showCodeModal: PropTypes.bool,
