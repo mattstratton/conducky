@@ -145,6 +145,27 @@ This document describes all API endpoints provided by the backend Express server
 - **Role:** Admin or SuperAdmin for the event
 - **Response:** `{ message }`
 
+### User Avatars
+
+- **POST** `/users/:userId/avatar`
+  - **Description:** Upload or change the avatar for the specified user. Only the user themselves can upload/change their avatar.
+  - **Body:** `multipart/form-data` with an `avatar` file field (PNG or JPG, max 2MB)
+  - **Response:** `{ success: true, avatarId }` on success
+  - **Errors:** 401 if not authenticated or not the user, 400 if no file or invalid type/size
+
+- **GET** `/users/:userId/avatar`
+  - **Description:** Fetch the avatar image for the specified user. Returns the image as binary data with the correct content-type. Returns 404 if the user has no avatar.
+  - **Response:** Binary image data
+
+- **DELETE** `/users/:userId/avatar`
+  - **Description:** Remove the avatar for the specified user. Only the user themselves can delete their avatar.
+  - **Response:** 204 No Content on success
+  - **Errors:** 401 if not authenticated or not the user
+
+- **Notes:**
+  - The `avatarUrl` field in user objects (e.g., `/session`, `/events/slug/:slug/users`, report comments) will be set to `/users/:userId/avatar` if the user has an avatar, or `null` otherwise.
+  - The frontend will prepend the API base URL to this path as needed.
+
 ---
 
 ## Reports

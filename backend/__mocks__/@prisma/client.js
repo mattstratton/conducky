@@ -22,6 +22,7 @@ const inMemoryStore = {
   auditLogs: [],
   eventLogos: [],
   eventInvites: [],
+  userAvatars: [],
 };
 
 class PrismaClient {
@@ -353,6 +354,33 @@ class PrismaClient {
         return inMemoryStore.evidenceFiles.filter(
           (e) => e.reportId === where.reportId,
         );
+      }),
+    };
+    this.userAvatar = {
+      findUnique: jest.fn(({ where }) => {
+        return (
+          inMemoryStore.userAvatars.find((a) => a.userId === where.userId) ||
+          null
+        );
+      }),
+      create: jest.fn(({ data }) => {
+        // Remove any existing avatar for this user
+        inMemoryStore.userAvatars = inMemoryStore.userAvatars.filter(
+          (a) => a.userId !== data.userId,
+        );
+        const avatar = {
+          id: String(inMemoryStore.userAvatars.length + 1),
+          ...data,
+        };
+        inMemoryStore.userAvatars.push(avatar);
+        return avatar;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.userAvatars.length;
+        inMemoryStore.userAvatars = inMemoryStore.userAvatars.filter(
+          (a) => a.userId !== where.userId,
+        );
+        return { count: before - inMemoryStore.userAvatars.length };
       }),
     };
   }

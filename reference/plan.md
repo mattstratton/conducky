@@ -122,7 +122,13 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Consider having direct links to a specific comment on an incident ([#39](https://github.com/mattstratton/conducky/issues/39))
 - [ ] Comments should support markdown and basic formatting ([#37](https://github.com/mattstratton/conducky/issues/37))
 - [ ] add filtering, pagination, and possibly search for comments on an incident ([#36](https://github.com/mattstratton/conducky/issues/36))
-- [ ] Add ability to add avatars ([#32](https://github.com/mattstratton/conducky/issues/32))
+- [X] Add ability to add avatars ([#32](https://github.com/mattstratton/conducky/issues/32))
+  - [X] Users can upload/remove avatars (PNG/JPG, max 2MB, stored as BLOBs in DB)
+  - [X] Avatar displays in navbar, CoC team list, and report comments
+  - [X] Fallback to initials if no avatar
+  - [X] Only user can modify their avatar
+  - [X] All endpoints and UI tested and working
+  - [X] Documentation and automated tests for avatar functionality (backend and frontend) are complete and passing
 - [ ] At limits for file uploads ([#31](https://github.com/mattstratton/conducky/issues/31))
 - [ ] Make sure there is a public path to the code of conduct of the event ([#28](https://github.com/mattstratton/conducky/issues/28))
 
@@ -231,7 +237,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [X] Ensure layout is responsive and accessible
 - [X] Update documentation in /docs to reflect new metadata editing features
 
-## Suggested Next Task
+## Enhanching the report submission form
 
 - [X] Enhance the report submission form
   - [X] Add a date and time of incident field
@@ -268,6 +274,25 @@ _Checklist items with a GitHub issue are now linked for traceability._
 
 - [x] Frontend: Allow event admins to edit contact email and display it on event home page ([#71](https://github.com/mattstratton/conducky/issues/71))
 
+## User Avatars (Issue #32)
+
+- [x] Update Prisma schema: add UserAvatar model, relation to User
+- [x] Backend: endpoints for upload, fetch, update, delete avatar
+- [x] Backend: refactor file upload/storage logic for avatars, event logos, evidence files (shared utilities, per-type restrictions)
+- [x] Backend: /session and user fetch endpoints include avatarUrl
+- [x] Frontend: create user profile/settings page for avatar management (upload, remove, preview; uses Avatar component)
+- [x] Frontend: reusable Avatar component (image or initials fallback)
+- [X] Frontend: display Avatar in nav bar, CoC team list, report comments
+- [X] Docs: update documentation in /website/docs in the appropriate guides for avatar usage, upload/removal, and restrictions
+- [X] Tests: backend and frontend tests for avatar upload, removal, fallback
+- [X] All errors are logged to the console or the server logs as appropriate, with informative messages
+- [X] Review and update all new user profile related pages for dark mode and mobile responsiveness
+
+## Testing improvments
+
+- [ ] Make a list of all pages and use cases to test manually (user experience testing)
+- [ ] Remove all DEBUG from the existing tests
+
 ---
 
 **Notes:**
@@ -281,3 +306,4 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - Documentation will cover both system usage and all aspects of setup, configuration, local development, and hosting.
 - Documentation should be written in markdown and stored in the docs directory
 - Documentation should be separated into user and developer documentation
+
