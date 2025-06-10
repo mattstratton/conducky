@@ -13,5 +13,3 @@ name = "javascript"
     "jest"
   ]
 
-[[transformers]]
-name = "prettier"
