@@ -2,6 +2,7 @@ import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { Button, Card, Table } from '../../../../components';
+import Avatar from "../../../../components/Avatar";
 
 const validStates = [
   'submitted',
@@ -391,6 +392,7 @@ export default function ReportDetail({ initialReport, error }) {
               return (
                 <li key={comment.id} className="border border-gray-200 dark:border-gray-700 rounded p-3 bg-gray-50 dark:bg-gray-900">
                   <div className="flex items-center gap-2 mb-1">
+                    <Avatar user={comment.author} size={32} className="mr-2" />
                     <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{comment.author?.name || comment.author?.email || 'Anonymous'}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(comment.createdAt).toLocaleString()}</span>
                     {comment.visibility === 'internal' && (

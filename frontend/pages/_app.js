@@ -7,6 +7,7 @@ import { ModalContext } from "../context/ModalContext";
 import { Button, Card } from "../components";
 import CoCTeamList from "../components/CoCTeamList";
 import ReportForm from "../components/ReportForm";
+import Avatar from "../components/Avatar";
 
 // User context for global user state
 export const UserContext = createContext({ user: null, setUser: () => {} });
@@ -285,12 +286,15 @@ function Header() {
       <div className="hidden md:flex items-center gap-4">
         {user ? (
           <>
-            <span className="text-sm md:text-base">
-              Logged in as <b>{user.email}</b>
-              {user.name && (
-                <span className="text-gray-300"> ({user.name})</span>
-              )}
-            </span>
+            <Link href="/profile" className="flex items-center gap-2 group">
+              <Avatar user={user} size={36} className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" />
+              <span className="text-sm md:text-base">
+                Logged in as <b>{user.email}</b>
+                {user.name && (
+                  <span className="text-gray-300"> ({user.name})</span>
+                )}
+              </span>
+            </Link>
             <MyEventsDropdown />
             <Button onClick={handleLogout} className="ml-2">
               Logout
@@ -367,12 +371,15 @@ function Header() {
         <div className="px-4 py-2 border-t border-gray-800 flex flex-col gap-2">
           {user ? (
             <>
-              <span className="text-sm">
-                Logged in as <b>{user.email}</b>
-                {user.name && (
-                  <span className="text-gray-300"> ({user.name})</span>
-                )}
-              </span>
+              <Link href="/profile" className="flex items-center gap-2 group mb-2">
+                <Avatar user={user} size={36} className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" />
+                <span className="text-sm">
+                  Logged in as <b>{user.email}</b>
+                  {user.name && (
+                    <span className="text-gray-300"> ({user.name})</span>
+                  )}
+                </span>
+              </Link>
               <MyEventsDropdown />
               <Button onClick={handleLogout} className="mt-2">
                 Logout

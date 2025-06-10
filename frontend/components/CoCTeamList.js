@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { UserContext } from "../pages/_app";
+import Avatar from "./Avatar";
 
 export default function CoCTeamList({ eventSlug, showTitle = true }) {
   const { user } = useContext(UserContext);
@@ -66,7 +67,8 @@ export default function CoCTeamList({ eventSlug, showTitle = true }) {
       ) : (
         <ul className="list-disc pl-6">
           {team.map((member) => (
-            <li key={member.id} className="mb-1">
+            <li key={member.id} className="mb-1 flex items-center">
+              <Avatar user={member} size={32} className="mr-2" />
               <span className="font-medium">{member.name || member.email}</span>
               {member.name && member.email && (
                 <span className="text-gray-500 ml-2">({member.email})</span>

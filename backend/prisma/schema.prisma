@@ -53,6 +53,7 @@ model User {
   reportComments ReportComment[]
   evidenceFilesUploaded EvidenceFile[] @relation("EvidenceFileUploader")
   assignedReports Report[] @relation("AssignedResponder")
+  avatar         UserAvatar?
 }
 
 model Event {
@@ -171,6 +172,17 @@ model EventLogo {
   id        String   @id @default(uuid())
   event     Event    @relation(fields: [eventId], references: [id])
   eventId   String   @unique
+  filename  String
+  mimetype  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+model UserAvatar {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
   filename  String
   mimetype  String
   size      Int

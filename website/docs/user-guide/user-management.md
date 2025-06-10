@@ -12,6 +12,17 @@ Event Admins can manage users for their event using a powerful user list UI with
 
 All these controls can be combined for advanced filtering and navigation.
 
+## Avatars
+
+You can personalize your account by uploading an avatar (profile picture). Your avatar will appear in the navigation bar, Code of Conduct team list, and next to your comments on reports.
+
+- **Upload/Change Avatar:** Go to your profile page (click your avatar or email in the top right) and use the upload button to select a PNG or JPG image (max 2MB).
+- **Remove Avatar:** On your profile page, click the "Remove Avatar" button to revert to your initials.
+- **Privacy:** Only you can upload or remove your avatar. Other users will see your avatar but cannot change it.
+- **Fallback:** If you do not upload an avatar, your initials will be shown instead.
+
+Avatars help personalize the experience and make it easier to identify users in team lists and report comments.
+
 ## API Details
 The backend endpoint `/events/slug/:slug/users` supports the following query parameters:
 - `search` (string): Filter by name or email

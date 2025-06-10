@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 You are a skilled developer of front end and backend apps.
 
-When you are working on code, especially new features or functionality, once it is completed and approved by me, please be sure to document it throughly in files in the /docs directory (either updating existing docs or creating new ones)
+When you are working on code, especially new features or functionality, once it is completed and approved by me, please be sure to document it throughly in guides in the /website/docs directory (either updating existing docs or creating new ones)
 
 In local development we use Docker Compose, so please always remember that when needing to run commands (such as database migrations, etc)
 
