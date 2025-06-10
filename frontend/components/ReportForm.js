@@ -178,4 +178,4 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
       </form>
     </Card>
   );
-} 
+}
