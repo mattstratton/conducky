@@ -525,6 +525,15 @@ describe("Slug-based Event Endpoints", () => {
     expect(res.body.event).toHaveProperty("name", "Updated Event");
   });
 
+  it("should update contactEmail for an event", async () => {
+    const res = await request(app)
+      .patch(`/events/slug/${slug}`)
+      .send({ contactEmail: "contact@example.com" });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("event");
+    expect(res.body.event).toHaveProperty("contactEmail", "contact@example.com");
+  });
+
   it("should fail with 400 if nothing to update", async () => {
     const res = await request(app).patch(`/events/slug/${slug}`).send({});
     expect(res.statusCode).toBe(400);

@@ -619,10 +619,7 @@ export default function EventAdminPage() {
                     type="button"
                     onClick={saveEdit}
                     className="text-green-600"
-                  style={{ minWidth: 180 }}
-                  pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                  title="Please enter a valid email address"
-                />
+                    aria-label="Save logo"
                   >
                     <CheckIcon className="h-5 w-5" />
                   </button>
@@ -923,22 +920,25 @@ export default function EventAdminPage() {
                   placeholder="contact@example.com"
                   style={{ minWidth: 180 }}
                 />
-                <button
-                  type="button"
-                  onClick={saveEdit}
-                  className="ml-2 text-green-600"
-                  aria-label="Save contact email"
-                >
-                  <CheckIcon className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="ml-1 text-gray-500"
-                  aria-label="Cancel edit"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+                <div className="flex gap-1 mt-2">
+                  <button
+                    type="button"
+                    onClick={saveEdit}
+                    className="text-green-600"
+                    aria-label="Save contact email"
+                  >
+                    <CheckIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="text-gray-500"
+                    aria-label="Cancel edit"
+                    disabled={logoUploadLoading}
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </>
             ) : (
               <>

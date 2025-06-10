@@ -1287,6 +1287,7 @@ app.patch("/events/slug/:slug", async (req, res) => {
     endDate,
     website,
     codeOfConduct,
+    contactEmail,
   } = req.body;
   if (
     !name &&
@@ -1296,7 +1297,8 @@ app.patch("/events/slug/:slug", async (req, res) => {
     !startDate &&
     !endDate &&
     !website &&
-    !codeOfConduct
+    !codeOfConduct &&
+    !contactEmail
   ) {
     return res.status(400).json({ error: "Nothing to update." });
   }
@@ -1342,6 +1344,7 @@ app.patch("/events/slug/:slug", async (req, res) => {
       updateData.endDate = endDate ? new Date(endDate) : null;
     if (website !== undefined) updateData.website = website;
     if (codeOfConduct !== undefined) updateData.codeOfConduct = codeOfConduct;
+    if (contactEmail !== undefined) updateData.contactEmail = contactEmail;
     const updated = await prisma.event.update({
       where: { slug },
       data: updateData,
