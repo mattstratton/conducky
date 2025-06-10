@@ -264,6 +264,10 @@ _Checklist items with a GitHub issue are now linked for traceability._
 
 - [ ] Refactor report detail pages (reporter and admin/responder) to use shared components for report metadata, evidence, and comments. Minimize code duplication and use role-based conditional rendering where possible, while keeping security and clarity. (Add after initial admin/responder UI is complete)
 
+## New Checklist Item
+
+- [x] Frontend: Allow event admins to edit contact email and display it on event home page ([#71](https://github.com/mattstratton/conducky/issues/71))
+
 ---
 
 **Notes:**

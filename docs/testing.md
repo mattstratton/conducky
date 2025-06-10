@@ -14,4 +14,20 @@
 4. Confirm that you see a success message: "Registration successful! Please log in to continue." and a button labeled "Go to Login".
 5. Click the "Go to Login" button and verify you are taken to the login page, with the `next` parameter set to the invite link.
 6. Log in with the newly created credentials and confirm you are redirected appropriately.
-7. Confirm you are **not** automatically logged in after registration. 
+7. Confirm you are **not** automatically logged in after registration.
+
+# Testing Event Contact Email
+
+## Automated Tests
+- Backend integration tests already cover PATCH /events/slug/:slug for contactEmail.
+
+## Manual Testing
+1. As an event admin, go to the event admin page.
+2. Edit the Contact Email field, save, and verify a success message appears.
+3. Visit the event home page and confirm the contact email is displayed as a mailto: link.
+4. Remove the contact email and verify it disappears from the event home page.
+
+## Running Tests
+- Run all tests: `npm run test:all`
+- Run backend tests: `cd backend && npm test`
+- Run frontend tests: `cd frontend && npm test` 
