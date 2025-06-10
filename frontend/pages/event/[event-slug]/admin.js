@@ -245,6 +245,7 @@ export default function EventAdminPage() {
         return;
       }
       // Refresh users
+      // TODO: add exception handling and/or better logging of error
       fetchEventUsers();
     } catch (err) {
       alert("Network error");
