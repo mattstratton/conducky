@@ -947,7 +947,10 @@ export default function EventAdminPage() {
                   Code of Conduct
                 </h2>
                 <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto">
-                  <ReactMarkdown>{event?.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown>
+                  <ReactMarkdown>
+                    {event?.codeOfConduct ||
+                      "No code of conduct provided for this event."}
+                  </ReactMarkdown>
                 </div>
               </div>
             </div>
