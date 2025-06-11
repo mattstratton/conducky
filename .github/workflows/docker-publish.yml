@@ -1,4 +1,4 @@
-name: Release & Publish Docker Images
+name: Publish Docker Images
 
 on:
   push:
@@ -52,18 +52,4 @@ jobs:
             ${{ env.IMAGE_BACKEND }}:${{ env.TAG }}
             ${{ env.IMAGE_BACKEND }}:latest
           build-args: |
-            APP_VERSION=${{ env.TAG }}
-
-  release:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create GitHub Release with Changelog
-        uses: google-github-actions/release-please-action@v4
-        with:
-          release-type: simple 
+            APP_VERSION=${{ env.TAG }} 
