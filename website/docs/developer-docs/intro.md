@@ -28,11 +28,14 @@ See `/backend/.env.example` for the template. Copy it to `/backend/.env` and fil
 
 #### Frontend (`/frontend`)
 
-- `NEXT_PUBLIC_API_URL` — The base URL for the backend API, used for client-side (browser) requests (e.g., `http://localhost:4000`)
-- `BACKEND_API_URL` — The base URL for the backend API, used for server-side rendering (SSR) and API calls from Next.js server functions (e.g., `http://localhost:4000`)
+- `NEXT_PUBLIC_API_URL` — The base URL for the backend API, used for all API calls from the frontend and server-side rendering (SSR) in Next.js (e.g., `http://localhost:4000`)
 
 See `/frontend/.env.example` for the template. Copy it to `/frontend/.env` and fill in the value as needed.
 
 > **Note:** Only these variables are required. Any others previously present have been removed for clarity and consistency.
 
 TODO: Add instructions for setting up a development environment, installing dependencies, and contributing to the project.
+
+### Running Backend Tests
+
+Backend tests automatically load environment variables from `/backend/.env.test` (if present) using `dotenv`. Edit `/backend/.env.test` to configure your local test database and secrets. This ensures tests run with the correct settings, separate from your development `.env`.
