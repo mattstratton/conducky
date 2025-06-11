@@ -23,6 +23,8 @@ Conducky uses environment variables for configuration. The required variables ar
 - `DATABASE_URL` — The Postgres connection string for the database
 - `SESSION_SECRET` — Secret used for session middleware (set securely in production)
 - `FRONTEND_BASE_URL` — The base URL of the deployed frontend (e.g., `http://localhost:3001`)
+- `CORS_ORIGIN` — The public URL of the frontend (e.g., `http://localhost:3001`)
+- `PORT` — The port the backend will listen on (e.g., `4000`). Optional, defaults to `4000`.
 
 See `/backend/.env.example` for the template. Copy it to `/backend/.env` and fill in the values as needed.
 

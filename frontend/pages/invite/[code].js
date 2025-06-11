@@ -2,6 +2,7 @@ import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../_app';
+import UserRegistrationForm from '../../components/UserRegistrationForm';
 
 export default function RedeemInvitePage() {
   const router = useRouter();
@@ -58,35 +59,6 @@ export default function RedeemInvitePage() {
     setRedeeming(false);
   };
 
-  // Registration handler
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setRegError('');
-    if (!regName || !regEmail || !regPassword || !regPassword2) {
-      setRegError('All fields are required.');
-      return;
-    }
-    if (regPassword !== regPassword2) {
-      setRegError('Passwords do not match.');
-      return;
-    }
-    setRegLoading(true);
-    try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/register/invite/${code}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: regName, email: regEmail, password: regPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
-      // Do NOT auto-login. Show success and prompt to login.
-      setSuccess('Registration successful! Please log in to continue.');
-    } catch (err) {
-      setRegError(err.message || 'Registration failed');
-    }
-    setRegLoading(false);
-  };
-
   // If not logged in, show login/register form
   if (!user && !loading) {
     return (
@@ -103,15 +75,29 @@ export default function RedeemInvitePage() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleRegister} className="flex flex-col gap-2 border-t pt-6">
-              <div className="font-semibold mb-2">Register as a New User</div>
-              <input type="text" placeholder="Name" value={regName} onChange={e => setRegName(e.target.value)} className="border px-2 py-1 rounded" />
-              <input type="email" placeholder="Email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="border px-2 py-1 rounded" />
-              <input type="password" placeholder="Password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="border px-2 py-1 rounded" />
-              <input type="password" placeholder="Confirm Password" value={regPassword2} onChange={e => setRegPassword2(e.target.value)} className="border px-2 py-1 rounded" />
-              <button type="submit" disabled={regLoading} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2 disabled:opacity-50">{regLoading ? 'Registering...' : 'Register & Join Event'}</button>
-              {regError && <div className="text-red-600 mt-2">{regError}</div>}
-            </form>
+            <UserRegistrationForm
+              buttonText="Register & Join Event"
+              loading={regLoading}
+              error={regError}
+              success={success}
+              onSubmit={async ({ name, email, password }) => {
+                setRegError('');
+                setRegLoading(true);
+                try {
+                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/register/invite/${code}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || 'Registration failed');
+                  setSuccess('Registration successful! Please log in to continue.');
+                } catch (err) {
+                  setRegError(err.message || 'Registration failed');
+                }
+                setRegLoading(false);
+              }}
+            />
           )}
         </div>
       </div>
