@@ -1793,6 +1793,27 @@ app.get("/users/me/events", async (req, res) => {
 app.get("/reports/:reportId/evidence", async (req, res) => {
   const { reportId } = req.params;
   try {
+    // Add access control before querying files
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: { event: true }
+    });
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+    // Verify user has access to this report
+    const isReporter = report.reporterId && req.user && req.user.id === report.reporterId;
+    const userEventRoles = req.user ? await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId: report.eventId },
+      include: { role: true },
+    }) : [];
+    const roles = userEventRoles.map((uer) => uer.role.name);
+    const isResponderOrAbove = roles.some((r) =>
+      ["Responder", "Admin", "SuperAdmin"].includes(r)
+    );
+    if (!isReporter && !isResponderOrAbove) {
+      return res.status(403).json({ error: "Forbidden: insufficient role" });
+    }
     const files = await prisma.evidenceFile.findMany({
       where: { reportId },
       select: {

@@ -172,8 +172,7 @@ export default function ReportDetail({ initialReport, error }) {
   };
 
   // Handle comment submit
-  const handleCommentSubmit = async (e, body, visibility) => {
-    e.preventDefault();
+  const handleCommentSubmit = async (body, visibility) => {
     setCommentError("");
     setCommentSubmitting(true);
     if (!body.trim()) {
@@ -428,7 +427,7 @@ export default function ReportDetail({ initialReport, error }) {
       loading={loading}
       error={fetchError}
       onStateChange={handleStateChange}
-      onCommentSubmit={(body, visibility) => handleCommentSubmit({ preventDefault: () => {} }, body, visibility)}
+      onCommentSubmit={(body, visibility) => handleCommentSubmit(body, visibility)}
       onCommentEdit={(comment, body, visibility) => {
         setEditingCommentId(comment.id);
         setEditCommentBody(body);
