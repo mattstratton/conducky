@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-if (!process.env.NEXT_PUBLIC_API_URL) {
+if (!process.env.NEXT_PUBLIC_API_URL || !process.env.NEXT_PUBLIC_API_URL.trim()) {
   throw new Error('Missing required environment variable: NEXT_PUBLIC_API_URL. Please set it in your .env file.');
 }
 const nextConfig = {
