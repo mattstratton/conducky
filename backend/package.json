@@ -8,6 +8,7 @@
     "seed": "node prisma/seed.js",
     "sample-data": "node prisma/sample-data-seed.js",
     "test": "jest",
+    "test:ci": "jest --ci --coverage --reporters=jest-junit",
     "test:coverage": "jest --coverage",
     "test:ctrf": "jest --ci"
   },
