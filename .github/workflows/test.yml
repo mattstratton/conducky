@@ -54,7 +54,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: backend
           name: backend-tests
-          verbose: true
+
 
   frontend:
     runs-on: ubuntu-latest
@@ -92,6 +92,13 @@ jobs:
           flags: frontend
           files: ./coverage/lcov.info
           name: frontend-coverage
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: frontend
+
 
   publish-test-report:
     needs: [backend, frontend]
