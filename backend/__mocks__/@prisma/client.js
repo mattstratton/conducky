@@ -341,19 +341,27 @@ class PrismaClient {
         inMemoryStore.evidenceFiles.push(newEvidence);
         return newEvidence;
       }),
+      // findUnique should only be used for id, not reportId (reportId is not unique)
       findUnique: jest.fn(({ where }) => {
         if (!inMemoryStore.evidenceFiles) return null;
-        return (
-          inMemoryStore.evidenceFiles.find(
-            (e) => e.reportId === where.reportId,
-          ) || null
-        );
+        if (where.id) {
+          return (
+            inMemoryStore.evidenceFiles.find(
+              (e) => e.id === where.id,
+            ) || null
+          );
+        }
+        return null;
       }),
+      // findMany should be used for reportId
       findMany: jest.fn(({ where }) => {
         if (!inMemoryStore.evidenceFiles) return [];
-        return inMemoryStore.evidenceFiles.filter(
-          (e) => e.reportId === where.reportId,
-        );
+        if (where.reportId) {
+          return inMemoryStore.evidenceFiles.filter(
+            (e) => e.reportId === where.reportId,
+          );
+        }
+        return [];
       }),
     };
     this.userAvatar = {

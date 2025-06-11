@@ -58,7 +58,7 @@ export default function AdminReportsList() {
                   <td>{report.severity ? report.severity.charAt(0).toUpperCase() + report.severity.slice(1) : <span className="text-gray-400 italic">(none)</span>}</td>
                   <td>{report.evidenceFiles ? report.evidenceFiles.length : 0}</td>
                   <td>
-                    <Link href={`/event/${eventSlug}/admin/reports/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">View</Link>
+                    <Link href={`/event/${eventSlug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">View</Link>
                   </td>
                 </tr>
               ))}

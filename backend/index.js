@@ -808,6 +808,9 @@ app.get("/events/slug/:slug/reports/:reportId", async (req, res) => {
   if (!slug || !reportId) {
     return res.status(400).json({ error: "slug and reportId are required." });
   }
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
   try {
     const eventId = await getEventIdBySlug(slug);
     if (!eventId) {
@@ -826,9 +829,20 @@ app.get("/events/slug/:slug/reports/:reportId", async (req, res) => {
       },
     });
     if (!report || report.eventId !== eventId) {
-      return res
-        .status(404)
-        .json({ error: "Report not found for this event." });
+      return res.status(404).json({ error: "Report not found for this event." });
+    }
+    // Access control: allow reporter or responder/admin/superadmin for the event
+    const isReporter = report.reporterId && req.user.id === report.reporterId;
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map((uer) => uer.role.name);
+    const isResponderOrAbove = roles.some((r) =>
+      ["Responder", "Admin", "SuperAdmin"].includes(r)
+    );
+    if (!isReporter && !isResponderOrAbove) {
+      return res.status(403).json({ error: "Forbidden: insufficient role" });
     }
     res.json({ report });
   } catch (err) {
@@ -1779,26 +1793,23 @@ app.get("/users/me/events", async (req, res) => {
 app.get("/reports/:reportId/evidence", async (req, res) => {
   const { reportId } = req.params;
   try {
-    const evidence = await prisma.evidenceFile.findUnique({
+    const files = await prisma.evidenceFile.findMany({
       where: { reportId },
+      select: {
+        id: true,
+        filename: true,
+        mimetype: true,
+        size: true,
+        createdAt: true,
+        uploader: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: "asc" },
     });
-    if (!evidence) {
-      return res
-        .status(404)
-        .json({ error: "No evidence file found for this report." });
-    }
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${evidence.filename}"`,
-    );
-    res.setHeader("Content-Type", evidence.mimetype);
-    res.setHeader("Content-Length", evidence.size);
-    res.send(evidence.data);
+    res.json({ files });
   } catch (err) {
-    res.status(500).json({
-      error: "Failed to download evidence file.",
-      details: err.message,
-    });
+    res
+      .status(500)
+      .json({ error: "Failed to list evidence files.", details: err.message });
   }
 });
 
@@ -1892,7 +1903,8 @@ app.get("/evidence/:evidenceId/download", async (req, res) => {
       "Content-Disposition",
       `attachment; filename="${evidence.filename}"`,
     );
-    res.setHeader("Content-Type", evidence.mimetype);
+    // Always use application/octet-stream for downloads
+    res.setHeader("Content-Type", "application/octet-stream");
     res.setHeader("Content-Length", evidence.size);
     res.send(evidence.data);
   } catch (err) {

@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This rule is about how you will manage context and things to do in every coding session
+
+- The AI should start every session by running all tests and summarizing failures.
+- Always scan recent git diffs/commits for context.
+
+- Generate a persistent summary at the end of each session and add it to a new markdown file (named by timestamp) in /reference/ai-summaries/.
