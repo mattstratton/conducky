@@ -52,7 +52,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/mattstratton/conducky/website/',
+            'https://github.com/mattstratton/conducky/tree/main/website/',
         },
         blog: false,
         theme: {
