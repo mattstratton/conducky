@@ -35,3 +35,7 @@ See `/frontend/.env.example` for the template. Copy it to `/frontend/.env` and f
 > **Note:** Only these variables are required. Any others previously present have been removed for clarity and consistency.
 
 TODO: Add instructions for setting up a development environment, installing dependencies, and contributing to the project.
+
+### Running Backend Tests
+
+Backend tests automatically load environment variables from `/backend/.env.test` (if present) using `dotenv`. Edit `/backend/.env.test` to configure your local test database and secrets. This ensures tests run with the correct settings, separate from your development `.env`.

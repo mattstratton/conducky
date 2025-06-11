@@ -8,6 +8,10 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgres://postgres:postgres@localhost:5432/conducky_test"
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET_TEST }}
+      FRONTEND_BASE_URL: "http://localhost:3001"
     permissions:
       pull-requests: write
     defaults:
@@ -45,6 +49,8 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: "http://localhost:4000"
     defaults:
       run:
         working-directory: frontend
