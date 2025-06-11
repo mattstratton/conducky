@@ -11,4 +11,4 @@ fi
 
 export APP_VERSION=$TAG
 echo "Using APP_VERSION=$APP_VERSION"
-docker-compose up --build -d 
+docker-compose up --build -d
