@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
 import { Button, Input, Card } from '../components';
+import UserRegistrationForm from '../components/UserRegistrationForm';
 
 export default function Home() {
   const [firstUserNeeded, setFirstUserNeeded] = useState(false);
@@ -39,41 +40,29 @@ export default function Home() {
         <Card className="w-full max-w-md p-4 sm:p-8">
           <h1 className="text-2xl font-bold mb-4 text-center">Welcome! Set Up Your First User</h1>
           <p className="mb-4 text-gray-700 dark:text-gray-200">No users exist yet. Create the first user (will be Global Admin):</p>
-          <form onSubmit={async e => {
-            e.preventDefault();
-            setFirstUserError('');
-            setFirstUserSuccess('');
-            // Register the user
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(firstUserForm),
-              credentials: 'include',
-            });
-            if (!res.ok) {
-              const data = await res.json();
-              setFirstUserError(data.error || 'Failed to create user.');
-              return;
-            }
-            setFirstUserSuccess('First user created and set as Global Admin! You can now log in.');
-            setFirstUserNeeded(false);
-          }}>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
-              <Input type="email" required value={firstUserForm.email} onChange={e => setFirstUserForm(f => ({ ...f, email: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Name</label>
-              <Input type="text" value={firstUserForm.name} onChange={e => setFirstUserForm(f => ({ ...f, name: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
-              <Input type="password" required value={firstUserForm.password} onChange={e => setFirstUserForm(f => ({ ...f, password: e.target.value }))} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-            </div>
-            <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create First User</Button>
-          </form>
-          {firstUserError && <p className="text-red-600 dark:text-red-400 mt-2">{firstUserError}</p>}
-          {firstUserSuccess && <p className="text-green-600 dark:text-green-400 mt-2">{firstUserSuccess}</p>}
+          <UserRegistrationForm
+            buttonText="Create First User"
+            loading={false}
+            error={firstUserError}
+            success={firstUserSuccess}
+            onSubmit={async ({ name, email, password }) => {
+              setFirstUserError('');
+              setFirstUserSuccess('');
+              const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password }),
+                credentials: 'include',
+              });
+              if (!res.ok) {
+                const data = await res.json();
+                setFirstUserError(data.error || 'Failed to create user.');
+                return;
+              }
+              setFirstUserSuccess('First user created and set as Global Admin! You can now log in.');
+              setFirstUserNeeded(false);
+            }}
+          />
         </Card>
       </div>
     );
