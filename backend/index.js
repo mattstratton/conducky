@@ -2011,6 +2011,15 @@ app.get("/users/:userId/avatar", async (req, res) => {
   }
 });
 
+// Startup check for required environment variables
+const requiredEnv = ["DATABASE_URL", "SESSION_SECRET", "FRONTEND_BASE_URL"];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  throw new Error(
+    `Missing required environment variables: ${missingEnv.join(", ")}.\nPlease set them in your .env file.`
+  );
+}
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Backend server listening on port ${PORT}`);

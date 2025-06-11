@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error('Missing required environment variable: NEXT_PUBLIC_API_URL. Please set it in your .env file.');
+}
 const nextConfig = {
   async rewrites() {
     return [
