@@ -29,14 +29,16 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm ci
-      - name: Run tests and generate JUnit and CTRF reports
+      - name: Run tests and generate JUnit and coverage reports
         run: npm run test:ci
+      - name: Run tests and generate CTRF report
+        run: npm run test:ctrf
       - name: Upload CTRF report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-ctrf-report
-          path: ctrf/ctrf-report.json
+          path: backend/ctrf/ctrf-report.json
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v5
@@ -72,8 +74,10 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm ci
-      - name: Run tests and generate JUnit and CTRF reports
+      - name: Run tests and generate JUnit and coverage reports
         run: npm run test:ci
+      - name: Run tests and generate CTRF report
+        run: npm run test:ctrf
       - name: Upload CTRF report artifact
         if: always()
         uses: actions/upload-artifact@v4
