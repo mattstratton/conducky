@@ -822,3 +822,100 @@ describe("User Avatar endpoints", () => {
     expect(usersRes.body.users[0]).toHaveProperty("avatarUrl");
   });
 });
+
+describe("Evidence endpoints", () => {
+  let reportId;
+  beforeEach(async () => {
+    // Create a report to attach evidence to
+    const res = await request(app)
+      .post("/events/1/reports")
+      .send({ type: "harassment", description: "Report for evidence" });
+    reportId = res.body.report.id;
+  });
+
+  it("should upload multiple evidence files to a report", async () => {
+    const res = await request(app)
+      .post(`/reports/${reportId}/evidence`)
+      .attach("evidence", Buffer.from("file1data"), "file1.txt")
+      .attach("evidence", Buffer.from("file2data"), "file2.txt");
+    expect(res.statusCode).toBe(201);
+    expect(res.body.files).toHaveLength(2);
+    expect(res.body.files[0]).toHaveProperty("filename", "file1.txt");
+    expect(res.body.files[1]).toHaveProperty("filename", "file2.txt");
+  });
+
+  it("should list all evidence files for a report", async () => {
+    // Upload files first
+    await request(app)
+      .post(`/reports/${reportId}/evidence`)
+      .attach("evidence", Buffer.from("file1data"), "file1.txt")
+      .attach("evidence", Buffer.from("file2data"), "file2.txt");
+    const res = await request(app).get(`/reports/${reportId}/evidence`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.files).toHaveLength(2);
+    expect(res.body.files[0]).toHaveProperty("filename", "file1.txt");
+    expect(res.body.files[1]).toHaveProperty("filename", "file2.txt");
+  });
+
+  it("should download a specific evidence file by its ID", async () => {
+    // Upload a file
+    const uploadRes = await request(app)
+      .post(`/reports/${reportId}/evidence`)
+      .attach("evidence", Buffer.from("downloadme"), "download.txt");
+    const evidenceId = uploadRes.body.files[0].id;
+    const res = await request(app).get(`/evidence/${evidenceId}/download`);
+    expect(res.statusCode).toBe(200);
+    expect(res.header["content-type"]).toBe("application/octet-stream");
+    expect(res.header["content-disposition"]).toContain("download.txt");
+    expect(res.body).toBeInstanceOf(Buffer);
+  });
+});
+
+describe("Report detail access control (slug-based)", () => {
+  beforeEach(() => {
+    // Set up event, users, roles, and a report
+    inMemoryStore.events = [{ id: "1", name: "Event1", slug: "event1" }];
+    inMemoryStore.roles = [
+      { id: "1", name: "SuperAdmin" },
+      { id: "2", name: "Admin" },
+      { id: "3", name: "Responder" },
+      { id: "4", name: "Reporter" },
+    ];
+    inMemoryStore.users = [
+      { id: "u1", email: "reporter@example.com", name: "Reporter" },
+      { id: "u2", email: "responder@example.com", name: "Responder" },
+      { id: "u3", email: "other@example.com", name: "Other" },
+    ];
+    inMemoryStore.userEventRoles = [
+      { userId: "u1", eventId: "1", roleId: "4", role: { name: "Reporter" }, user: { id: "u1" } },
+      { userId: "u2", eventId: "1", roleId: "3", role: { name: "Responder" }, user: { id: "u2" } },
+    ];
+    inMemoryStore.reports = [
+      { id: "r1", eventId: "1", reporterId: "u1", type: "harassment", description: "Test report", state: "submitted" },
+    ];
+  });
+
+  it("allows the reporter to access the report detail", async () => {
+    const res = await request(app)
+      .get("/events/slug/event1/reports/r1")
+      .set("x-test-user-id", "u1");
+    expect(res.statusCode).toBe(200);
+    expect(res.body.report).toHaveProperty("id", "r1");
+  });
+
+  it("allows a responder to access the report detail", async () => {
+    const res = await request(app)
+      .get("/events/slug/event1/reports/r1")
+      .set("x-test-user-id", "u2");
+    expect(res.statusCode).toBe(200);
+    expect(res.body.report).toHaveProperty("id", "r1");
+  });
+
+  it("forbids a user who is not the reporter or responder", async () => {
+    const res = await request(app)
+      .get("/events/slug/event1/reports/r1")
+      .set("x-test-user-id", "u3");
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toHaveProperty("error");
+  });
+});

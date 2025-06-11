@@ -120,12 +120,26 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 
 ---
 
-## Evidence File Uploads
+## Report Access and Evidence Management
 
+### Who Can View a Report
+- Only the following users can view a report detail page:
+  - The reporter (the user who submitted the report)
+  - Responders for the event
+  - Admins for the event
+- If you are not logged in, you will see: **"You must be logged in to view this report."**
+- If you are logged in but not authorized, you will see: **"You are not authorized to view this report."**
+
+### Evidence File Uploads
 - Reports can have multiple evidence files attached.
-- Evidence files can be uploaded when submitting a report, or added later from the report detail page (if you are the reporter, responder, or admin).
+- Evidence files can be uploaded when submitting a report, or added later from the report detail page.
+- **Who can upload evidence:**
+  - The reporter (user who submitted the report)
+  - Responders for the event
+  - Admins for the event
 - Each evidence file records the uploader (name/email if authenticated).
 - All evidence files are listed on the report detail page, with download links and uploader info.
+- Download links point directly to the backend API and will prompt a download or open the file, depending on your browser settings.
 - See [API Endpoints](../developer-docs/api-endpoints.md) for technical details on uploading, listing, and downloading evidence files.
 
 ---

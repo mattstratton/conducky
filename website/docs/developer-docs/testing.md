@@ -180,4 +180,24 @@ See `backend/tests/integration/audit-test.test.js` for a sample integration test
 
 ---
 
-For questions or improvements, see the project README or contact the maintainers. 
+For questions or improvements, see the project README or contact the maintainers.
+
+---
+
+## Recent Test Additions (June 2024)
+
+### Automated Tests
+- **Frontend:**
+  - Evidence file download link uses the correct backend API URL.
+  - Reporter can see and use the evidence upload form.
+- **Backend:**
+  - Access control for report detail endpoint: only the reporter, event responders, or event admins can access a report; others receive 403 Forbidden.
+  - Evidence upload, listing, and download endpoints are covered for all allowed roles.
+
+### Manual Testing Instructions
+- Log in as a reporter, responder, admin, and an unrelated user. Attempt to view a report detail page:
+  - Reporter, responder, and admin should see the report.
+  - Unauthorized users should see a clear error message.
+  - Unauthenticated users should be prompted to log in.
+- Try uploading evidence as each allowed role and verify the file appears in the evidence list.
+- Click an evidence file link to confirm it downloads or opens as expected. 

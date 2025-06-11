@@ -197,20 +197,35 @@ This document describes all API endpoints provided by the backend Express server
 
 #### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`).
 
+### Get Report by Slug (with Access Control)
+- **GET** `/events/slug/:slug/reports/:reportId`
+- **Description:** Get report details by event slug and report ID.
+- **Access Control:** Only the following users can access this endpoint:
+  - The reporter (user who submitted the report)
+  - Responders for the event
+  - Admins for the event
+- **Error Responses:**
+  - 401 if not authenticated
+  - 403 if authenticated but not authorized (not the reporter or event responder/admin)
+  - 404 if the report or event does not exist
+- **Response:** `{ report }`
+
 ### List Evidence Files for a Report
 - **GET** `/reports/:reportId/evidence`
 - **Description:** List all evidence files for a report (metadata only).
+- **Access Control:** Reporter, responder, or admin for the event.
 - **Response:** `{ files: [ { id, filename, mimetype, size, createdAt, uploader: { id, name, email } } ] }`
 
 ### Add Evidence Files to a Report
 - **POST** `/reports/:reportId/evidence`
 - **Description:** Upload one or more additional evidence files to an existing report (multipart/form-data, field: `evidence[]`).
-- **Role:** Reporter, Responder, or Admin for the event
+- **Access Control:** Reporter, responder, or admin for the event.
 - **Response:** `{ files: [...] }`
 
 ### Download Evidence File
 - **GET** `/evidence/:evidenceId/download`
 - **Description:** Download a specific evidence file by its ID.
+- **Access Control:** Reporter, responder, or admin for the event associated with the report.
 - **Response:** Binary file data with correct content-type and filename.
 
 ### Submit Report (by Event Slug)
