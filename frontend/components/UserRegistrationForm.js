@@ -51,7 +51,7 @@ export default function UserRegistrationForm({
         required
         onBlur={() => setTouched(t => ({ ...t, email: true }))}
       />
-      {touched.email && !emailValid && (
+      {touched.email && email && !emailValid && (
         <div className="text-red-600 text-sm">Please enter a valid email address.</div>
       )}
       <input
