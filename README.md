@@ -119,4 +119,8 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 You can use these credentials to log in and test the application immediately after seeding.
 
- 
+## Releases
+
+ We use GitHub Releases; you can do this either in the [web ui](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) or via the [CLI](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository?tool=cli).
+
+Please note that releases must start with a `v` and be in the format `vX.X.X`.

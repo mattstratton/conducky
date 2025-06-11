@@ -536,7 +536,7 @@ function MyApp({ Component, pageProps }) {
             <footer className="w-full mt-8 flex flex-col items-center justify-center px-4 py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center justify-center">
                 <span>© {new Date().getFullYear()} Conducky</span>
-                <span>v1.0.0</span>
+                <span>version {process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}</span>
                 <a
                   href="https://github.com/mattstratton/conducky"
                   target="_blank"

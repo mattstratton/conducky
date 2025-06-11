@@ -1,7 +1,10 @@
 version: '3.8'
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
     ports:
       - '3001:3000'
     environment:
@@ -11,7 +14,10 @@ services:
     volumes:
       - ./frontend:/app
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
     ports:
       - '4000:4000'
       - '5555:5555'
