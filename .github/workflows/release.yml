@@ -37,7 +37,9 @@ jobs:
         with:
           context: ./frontend
           push: true
-          tags: ${{ env.IMAGE_FRONTEND }}:${{ env.TAG }}
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:${{ env.TAG }}
+            ${{ env.IMAGE_FRONTEND }}:latest
           build-args: |
             APP_VERSION=${{ env.TAG }}
 
@@ -46,7 +48,9 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ${{ env.IMAGE_BACKEND }}:${{ env.TAG }}
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:${{ env.TAG }}
+            ${{ env.IMAGE_BACKEND }}:latest
           build-args: |
             APP_VERSION=${{ env.TAG }}
 
