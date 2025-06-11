@@ -28,7 +28,8 @@ See `/backend/.env.example` for the template. Copy it to `/backend/.env` and fil
 
 #### Frontend (`/frontend`)
 
-- `NEXT_PUBLIC_API_URL` — The base URL for the backend API, used for all API calls from the frontend and server-side rendering (SSR) in Next.js (e.g., `http://localhost:4000`)
+- `NEXT_PUBLIC_API_URL` — The base URL for the backend API, used for all client-side API calls in Next.js (e.g., `http://localhost:4000`)
+- `BACKEND_API_URL` — The base URL for the backend API, used for server-side rendering (SSR) and API calls from Next.js server functions (e.g., `http://localhost:4000`)
 
 See `/frontend/.env.example` for the template. Copy it to `/frontend/.env` and fill in the value as needed.
 

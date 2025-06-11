@@ -152,7 +152,7 @@ export default function EventDashboard() {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}/state`,
+          `/events/slug/${eventSlug}/reports/${reportId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

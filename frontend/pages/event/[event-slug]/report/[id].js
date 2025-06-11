@@ -123,7 +123,7 @@ export default function ReportDetail({ initialReport, error }) {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${id}/state`,
+          `/events/slug/${eventSlug}/reports/${id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -794,7 +794,8 @@ export async function getServerSideProps(context) {
     };
   }
   try {
-    const fetchUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/events/slug/${eventSlug}/reports/${id}`;
+    const apiUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const fetchUrl = `${apiUrl}/events/slug/${eventSlug}/reports/${id}`;
     const res = await fetch(fetchUrl);
     if (!res.ok) {
       throw new Error(`Failed to fetch report: ${res.status}`);
