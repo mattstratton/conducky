@@ -2,7 +2,9 @@ import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Button, Input, Card, Table } from "../../../components";
+import { Button } from "@/components/ui/button";
+import { Input, Card } from "../../../components";
+import { Table } from "../../../components";
 import {
   ClipboardIcon,
   PencilIcon,

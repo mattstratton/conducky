@@ -1,7 +1,8 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card } from '../../../../../components';
+import { Button } from "@/components/ui/button";
+import { Card } from '../../../../../components';
 
 export default function UserDetailsPage() {
   const router = useRouter();

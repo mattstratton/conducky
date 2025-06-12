@@ -3,7 +3,8 @@ import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
-import { Button, Input, Card } from '../components';
+import { Button } from "@/components/ui/button";
+import { Input, Card } from '../components';
 import UserRegistrationForm from '../components/UserRegistrationForm';
 
 export default function Home() {

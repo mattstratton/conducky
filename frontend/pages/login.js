@@ -2,7 +2,8 @@ import React from "react";
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
-import { Button, Input, Card } from '../components';
+import { Button } from "@/components/ui/button";
+import { Input, Card } from '../components';
 
 export default function Login() {
   const [email, setEmail] = useState('');

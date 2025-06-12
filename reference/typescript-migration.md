@@ -7,7 +7,7 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 - [X] Install TypeScript and type definitions for React/Node
 - [X] Add a `tsconfig.json` to the frontend directory
 - [X] Pick a simple component (e.g., `Button`) and migrate it to `.tsx` with typed props
-- [ ] Update all imports of the migrated component
+- [X] Update all imports of the migrated component (Button, Card, Input, Table)
 - [ ] Verify build and lint pass
 - [ ] Document best practices for TypeScript in `/website/docs/developer-docs/frontend-typescript.md`
 - [ ] Incrementally migrate other components/pages
@@ -15,9 +15,9 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 ## Component Migration Progress
 
 - [X] Button
-- [ ] Card ([#140](https://github.com/mattstratton/conducky/issues/140))
-- [ ] Input ([#141](https://github.com/mattstratton/conducky/issues/141))
-- [ ] Table ([#142](https://github.com/mattstratton/conducky/issues/142))
+- [X] Card ([#140](https://github.com/mattstratton/conducky/issues/140))
+- [X] Input ([#141](https://github.com/mattstratton/conducky/issues/141))
+- [X] Table ([#142](https://github.com/mattstratton/conducky/issues/142))
 - [ ] Avatar ([#143](https://github.com/mattstratton/conducky/issues/143))
 - [ ] CoCTeamList ([#144](https://github.com/mattstratton/conducky/issues/144))
 - [ ] UserRegistrationForm ([#145](https://github.com/mattstratton/conducky/issues/145))
@@ -35,4 +35,4 @@ Add more components/pages as needed. Check off each as it is migrated.
   - Update the barrel file to use `export * from './Button';` style re-exports
   - Update all imports throughout the codebase to use named imports (e.g., `import { Button } from '../components'`)
 
-This staged approach allows for a smooth migration with minimal breakage, followed by a modernization pass for best TypeScript practices. 
+This staged approach allows for a smooth migration with minimal breakage, followed by a modernization pass for best TypeScript practices.

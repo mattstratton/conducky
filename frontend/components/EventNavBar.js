@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Button } from "./index";
+import { Button } from "@/components/ui/button";
 
 export default function EventNavBar({ eventSlug, eventName, user, userRoles = [], openReportModal }) {
   const isAdmin = userRoles.includes("Admin");

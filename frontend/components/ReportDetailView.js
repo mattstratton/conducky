@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Card, Table, Button } from "./index";
+import { Button } from "@/components/ui/button";
+import { Card } from "./index";
+import { Table } from "./index";
 import Avatar from "./Avatar";
 
 const validStates = [

@@ -2,7 +2,9 @@ import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, Table, Button } from '../../../../components';
+import { Button } from "@/components/ui/button";
+import { Card } from '../../../../components';
+import { Table } from '../../../../components';
 
 export default function AdminReportsList() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import "../styles.css";
 import { useRouter } from "next/router";
 import { ModalContext } from "../context/ModalContext";
-import { Button, Card } from "../components";
+import { Button } from "@/components/ui/button";
 import CoCTeamList from "../components/CoCTeamList";
 import ReportForm from "../components/ReportForm";
 import Avatar from "../components/Avatar";
@@ -171,7 +171,7 @@ function Header() {
       .then((data) => setUser(data ? data.user : null))
       .catch(() => setUser(null));
     // Only run on mount
-    // eslint-disable-next-line
+     
   }, []);
 
   const handleLogout = async () => {

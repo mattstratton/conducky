@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import CoCTeamList from "./CoCTeamList";
 import Card from "./Card";
-import Button from "./Button";
+import { Button } from "@/components/ui/button";
 import PropTypes from "prop-types";
 
 export default function ReportForm({ eventSlug, eventName, onSuccess }) {

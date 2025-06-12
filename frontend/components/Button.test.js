@@ -1,6 +1,6 @@
+import { Button } from "@/components/ui/button";
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Button } from "./Button";
 
 describe('Button component', () => {
   it('renders with the correct text', () => {

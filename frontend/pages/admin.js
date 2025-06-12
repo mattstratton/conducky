@@ -2,7 +2,9 @@ import React from "react";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Button, Input, Card, Table } from '../components';
+import { Button } from "@/components/ui/button";
+import { Input, Card } from '../components';
+import { Table } from '../components';
 
 export default function GlobalAdmin() {
   const [user, setUser] = useState(null);
