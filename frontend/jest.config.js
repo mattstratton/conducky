@@ -8,7 +8,7 @@ module.exports = {
   },
   setupFilesAfterEnv: ["@testing-library/jest-dom"],
   transform: {
-    "^.+\\.(js|jsx)$": "babel-jest",
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
   },
   testPathIgnorePatterns: ["/node_modules/", "/.next/"],
   reporters: [
