@@ -5,9 +5,9 @@ import "../styles.css";
 import { useRouter } from "next/router";
 import { ModalContext } from "../context/ModalContext";
 import { Button } from "@/components/ui/button";
-import CoCTeamList from "../components/CoCTeamList";
-import ReportForm from "../components/ReportForm";
-import Avatar from "../components/Avatar";
+import { CoCTeamList } from "../components/CoCTeamList";
+import { ReportForm } from "@/components";
+import { Avatar } from "../components/Avatar";
 import EventNavBar from "../components/EventNavBar";
 import Head from "next/head";
 

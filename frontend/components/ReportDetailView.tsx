@@ -1,18 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "./index";
 import { Table } from "./index";
-import Avatar from "./Avatar";
+import { Avatar } from "./Avatar";
 
-const validStates = [
-  "submitted",
-  "acknowledged",
-  "investigating",
-  "resolved",
-  "closed",
-];
+export interface ReportDetailViewProps {
+  report: any;
+  user: any;
+  userRoles?: string[];
+  comments?: any[];
+  evidenceFiles?: any[];
+  adminMode?: boolean;
+  loading?: boolean;
+  error?: string;
+  onStateChange?: (e: ChangeEvent<HTMLSelectElement>) => void;
+  onAssignmentChange?: () => void;
+  onCommentSubmit?: (body: string, visibility: string) => void;
+  onCommentEdit?: (comment: any, body: string, visibility: string) => void;
+  onCommentDelete?: (comment: any) => void;
+  onEvidenceUpload?: (files: File[]) => void;
+  onEvidenceDelete?: (file: any) => void;
+  assignmentFields?: {
+    assignedResponderId?: string;
+    severity?: string;
+    resolution?: string;
+    [key: string]: any;
+  };
+  setAssignmentFields?: (f: any) => void;
+  eventUsers?: any[];
+  stateChangeLoading?: boolean;
+  stateChangeError?: string;
+  stateChangeSuccess?: string;
+  assignmentLoading?: boolean;
+  assignmentError?: string;
+  assignmentSuccess?: string;
+  apiBaseUrl?: string;
+  onTitleEdit?: (title: string) => Promise<void>;
+  [key: string]: any;
+}
 
-export default function ReportDetailView({
+export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   report,
   user,
   userRoles = [],
@@ -28,9 +55,9 @@ export default function ReportDetailView({
   onCommentDelete,
   onEvidenceUpload,
   onEvidenceDelete,
-  assignmentFields = {}, // { assignedResponderId, severity, resolution, ... }
+  assignmentFields = {},
   setAssignmentFields = () => {},
-  eventUsers = [], // for assignment dropdown
+  eventUsers = [],
   stateChangeLoading = false,
   stateChangeError = "",
   stateChangeSuccess = "",
@@ -40,8 +67,7 @@ export default function ReportDetailView({
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
   onTitleEdit,
   ...rest
-}) {
-  // Role checks
+}) => {
   const isSuperAdmin = user && user.roles && user.roles.includes("Global Admin");
   const isResponderOrAbove = userRoles.some((r) =>
     ["Responder", "Admin", "SuperAdmin", "Global Admin"].includes(r)
@@ -52,22 +78,20 @@ export default function ReportDetailView({
   const canChangeState = isSuperAdmin || isResponderOrAbove;
   const canEditTitle = user && (user.id === report.reporterId || isAdminOrSuperAdmin);
 
-  // Local state for comments and evidence
   const [commentBody, setCommentBody] = useState("");
   const [commentVisibility, setCommentVisibility] = useState("public");
-  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentBody, setEditCommentBody] = useState("");
   const [editCommentVisibility, setEditCommentVisibility] = useState("public");
-  const [newEvidence, setNewEvidence] = useState([]);
+  const [newEvidence, setNewEvidence] = useState<File[]>([]);
   const [evidenceUploadMsg, setEvidenceUploadMsg] = useState("");
-  const [deletingEvidenceId, setDeletingEvidenceId] = useState(null);
+  const [deletingEvidenceId, setDeletingEvidenceId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(report.title || "");
   const [titleError, setTitleError] = useState("");
   const [titleSuccess, setTitleSuccess] = useState("");
 
-  // Allowed state transitions (adminMode can pass a function for more control)
-  function getAllowedTransitions(current) {
+  function getAllowedTransitions(current: string): string[] {
     switch (current) {
       case "submitted": return ["acknowledged", "investigating", "resolved", "closed"];
       case "acknowledged": return ["investigating", "resolved", "closed"];
@@ -88,7 +112,7 @@ export default function ReportDetailView({
         <div className="flex-1">
           {editingTitle ? (
             <form
-              onSubmit={e => {
+              onSubmit={async e => {
                 e.preventDefault();
                 setTitleError("");
                 setTitleSuccess("");
@@ -96,14 +120,15 @@ export default function ReportDetailView({
                   setTitleError("Title must be between 10 and 70 characters.");
                   return;
                 }
-                onTitleEdit(titleInput)
-                  .then(() => {
+                if (onTitleEdit) {
+                  try {
+                    await onTitleEdit(titleInput);
                     setTitleSuccess("Title updated!");
                     setEditingTitle(false);
-                  })
-                  .catch(err => {
+                  } catch (err: any) {
                     setTitleError(err?.message || "Failed to update title.");
-                  });
+                  }
+                }
               }}
               className="flex flex-col sm:flex-row gap-2 items-start sm:items-center"
             >
@@ -121,14 +146,14 @@ export default function ReportDetailView({
               <Button type="submit" className="bg-blue-600 text-white px-3 py-1 text-sm">Save</Button>
               <Button type="button" onClick={() => { setEditingTitle(false); setTitleInput(report.title || ""); setTitleError(""); }} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 text-sm">Cancel</Button>
             </form>
-          ) : (
+          ) :
             <h2 className="text-2xl font-bold break-words">
               {report.title || <span className="italic text-gray-400">(untitled)</span>}
               {canEditTitle && (
                 <Button type="button" onClick={() => { setEditingTitle(true); setTitleInput(report.title || ""); setTitleError(""); setTitleSuccess(""); }} className="ml-2 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Edit</Button>
               )}
             </h2>
-          )}
+          }
           {titleError && <div className="text-xs text-red-500 dark:text-red-400 mt-1">{titleError}</div>}
           {titleSuccess && <div className="text-xs text-green-500 dark:text-green-400 mt-1">{titleSuccess}</div>}
         </div>
@@ -172,11 +197,11 @@ export default function ReportDetailView({
                 <td>
                   <select
                     value={assignmentFields.assignedResponderId || ''}
-                    onChange={e => setAssignmentFields(f => ({ ...f, assignedResponderId: e.target.value }))}
+                    onChange={e => setAssignmentFields((f: any) => ({ ...f, assignedResponderId: e.target.value }))}
                     className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100"
                   >
                     <option value="">(unassigned)</option>
-                    {eventUsers.map(u => (
+                    {eventUsers.map((u: any) => (
                       <option key={u.id} value={u.id}>{u.name || u.email || 'Unknown'}</option>
                     ))}
                   </select>
@@ -187,7 +212,7 @@ export default function ReportDetailView({
                 <td>
                   <select
                     value={assignmentFields.severity || ''}
-                    onChange={e => setAssignmentFields(f => ({ ...f, severity: e.target.value }))}
+                    onChange={e => setAssignmentFields((f: any) => ({ ...f, severity: e.target.value }))}
                     className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100"
                   >
                     <option value="">(none)</option>
@@ -203,7 +228,7 @@ export default function ReportDetailView({
                 <td>
                   <textarea
                     value={assignmentFields.resolution || ''}
-                    onChange={e => setAssignmentFields(f => ({ ...f, resolution: e.target.value }))}
+                    onChange={e => setAssignmentFields((f: any) => ({ ...f, resolution: e.target.value }))}
                     className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100 min-h-[60px]"
                     placeholder="Enter resolution details (required if resolved/closed)"
                   />
@@ -225,20 +250,20 @@ export default function ReportDetailView({
         </tbody>
       </Table>
       {/* Evidence section */}
-      <div className="mt-6">
+      <div className="mt-8">
         <h3 className="text-lg font-semibold mb-2">Evidence Files</h3>
         {(!report || !evidenceFiles) ? (
           <div className="text-gray-500 dark:text-gray-400">No evidence files.</div>
         ) : evidenceFiles.length > 0 ? (
           <ul className="space-y-1">
-            {evidenceFiles.map(file => (
+            {evidenceFiles.map((file: any) => (
               <li key={file.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <a href={`${apiBaseUrl}/evidence/${file.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-500 dark:text-blue-400 underline">{file.filename}</a>
                 <span className="text-xs text-gray-500 dark:text-gray-400">{file.uploader ? `${file.uploader.name || file.uploader.email || 'Unknown'}` : 'Unknown'}</span>
                 {isResponderOrAbove && (
                   deletingEvidenceId === file.id ? (
                     <>
-                      <Button onClick={() => onEvidenceDelete(file)} className="bg-red-600 text-white px-2 py-1 text-xs">Confirm Delete</Button>
+                      <Button onClick={() => onEvidenceDelete && onEvidenceDelete(file)} className="bg-red-600 text-white px-2 py-1 text-xs">Confirm Delete</Button>
                       <Button onClick={() => setDeletingEvidenceId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 text-xs">Cancel</Button>
                     </>
                   ) : (
@@ -249,14 +274,14 @@ export default function ReportDetailView({
             ))}
           </ul>
         ) : <div className="text-gray-500 dark:text-gray-400">No evidence files.</div>}
-        {(isResponderOrAbove || (user && report && user.id === report.reporterId)) && (
-          <form onSubmit={e => { e.preventDefault(); console.log('Evidence files:', newEvidence); onEvidenceUpload(newEvidence); setNewEvidence([]); }} className="mt-4 flex flex-col sm:flex-row gap-2 items-start">
+        {((isResponderOrAbove || (user && report && user.id === report.reporterId)) && onEvidenceUpload) && (
+          <form onSubmit={e => { e.preventDefault(); onEvidenceUpload(newEvidence); setNewEvidence([]); }} className="mt-4 flex flex-col sm:flex-row gap-2 items-start">
             <label htmlFor="evidence-upload-input" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Evidence Files</label>
             <input
               id="evidence-upload-input"
               type="file"
               multiple
-              onChange={e => setNewEvidence(Array.from(e.target.files))}
+              onChange={e => setNewEvidence(Array.from(e.target.files || []))}
               className="block border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
             <Button type="submit" className="bg-blue-600 text-white px-3 py-1 text-sm">Upload Evidence</Button>
@@ -271,7 +296,7 @@ export default function ReportDetailView({
           <div className="text-gray-500 dark:text-gray-400">No comments yet.</div>
         ) : (
           <ul className="space-y-4">
-            {comments.map(comment => (
+            {comments.map((comment: any) => (
               <li key={comment.id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
                 <div className="flex items-center gap-2 mb-1">
                   <Avatar user={comment.author} size={28} />
@@ -297,7 +322,7 @@ export default function ReportDetailView({
                       </select>
                     )}
                     <div className="flex gap-2 mt-2">
-                      <Button onClick={() => { onCommentEdit(comment, editCommentBody, editCommentVisibility); setEditingCommentId(null); }} className="bg-green-600 text-white px-3 py-1 text-sm">Save</Button>
+                      <Button onClick={() => { onCommentEdit && onCommentEdit(comment, editCommentBody, editCommentVisibility); setEditingCommentId(null); }} className="bg-green-600 text-white px-3 py-1 text-sm">Save</Button>
                       <Button onClick={() => setEditingCommentId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 text-sm">Cancel</Button>
                     </div>
                   </div>
@@ -305,10 +330,10 @@ export default function ReportDetailView({
                   <div className="mt-1">{comment.body}</div>
                 )}
                 {/* Edit/Delete controls */}
-                {(user && (user.id === comment.author.id || isAdminOrSuperAdmin)) && editingCommentId !== comment.id && (
+                {(user && (user.id === comment.author?.id || isResponderOrAbove)) && (
                   <div className="flex gap-2 mt-1">
                     <Button onClick={() => { setEditingCommentId(comment.id); setEditCommentBody(comment.body); setEditCommentVisibility(comment.visibility); }} className="bg-blue-600 text-white px-2 py-1 text-xs">Edit</Button>
-                    <Button onClick={() => onCommentDelete(comment)} className="bg-red-600 text-white px-2 py-1 text-xs">Delete</Button>
+                    <Button onClick={() => onCommentDelete && onCommentDelete(comment)} className="bg-red-600 text-white px-2 py-1 text-xs">Delete</Button>
                   </div>
                 )}
               </li>
@@ -316,7 +341,7 @@ export default function ReportDetailView({
           </ul>
         )}
         {/* Add comment form */}
-        {user && (
+        {user && onCommentSubmit && (
           <form onSubmit={e => { e.preventDefault(); onCommentSubmit(commentBody, commentVisibility); setCommentBody(""); setCommentVisibility("public"); }} className="mt-4 flex flex-col gap-2">
             <textarea
               value={commentBody}
@@ -341,4 +366,4 @@ export default function ReportDetailView({
       </div>
     </Card>
   );
-} 
+}; 

@@ -1,15 +1,12 @@
+/* global process */
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { ModalContext } from "../../context/ModalContext";
 import { Button } from "@/components/ui/button";
-import { Input, Card } from "../../components";
-import { Table } from "../../components";
-import ReactMarkdown from "react-markdown";
-import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import CoCTeamList from "../../components/CoCTeamList";
+import { Card } from "../../components";
+import { ReportForm } from "../../components";
 import EventMetaCard from "../../components/EventMetaCard";
-import ReportForm from "../../components/ReportForm";
 
 const validStates = [
   "submitted",
@@ -141,8 +138,6 @@ export default function EventDashboard() {
   const isSuperAdmin = userRoles.includes("SuperAdmin");
   const isAdmin = userRoles.includes("Admin");
   const isResponder = userRoles.includes("Responder");
-  const isRegularUser = user && !isSuperAdmin && !isAdmin && !isResponder;
-  const isAnonymous = !user;
   const canChangeState = isResponder || isAdmin || isSuperAdmin;
 
   // Handler for inline state change
@@ -178,18 +173,8 @@ export default function EventDashboard() {
           [reportId]: { loading: false, error: "", success: "State updated!" },
         }));
       }
-    } catch (err) {
-      console.error("Failed to change report state:", err);
-      setStateChange((prev) => ({
-        ...prev,
-        [reportId]: {
-          loading: false,
-          error: err?.message
-            ? `Network error: ${err.message}`
-            : "An unexpected network error occurred.",
-          success: "",
-        },
-      }));
+    } catch {
+      setError("Network error");
     }
   };
 
@@ -240,8 +225,8 @@ export default function EventDashboard() {
         setEditingField(null);
         setLogoUploadLoading(false);
         return;
-      } catch (err) {
-        setMetaEditError("Network error");
+      } catch {
+        setError("Network error");
         setLogoUploadLoading(false);
         return;
       }
@@ -266,8 +251,8 @@ export default function EventDashboard() {
       const data = await res.json();
       setEvent(data.event);
       setEditingField(null);
-    } catch (err) {
-      setMetaEditError("Network error");
+    } catch {
+      setError("Network error");
     }
   };
 

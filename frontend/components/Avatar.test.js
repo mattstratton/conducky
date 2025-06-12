@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import Avatar from "./Avatar";
+import { Avatar } from "./Avatar";
 
 describe("Avatar", () => {
   it("renders image when avatarUrl is present (absolute)", () => {

@@ -2,7 +2,7 @@ import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../_app';
-import UserRegistrationForm from '../../components/UserRegistrationForm';
+import { UserRegistrationForm } from '../../components/UserRegistrationForm';
 
 export default function RedeemInvitePage() {
   const router = useRouter();

@@ -2,7 +2,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import Card from "./Card";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import CoCTeamList from "./CoCTeamList";
+import { CoCTeamList } from "./CoCTeamList";
 import PropTypes from "prop-types";
 
 export default function EventMetaCard({

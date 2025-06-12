@@ -1,5 +1,5 @@
 import React, { useContext, useRef, useState } from "react";
-import Avatar from "../components/Avatar";
+import { Avatar } from "../components/Avatar";
 import { UserContext } from "./_app";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
-import CoCTeamList from "./CoCTeamList";
+import { CoCTeamList } from "./CoCTeamList";
 import { UserContext } from "../pages/_app";
 
 const mockUser = { id: "test", email: "test@example.com" };

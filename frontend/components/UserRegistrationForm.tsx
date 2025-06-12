@@ -1,11 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, FormEvent } from "react";
 
-function validateEmail(email) {
-  // Simple email regex
+function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export default function UserRegistrationForm({
+export interface UserRegistrationFormProps {
+  onSubmit: (data: { name: string; email: string; password: string }) => void;
+  buttonText?: string;
+  loading?: boolean;
+  error?: string;
+  success?: string;
+  defaultName?: string;
+  defaultEmail?: string;
+}
+
+export const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
   onSubmit,
   buttonText = "Register",
   loading = false,
@@ -13,19 +22,19 @@ export default function UserRegistrationForm({
   success = "",
   defaultName = "",
   defaultEmail = "",
-}) {
+}) => {
   const [name, setName] = useState(defaultName);
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-  const [touched, setTouched] = useState({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
   const emailValid = validateEmail(email);
   const passwordsMatch = password === password2;
   const canSubmit =
-    name && emailValid && password && password2 && passwordsMatch && !loading;
+    !!name && emailValid && !!password && !!password2 && passwordsMatch && !loading;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) return;
     onSubmit({ name, email, password });
@@ -86,4 +95,4 @@ export default function UserRegistrationForm({
       </button>
     </form>
   );
-} 
+}; 

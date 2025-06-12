@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { UserContext } from './_app';
 import { Button } from "@/components/ui/button";
 import { Input, Card } from '../components';
-import UserRegistrationForm from '../components/UserRegistrationForm';
+import { UserRegistrationForm } from '../components/UserRegistrationForm';
 
 export default function Home() {
   const [firstUserNeeded, setFirstUserNeeded] = useState(false);

@@ -3,8 +3,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Card } from "../../../../components";
 import { Table } from "../../../../components";
-import Avatar from "../../../../components/Avatar";
-import ReportDetailView from "../../../../components/ReportDetailView";
+import { Avatar } from "../../../../components/Avatar";
+import { ReportDetailView } from "../../../../components";
 
 const validStates = [
   "submitted",

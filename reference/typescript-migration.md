@@ -7,7 +7,7 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 - [X] Install TypeScript and type definitions for React/Node
 - [X] Add a `tsconfig.json` to the frontend directory
 - [X] Pick a simple component (e.g., `Button`) and migrate it to `.tsx` with typed props
-- [X] Update all imports of the migrated component (Button, Card, Input, Table)
+- [X] Update all imports of the migrated component (Button, Card, Input, Table, Avatar)
 - [ ] Verify build and lint pass
 - [ ] Document best practices for TypeScript in `/website/docs/developer-docs/frontend-typescript.md`
 - [ ] Incrementally migrate other components/pages
@@ -18,11 +18,11 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 - [X] Card ([#140](https://github.com/mattstratton/conducky/issues/140))
 - [X] Input ([#141](https://github.com/mattstratton/conducky/issues/141))
 - [X] Table ([#142](https://github.com/mattstratton/conducky/issues/142))
-- [ ] Avatar ([#143](https://github.com/mattstratton/conducky/issues/143))
-- [ ] CoCTeamList ([#144](https://github.com/mattstratton/conducky/issues/144))
-- [ ] UserRegistrationForm ([#145](https://github.com/mattstratton/conducky/issues/145))
+- [X] Avatar ([#143](https://github.com/mattstratton/conducky/issues/143))
+- [X] CoCTeamList ([#144](https://github.com/mattstratton/conducky/issues/144))
+- [X] UserRegistrationForm ([#145](https://github.com/mattstratton/conducky/issues/145))
 - [ ] ReportForm ([#146](https://github.com/mattstratton/conducky/issues/146))
-- [ ] ReportDetailView ([#147](https://github.com/mattstratton/conducky/issues/147))
+- [X] ReportDetailView ([#147](https://github.com/mattstratton/conducky/issues/147))
 - [ ] All pages in `pages/` ([#148](https://github.com/mattstratton/conducky/issues/148))
 
 Add more components/pages as needed. Check off each as it is migrated.
