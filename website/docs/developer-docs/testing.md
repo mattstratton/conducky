@@ -12,21 +12,25 @@ This guide explains how to set up, run, and write automated tests for the backen
 You can run backend and frontend tests inside their respective Docker containers using Docker Compose. This ensures your tests run in the same environment as production and CI.
 
 ### Run Backend Tests in Docker Compose
+
 ```sh
 docker compose run --rm backend npm test
 ```
 
 ### Run Backend Tests with Coverage in Docker Compose
+
 ```sh
 docker compose run --rm backend npm run test:coverage
 ```
 
 ### Run Frontend Tests in Docker Compose
+
 ```sh
 docker compose run --rm frontend npm test
 ```
 
 ### Run Frontend Tests with Coverage in Docker Compose
+
 ```sh
 docker compose run --rm frontend npm run test:coverage
 ```
@@ -69,22 +73,28 @@ This will run all backend tests, then all frontend tests, and report the results
 ## Running Frontend Tests
 
 ### Prerequisites
+
 - Node.js and npm installed on your machine
 - All frontend dependencies installed (`npm install` in the `frontend/` directory)
 
 ### Run All Tests
+
 ```sh
 npm test
 ```
 
 ### Run Tests with Coverage Report
+
 ```sh
 npm run test:coverage
 ```
+
 - Coverage results will be shown in the terminal and a summary will be written to the `coverage/` directory.
 
 ### Run Tests in Docker Compose
+
 If you prefer to run tests inside the frontend container:
+
 ```sh
 docker compose run frontend npm test
 ```
@@ -98,9 +108,11 @@ docker compose run frontend npm test
 - Use [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
 ### Example: Component Test
+
 See `frontend/components/Button.test.js` for a sample test of a button component.
 
 ### Example: Page Test
+
 See `frontend/pages/login.test.js` for a sample test of a Next.js page.
 
 ---
@@ -114,6 +126,7 @@ See `frontend/pages/login.test.js` for a sample test of a Next.js page.
 ---
 
 ## Troubleshooting (Frontend)
+
 - If you see errors about JSX or React syntax, ensure Babel and Jest are configured as shown in this repo.
 - If you see errors about Next.js hooks (e.g., `useRouter`), mock them in your tests.
 - If tests fail due to missing label associations, ensure your form fields use `htmlFor` and `id` attributes.
@@ -127,22 +140,28 @@ For questions or improvements, see the project README or contact the maintainers
 ## Running Backend Tests
 
 ### Prerequisites
+
 - Node.js and npm installed on your machine
 - All backend dependencies installed (`npm install` in the `backend/` directory)
 
 ### Run All Tests
+
 ```sh
 npm test
 ```
 
 ### Run Tests with Coverage Report
+
 ```sh
 npm run test:coverage
 ```
+
 - Coverage results will be shown in the terminal and a summary will be written to the `coverage/` directory.
 
 ### Run Tests in Docker Compose
+
 If you prefer to run tests inside the backend container:
+
 ```sh
 docker compose run backend npm test
 ```
@@ -157,9 +176,11 @@ docker compose run backend npm test
 - Use [supertest](https://github.com/ladjs/supertest) for HTTP endpoint tests
 
 ### Example: Unit Test
+
 See `backend/tests/unit/rbac.test.js` for a sample unit test of middleware logic.
 
 ### Example: Integration Test
+
 See `backend/tests/integration/audit-test.test.js` for a sample integration test of an API endpoint.
 
 > **Note:** Integration tests currently mock database dependencies for fast feedback. In the future, we plan to set up full stack integration tests with a test database and seeded data for true end-to-end coverage.
@@ -175,6 +196,7 @@ See `backend/tests/integration/audit-test.test.js` for a sample integration test
 ---
 
 ## Troubleshooting
+
 - If you see errors about missing Prisma binaries, ensure your `schema.prisma` includes the correct `binaryTargets` and run `npx prisma generate`.
 - If tests fail due to missing database records, check if the test mocks DB dependencies or if a test database is needed.
 
@@ -187,6 +209,7 @@ For questions or improvements, see the project README or contact the maintainers
 ## Recent Test Additions (June 2024)
 
 ### Automated Tests
+
 - **Frontend:**
   - Evidence file download link uses the correct backend API URL.
   - Reporter can see and use the evidence upload form.
@@ -195,9 +218,31 @@ For questions or improvements, see the project README or contact the maintainers
   - Evidence upload, listing, and download endpoints are covered for all allowed roles.
 
 ### Manual Testing Instructions
+
 - Log in as a reporter, responder, admin, and an unrelated user. Attempt to view a report detail page:
   - Reporter, responder, and admin should see the report.
   - Unauthorized users should see a clear error message.
   - Unauthenticated users should be prompted to log in.
 - Try uploading evidence as each allowed role and verify the file appears in the evidence list.
-- Click an evidence file link to confirm it downloads or opens as expected. 
+- Click an evidence file link to confirm it downloads or opens as expected.
+
+## Testing Reports
+
+### Report Title
+
+- **Automated tests:**
+  - Backend integration tests cover:
+    - Report creation requires a title (10–70 chars).
+    - Editing the title (PATCH endpoint) with permissions and validation.
+    - Title is present in all report API responses.
+  - Frontend tests cover:
+    - Report form requires and validates the title.
+    - Title is shown in all report lists and is the clickable link.
+    - Title editing in the detail view (authorized users only).
+
+- **Manual testing:**
+  1. Submit a new report; verify the title is required and validated.
+  2. View report lists; verify the title is shown and is a clickable link.
+  3. Open a report detail page; verify the title is displayed.
+  4. As the reporter or admin, edit the title; verify validation and update.
+  5. As a responder or unauthorized user, verify you cannot edit the title.

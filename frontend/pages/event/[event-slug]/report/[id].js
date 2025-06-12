@@ -410,6 +410,30 @@ export default function ReportDetail({ initialReport, error }) {
     setAssignmentLoading(false);
   };
 
+  // Add handler for editing the report title
+  const handleTitleEdit = async (newTitle) => {
+    if (!newTitle || newTitle.length < 10 || newTitle.length > 70) {
+      throw new Error("Title must be between 10 and 70 characters.");
+    }
+    const res = await fetch(
+      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
+        `/events/slug/${eventSlug}/reports/${id}/title`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: newTitle }),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to update title.");
+    }
+    const data = await res.json();
+    setReport(data.report);
+    return true;
+  };
+
   if (fetchError) {
     return <div className="max-w-2xl mx-auto mt-12 p-6 bg-red-100 text-red-800 rounded shadow text-center">{fetchError}</div>;
   }
@@ -427,17 +451,10 @@ export default function ReportDetail({ initialReport, error }) {
       loading={loading}
       error={fetchError}
       onStateChange={handleStateChange}
-      onCommentSubmit={(body, visibility) => handleCommentSubmit(body, visibility)}
-      onCommentEdit={(comment, body, visibility) => {
-        setEditingCommentId(comment.id);
-        setEditCommentBody(body);
-        setEditCommentVisibility(visibility);
-        handleEditSave(comment);
-      }}
+      onCommentSubmit={handleCommentSubmit}
+      onCommentEdit={handleEditSave}
       onCommentDelete={handleDeleteConfirm}
-      onEvidenceUpload={async (files) => {
-        await handleEvidenceUpload(files);
-      }}
+      onEvidenceUpload={handleEvidenceUpload}
       onEvidenceDelete={handleEvidenceDelete}
       stateChangeLoading={loading}
       stateChangeError={stateChangeError}
@@ -451,6 +468,7 @@ export default function ReportDetail({ initialReport, error }) {
       assignmentError={assignmentError}
       assignmentSuccess={assignmentSuccess}
       apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
+      onTitleEdit={handleTitleEdit}
     />
   );
 }

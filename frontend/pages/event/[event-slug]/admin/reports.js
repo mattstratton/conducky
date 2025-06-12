@@ -37,6 +37,7 @@ export default function AdminReportsList() {
           <Table>
             <thead>
               <tr>
+                <th>Title</th>
                 <th>Type</th>
                 <th>State</th>
                 <th>Created At</th>
@@ -44,12 +45,16 @@ export default function AdminReportsList() {
                 <th>Assigned Responder(s)</th>
                 <th>Severity</th>
                 <th>Evidence</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {reports.map(report => (
                 <tr key={report.id} className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <td>
+                    <Link href={`/event/${eventSlug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">
+                      {report.title || <span className="italic text-gray-400">(untitled)</span>}
+                    </Link>
+                  </td>
                   <td>{report.type}</td>
                   <td>{report.state}</td>
                   <td>{new Date(report.createdAt).toLocaleString()}</td>
@@ -57,9 +62,6 @@ export default function AdminReportsList() {
                   <td>{report.assignedResponder ? (report.assignedResponder.name || report.assignedResponder.email || 'Unknown') : <span className="text-gray-400 italic">(unassigned)</span>}</td>
                   <td>{report.severity ? report.severity.charAt(0).toUpperCase() + report.severity.slice(1) : <span className="text-gray-400 italic">(none)</span>}</td>
                   <td>{report.evidenceFiles ? report.evidenceFiles.length : 0}</td>
-                  <td>
-                    <Link href={`/event/${eventSlug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">View</Link>
-                  </td>
                 </tr>
               ))}
             </tbody>

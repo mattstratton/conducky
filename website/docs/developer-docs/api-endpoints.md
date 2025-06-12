@@ -11,23 +11,27 @@ This document describes all API endpoints provided by the backend Express server
 ## Authentication
 
 ### Register
+
 - **POST** `/register`
 - **Description:** Register a new user. The first user becomes Global Admin (SuperAdmin).
 - **Body:** `{ email, password, name }`
 - **Response:** `{ message, user, madeSuperAdmin }`
 
 ### Login
+
 - **POST** `/login`
 - **Description:** Log in with email and password.
 - **Body:** `{ email, password }`
 - **Response:** `{ message, user }`
 
 ### Logout
+
 - **POST** `/logout`
 - **Description:** Log out the current user.
 - **Response:** `{ message }`
 
 ### Session Check
+
 - **GET** `/session`
 - **Description:** Get current session user and roles.
 - **Response:** `{ user: { id, email, name, roles } }` or 401 if not authenticated
@@ -37,27 +41,32 @@ This document describes all API endpoints provided by the backend Express server
 ## Events
 
 ### Create Event
+
 - **POST** `/events`
 - **Role:** SuperAdmin only
 - **Body:** `{ name, slug }`
 - **Response:** `{ event }`
 
 ### List Events
+
 - **GET** `/events`
 - **Role:** SuperAdmin only
 - **Response:** `{ events }`
 
 ### Get Event Details
+
 - **GET** `/events/:eventId`
 - **Role:** Admin or SuperAdmin for the event
 - **Response:** `{ event }`
 
 ### Get Event by Slug
+
 - **GET** `/event/slug/:slug`
 - **Description:** Get event details by slug (public)
 - **Response:** `{ event }`
 
 ### List Users for Event (by Slug)
+
 - **GET** `/events/slug/:slug/users`
 - **Role:** Admin or SuperAdmin for the event
 - **Query Parameters:**
@@ -73,6 +82,7 @@ This document describes all API endpoints provided by the backend Express server
   - The `total` field gives the total number of users matching the filters (for pagination UI).
 
 ### Update Event (by Slug)
+
 - **PATCH** `/events/slug/:slug`
 - **Role:** SuperAdmin only
 - **Body:** `{ name, newSlug }` (at least one required)
@@ -84,6 +94,7 @@ This document describes all API endpoints provided by the backend Express server
   - Returns 400 if neither field is provided.
 
 ### Upload Event Logo
+
 - **POST** `/events/slug/:slug/logo`
 - **Role:** Admin or SuperAdmin for the event
 - **Description:** Upload a new logo image for the event. Stores the file in the database and updates the event's `logo` field with the GET endpoint URL.
@@ -95,6 +106,7 @@ This document describes all API endpoints provided by the backend Express server
   - The `logo` field in the event will be set to `/events/slug/:slug/logo`.
 
 ### Get Event Logo
+
 - **GET** `/events/slug/:slug/logo`
 - **Role:** Public
 - **Description:** Fetch the event logo image for display. Returns the image as a binary response with the correct content-type.
@@ -107,40 +119,47 @@ This document describes all API endpoints provided by the backend Express server
 ## User Management
 
 ### List Users for Event
+
 - **GET** `/events/:eventId/users`
 - **Role:** Admin or SuperAdmin for the event
 - **Response:** `{ users }`
 
 ### Assign Role to User
+
 - **POST** `/events/:eventId/roles`
 - **Role:** Admin or SuperAdmin for the event
 - **Body:** `{ userId, roleName }`
 - **Response:** `{ message, userEventRole }`
 
 ### Remove Role from User
+
 - **DELETE** `/events/:eventId/roles`
 - **Role:** Admin or SuperAdmin for the event
 - **Body:** `{ userId, roleName }`
 - **Response:** `{ message }`
 
 ### List All Users (Global)
+
 - **GET** `/admin/users`
 - **Role:** SuperAdmin only
 - **Response:** `{ users }`
 
 ### Create/Invite User (Global)
+
 - **POST** `/admin/users`
 - **Role:** SuperAdmin only
 - **Body:** `{ email, name }`
 - **Response:** `{ message, user }`
 
 ### Update User for Event
+
 - **PATCH** `/events/slug/:slug/users/:userId`
 - **Role:** Admin or SuperAdmin for the event
 - **Body:** `{ name, email, role }`
 - **Response:** `{ message }`
 
 ### Remove User from Event
+
 - **DELETE** `/events/slug/:slug/users/:userId`
 - **Role:** Admin or SuperAdmin for the event
 - **Response:** `{ message }`
@@ -171,33 +190,49 @@ This document describes all API endpoints provided by the backend Express server
 ## Reports
 
 ### Submit Report (by Event ID)
+
 - **POST** `/events/:eventId/reports`
 - **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
-- **Body:** `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
+- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
 - **Response:** `{ report }`
 - **Notes:**
+  - The `title` field is required and must be between 10 and 70 characters.
   - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
   - `incidentAt` should be an ISO 8601 date/time string (e.g., `2024-06-06T15:30:00Z`).
   - `parties` can be a comma-separated or freeform list of involved parties.
   - Each evidence file is associated with the uploader (if authenticated).
 
+### Edit Report Title (by Event Slug)
+
+- **PATCH** `/events/slug/:slug/reports/:reportId/title`
+- **Description:** Edit the title of a report. Only the reporter or an event admin can edit the title.
+- **Body:** `{ title }` (string, required, 10–70 chars)
+- **Response:** `{ report }`
+- **Notes:**
+  - Returns 403 if the user is not authorized to edit the title.
+  - Returns 400 if the title is missing or invalid.
+
 ### List Reports (by Event ID)
+
 - **GET** `/events/:eventId/reports`
 - **Response:** `{ reports }`
 
 ### Get Report by ID
+
 - **GET** `/events/:eventId/reports/:reportId`
 - **Response:** `{ report }`
 
 ### Change Report State
+
 - **PATCH** `/events/:eventId/reports/:reportId/state`
 - **Role:** Responder, Admin, or SuperAdmin
 - **Body:** `{ state }`
 - **Response:** `{ report }`
 
-#### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`).
+#### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`)
 
 ### Get Report by Slug (with Access Control)
+
 - **GET** `/events/slug/:slug/reports/:reportId`
 - **Description:** Get report details by event slug and report ID.
 - **Access Control:** Only the following users can access this endpoint:
@@ -211,24 +246,28 @@ This document describes all API endpoints provided by the backend Express server
 - **Response:** `{ report }`
 
 ### List Evidence Files for a Report
+
 - **GET** `/reports/:reportId/evidence`
 - **Description:** List all evidence files for a report (metadata only).
 - **Access Control:** Reporter, responder, or admin for the event.
 - **Response:** `{ files: [ { id, filename, mimetype, size, createdAt, uploader: { id, name, email } } ] }`
 
 ### Add Evidence Files to a Report
+
 - **POST** `/reports/:reportId/evidence`
 - **Description:** Upload one or more additional evidence files to an existing report (multipart/form-data, field: `evidence[]`).
 - **Access Control:** Reporter, responder, or admin for the event.
 - **Response:** `{ files: [...] }`
 
 ### Download Evidence File
+
 - **GET** `/evidence/:evidenceId/download`
 - **Description:** Download a specific evidence file by its ID.
 - **Access Control:** Reporter, responder, or admin for the event associated with the report.
 - **Response:** Binary file data with correct content-type and filename.
 
 ### Submit Report (by Event Slug)
+
 - **POST** `/events/slug/:slug/reports`
 - **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
 - **Body:** `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
@@ -237,4 +276,4 @@ This document describes all API endpoints provided by the backend Express server
   - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
   - Each evidence file is associated with the uploader (if authenticated).
 
-### Report Comments (by Event ID) 
+### Report Comments (by Event ID)

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReportDetailView from "./ReportDetailView";
 
 // Mock Card, Table, Button, Avatar for isolation
@@ -37,14 +37,12 @@ describe("ReportDetailView", () => {
   it("renders report details", () => {
     render(
       <ReportDetailView
-        report={baseReport}
-        user={user}
-        userRoles={userRoles}
-        comments={[]}
-        evidenceFiles={[]}
+        report={{ ...baseReport, title: "Test Title", reporterId: "u1" }}
+        user={{ id: "u1", name: "Alice", roles: [] }}
+        userRoles={[]}
       />
     );
-    expect(screen.getByText("Report Detail")).toBeInTheDocument();
+    expect(screen.getByText("Test Title")).toBeInTheDocument();
     expect(screen.getByText("Test report")).toBeInTheDocument();
     expect(screen.getByText("incident")).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
@@ -173,5 +171,60 @@ describe("ReportDetailView", () => {
     // The file input should be present
     expect(screen.getByLabelText(/file/i)).toBeInTheDocument();
     expect(screen.getByText("Upload Evidence")).toBeInTheDocument();
+  });
+
+  it("shows the report title as the heading", () => {
+    render(
+      <ReportDetailView
+        report={{ ...baseReport, title: "Test Title", reporterId: "u1" }}
+        user={{ id: "u1", name: "Alice", roles: [] }}
+        userRoles={[]}
+      />
+    );
+    expect(screen.getByRole("heading", { name: /Test Title/ })).toBeInTheDocument();
+  });
+
+  it("shows edit button for reporter", () => {
+    render(
+      <ReportDetailView
+        report={{ ...baseReport, title: "Test Title", reporterId: "u1" }}
+        user={{ id: "u1", name: "Alice", roles: [] }}
+        userRoles={[]}
+      />
+    );
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+  });
+
+  it("shows edit button for admin", () => {
+    render(
+      <ReportDetailView
+        report={{ ...baseReport, title: "Test Title", reporterId: "u2" }}
+        user={{ id: "admin", name: "Admin", roles: ["Admin"] }}
+        userRoles={["Admin"]}
+      />
+    );
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+  });
+
+  it("allows editing the title and validates length", async () => {
+    const onTitleEdit = jest.fn(() => Promise.resolve());
+    render(
+      <ReportDetailView
+        report={{ ...baseReport, title: "Test Title", reporterId: "u1" }}
+        user={{ id: "u1", name: "Alice", roles: [] }}
+        userRoles={[]}
+        onTitleEdit={onTitleEdit}
+      />
+    );
+    fireEvent.click(screen.getByText("Edit"));
+    const input = screen.getByPlaceholderText("Report Title");
+    // Too short
+    fireEvent.change(input, { target: { value: "short" } });
+    fireEvent.click(screen.getByText("Save"));
+    expect(await screen.findByText(/between 10 and 70/)).toBeInTheDocument();
+    // Valid
+    fireEvent.change(input, { target: { value: "A valid new title" } });
+    fireEvent.click(screen.getByText("Save"));
+    await waitFor(() => expect(onTitleEdit).toHaveBeenCalledWith("A valid new title"));
   });
 }); 

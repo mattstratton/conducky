@@ -227,17 +227,35 @@ describe("Event endpoints", () => {
     it("should create a report (success)", async () => {
       const res = await request(app)
         .post("/events/1/reports")
-        .send({ type: "harassment", description: "Test report" });
+        .send({ type: "harassment", description: "Test report", title: "A valid report title" });
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty("report");
       expect(res.body.report).toHaveProperty("type", "harassment");
       expect(res.body.report).toHaveProperty("description", "Test report");
+      expect(res.body.report).toHaveProperty("title", "A valid report title");
     });
 
     it("should fail if missing required fields", async () => {
       const res = await request(app)
         .post("/events/1/reports")
-        .send({ type: "harassment" }); // missing description
+        .send({ type: "harassment" }); // missing description and title
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toHaveProperty("error");
+    });
+
+    it("should fail if title is too short", async () => {
+      const res = await request(app)
+        .post("/events/1/reports")
+        .send({ type: "harassment", description: "desc", title: "short" });
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toHaveProperty("error");
+    });
+
+    it("should fail if title is too long", async () => {
+      const longTitle = "a".repeat(71);
+      const res = await request(app)
+        .post("/events/1/reports")
+        .send({ type: "harassment", description: "desc", title: longTitle });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
     });
@@ -245,7 +263,7 @@ describe("Event endpoints", () => {
     it("should return 404 if event not found", async () => {
       const res = await request(app)
         .post("/events/999/reports")
-        .send({ type: "harassment", description: "Test report" });
+        .send({ type: "harassment", description: "Test report", title: "A valid report title" });
       expect(res.statusCode).toBe(404);
     });
 
@@ -254,9 +272,11 @@ describe("Event endpoints", () => {
         .post("/events/1/reports")
         .attach("evidence", Buffer.from("fake evidence data"), "evidence.txt")
         .field("type", "harassment")
-        .field("description", "Test with file");
+        .field("description", "Test with file")
+        .field("title", "A valid report title");
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty("report");
+      expect(res.body.report).toHaveProperty("title", "A valid report title");
     });
   });
 
@@ -307,6 +327,82 @@ describe("Event endpoints", () => {
     it("should return 404 if report not found", async () => {
       const res = await request(app).get("/events/1/reports/doesnotexist");
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe("PATCH /events/:eventId/reports/:reportId/title", () => {
+    it("should allow reporter to edit title", async () => {
+      // Create a report as reporter
+      inMemoryStore.reports.push({
+        id: "r10",
+        eventId: "1",
+        reporterId: "1",
+        type: "harassment",
+        title: "Original Title",
+        description: "desc",
+        state: "submitted",
+      });
+      const res = await request(app)
+        .patch("/events/1/reports/r10/title")
+        .set("x-test-user-id", "1")
+        .send({ title: "Updated Report Title" });
+      expect(res.statusCode).toBe(200);
+      expect(res.body.report).toHaveProperty("title", "Updated Report Title");
+    });
+    it("should allow admin to edit title", async () => {
+      // Add admin role for user 2
+      inMemoryStore.users.push({ id: "2", email: "admin2@example.com", name: "Admin2" });
+      inMemoryStore.userEventRoles.push({ userId: "2", eventId: "1", roleId: "2", role: { name: "Admin" }, user: { id: "2" } });
+      inMemoryStore.reports.push({
+        id: "r11",
+        eventId: "1",
+        reporterId: "1",
+        type: "harassment",
+        title: "Original Title",
+        description: "desc",
+        state: "submitted",
+      });
+      const res = await request(app)
+        .patch("/events/1/reports/r11/title")
+        .set("x-test-user-id", "2")
+        .send({ title: "Admin Updated Title" });
+      expect(res.statusCode).toBe(200);
+      expect(res.body.report).toHaveProperty("title", "Admin Updated Title");
+    });
+    it("should forbid responder from editing title", async () => {
+      // Add responder role for user 3
+      inMemoryStore.users.push({ id: "3", email: "responder@example.com", name: "Responder" });
+      inMemoryStore.userEventRoles.push({ userId: "3", eventId: "1", roleId: "3", role: { name: "Responder" }, user: { id: "3" } });
+      inMemoryStore.reports.push({
+        id: "r12",
+        eventId: "1",
+        reporterId: "1",
+        type: "harassment",
+        title: "Original Title",
+        description: "desc",
+        state: "submitted",
+      });
+      const res = await request(app)
+        .patch("/events/1/reports/r12/title")
+        .set("x-test-user-id", "3")
+        .send({ title: "Responder Update Attempt" });
+      expect(res.statusCode).toBe(403);
+    });
+    it("should fail if title is invalid", async () => {
+      inMemoryStore.reports.push({
+        id: "r13",
+        eventId: "1",
+        reporterId: "1",
+        type: "harassment",
+        title: "Original Title",
+        description: "desc",
+        state: "submitted",
+      });
+      const res = await request(app)
+        .patch("/events/1/reports/r13/title")
+        .set("x-test-user-id", "1")
+        .send({ title: "short" });
+      expect(res.statusCode).toBe(400);
     });
   });
 });
@@ -829,7 +925,7 @@ describe("Evidence endpoints", () => {
     // Create a report to attach evidence to
     const res = await request(app)
       .post("/events/1/reports")
-      .send({ type: "harassment", description: "Report for evidence" });
+      .send({ type: "harassment", description: "Report for evidence", title: "Evidence Report Title" });
     reportId = res.body.report.id;
   });
 

@@ -36,6 +36,7 @@ export default function ReportDetailView({
   assignmentError = "",
   assignmentSuccess = "",
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
+  onTitleEdit,
   ...rest
 }) {
   // Role checks
@@ -47,6 +48,7 @@ export default function ReportDetailView({
     ["Admin", "SuperAdmin", "Global Admin"].includes(r)
   );
   const canChangeState = isSuperAdmin || isResponderOrAbove;
+  const canEditTitle = user && (user.id === report.reporterId || isAdminOrSuperAdmin);
 
   // Local state for comments and evidence
   const [commentBody, setCommentBody] = useState("");
@@ -57,6 +59,10 @@ export default function ReportDetailView({
   const [newEvidence, setNewEvidence] = useState([]);
   const [evidenceUploadMsg, setEvidenceUploadMsg] = useState("");
   const [deletingEvidenceId, setDeletingEvidenceId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(report.title || "");
+  const [titleError, setTitleError] = useState("");
+  const [titleSuccess, setTitleSuccess] = useState("");
 
   // Allowed state transitions (adminMode can pass a function for more control)
   function getAllowedTransitions(current) {
@@ -76,7 +82,55 @@ export default function ReportDetailView({
 
   return (
     <Card className="max-w-3xl mx-auto p-4 sm:p-8 mt-8">
-      <h2 className="text-2xl font-bold mb-4">Report Detail</h2>
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+        <div className="flex-1">
+          {editingTitle ? (
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                setTitleError("");
+                setTitleSuccess("");
+                if (!titleInput || titleInput.length < 10 || titleInput.length > 70) {
+                  setTitleError("Title must be between 10 and 70 characters.");
+                  return;
+                }
+                onTitleEdit(titleInput)
+                  .then(() => {
+                    setTitleSuccess("Title updated!");
+                    setEditingTitle(false);
+                  })
+                  .catch(err => {
+                    setTitleError(err?.message || "Failed to update title.");
+                  });
+              }}
+              className="flex flex-col sm:flex-row gap-2 items-start sm:items-center"
+            >
+              <input
+                type="text"
+                value={titleInput}
+                onChange={e => setTitleInput(e.target.value)}
+                minLength={10}
+                maxLength={70}
+                required
+                className="border px-2 py-1 rounded w-80 max-w-full dark:bg-gray-800 dark:text-gray-100"
+                placeholder="Report Title"
+                autoFocus
+              />
+              <Button type="submit" className="bg-blue-600 text-white px-3 py-1 text-sm">Save</Button>
+              <Button type="button" onClick={() => { setEditingTitle(false); setTitleInput(report.title || ""); setTitleError(""); }} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 text-sm">Cancel</Button>
+            </form>
+          ) : (
+            <h2 className="text-2xl font-bold break-words">
+              {report.title || <span className="italic text-gray-400">(untitled)</span>}
+              {canEditTitle && (
+                <Button type="button" onClick={() => { setEditingTitle(true); setTitleInput(report.title || ""); setTitleError(""); setTitleSuccess(""); }} className="ml-2 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">Edit</Button>
+              )}
+            </h2>
+          )}
+          {titleError && <div className="text-xs text-red-500 dark:text-red-400 mt-1">{titleError}</div>}
+          {titleSuccess && <div className="text-xs text-green-500 dark:text-green-400 mt-1">{titleSuccess}</div>}
+        </div>
+      </div>
       {/* Main report details */}
       <Table>
         <tbody>
