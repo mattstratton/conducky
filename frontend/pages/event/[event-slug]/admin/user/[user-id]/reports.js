@@ -1,3 +1,4 @@
+import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -33,8 +34,8 @@ export default function UserReportsPage() {
           <Table className="mt-4">
             <thead>
               <tr>
+                <th className="border border-gray-200 dark:border-gray-700 p-2">Title</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Type</th>
-                <th className="border border-gray-200 dark:border-gray-700 p-2">Description</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">State</th>
                 <th className="border border-gray-200 dark:border-gray-700 p-2">Created At</th>
               </tr>
@@ -42,8 +43,12 @@ export default function UserReportsPage() {
             <tbody>
               {reports.map(report => (
                 <tr key={report.id}>
+                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                    <Link href={`/event/${eventSlug}/report/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">
+                      {report.title || <span className="italic text-gray-400">(untitled)</span>}
+                    </Link>
+                  </td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{report.type}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{report.description}</td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{report.state}</td>
                   <td className="border border-gray-200 dark:border-gray-700 p-2">{new Date(report.createdAt).toLocaleString()}</td>
                 </tr>

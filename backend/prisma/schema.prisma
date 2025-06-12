@@ -100,6 +100,7 @@ model Report {
   reporter    User?    @relation("ReporterReports", fields: [reporterId], references: [id])
   reporterId  String?
   type        ReportType
+  title       String   @db.VarChar(70) // required, max 70 chars
   description String
   state       ReportState   // submitted, acknowledged, investigating, resolved, closed
   incidentAt  DateTime? // date and time of the incident (optional)

@@ -7,7 +7,6 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
 const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -472,11 +471,14 @@ app.post(
   upload.array("evidence", 10),
   async (req, res) => {
     const { eventId } = req.params;
-    const { type, description, incidentAt, parties } = req.body;
-    if (!type || !description) {
+    const { type, description, incidentAt, parties, title } = req.body;
+    if (!type || !description || !title) {
       return res
         .status(400)
-        .json({ error: "type and description are required." });
+        .json({ error: "type, title, and description are required." });
+    }
+    if (typeof title !== "string" || title.length < 10 || title.length > 70) {
+      return res.status(400).json({ error: "title must be 10-70 characters." });
     }
     try {
       // Check event exists
@@ -495,6 +497,7 @@ app.post(
           eventId,
           reporterId,
           type,
+          title,
           description,
           state: "submitted",
           incidentAt: incidentAt ? new Date(incidentAt) : undefined,
@@ -748,11 +751,14 @@ app.post(
   upload.array("evidence", 10),
   async (req, res) => {
     const { slug } = req.params;
-    const { type, description, incidentAt, parties } = req.body;
-    if (!type || !description) {
+    const { type, description, incidentAt, parties, title } = req.body;
+    if (!type || !description || !title) {
       return res
         .status(400)
-        .json({ error: "type and description are required." });
+        .json({ error: "type, title, and description are required." });
+    }
+    if (typeof title !== "string" || title.length < 10 || title.length > 70) {
+      return res.status(400).json({ error: "title must be 10-70 characters." });
     }
     try {
       const eventId = await getEventIdBySlug(slug);
@@ -770,6 +776,7 @@ app.post(
           eventId,
           reporterId,
           type,
+          title,
           description,
           state: "submitted",
           incidentAt: incidentAt ? new Date(incidentAt) : undefined,
@@ -2060,3 +2067,104 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
+// PATCH endpoint to edit report title (eventId-based)
+app.patch(
+  "/events/:eventId/reports/:reportId/title",
+  async (req, res) => {
+    const { eventId, reportId } = req.params;
+    const { title } = req.body;
+    if (!title || typeof title !== "string" || title.length < 10 || title.length > 70) {
+      return res.status(400).json({ error: "title must be 10-70 characters." });
+    }
+    try {
+      const report = await prisma.report.findUnique({ where: { id: reportId } });
+      if (!report || report.eventId !== eventId) {
+        return res.status(404).json({ error: "Report not found for this event." });
+      }
+      // Only reporter or admin can edit
+      let canEdit = false;
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        if (report.reporterId && req.user.id === report.reporterId) {
+          canEdit = true;
+        } else {
+          // Check if user is admin for the event
+          const userEventRoles = await prisma.userEventRole.findMany({
+            where: { userId: req.user.id, eventId },
+            include: { role: true },
+          });
+          const roles = userEventRoles.map((uer) => uer.role.name);
+          if (roles.some((r) => ["Admin", "SuperAdmin"].includes(r))) {
+            canEdit = true;
+          }
+        }
+      }
+      if (!canEdit) {
+        return res.status(403).json({ error: "Forbidden: only reporter or admin can edit title." });
+      }
+      const updated = await prisma.report.update({
+        where: { id: reportId },
+        data: { title },
+      });
+      res.json({ report: updated });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to update report title", details: err.message });
+    }
+  },
+);
+
+// PATCH endpoint to edit report title (slug-based)
+app.patch(
+  "/events/slug/:slug/reports/:reportId/title",
+  async (req, res) => {
+    const { slug, reportId } = req.params;
+    const { title } = req.body;
+    if (!title || typeof title !== "string" || title.length < 10 || title.length > 70) {
+      return res.status(400).json({ error: "title must be 10-70 characters." });
+    }
+    try {
+      const eventId = await getEventIdBySlug(slug);
+      if (!eventId) return res.status(404).json({ error: "Event not found." });
+      const report = await prisma.report.findUnique({ where: { id: reportId } });
+      if (!report || report.eventId !== eventId) {
+        return res.status(404).json({ error: "Report not found for this event." });
+      }
+      // Only reporter or admin can edit
+      let canEdit = false;
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        if (report.reporterId && req.user.id === report.reporterId) {
+          canEdit = true;
+        } else {
+          // Check if user is admin for the event
+          const userEventRoles = await prisma.userEventRole.findMany({
+            where: { userId: req.user.id, eventId },
+            include: { role: true },
+          });
+          const roles = userEventRoles.map((uer) => uer.role.name);
+          if (roles.some((r) => ["Admin", "SuperAdmin"].includes(r))) {
+            canEdit = true;
+          }
+        }
+      }
+      if (!canEdit) {
+        return res.status(403).json({ error: "Forbidden: only reporter or admin can edit title." });
+      }
+      const updated = await prisma.report.update({
+        where: { id: reportId },
+        data: { title },
+      });
+      res.json({ report: updated });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to update report title", details: err.message });
+    }
+  },
+);
+
+let prisma;
+if (process.env.NODE_ENV === "test") {
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
+} else {
+  const { PrismaClient } = require("@prisma/client");
+  prisma = new PrismaClient();
+}

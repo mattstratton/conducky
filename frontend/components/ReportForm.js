@@ -13,6 +13,8 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
   const [evidence, setEvidence] = useState([]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
   const router = useRouter();
 
   const reportTypes = [
@@ -25,7 +27,14 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
     e.preventDefault();
     setSubmitting(true);
     setMessage("");
+    setTitleError("");
+    if (!title || title.length < 10 || title.length > 70) {
+      setTitleError("Title must be between 10 and 70 characters.");
+      setSubmitting(false);
+      return;
+    }
     const formData = new FormData();
+    formData.append("title", title);
     formData.append("type", type);
     formData.append("description", description);
     if (incidentAt)
@@ -48,6 +57,7 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
     if (res.ok) {
       setMessage("Report submitted!");
       setType("");
+      setTitle("");
       setDescription("");
       setIncidentAt("");
       setParties("");
@@ -79,6 +89,26 @@ export default function ReportForm({ eventSlug, eventName, onSuccess }) {
         Submit a Report
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+            htmlFor="report-title"
+          >
+            Report Title
+          </label>
+          <input
+            id="report-title"
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+            minLength={10}
+            maxLength={70}
+            className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            placeholder="Enter a concise summary (10-70 characters)"
+          />
+          {titleError && <span className="text-xs text-red-500 dark:text-red-400">{titleError}</span>}
+        </div>
         <div>
           <label
             className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
