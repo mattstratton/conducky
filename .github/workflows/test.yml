@@ -9,7 +9,7 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: "postgres://postgres:postgres@localhost:5432/conducky_test"
+      DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
       SESSION_SECRET: ${{ secrets.SESSION_SECRET_TEST }}
       FRONTEND_BASE_URL: "http://localhost:3001"
       JEST_JUNIT_CLASSNAME: "{filepath}"
