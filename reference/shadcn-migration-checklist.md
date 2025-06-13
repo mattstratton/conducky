@@ -53,7 +53,7 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 
 ### 4. UI Primitives (Button, Input, Avatar, etc.)
 - [ ] Replace all custom primitives with Shadcn versions
-- [ ] Ensure Button POC is used everywhere
+- [x] Ensure Shadcn button is used everywhere
 
 ### 5. Dark Mode
 - [x] Remove custom theme logic (localStorage, etc.)
@@ -80,7 +80,7 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 ### 10. Testing & Documentation
 - [x] Update/add automated tests for all refactored components (forms, report detail view)
 - [ ] Document manual test steps for UI/UX flows
-- [ ] Update `/website/docs/developer-docs/testing.md` and add a migration guide
+- [x] Update `/website/docs/developer-docs/testing.md` and add a migration guide
 
 ### 11. ReportForm
 - [x] Migrate ReportForm to Shadcn Form (with react-hook-form)

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from "../components/ui/card";
-import Input from '../components/Input';
+import { Input } from "@/components/ui/input";
 import { Table } from '../components/Table';
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
