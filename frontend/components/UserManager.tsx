@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Input from "./Input";
-import Card from "./Card";
+import { Card } from "./ui/card";
 import { Table } from "./Table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

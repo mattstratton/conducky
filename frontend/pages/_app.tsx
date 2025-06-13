@@ -1,15 +1,18 @@
-import React, { useEffect, useState, useRef, createContext, useContext, ReactNode, Dispatch, SetStateAction } from "react";
+import React, { useEffect, useState, useRef, createContext, useContext, Dispatch, SetStateAction } from "react";
 import Link from "next/link";
 import "../styles.css";
 import { useRouter } from "next/router";
 import { ModalContext } from "../context/ModalContext";
-import Card from "../components/Card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "../components/Avatar";
 import EventNavBar from "../components/EventNavBar";
 import Head from "next/head";
 import type { AppProps } from "next/app";
 import { ReportForm } from "../components/ReportForm";
+import { ThemeProvider, useTheme } from "next-themes";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "../components/ui/navigation-menu";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 
 // User context for global user state
 interface User {
@@ -24,70 +27,25 @@ interface UserContextType {
 }
 export const UserContext = createContext<UserContextType>({ user: null, setUser: () => {} });
 
-// Dark mode context
-interface DarkModeContextType {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-}
-export const DarkModeContext = createContext<DarkModeContextType>({
-  darkMode: false,
-  toggleDarkMode: () => {},
-});
-
-function useDarkMode(): DarkModeContextType {
-  const [darkMode, setDarkMode] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") setDarkMode(true);
-    else if (saved === "light") setDarkMode(false);
-    else setDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
-  }, []);
-  useEffect(() => {
-    if (darkMode) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-  }, [darkMode]);
-  const toggleDarkMode = () => {
-    setDarkMode((dm) => {
-      localStorage.setItem("theme", !dm ? "dark" : "light");
-      return !dm;
-    });
-  };
-  return { darkMode, toggleDarkMode };
-}
-
 function DarkModeToggle() {
-  const { darkMode, toggleDarkMode } = useContext(DarkModeContext);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <button
-      onClick={toggleDarkMode}
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className="p-2 rounded-full border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-yellow-400"
       title="Toggle dark mode"
       aria-label="Toggle dark mode"
     >
-      {darkMode ? "🌙" : "☀️"}
+      {theme === "dark" ? "🌙" : "☀️"}
     </button>
-  );
-}
-
-interface SimpleModalProps {
-  open: boolean;
-  onClose: () => void;
-  children: ReactNode;
-}
-function SimpleModal({ open, onClose, children }: SimpleModalProps) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
-      <Card className="relative max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-        <Button
-          onClick={onClose}
-          className="absolute top-2 right-2 px-4 py-2 sm:px-2 sm:py-0.5 text-2xl sm:text-lg font-bold bg-gray-800 text-white border border-white dark:bg-gray-900 dark:text-white dark:border-gray-600 shadow hover:bg-gray-900 dark:hover:bg-gray-800 focus:ring-2 focus:ring-primary-500"
-        >
-          &times;
-        </Button>
-        {children}
-      </Card>
-    </div>
   );
 }
 
@@ -146,7 +104,6 @@ function MyEventsDropdown() {
 
 function Header() {
   const { user, setUser } = useContext(UserContext);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch(
@@ -229,46 +186,125 @@ function Header() {
             🦆
           </span>
         </Link>
-        {/* Hamburger for mobile */}
-        <button
-          className="md:hidden ml-2 p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          onClick={() => setMobileMenuOpen((o) => !o)}
-          aria-label="Open menu"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d={
-                mobileMenuOpen
-                  ? "M6 18L18 6M6 6l12 12"
-                  : "M4 6h16M4 12h16M4 18h16"
-              }
-            />
-          </svg>
-        </button>
+        {/* Hamburger for mobile using SheetTrigger */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              className="md:hidden ml-2 p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              aria-label="Open menu"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </SheetTrigger>
+          <SheetContent className="p-0 w-64 bg-gray-900 text-white">
+            <SheetHeader className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+              <SheetTitle asChild>
+                <span className="font-extrabold text-xl tracking-wide flex items-center gap-2">
+                  Conducky <span role="img" aria-label="duck">🦆</span>
+                </span>
+              </SheetTitle>
+              <SheetClose asChild>
+                <button
+                  className="p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  aria-label="Close menu"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </SheetClose>
+            </SheetHeader>
+            <nav className="flex flex-col gap-2 px-4 py-4">
+              {navLinks
+                .filter((l) => l.show)
+                .map((l) => (
+                  <SheetClose asChild key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="py-3 px-3 rounded hover:bg-gray-800 font-semibold flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    >
+                      {l.icon}
+                      {l.label}
+                    </Link>
+                  </SheetClose>
+                ))}
+            </nav>
+            <div className="px-4 py-2 border-t border-gray-800 flex flex-col gap-2">
+              {user ? (
+                <>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 group mb-2"
+                  >
+                    <Avatar
+                      user={user}
+                      size={36}
+                      className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
+                    />
+                    <span className="text-sm">
+                      Logged in as <b>{user.email}</b>
+                      {user.name && (
+                        <span className="text-gray-300"> ({user.name})</span>
+                      )}
+                    </span>
+                  </Link>
+                  <MyEventsDropdown />
+                  <Button onClick={handleLogout} className="mt-2">
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <SheetClose asChild>
+                  <Link
+                    href="/login"
+                    className="underline font-semibold hover:text-yellow-300 transition py-2"
+                  >
+                    Login
+                  </Link>
+                </SheetClose>
+              )}
+              <DarkModeToggle />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       {/* Center: Desktop Nav */}
-      <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-        {navLinks
-          .filter((l) => l.show)
-          .map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="font-semibold hover:text-yellow-300 transition px-3 py-2 rounded flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            >
-              {l.icon}
-              {l.label}
-            </Link>
+      <NavigationMenu className="hidden md:flex items-center gap-6 flex-1 justify-center">
+        <NavigationMenuList>
+          {navLinks.filter((l) => l.show).map((l) => (
+            <NavigationMenuItem key={l.href}>
+              <NavigationMenuLink asChild>
+                <Link href={l.href} className="font-semibold hover:text-yellow-300 transition px-3 py-2 rounded flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                  {l.icon}
+                  {l.label}
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
           ))}
-      </nav>
+        </NavigationMenuList>
+      </NavigationMenu>
       {/* Right: Actions */}
       <div className="hidden md:flex items-center gap-4">
         {user ? (
@@ -300,95 +336,6 @@ function Header() {
           </Link>
         )}
         <DarkModeToggle />
-      </div>
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-60 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-      {/* Mobile Menu Drawer */}
-      <div
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-gray-900 text-white shadow-lg transform transition-transform duration-200 md:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-          <span className="font-extrabold text-xl tracking-wide flex items-center gap-2">
-            Conducky{" "}
-            <span role="img" aria-label="duck">
-              🦆
-            </span>
-          </span>
-          <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="p-2 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            aria-label="Close menu"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <nav className="flex flex-col gap-2 px-4 py-4">
-          {navLinks
-            .filter((l) => l.show)
-            .map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="py-3 px-3 rounded hover:bg-gray-800 font-semibold flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {l.icon}
-                {l.label}
-              </Link>
-            ))}
-        </nav>
-        <div className="px-4 py-2 border-t border-gray-800 flex flex-col gap-2">
-          {user ? (
-            <>
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 group mb-2"
-              >
-                <Avatar
-                  user={user}
-                  size={36}
-                  className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
-                />
-                <span className="text-sm">
-                  Logged in as <b>{user.email}</b>
-                  {user.name && (
-                    <span className="text-gray-300"> ({user.name})</span>
-                  )}
-                </span>
-              </Link>
-              <MyEventsDropdown />
-              <Button onClick={handleLogout} className="mt-2">
-                Logout
-              </Button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="underline font-semibold hover:text-yellow-300 transition py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Login
-            </Link>
-          )}
-          <DarkModeToggle />
-        </div>
       </div>
     </header>
   );
@@ -441,9 +388,8 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
     setEventName(name || "");
     setModalOpen(true);
   };
-  const darkModeValue = useDarkMode();
   return (
-    <>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -451,27 +397,32 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <UserContext.Provider value={{ user, setUser }}>
-        <DarkModeContext.Provider value={darkModeValue}>
-          <ModalContext.Provider value={{ openModal }}>
-            <Header />
-            {eventSlug && (
-              <EventNavBar
-                eventSlug={eventSlug}
-                eventName={eventName}
-                user={user}
-                userRoles={userRoles}
-                openReportModal={() => openModal(eventSlug, eventName)}
-              />
-            )}
-            <SimpleModal open={modalOpen} onClose={() => setModalOpen(false)}>
-              <div className="text-gray-800">
-                <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
-                {eventSlugForModal && (
+        <ModalContext.Provider value={{ openModal }}>
+          <Header />
+          {eventSlug && (
+            <EventNavBar
+              eventSlug={eventSlug}
+              eventName={eventName}
+              user={user}
+              userRoles={userRoles}
+              openReportModal={() => openModal(eventSlug, eventName)}
+            />
+          )}
+          {eventSlugForModal && (
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+              <DialogContent className="max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <DialogClose asChild>
+                  <Button
+                    className="absolute top-2 right-2 px-4 py-2 sm:px-2 sm:py-0.5 text-2xl sm:text-lg font-bold bg-gray-800 text-white border border-white dark:bg-gray-900 dark:text-white dark:border-gray-600 shadow hover:bg-gray-900 dark:hover:bg-gray-800 focus:ring-2 focus:ring-primary-500"
+                  >
+                    &times;
+                  </Button>
+                </DialogClose>
+                <div className="text-gray-800">
+                  <h2 className="text-xl font-bold mb-4">Submit a Report</h2>
                   <div className="text-sm mb-2 text-gray-500">
                     For event: <b>{eventName || eventSlugForModal}</b>
                   </div>
-                )}
-                {eventSlugForModal ? (
                   <ReportForm
                     eventSlug={eventSlugForModal}
                     eventName={eventName}
@@ -485,32 +436,30 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                       }
                     }}
                   />
-                ) : (
-                  <div className="text-gray-500">No event selected.</div>
-                )}
-              </div>
-            </SimpleModal>
-            <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-10">
-              <Component {...pageProps} />
-            </main>
-            <footer className="w-full mt-8 flex flex-col items-center justify-center px-4 py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center justify-center">
-                <span>© {new Date().getFullYear()} Conducky</span>
-                <span>version {process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}</span>
-                <a
-                  href="https://github.com/mattstratton/conducky"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  GitHub
-                </a>
-              </div>
-            </footer>
-          </ModalContext.Provider>
-        </DarkModeContext.Provider>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-10">
+            <Component {...pageProps} />
+          </main>
+          <footer className="w-full mt-8 flex flex-col items-center justify-center px-4 py-6 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center justify-center">
+              <span>© {new Date().getFullYear()} Conducky</span>
+              <span>version {process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}</span>
+              <a
+                href="https://github.com/mattstratton/conducky"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                GitHub
+              </a>
+            </div>
+          </footer>
+        </ModalContext.Provider>
       </UserContext.Provider>
-    </>
+    </ThemeProvider>
   );
 };
 

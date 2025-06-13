@@ -4,9 +4,9 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReportDetailView from "./ReportDetailView";
 
 // Mock Card, Table, Button, Avatar for isolation
-jest.mock("./Card", () => ({
+jest.mock("./ui/card", () => ({
   __esModule: true,
-  default: ({ children, ...props }) => <div data-testid="card" {...props}>{children}</div>,
+  Card: ({ children, ...props }) => <div data-testid="card" {...props}>{children}</div>,
 }));
 jest.mock("./Table", () => ({
   __esModule: true,

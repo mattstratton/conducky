@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import Card from "./Card";
+import { Card } from "./ui/card";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { CoCTeamList } from "./CoCTeamList";
 

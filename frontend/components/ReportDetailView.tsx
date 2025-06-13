@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import Card from "./Card";
+import { Card } from "./ui/card";
 import { Table } from "./Table";
 import { Avatar } from "./Avatar";
 

@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import Card from '../../../../../../components/Card';
+import { Card } from "../../../../../../components/ui/card";
 import { Table } from '../../../../../../components/Table';
 
 interface Report {

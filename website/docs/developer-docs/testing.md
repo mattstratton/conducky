@@ -246,3 +246,71 @@ For questions or improvements, see the project README or contact the maintainers
   3. Open a report detail page; verify the title is displayed.
   4. As the reporter or admin, edit the title; verify validation and update.
   5. As a responder or unauthorized user, verify you cannot edit the title.
+
+## Testing Dark Mode (Shadcn Implementation)
+
+Dark mode is now managed using [Shadcn's recommended approach](https://ui.shadcn.com/docs/dark-mode/next) with the `next-themes` package.
+
+### How to Test
+
+1. **Toggle Dark Mode**
+   - Use the dark mode toggle button in the UI (usually in the header or navigation).
+   - The UI should immediately switch between light and dark themes.
+
+2. **Persistence**
+   - Refresh the page after toggling. The selected theme should persist across reloads and navigation.
+
+3. **System Preference**
+   - If the theme is set to "system", the app should follow your OS/browser color scheme.
+   - Change your system's dark/light mode and verify the app updates accordingly.
+
+4. **Manual Testing**
+   - Check all major pages and components in both light and dark mode for visual issues or contrast problems.
+
+### Troubleshooting
+
+- If the theme does not persist, ensure localStorage is not blocked and cookies are enabled.
+- If the toggle does not work, check for errors in the browser console and verify the `ThemeProvider` is correctly set up in `_app.tsx`.
+
+## Mobile Navigation (Shadcn Sheet)
+
+The mobile navigation menu is now implemented using the Shadcn Sheet component in the Header. To test:
+
+### Manual Testing
+1. Resize your browser to mobile width or use a mobile device.
+2. Tap the hamburger menu to open the Sheet.
+3. Verify that navigation links, user info, logout, and dark mode toggle are present.
+4. Tap a link or the close button to close the Sheet.
+5. Press `Escape` to close the Sheet.
+6. Use `Tab`/`Shift+Tab` to cycle through focusable elements; focus should be trapped within the Sheet.
+7. Ensure the Sheet closes when a navigation link is clicked.
+
+### Automated Testing
+- Add tests to verify that the Sheet opens and closes on trigger.
+- Test that focus is trapped within the Sheet when open.
+- Test that pressing `Escape` closes the Sheet.
+- Test that clicking a navigation link closes the Sheet.
+
+The Sheet replaces the previous custom mobile drawer logic. Remove or update any tests that referenced the old implementation.
+
+## Event-Level Navigation (EventNavBar)
+
+The event-level navigation now uses Shadcn UI components:
+- **Mobile:** Uses Shadcn Sheet for the menu, matching the Header's mobile nav.
+- **Desktop:** Uses Shadcn NavigationMenu for accessible, consistent navigation.
+
+### Manual Testing
+1. On desktop, verify the event nav renders as a horizontal menu with all expected links and the Submit Report button.
+2. On mobile, tap the hamburger menu to open the Sheet and verify all links and actions are present.
+3. Test keyboard navigation (Tab, Shift+Tab, Enter, Escape) for both desktop and mobile navs.
+4. Ensure focus is trapped in the Sheet when open and returns to the trigger when closed.
+5. Confirm that clicking a link in the Sheet closes the menu.
+
+### Automated Testing
+- Add tests to verify:
+  - NavigationMenu renders all expected links and actions on desktop.
+  - Sheet opens and closes on trigger in mobile view.
+  - Focus management and accessibility for both navs.
+  - Clicking a Sheet link closes the menu.
+
+Remove or update any tests that referenced the old nav implementation.

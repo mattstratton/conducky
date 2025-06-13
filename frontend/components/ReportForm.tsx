@@ -1,7 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { CoCTeamList } from "./CoCTeamList";
-import Card from "./Card";
+import { Card } from "./ui/card";
 import { Button } from "@/components/ui/button";
 
 export interface ReportFormProps {
