@@ -1,5 +1,5 @@
 import React, { useContext, useRef, useState } from "react";
-import { Avatar } from "../components/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { UserContext } from "./_app";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -117,7 +117,26 @@ export default function ProfilePage() {
         Your Profile
       </h1>
       <div className="flex flex-col items-center gap-4 mb-6">
-        <Avatar user={user} size={56} className="sm:size-20" />
+        {(() => {
+          let avatarSrc: string | undefined = undefined;
+          if (user.avatarUrl) {
+            avatarSrc = user.avatarUrl.startsWith("/")
+              ? apiUrl + user.avatarUrl
+              : user.avatarUrl;
+          }
+          return (
+            <Avatar className="sm:size-20" style={{ width: 56, height: 56 }}>
+              <AvatarImage src={avatarSrc} alt={user.name || user.email || "User avatar"} />
+              <AvatarFallback>
+                {user.name
+                  ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+                  : user.email
+                    ? user.email[0].toUpperCase()
+                    : "U"}
+              </AvatarFallback>
+            </Avatar>
+          );
+        })()}
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-stretch sm:items-center">
           <input
             type="file"

@@ -4,7 +4,7 @@ import "../styles.css";
 import { useRouter } from "next/router";
 import { ModalContext } from "../context/ModalContext";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "../components/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import EventNavBar from "../components/EventNavBar";
 import Head from "next/head";
 import type { AppProps } from "next/app";
@@ -20,6 +20,7 @@ interface User {
   email?: string;
   name?: string;
   roles?: string[];
+  avatarUrl?: string;
 }
 interface UserContextType {
   user: User | null;
@@ -258,11 +259,27 @@ function Header() {
                     href="/profile"
                     className="flex items-center gap-2 group mb-2"
                   >
-                    <Avatar
-                      user={user}
-                      size={36}
-                      className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
-                    />
+                    {(() => {
+                      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+                      let avatarSrc: string | undefined = undefined;
+                      if (user?.avatarUrl) {
+                        avatarSrc = user.avatarUrl.startsWith("/")
+                          ? apiUrl + user.avatarUrl
+                          : user.avatarUrl;
+                      }
+                      return (
+                        <Avatar className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" style={{ width: 36, height: 36 }}>
+                          <AvatarImage src={avatarSrc} alt={user?.name || user?.email || "User avatar"} />
+                          <AvatarFallback>
+                            {user?.name
+                              ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+                              : user?.email
+                                ? user.email[0].toUpperCase()
+                                : "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      );
+                    })()}
                     <span className="text-sm">
                       Logged in as <b>{user.email}</b>
                       {user.name && (
@@ -310,11 +327,27 @@ function Header() {
         {user ? (
           <>
             <Link href="/profile" className="flex items-center gap-2 group">
-              <Avatar
-                user={user}
-                size={36}
-                className="border-2 border-yellow-400 group-hover:border-yellow-300 transition"
-              />
+              {(() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+                let avatarSrc: string | undefined = undefined;
+                if (user?.avatarUrl) {
+                  avatarSrc = user.avatarUrl.startsWith("/")
+                    ? apiUrl + user.avatarUrl
+                    : user.avatarUrl;
+                }
+                return (
+                  <Avatar className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" style={{ width: 36, height: 36 }}>
+                    <AvatarImage src={avatarSrc} alt={user?.name || user?.email || "User avatar"} />
+                    <AvatarFallback>
+                      {user?.name
+                        ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+                        : user?.email
+                          ? user.email[0].toUpperCase()
+                          : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                );
+              })()}
               <span className="text-sm md:text-base">
                 Logged in as <b>{user.email}</b>
                 {user.name && (

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { UserContext } from "../pages/_app";
-import { Avatar } from "./Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TeamMember {
   id: string;
@@ -80,7 +80,27 @@ export const CoCTeamList: React.FC<CoCTeamListProps> = ({ eventSlug, showTitle =
         <ul className="list-disc pl-6">
           {team.map((member) => (
             <li key={member.id} className="mb-1 flex items-center">
-              <Avatar user={member} size={32} className="mr-2" />
+              {(() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+                let avatarSrc: string | undefined = undefined;
+                if (member.avatarUrl) {
+                  avatarSrc = member.avatarUrl.startsWith("/")
+                    ? apiUrl + member.avatarUrl
+                    : member.avatarUrl;
+                }
+                return (
+                  <Avatar className="mr-2" style={{ width: 32, height: 32 }}>
+                    <AvatarImage src={avatarSrc} alt={member.name || member.email || "User avatar"} />
+                    <AvatarFallback>
+                      {member.name
+                        ? member.name.split(" ").map(n => n[0]).join("").toUpperCase()
+                        : member.email
+                          ? member.email[0].toUpperCase()
+                          : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                );
+              })()}
               <span className="font-medium">{member.name || member.email}</span>
               {member.name && member.email && (
                 <span className="text-gray-500 ml-2">({member.email})</span>
