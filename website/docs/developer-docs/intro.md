@@ -49,7 +49,7 @@ When you add a new React component to the codebase (in `frontend/components` or 
 
 To do this:
 
-1. Open `website/docs/developer-docs/components/AllComponents.mdx`.
+1. Open `website/docs/developer-docs/AllComponents.mdx`.
 2. Add a new section for your component, using the following format:
 
    ```mdx
