@@ -465,9 +465,9 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
-            assignedResponderId: assignmentFields.assignedResponderId || undefined,
-            severity: assignmentFields.severity || undefined,
-            resolution: assignmentFields.resolution || undefined,
+            assignedResponderId: assignmentFields.assignedResponderId || null,
+            severity: assignmentFields.severity || null,
+            resolution: assignmentFields.resolution || null,
           }),
         }
       );
