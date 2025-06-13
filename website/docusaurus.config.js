@@ -129,6 +129,32 @@ const config = {
         darkTheme: prismThemes.dracula,
       },
     }),
+
+  plugins: [
+    [
+      'docusaurus-plugin-react-docgen-typescript',
+      /** @type {import('docusaurus-plugin-react-docgen-typescript').Options} */
+      {
+        src: [
+          '../frontend/components/**/*.tsx',
+        ],
+        ignore: [
+          '../frontend/components/**/*test.*',
+        ],
+        // Output docs to developer-docs/components (handled by docs routeBasePath)
+        parserOptions: {
+          propFilter: (prop, component) => {
+            if (prop.parent) {
+              return !prop.parent.fileName.includes('@types/react');
+            }
+            return true;
+          },
+        },
+        // Optionally, you can set global: true if you want global data access
+        // global: true,
+      },
+    ],
+  ],
 };
 
 export default config;
