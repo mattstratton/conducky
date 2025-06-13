@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ModalContext } from "../../context/ModalContext";
 import { Button } from "@/components/ui/button";
-import Card from "../../components/Card";
+import { Card } from "../../components/ui/card";
 import { ReportForm } from "../../components/ReportForm";
 import EventMetaCard from "../../components/EventMetaCard";
 

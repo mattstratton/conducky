@@ -1,8 +1,17 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { useRouter } from "next/router";
 import { CoCTeamList } from "./CoCTeamList";
-import Card from "./Card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 export interface ReportFormProps {
   eventSlug: string;
@@ -10,31 +19,42 @@ export interface ReportFormProps {
   onSuccess?: () => void;
 }
 
+interface ReportFormValues {
+  title: string;
+  type: string;
+  description: string;
+  incidentAt?: string;
+  parties?: string;
+  evidence?: File[];
+}
+
+const reportTypes = [
+  { value: "harassment", label: "Harassment" },
+  { value: "safety", label: "Safety" },
+  { value: "other", label: "Other" },
+];
+
 export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, onSuccess }) => {
-  const [type, setType] = useState("");
-  const [description, setDescription] = useState("");
-  const [incidentAt, setIncidentAt] = useState("");
-  const [parties, setParties] = useState("");
-  const [evidence, setEvidence] = useState<File[]>([]);
-  const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [title, setTitle] = useState("");
-  const [titleError, setTitleError] = useState("");
   const router = useRouter();
+  const form = useForm<ReportFormValues>({
+    defaultValues: {
+      title: "",
+      type: "",
+      description: "",
+      incidentAt: "",
+      parties: "",
+      evidence: [],
+    },
+  });
+  const [message, setMessage] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
 
-  const reportTypes = [
-    { value: "harassment", label: "Harassment" },
-    { value: "safety", label: "Safety" },
-    { value: "other", label: "Other" },
-  ];
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit: SubmitHandler<ReportFormValues> = async (data) => {
     setSubmitting(true);
     setMessage("");
-    setTitleError("");
+    const { title, type, description, incidentAt, parties, evidence } = data;
     if (!title || title.length < 10 || title.length > 70) {
-      setTitleError("Title must be between 10 and 70 characters.");
+      form.setError("title", { message: "Title must be between 10 and 70 characters." });
       setSubmitting(false);
       return;
     }
@@ -42,8 +62,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
     formData.append("title", title);
     formData.append("type", type);
     formData.append("description", description);
-    if (incidentAt)
-      formData.append("incidentAt", new Date(incidentAt).toISOString());
+    if (incidentAt) formData.append("incidentAt", new Date(incidentAt).toISOString());
     if (parties) formData.append("parties", parties);
     if (evidence && evidence.length > 0) {
       for (let i = 0; i < evidence.length; i++) {
@@ -61,12 +80,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
     );
     if (res.ok) {
       setMessage("Report submitted!");
-      setType("");
-      setTitle("");
-      setDescription("");
-      setIncidentAt("");
-      setParties("");
-      setEvidence([]);
+      form.reset();
       const eventUrl = `/event/${eventSlug}`;
       if (onSuccess) {
         onSuccess();
@@ -93,125 +107,147 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
       <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
         Submit a Report
       </h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="report-title"
-          >
-            Report Title
-          </label>
-          <input
-            id="report-title"
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            required
-            minLength={10}
-            maxLength={70}
-            className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            placeholder="Enter a concise summary (10-70 characters)"
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <FormField
+            name="title"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="report-title">Report Title</FormLabel>
+                <FormControl>
+                  <input
+                    id="report-title"
+                    type="text"
+                    {...field}
+                    minLength={10}
+                    maxLength={70}
+                    required
+                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    placeholder="Enter a concise summary (10-70 characters)"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {titleError && <span className="text-xs text-red-500 dark:text-red-400">{titleError}</span>}
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="report-type"
-          >
-            Type
-          </label>
-          <select
-            id="report-type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            required
-            className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">Select type</option>
-            {reportTypes.map((rt) => (
-              <option key={rt.value} value={rt.value}>
-                {rt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="report-description"
-          >
-            Description
-          </label>
-          <textarea
-            id="report-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-[80px]"
+          <FormField
+            name="type"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="report-type">Type</FormLabel>
+                <FormControl>
+                  <select
+                    id="report-type"
+                    {...field}
+                    required
+                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="">Select type</option>
+                    {reportTypes.map((rt) => (
+                      <option key={rt.value} value={rt.value}>
+                        {rt.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="incident-at"
-          >
-            Date/Time of Incident (optional)
-          </label>
-          <input
-            id="incident-at"
-            type="datetime-local"
-            value={incidentAt}
-            onChange={(e) => setIncidentAt(e.target.value)}
-            className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          <FormField
+            name="description"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="report-description">Description</FormLabel>
+                <FormControl>
+                  <textarea
+                    id="report-description"
+                    {...field}
+                    required
+                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-[80px]"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            If known, please provide when the incident occurred.
-          </span>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="parties"
-          >
-            Involved Parties (optional)
-          </label>
-          <input
-            id="parties"
-            type="text"
-            value={parties}
-            onChange={(e) => setParties(e.target.value)}
-            className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            placeholder="List names, emails, or descriptions (comma-separated or freeform)"
+          <FormField
+            name="incidentAt"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="incident-at">Date/Time of Incident (optional)</FormLabel>
+                <FormControl>
+                  <input
+                    id="incident-at"
+                    type="datetime-local"
+                    {...field}
+                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                </FormControl>
+                <FormMessage />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  If known, please provide when the incident occurred.
+                </span>
+              </FormItem>
+            )}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            List anyone involved, if known. Separate multiple names with commas.
-          </span>
-        </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-            htmlFor="report-evidence"
-          >
-            Evidence (optional)
-          </label>
-          <input
-            id="report-evidence"
-            type="file"
-            multiple
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setEvidence(e.target.files ? Array.from(e.target.files) : [])}
-            className="mt-1 block w-full"
+          <FormField
+            name="parties"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="parties">Involved Parties (optional)</FormLabel>
+                <FormControl>
+                  <input
+                    id="parties"
+                    type="text"
+                    {...field}
+                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    placeholder="List names, emails, or descriptions (comma-separated or freeform)"
+                  />
+                </FormControl>
+                <FormMessage />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  List anyone involved, if known. Separate multiple names with commas.
+                </span>
+              </FormItem>
+            )}
           />
-        </div>
-        <Button type="submit" disabled={submitting} className="mt-2">
-          {submitting ? "Submitting..." : "Submit Report"}
-        </Button>
-        {message && (
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {message}
-          </p>
-        )}
-      </form>
+          <FormField
+            name="evidence"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="report-evidence">Evidence (optional)</FormLabel>
+                <FormControl>
+                  <input
+                    id="report-evidence"
+                    type="file"
+                    multiple
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      field.onChange(e.target.files ? Array.from(e.target.files) : []);
+                    }}
+                    className="mt-1 block w-full"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" disabled={submitting} className="mt-2">
+            {submitting ? "Submitting..." : "Submit Report"}
+          </Button>
+          {message && (
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {message}
+            </p>
+          )}
+        </form>
+      </Form>
     </Card>
   );
 }; 

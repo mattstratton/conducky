@@ -1,11 +1,12 @@
 import React from 'react';
-import Card from '../components/Card';
-import Input from '../components/Input';
+import { Card } from "../components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Table } from '../components/Table';
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
 // Define event interface based on how it's used in the component
 interface Event {
@@ -222,7 +223,21 @@ export default function GlobalAdmin() {
                       ) : (
                         <>
                           <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
-                          <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
+                                <p className="text-sm text-gray-500">This action cannot be undone.</p>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white" disabled={deleteLoading}>Confirm Delete</Button>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                           <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
                           <Link href={`/event/${ev.slug}/admin`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm w-full inline-block text-center">Admin</Link>
                         </>
@@ -266,7 +281,21 @@ export default function GlobalAdmin() {
                         ) : (
                           <div className="flex gap-2">
                             <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
-                            <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
+                                  <p className="text-sm text-gray-500">This action cannot be undone.</p>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white" disabled={deleteLoading}>Confirm Delete</Button>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                             <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
                             <Link href={`/event/${ev.slug}/admin`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm inline-block text-center">Admin</Link>
                           </div>

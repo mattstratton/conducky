@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import Card from "../../../components/Card";
+import { Card } from "../../../components/ui/card";
 import { EventMetaEditor } from "../../../components/EventMetaEditor";
 import { InviteManager } from "../../../components/InviteManager";
 import { UserManager } from "../../../components/UserManager";

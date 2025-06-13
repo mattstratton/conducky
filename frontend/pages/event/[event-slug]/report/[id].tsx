@@ -1,10 +1,9 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import Card from "../../../../components/Card";
+import { Card } from "../../../../components/ui/card";
 import { Table } from "../../../../components/Table";
 import { ReportDetailView } from "../../../../components/ReportDetailView";
-import { Avatar } from "../../../../components/Avatar";
 import { GetServerSideProps } from "next";
 
 // Define interfaces

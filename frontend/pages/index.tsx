@@ -3,7 +3,7 @@ import { useEffect, useState, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
-import Card from '../components/Card';
+import { Card } from "../components/ui/card";
 import { UserRegistrationForm } from '../components/UserRegistrationForm';
 
 // Define the user type based on how it's used in the component

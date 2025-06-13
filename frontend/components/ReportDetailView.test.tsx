@@ -4,18 +4,13 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReportDetailView from "./ReportDetailView";
 
 // Mock Card, Table, Button, Avatar for isolation
-jest.mock("./Card", () => ({
+jest.mock("./ui/card", () => ({
   __esModule: true,
-  default: ({ children, ...props }) => <div data-testid="card" {...props}>{children}</div>,
+  Card: ({ children, ...props }) => <div data-testid="card" {...props}>{children}</div>,
 }));
 jest.mock("./Table", () => ({
   __esModule: true,
   Table: ({ children, ...props }) => <table data-testid="table" {...props}>{children}</table>,
-}));
-jest.mock("./Avatar", () => ({
-  __esModule: true,
-  default: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
-  Avatar: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
 }));
 jest.mock("@/components/ui/button", () => ({
   __esModule: true,
@@ -67,6 +62,7 @@ describe("ReportDetailView", () => {
         onStateChange={onStateChange}
       />
     );
+    fireEvent.click(screen.getByLabelText('Edit state'));
     const select = screen.getByDisplayValue("submitted");
     expect(select).toBeInTheDocument();
     fireEvent.change(select, { target: { value: "acknowledged" } });
@@ -86,12 +82,12 @@ describe("ReportDetailView", () => {
         eventUsers={eventUsers}
       />
     );
-    // Check that the options for Bob and Carol are present
+    fireEvent.click(screen.getByLabelText('Edit assigned responder'));
     expect(screen.getByRole('option', { name: 'Bob' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Carol' })).toBeInTheDocument();
-    // Check that the severity select has "High" selected
-    expect(screen.getByRole('option', { name: 'High' }).selected).toBe(true);
-    // Check that the textarea for resolution has the correct value
+    fireEvent.click(screen.getByLabelText('Edit severity'));
+    expect((screen.getByRole('option', { name: 'High' }) as HTMLOptionElement).selected).toBe(true);
+    fireEvent.click(screen.getByLabelText('Edit resolution'));
     expect(screen.getByDisplayValue('done')).toBeInTheDocument();
   });
 
@@ -178,7 +174,6 @@ describe("ReportDetailView", () => {
         onEvidenceUpload={jest.fn()}
       />
     );
-    // The file input should be present
     expect(screen.getByLabelText(/file/i)).toBeInTheDocument();
     expect(screen.getByText("Upload Evidence")).toBeInTheDocument();
   });
@@ -202,7 +197,7 @@ describe("ReportDetailView", () => {
         userRoles={[]}
       />
     );
-    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit title')).toBeInTheDocument();
   });
 
   it("shows edit button for admin", () => {
@@ -213,7 +208,7 @@ describe("ReportDetailView", () => {
         userRoles={["Admin"]}
       />
     );
-    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit title')).toBeInTheDocument();
   });
 
   it("allows editing the title and validates length", async () => {
@@ -226,13 +221,11 @@ describe("ReportDetailView", () => {
         onTitleEdit={onTitleEdit}
       />
     );
-    fireEvent.click(screen.getByText("Edit"));
+    fireEvent.click(screen.getByLabelText('Edit title'));
     const input = screen.getByPlaceholderText("Report Title");
-    // Too short
     fireEvent.change(input, { target: { value: "short" } });
     fireEvent.click(screen.getByText("Save"));
     expect(await screen.findByText(/between 10 and 70/)).toBeInTheDocument();
-    // Valid
     fireEvent.change(input, { target: { value: "A valid new title" } });
     fireEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(onTitleEdit).toHaveBeenCalledWith("A valid new title"));

@@ -246,3 +246,169 @@ For questions or improvements, see the project README or contact the maintainers
   3. Open a report detail page; verify the title is displayed.
   4. As the reporter or admin, edit the title; verify validation and update.
   5. As a responder or unauthorized user, verify you cannot edit the title.
+
+## Testing Dark Mode (Shadcn Implementation)
+
+Dark mode is now managed using [Shadcn's recommended approach](https://ui.shadcn.com/docs/dark-mode/next) with the `next-themes` package.
+
+### How to Test
+
+1. **Toggle Dark Mode**
+   - Use the dark mode toggle button in the UI (usually in the header or navigation).
+   - The UI should immediately switch between light and dark themes.
+
+2. **Persistence**
+   - Refresh the page after toggling. The selected theme should persist across reloads and navigation.
+
+3. **System Preference**
+   - If the theme is set to "system", the app should follow your OS/browser color scheme.
+   - Change your system's dark/light mode and verify the app updates accordingly.
+
+4. **Manual Testing**
+   - Check all major pages and components in both light and dark mode for visual issues or contrast problems.
+
+### Troubleshooting
+
+- If the theme does not persist, ensure localStorage is not blocked and cookies are enabled.
+- If the toggle does not work, check for errors in the browser console and verify the `ThemeProvider` is correctly set up in `_app.tsx`.
+
+## Mobile Navigation (Shadcn Sheet)
+
+The mobile navigation menu is now implemented using the Shadcn Sheet component in the Header. To test:
+
+### Manual Testing
+1. Resize your browser to mobile width or use a mobile device.
+2. Tap the hamburger menu to open the Sheet.
+3. Verify that navigation links, user info, logout, and dark mode toggle are present.
+4. Tap a link or the close button to close the Sheet.
+5. Press `Escape` to close the Sheet.
+6. Use `Tab`/`Shift+Tab` to cycle through focusable elements; focus should be trapped within the Sheet.
+7. Ensure the Sheet closes when a navigation link is clicked.
+
+### Automated Testing
+- Add tests to verify that the Sheet opens and closes on trigger.
+- Test that focus is trapped within the Sheet when open.
+- Test that pressing `Escape` closes the Sheet.
+- Test that clicking a navigation link closes the Sheet.
+
+The Sheet replaces the previous custom mobile drawer logic. Remove or update any tests that referenced the old implementation.
+
+## Event-Level Navigation (EventNavBar)
+
+The event-level navigation now uses Shadcn UI components:
+- **Mobile:** Uses Shadcn Sheet for the menu, matching the Header's mobile nav.
+- **Desktop:** Uses Shadcn NavigationMenu for accessible, consistent navigation.
+
+### Manual Testing
+1. On desktop, verify the event nav renders as a horizontal menu with all expected links and the Submit Report button.
+2. On mobile, tap the hamburger menu to open the Sheet and verify all links and actions are present.
+3. Test keyboard navigation (Tab, Shift+Tab, Enter, Escape) for both desktop and mobile navs.
+4. Ensure focus is trapped in the Sheet when open and returns to the trigger when closed.
+5. Confirm that clicking a link in the Sheet closes the menu.
+
+### Automated Testing
+- Add tests to verify:
+  - NavigationMenu renders all expected links and actions on desktop.
+  - Sheet opens and closes on trigger in mobile view.
+  - Focus management and accessibility for both navs.
+  - Clicking a Sheet link closes the menu.
+
+Remove or update any tests that referenced the old nav implementation.
+
+---
+
+# Shadcn UI Migration Guide
+
+## Overview
+
+We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) components for consistency, accessibility, and modern best practices. This migration aims to:
+- Improve accessibility and UX
+- Ensure consistent theming (including dark mode)
+- Reduce custom UI code
+- Leverage Tailwind and Radix primitives
+
+See the full migration checklist in `/reference/shadcn-migration-checklist.md` and the project plan in `/reference/plan.md`.
+
+## Migration Best Practices
+
+- **Use the Shadcn CLI** (`npx shadcn@latest add [component]`) to add or update components. Prefer CLI over copy/paste to ensure up-to-date code and patterns.
+- **Replace custom primitives** (Button, Card, Input, etc.) with Shadcn versions. Remove legacy components once fully migrated.
+- **Use Shadcn Form** for all forms, with `react-hook-form` and Zod for validation. Follow the `<Form {...form}>` pattern.
+- **Dialogs/Modals:** Use Shadcn Dialog or Sheet for modals. Use AlertDialog for destructive actions (deletes, confirmations).
+- **Navigation:** Use Shadcn NavigationMenu for desktop and Sheet for mobile navigation. Ensure accessibility and keyboard navigation.
+- **Dark Mode:** Implement using Shadcn's [Next.js dark mode guide](https://ui.shadcn.com/docs/dark-mode/next) and the `next-themes` package.
+- **Accessibility:** Leverage Shadcn's accessible components (focus, ARIA, keyboard nav). Test with keyboard and screen readers.
+- **Responsiveness:** Use Tailwind's mobile-first utilities. Test all components on mobile and desktop.
+- **Testing:** Update or add automated and manual tests for all migrated components. See below for patterns.
+
+## Common Migration Patterns
+
+- **Forms:**
+  - Use `<Form {...form}>` and Shadcn Input, Textarea, Select, etc.
+  - Use Zod for schema validation and show errors with `<FormMessage />`.
+  - Example: See `UserRegistrationForm` and `ReportForm`.
+- **Editable Fields:**
+  - Use an edit icon (pencil) to toggle edit mode.
+  - Show the edit UI only when the icon is clicked.
+  - Example: See `TitleEditForm` and assignment fields in `ReportDetailView`.
+- **Sheets/Dialogs:**
+  - Use Sheet for in-context side panels (e.g., Code of Conduct viewer).
+  - Use Dialog/AlertDialog for modal interactions and confirmations.
+- **Navigation:**
+  - Use NavigationMenu for desktop, Sheet for mobile.
+  - Ensure focus is trapped and accessible.
+- **Dark Mode:**
+  - Use the `ThemeProvider` and follow Shadcn docs for persistence and system preference.
+
+## Automated Testing Patterns for Shadcn Components
+
+- Use [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for all component and integration tests.
+- **Forms:**
+  - Test field rendering, validation, error messages, and submission.
+  - Example:
+    ```ts
+    import { render, screen, fireEvent } from '@testing-library/react';
+    import UserRegistrationForm from '../components/UserRegistrationForm';
+
+    test('shows validation error for empty email', async () => {
+      render(<UserRegistrationForm />);
+      fireEvent.click(screen.getByRole('button', { name: /register/i }));
+      expect(await screen.findByText(/email is required/i)).toBeInTheDocument();
+    });
+    ```
+- **Sheets/Dialogs:**
+  - Test open/close behavior, focus management, and accessibility.
+  - Example:
+    ```ts
+    import { render, screen } from '@testing-library/react';
+    import userEvent from '@testing-library/user-event';
+    import CodeOfConductSheet from '../components/CodeOfConductSheet';
+
+    test('opens and closes the sheet', async () => {
+      render(<CodeOfConductSheet />);
+      userEvent.click(screen.getByRole('button', { name: /view code of conduct/i }));
+      expect(screen.getByText(/code of conduct/i)).toBeInTheDocument();
+      userEvent.click(screen.getByRole('button', { name: /close/i }));
+      expect(screen.queryByText(/code of conduct/i)).not.toBeInTheDocument();
+    });
+    ```
+- **Navigation:**
+  - Test that all links are present, navigation works, and focus is managed correctly.
+- **Dark Mode:**
+  - Test toggling dark mode, persistence, and system preference.
+
+## Manual Testing Checklist
+
+- Test all migrated components in both light and dark mode.
+- Test on mobile and desktop.
+- Use keyboard navigation (Tab, Shift+Tab, Enter, Escape) to verify accessibility.
+- For forms, test validation, error messages, and submission flows.
+- For dialogs/sheets, test open/close, focus trap, and accessibility.
+- For navigation, test all links, focus management, and closing behavior.
+
+## Reference
+- Migration checklist: `/reference/shadcn-migration-checklist.md`
+- Project plan: `/reference/plan.md`
+- Shadcn UI docs: https://ui.shadcn.com/
+
+For questions or improvements, see the project README or contact the maintainers.

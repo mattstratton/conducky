@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Input from "./Input";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table } from "./Table";
 import { ClipboardIcon } from "@heroicons/react/24/outline";

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import Input from "./Input";
-import Card from "./Card";
+import { Input } from "@/components/ui/input";
+import { Card } from "./ui/card";
 import { Table } from "./Table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PencilIcon } from "@heroicons/react/24/outline";
 
 interface User {
   id: string;
@@ -36,8 +35,6 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -49,7 +46,6 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
 
   const fetchEventUsers = () => {
     if (!eventSlug) return;
-    setLoading(true);
     let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
     if (debouncedSearch.trim() !== "") url += `&search=${encodeURIComponent(debouncedSearch)}`;
     if (roleFilter && roleFilter !== "All") url += `&role=${encodeURIComponent(roleFilter)}`;
@@ -62,8 +58,7 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
       .catch(() => {
         setEventUsers([]);
         setTotal(0);
-      })
-      .finally(() => setLoading(false));
+      });
   };
 
   useEffect(() => { fetchEventUsers(); }, [debouncedSearch, sort, order, page, limit, eventSlug, roleFilter]);
