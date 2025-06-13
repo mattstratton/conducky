@@ -110,7 +110,18 @@ export function CommentsSection({
                     </select>
                   )}
                   <div className="flex gap-2 mt-2">
-                    <Button onClick={() => { onCommentEdit && onCommentEdit(comment, editCommentBody, editCommentVisibility); setEditingCommentId(null); }} className="bg-green-600 text-white px-3 py-1 text-sm">Save</Button>
+                    <Button 
+                      onClick={() => { 
+                        if (editCommentBody.trim()) {
+                          onCommentEdit && onCommentEdit(comment, editCommentBody, editCommentVisibility); 
+                          setEditingCommentId(null); 
+                        }
+                      }} 
+                      disabled={!editCommentBody.trim()}
+                      className="bg-green-600 text-white px-3 py-1 text-sm disabled:opacity-50"
+                    >
+                      Save
+                    </Button>
                     <Button onClick={() => setEditingCommentId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 text-sm">Cancel</Button>
                   </div>
                 </div>
