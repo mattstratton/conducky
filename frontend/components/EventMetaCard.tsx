@@ -60,7 +60,7 @@ export default function EventMetaCard({
   setShowCodeModal,
 }: EventMetaCardProps) {
   const backendBaseUrl =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || "http://localhost:4000";
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const logoSrc =
     logoPreview ||
     (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
