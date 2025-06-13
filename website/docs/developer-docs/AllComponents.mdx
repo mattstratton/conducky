@@ -1,0 +1,86 @@
+---
+title: All Components
+sidebar_label: All Components
+---
+
+import React from "react";
+import { useDynamicImport } from "docusaurus-plugin-react-docgen-typescript/useDynamicImport";
+
+export function PropTable({ name }) {
+  const props = useDynamicImport(name);
+  if (!props) return null;
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Default Value</th>
+          <th>Required</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Object.keys(props).map((key) => (
+          <tr key={key}>
+            <td><code>{key}</code></td>
+            <td><code>{props[key].type?.name}</code></td>
+            <td>{props[key].defaultValue && <code>{props[key].defaultValue.value}</code>}</td>
+            <td>{props[key].required ? "Yes" : "No"}</td>
+            <td>{props[key].description}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+# All Frontend Components
+
+This page documents all React components in the frontend codebase. Each section below shows the props for a component, auto-generated from TypeScript source.
+
+## UserManager
+<PropTable name="UserManager" />
+
+## UserRegistrationForm
+<PropTable name="UserRegistrationForm" />
+
+## ReportDetailView
+<PropTable name="ReportDetailView" />
+
+## ReportForm
+<PropTable name="ReportForm" />
+
+## Table
+<PropTable name="Table" />
+
+## EventNavBar
+<PropTable name="EventNavBar" />
+
+## Input
+<PropTable name="Input" />
+
+## InviteManager
+<PropTable name="InviteManager" />
+
+## Card
+<PropTable name="Card" />
+
+## CoCTeamList
+<PropTable name="CoCTeamList" />
+
+## EventMetaCard
+<PropTable name="EventMetaCard" />
+
+## EventMetaEditor
+<PropTable name="EventMetaEditor" />
+
+## Avatar
+<PropTable name="Avatar" />
+
+## button (ui/button.tsx)
+<PropTable name="button" />
+
+---
+
+> **Note:** These prop tables are auto-generated from the TypeScript source using [docusaurus-plugin-react-docgen-typescript](https://github.com/atomicpages/docusaurus-plugin-react-docgen-typescript). To add a new component, simply create it in the components directory and it will be included here after the next docgen run. 

@@ -42,3 +42,21 @@ TODO: Add instructions for setting up a development environment, installing depe
 ### Running Backend Tests
 
 Backend tests automatically load environment variables from `/backend/.env.test` (if present) using `dotenv`. Edit `/backend/.env.test` to configure your local test database and secrets. This ensures tests run with the correct settings, separate from your development `.env`.
+
+## Documenting New React Components
+
+When you add a new React component to the codebase (in `frontend/components` or its subdirectories), you must also update the documentation to include it in the auto-generated prop tables.
+
+To do this:
+
+1. Open `website/docs/developer-docs/AllComponents.mdx`.
+2. Add a new section for your component, using the following format:
+
+   ```mdx
+   ## MyNewComponent
+   <PropTable name="MyNewComponent" />
+   ```
+
+3. Save the file and restart the Docusaurus dev server if needed.
+
+This will ensure your new component's props are documented automatically. For more details, see the comments in `AllComponents.mdx`.
