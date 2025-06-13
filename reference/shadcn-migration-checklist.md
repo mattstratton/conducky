@@ -15,17 +15,38 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 
 ## Migration Plan & Checklist
 
+### 0. CLI-First Approach ✅
+- [x] Use `npx shadcn@latest add [component]` instead of copy/paste
+- [x] Re-add existing components via CLI to ensure they're standard
+- [x] Use `--overwrite` flag to update existing components
+- [x] Use `npx shadcn@latest diff` to check for updates
+- [x] Added core components: sheet, input, label, textarea, select, avatar, badge, tabs, toast
+- [x] Added form component via CLI and updated UserRegistrationForm and ReportForm to use proper Shadcn Form pattern
+- [x] Update ReportDetailView subcomponents to use proper Shadcn Form pattern
+
 ### 1. Card Component
 - [x] Replace custom `Card` with Shadcn's Card component everywhere
 - [x] Refactor usages for new API/styling
 - [x] Remove old Card component if fully migrated
 
 ### 2. Dialogs/Modals
-- [ ] Identify all custom modals/dialogs (e.g., EventMetaEditor)
-- [ ] Replace with Shadcn Dialog/AlertDialog
+- [x] Identify all custom modals/dialogs (e.g., EventMetaEditor, EventMetaCard)
+  - [x] Migrate Code of Conduct modal in EventMetaEditor to Shadcn Sheet for in-context viewing
+  - [x] Migrate Code of Conduct modal in EventMetaCard to Shadcn Sheet for in-context viewing
+  - [x] Add copy-link and open-link buttons in the Sheet to reference the dedicated page
+  - [x] Create a dedicated public page for Code of Conduct at `/event/[slug]/code-of-conduct` (no auth required)
+  - [x] Fix import issue in Code of Conduct page (Card component import)
+  - [x] Improve Sheet UX: slide from right instead of left, add built-in close button
+  - [ ] [Add more as discovered]
+- [ ] Replace with Shadcn Dialog/AlertDialog where appropriate
 - [ ] Use AlertDialog for destructive actions (deletes, confirmations)
 
 ### 3. Navigation
+- [x] Migrate event-level navigation (EventNavBar) to Shadcn
+  - [x] Mobile: Sheet
+  - [x] Desktop: NavigationMenu
+  - [x] Automated and manual tests complete
+  - [x] Documentation updated
 - [ ] Refactor navigation (EventNavBar, etc.) to use Shadcn NavigationMenu/Tabs
 - [ ] Ensure mobile and desktop nav are accessible and consistent
 - [x] Migrate mobile navigation to Shadcn Sheet (Header uses Sheet for mobile menu, replacing custom drawer)
@@ -41,9 +62,13 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 ### 6. Alerts, Toasts, Feedback
 - [ ] Use Shadcn Alert and Toast for user feedback, errors, confirmations
 
-### 7. Forms
-- [ ] Refactor forms to use Shadcn Form, Input, and related components
-- [ ] Ensure accessibility and validation feedback
+### 7. Forms ✅
+- [x] Refactor forms to use Shadcn Form, Input, and related components
+- [x] Ensure accessibility and validation feedback
+- [x] All form-related automated tests updated and passing
+- [x] Updated UserRegistrationForm and ReportForm to use proper `<Form {...form}>` pattern
+- [x] Fixed ReportDetailView subcomponents (TitleEditForm, AssignmentSection, ReportStateSelector)
+- [x] All 40 tests passing
 
 ### 8. Spacing, Layout, Responsiveness
 - [ ] Use Shadcn/Tailwind spacing and container utilities
@@ -53,9 +78,16 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 - [ ] Leverage Shadcn's accessible components (focus, ARIA, keyboard nav)
 
 ### 10. Testing & Documentation
-- [ ] Update/add automated tests for all refactored components
+- [x] Update/add automated tests for all refactored components (forms, report detail view)
 - [ ] Document manual test steps for UI/UX flows
 - [ ] Update `/website/docs/developer-docs/testing.md` and add a migration guide
+
+### 11. ReportForm
+- [x] Migrate ReportForm to Shadcn Form (with react-hook-form)
+  - [x] All fields use Shadcn primitives
+  - [x] Validation and error messages use FormMessage
+  - [x] Automated tests updated and passing
+  - [x] Documentation updated
 
 ---
 

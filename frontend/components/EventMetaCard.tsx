@@ -1,7 +1,9 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import { Card } from "./ui/card";
-import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PencilIcon, CheckIcon, XMarkIcon, LinkIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { CoCTeamList } from "./CoCTeamList";
 
 interface EventMeta {
@@ -34,8 +36,8 @@ export interface EventMetaCardProps {
   logoUploadLoading?: boolean;
   handleLogoFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   logoFile?: File;
-  showCodeModal?: boolean;
-  setShowCodeModal?: (show: boolean) => void;
+  showCodeSheet?: boolean;
+  setShowCodeSheet?: (show: boolean) => void;
 }
 
 export default function EventMetaCard({
@@ -56,14 +58,30 @@ export default function EventMetaCard({
   logoUploadLoading,
   handleLogoFileChange,
   logoFile,
-  showCodeModal,
-  setShowCodeModal,
+  showCodeSheet,
+  setShowCodeSheet,
 }: EventMetaCardProps) {
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const logoSrc =
     logoPreview ||
     (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
+
+  const copyCodeOfConductLink = async () => {
+    const url = `${window.location.origin}/event/${eventSlug}/code-of-conduct`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // Could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
+  const openCodeOfConductPage = () => {
+    const url = `/event/${eventSlug}/code-of-conduct`;
+    window.open(url, '_blank');
+  };
+
   return (
     <Card className="mb-6 max-w-4xl mx-auto p-4 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-4">
@@ -406,12 +424,41 @@ export default function EventMetaCard({
           <div className="flex items-center gap-2 mb-2">
             <span className="font-medium">Code of Conduct:</span>
             {showCodeButton && (
-              <button
-                onClick={() => setShowCodeModal && setShowCodeModal(true)}
-                className="text-blue-600 dark:text-blue-400 underline font-medium"
-              >
-                View Code of Conduct
-              </button>
+              <Sheet open={showCodeSheet} onOpenChange={setShowCodeSheet}>
+                <SheetTrigger asChild>
+                  <Button className="text-blue-600 dark:text-blue-400 underline font-medium">
+                    View Code of Conduct
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-2xl">
+                  <SheetHeader className="space-y-4">
+                    <SheetTitle>Code of Conduct</SheetTitle>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={copyCodeOfConductLink}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        Copy Link
+                      </Button>
+                      <Button 
+                        onClick={openCodeOfConductPage}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                        Open Page
+                      </Button>
+                    </div>
+                  </SheetHeader>
+                  <div className="mt-6 prose dark:prose-invert max-h-[70vh] overflow-y-auto">
+                    <ReactMarkdown>{event.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown>
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
             {showEdit && (
               <button
@@ -444,26 +491,6 @@ export default function EventMetaCard({
           )}
         </div>
       </div>
-      {/* Code of Conduct Modal */}
-      {showCodeModal && setShowCodeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
-            <button
-              onClick={() => setShowCodeModal(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-2xl"
-              aria-label="Close"
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-              Code of Conduct
-            </h2>
-            <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto">
-              <ReactMarkdown>{event.codeOfConduct || ''}</ReactMarkdown>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Divider and Code of Conduct Team */}
       <hr className="my-6 border-gray-200 dark:border-gray-700" />
       <CoCTeamList eventSlug={eventSlug || ""} />

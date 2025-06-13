@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Card } from "./ui/card";
 import Input from "./Input";
 import { Button } from "@/components/ui/button";
-import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PencilIcon, CheckIcon, XMarkIcon, LinkIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import ReactMarkdown from "react-markdown";
 
 export interface EventMeta {
@@ -42,29 +43,7 @@ export function EventMetaEditor({
   const [editingField, setEditingField] = useState<keyof EventMeta | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const codeModalRef = useRef<HTMLDivElement>(null);
-  const closeCodeModalBtnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (showCodeModal) {
-      closeCodeModalBtnRef.current?.focus();
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setShowCodeModal(false);
-        else if (e.key === "Tab" && codeModalRef.current) {
-          const focusableEls = codeModalRef.current.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          );
-          const firstEl = focusableEls[0] as HTMLElement;
-          const lastEl = focusableEls[focusableEls.length - 1] as HTMLElement;
-          if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
-          else if (e.shiftKey && document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
-        }
-      };
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [showCodeModal]);
+  const [showCodeSheet, setShowCodeSheet] = useState(false);
 
   const backendBaseUrl = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || "http://localhost:4000";
   const logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
@@ -99,6 +78,21 @@ export function EventMetaEditor({
     if (file) {
       onMetaChange("logo", file);
     }
+  };
+
+  const copyCodeOfConductLink = async () => {
+    const url = `${window.location.origin}/event/${eventSlug}/code-of-conduct`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // Could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
+  const openCodeOfConductPage = () => {
+    const url = `/event/${eventSlug}/code-of-conduct`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -220,7 +214,39 @@ export function EventMetaEditor({
           ) : (
             <>
               {event.codeOfConduct ? (
-                <Button onClick={() => setShowCodeModal(true)} className="text-blue-600 dark:text-blue-400 underline font-medium ml-2">View Code of Conduct</Button>
+                <Sheet open={showCodeSheet} onOpenChange={setShowCodeSheet}>
+                  <SheetTrigger asChild>
+                    <Button className="text-blue-600 dark:text-blue-400 underline font-medium ml-2">View Code of Conduct</Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-2xl">
+                    <SheetHeader className="space-y-4">
+                      <SheetTitle>Code of Conduct</SheetTitle>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={copyCodeOfConductLink}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                          Copy Link
+                        </Button>
+                        <Button 
+                          onClick={openCodeOfConductPage}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                          Open Page
+                        </Button>
+                      </div>
+                    </SheetHeader>
+                    <div className="mt-6 prose dark:prose-invert max-h-[70vh] overflow-y-auto">
+                      <ReactMarkdown>{event.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               ) : (
                 <span className="italic text-gray-400 ml-2">No code of conduct added. Please add one.</span>
               )}
@@ -228,16 +254,6 @@ export function EventMetaEditor({
             </>
           )}
         </div>
-        {/* Code of Conduct Modal */}
-        {showCodeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="dialog" aria-modal="true" aria-labelledby="coc-modal-title" onClick={() => setShowCodeModal(false)}>
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-2xl w-full p-6 relative" ref={codeModalRef} onClick={e => e.stopPropagation()}>
-              <button onClick={() => setShowCodeModal(false)} className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200" aria-label="Close code of conduct modal" ref={closeCodeModalBtnRef}><XMarkIcon className="h-6 w-6" /></button>
-              <h2 id="coc-modal-title" className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Code of Conduct</h2>
-              <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto"><ReactMarkdown>{event.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown></div>
-            </div>
-          </div>
-        )}
         {/* Contact Email */}
         <div className="flex items-center gap-2">
           <span className="font-medium">Contact Email:</span>
