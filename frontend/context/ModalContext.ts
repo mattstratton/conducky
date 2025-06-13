@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 
 export interface ModalContextType {
-  openModal: (...args: any[]) => void;
+  openModal: (slug: string, name?: string) => void;
 }
 
 export const ModalContext = createContext<ModalContextType>({ openModal: () => {} }); 

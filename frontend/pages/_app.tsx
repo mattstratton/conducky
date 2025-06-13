@@ -452,7 +452,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
       </Head>
       <UserContext.Provider value={{ user, setUser }}>
         <DarkModeContext.Provider value={darkModeValue}>
-          <ModalContext.Provider value={{ openModal: openModal as unknown as () => void }}>
+          <ModalContext.Provider value={{ openModal }}>
             <Header />
             {eventSlug && (
               <EventNavBar
