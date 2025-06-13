@@ -54,6 +54,8 @@ We are migrating the frontend UI to use [Shadcn UI](https://ui.shadcn.com/) comp
 ### 4. UI Primitives (Button, Input, Avatar, etc.)
 - [ ] Replace all custom primitives with Shadcn versions
 - [x] Ensure Shadcn button is used everywhere
+- [x] Ensure Shadcn Avatar is used everywhere
+- [x] Ensure Shadcn Badge is used everywhere
 
 ### 5. Dark Mode
 - [x] Remove custom theme logic (localStorage, etc.)

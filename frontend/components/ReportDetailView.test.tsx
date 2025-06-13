@@ -12,11 +12,6 @@ jest.mock("./Table", () => ({
   __esModule: true,
   Table: ({ children, ...props }) => <table data-testid="table" {...props}>{children}</table>,
 }));
-jest.mock("./Avatar", () => ({
-  __esModule: true,
-  default: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
-  Avatar: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
-}));
 jest.mock("@/components/ui/button", () => ({
   __esModule: true,
   Button: ({ children, ...props }) => <button {...props}>{children}</button>,
