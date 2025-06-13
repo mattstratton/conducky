@@ -4,23 +4,41 @@ import { useEffect, useState, useContext } from 'react';
 import { UserContext } from '../_app';
 import { UserRegistrationForm } from '../../components/UserRegistrationForm';
 
+interface Invite {
+  id: string;
+  note?: string;
+  expiresAt?: string;
+  useCount: number;
+  maxUses?: number;
+  disabled: boolean;
+}
+
+interface Event {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface UserRegistrationData {
+  name: string;
+  email: string;
+  password: string;
+}
+
 export default function RedeemInvitePage() {
   const router = useRouter();
   const { code } = router.query;
-  const { user, refreshUser } = useContext(UserContext);
-  const [invite, setInvite] = useState(null);
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [redeeming, setRedeeming] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { user, refreshUser } = useContext(UserContext) as any;
+  const [invite, setInvite] = useState<Invite | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [redeeming, setRedeeming] = useState<boolean>(false);
   // Registration form state
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regPassword2, setRegPassword2] = useState('');
-  const [regLoading, setRegLoading] = useState(false);
-  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState<boolean>(false);
+  const [regError, setRegError] = useState<string>('');
 
   // Fetch invite link details
   useEffect(() => {
@@ -52,9 +70,9 @@ export default function RedeemInvitePage() {
         throw new Error(data.error || 'Failed to redeem invite');
       }
       setSuccess('You have joined the event!');
-      refreshUser && refreshUser();
+      if (refreshUser) refreshUser();
     } catch (err) {
-      setError(err.message || 'Failed to redeem invite');
+      setError(err instanceof Error ? err.message : 'Failed to redeem invite');
     }
     setRedeeming(false);
   };
@@ -80,7 +98,7 @@ export default function RedeemInvitePage() {
               loading={regLoading}
               error={regError}
               success={success}
-              onSubmit={async ({ name, email, password }) => {
+              onSubmit={async ({ name, email, password }: UserRegistrationData) => {
                 setRegError('');
                 setRegLoading(true);
                 try {
@@ -93,7 +111,7 @@ export default function RedeemInvitePage() {
                   if (!res.ok) throw new Error(data.error || 'Registration failed');
                   setSuccess('Registration successful! Please log in to continue.');
                 } catch (err) {
-                  setRegError(err.message || 'Registration failed');
+                  setRegError(err instanceof Error ? err.message : 'Registration failed');
                 }
                 setRegLoading(false);
               }}

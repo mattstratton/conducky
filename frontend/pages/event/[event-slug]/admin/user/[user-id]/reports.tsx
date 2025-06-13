@@ -3,13 +3,21 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card } from '../../../../../../components';
-import { Table } from '../../../../../../components';
+import Card from '../../../../../../components/Card';
+import { Table } from '../../../../../../components/Table';
+
+interface Report {
+  id: string;
+  title?: string;
+  type: string;
+  state: string;
+  createdAt: string;
+}
 
 export default function UserReportsPage() {
   const router = useRouter();
-  const { 'event-slug': eventSlug, 'user-id': userId } = router.query;
-  const [reports, setReports] = useState([]);
+  const { 'event-slug': eventSlug, 'user-id': userId } = router.query as { 'event-slug'?: string, 'user-id'?: string };
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

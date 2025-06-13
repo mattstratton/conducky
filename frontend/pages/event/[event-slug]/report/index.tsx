@@ -1,17 +1,34 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
-import { Card } from "../../../../components";
-import { Table } from "../../../../components";
+import Card from "../../../../components/Card";
+import { Table } from "../../../../components/Table";
 import { UserContext } from "../../../_app";
 import Link from "next/link";
+
+interface Report {
+  id: string;
+  title: string;
+  type: string;
+  state: string;
+  createdAt: string;
+}
+
+// Define UserContext type
+interface UserContextType {
+  user: {
+    id: string;
+    email?: string;
+    name?: string;
+  } | null;
+}
 
 export default function MyReportsPage() {
   const router = useRouter();
   const { "event-slug": eventSlug } = router.query;
-  const { user } = useContext(UserContext);
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { user } = useContext(UserContext) as UserContextType;
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     if (!eventSlug || !user) return;

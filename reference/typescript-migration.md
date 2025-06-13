@@ -1,14 +1,8 @@
 # TypeScript Migration Checklist (Frontend)
 
-  
-
 This document tracks the migration of the frontend from JavaScript to TypeScript.
 
-  
-
 ## Migration Steps
-
-  
 
 - [X] Install TypeScript and type definitions for React/Node
 
@@ -24,11 +18,7 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 
 - [ ] Incrementally migrate other components/pages
 
-  
-
 ## Component Migration Progress
-
-  
 
 - [X] Button
 
@@ -50,55 +40,45 @@ This document tracks the migration of the frontend from JavaScript to TypeScript
 
 - [ ] All pages in `pages/` ([#148](https://github.com/mattstratton/conducky/issues/148))
 
-  
-
 Add more components/pages as needed. Check off each as it is migrated.
-
-  
 
 ## Pages Migration Progress
 
-  
-
 - [ ] pages/_app.js
 
-- [ ] pages/index.js
+- [X] pages/index.js
 
-- [ ] pages/profile.js
+- [X] pages/profile.js
 
-- [ ] pages/admin.js
+- [X] pages/admin.js
 
-- [ ] pages/login.js
+- [X] pages/login.js
 
-- [ ] pages/login.test.js
+- [X] pages/login.test.js
 
-- [ ] pages/profile.test.js
+- [X] pages/profile.test.js
 
-- [ ] pages/invite/[code].js
+- [X] pages/invite/[code].js
 
-- [ ] pages/event/[event-slug].js
+- [X] pages/event/[event-slug].js
 
-- [ ] pages/event/[event-slug]/admin.js
+- [X] pages/event/[event-slug]/admin.js
 
-- [ ] pages/event/[event-slug]/code-of-conduct.js
+- [X] pages/event/[event-slug]/code-of-conduct.js
 
-- [ ] pages/event/[event-slug]/user/index.js
+- [X] pages/event/[event-slug]/user/index.js
 
-- [ ] pages/event/[event-slug]/user/[user-id]/index.js
+- [X] pages/event/[event-slug]/user/[user-id]/index.js
 
-- [ ] pages/event/[event-slug]/report/[id].js
+- [X] pages/event/[event-slug]/report/[id].js
 
-- [ ] pages/event/[event-slug]/report/index.js
+- [X] pages/event/[event-slug]/report/index.js
 
-- [ ] pages/event/[event-slug]/admin/reports.js
+- [X] pages/event/[event-slug]/admin/reports.js
 
-- [ ] pages/event/[event-slug]/admin/reports/user/[user-id].js
-
-  
+- [X] pages/event/[event-slug]/admin/reports/user/[user-id].js
 
 ## Export Style Decision
-
-  
 
 - For the initial migration, we are keeping **default exports** for components (e.g., `export default Button;`) to minimize disruption and avoid breaking existing imports and the barrel file (`components/index.js`).
 
@@ -109,7 +89,5 @@ Add more components/pages as needed. Check off each as it is migrated.
 - Update the barrel file to use `export * from './Button';` style re-exports
 
 - Update all imports throughout the codebase to use named imports (e.g., `import { Button } from '../components'`)
-
-  
 
 This staged approach allows for a smooth migration with minimal breakage, followed by a modernization pass for best TypeScript practices.

@@ -2,15 +2,22 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function EventNavBar({ eventSlug, eventName, user, userRoles = [], openReportModal }) {
+export interface EventNavBarProps {
+  eventSlug: string;
+  eventName?: string;
+  user?: unknown;
+  userRoles?: string[];
+  openReportModal?: () => void;
+}
+
+export function EventNavBar({ eventSlug, eventName, user, userRoles = [], openReportModal }: EventNavBarProps) {
   const isAdmin = userRoles.includes("Admin");
   const isResponder = userRoles.includes("Responder");
   const isSuperAdmin = userRoles.includes("SuperAdmin");
   const canSeeEventReports = isResponder || isAdmin || isSuperAdmin;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navRef = useRef(null);
+  const navRef = useRef<HTMLDivElement | null>(null);
 
-  // Close mobile nav on route change
   useEffect(() => {
     const handleRouteChange = () => setMobileOpen(false);
     window.addEventListener("hashchange", handleRouteChange);
@@ -21,23 +28,22 @@ export default function EventNavBar({ eventSlug, eventName, user, userRoles = []
     };
   }, []);
 
-  // Trap focus in mobile nav when open
   useEffect(() => {
     if (!mobileOpen || !navRef.current) return;
     const focusableEls = navRef.current.querySelectorAll(
       'a, button, [tabindex]:not([tabindex="-1"])'
     );
-    const firstEl = focusableEls[0];
-    const lastEl = focusableEls[focusableEls.length - 1];
-    const handleKeyDown = (e) => {
+    const firstEl = focusableEls[0] as HTMLElement | undefined;
+    const lastEl = focusableEls[focusableEls.length - 1] as HTMLElement | undefined;
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMobileOpen(false);
       if (e.key === "Tab") {
         if (!e.shiftKey && document.activeElement === lastEl) {
           e.preventDefault();
-          firstEl.focus();
+          firstEl?.focus();
         } else if (e.shiftKey && document.activeElement === firstEl) {
           e.preventDefault();
-          lastEl.focus();
+          lastEl?.focus();
         }
       }
     };
@@ -149,4 +155,6 @@ export default function EventNavBar({ eventSlug, eventName, user, userRoles = []
       )}
     </nav>
   );
-} 
+}
+
+export default EventNavBar; 

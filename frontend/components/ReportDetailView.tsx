@@ -1,7 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "./index";
-import { Table } from "./index";
+import Card from "./Card";
+import { Table } from "./Table";
 import { Avatar } from "./Avatar";
 
 export interface ReportDetailViewProps {
@@ -366,4 +366,6 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
       </div>
     </Card>
   );
-}; 
+};
+
+export default ReportDetailView; 

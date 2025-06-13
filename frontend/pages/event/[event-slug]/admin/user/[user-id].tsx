@@ -2,12 +2,20 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card } from '../../../../../components';
+import Card from '../../../../../components/Card';
+
+interface User {
+  id: string;
+  name?: string;
+  email?: string;
+  roles?: string[];
+  role?: string;
+}
 
 export default function UserDetailsPage() {
   const router = useRouter();
-  const { 'event-slug': eventSlug, 'user-id': userId } = router.query;
-  const [user, setUser] = useState(null);
+  const { 'event-slug': eventSlug, 'user-id': userId } = router.query as { 'event-slug'?: string, 'user-id'?: string };
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,7 +25,7 @@ export default function UserDetailsPage() {
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
-        const found = (data.users || []).find(u => String(u.id) === String(userId));
+        const found = (data.users || []).find((u: User) => String(u.id) === String(userId));
         if (!found) {
           setError('User not found for this event.');
         } else {

@@ -5,6 +5,7 @@ module.exports = {
     "^.+\\.(css|scss|sass)$": "identity-obj-proxy",
     // Handle static assets
     "^.+\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
+    "^@/(.*)$": "<rootDir>/$1",
   },
   setupFilesAfterEnv: ["@testing-library/jest-dom"],
   transform: {

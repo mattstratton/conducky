@@ -1,16 +1,25 @@
+/* global jest, describe, it, expect */
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReportDetailView from "./ReportDetailView";
 
 // Mock Card, Table, Button, Avatar for isolation
-jest.mock("./index", () => ({
-  Card: ({ children }) => <div data-testid="card">{children}</div>,
-  Table: ({ children }) => <table data-testid="table">{children}</table>,
-  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
+jest.mock("./Card", () => ({
+  __esModule: true,
+  default: ({ children, ...props }) => <div data-testid="card" {...props}>{children}</div>,
+}));
+jest.mock("./Table", () => ({
+  __esModule: true,
+  Table: ({ children, ...props }) => <table data-testid="table" {...props}>{children}</table>,
 }));
 jest.mock("./Avatar", () => ({
   __esModule: true,
   default: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
+  Avatar: ({ user }) => <span data-testid="avatar">{user?.name || user?.email || "A"}</span>,
+}));
+jest.mock("@/components/ui/button", () => ({
+  __esModule: true,
+  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
 }));
 
 describe("ReportDetailView", () => {
@@ -166,6 +175,7 @@ describe("ReportDetailView", () => {
         user={reporterUser}
         userRoles={[]}
         evidenceFiles={evidenceFiles}
+        onEvidenceUpload={jest.fn()}
       />
     );
     // The file input should be present

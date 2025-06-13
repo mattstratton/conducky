@@ -2,16 +2,38 @@ import React from "react";
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Card } from '../../../../components';
-import { Table } from '../../../../components';
+import Card from '../../../../components/Card';
+import { Table } from '../../../../components/Table';
+
+interface User {
+  id: string;
+  name?: string;
+  email?: string;
+}
+
+interface EvidenceFile {
+  id: string;
+  filename: string;
+}
+
+interface Report {
+  id: string;
+  title: string;
+  type: string;
+  state: string;
+  createdAt: string;
+  reporter: User | null;
+  assignedResponder: User | null;
+  severity: string | null;
+  evidenceFiles: EvidenceFile[];
+}
 
 export default function AdminReportsList() {
   const router = useRouter();
   const { 'event-slug': eventSlug } = router.query;
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (!eventSlug) return;
