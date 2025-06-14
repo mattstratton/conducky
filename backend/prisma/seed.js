@@ -84,6 +84,14 @@ async function main() {
     },
   });
 
+  // Seed system setting for public event list
+  await prisma.systemSetting.upsert({
+    where: { key: 'showPublicEventList' },
+    update: {},
+    create: { key: 'showPublicEventList', value: 'false' },
+  });
+  console.log('SystemSetting seeded: showPublicEventList = false');
+
   console.log('Default roles seeded.');
   console.log('Test event seeded. Event ID:', event.id);
   console.log('Admin user seeded:', adminEmail, '/ password:', adminPassword);

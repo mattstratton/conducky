@@ -67,8 +67,7 @@ export default function EventDashboard() {
   const [stateChange, setStateChange] = useState<StateChangeMap>({}); 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { openModal } = useContext(ModalContext) as any;
-  const [showCodeModal, setShowCodeModal] = useState<boolean>(false);
-  
+
   // Inline edit state for metadata
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -162,15 +161,15 @@ export default function EventDashboard() {
   // If user is not logged in, only show the event meta section
   if (!user) {
     return (
-      <div className="font-sans p-4 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+      <div className="font-sans p-4 min-h-screen bg-background">
         <EventMetaCard
           event={event}
-          logoPreview={logoPreview}
+          logoPreview={logoPreview ?? undefined}
           logoExists={logoExists}
           eventSlug={eventSlug as string}
           showCodeButton={true}
           showEdit={false}
-          editingField={null}
+          editingField={undefined}
           editValue={""}
           onEditStart={() => {}}
           onEditChange={() => {}}
@@ -180,11 +179,7 @@ export default function EventDashboard() {
           metaEditSuccess=""
           logoUploadLoading={false}
           handleLogoFileChange={() => {}}
-          logoFile={null}
-          setLogoFile={() => {}}
-          setLogoPreview={() => {}}
-          showCodeModal={showCodeModal}
-          setShowCodeModal={setShowCodeModal}
+          logoFile={undefined}
         />
       </div>
     );
@@ -335,17 +330,36 @@ export default function EventDashboard() {
   };
 
   return (
-    <div className="font-sans p-4 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+    <div className="font-sans p-4 min-h-screen bg-background">
       <EventMetaCard
         event={event}
-        logoPreview={logoPreview}
+        logoPreview={logoPreview ?? undefined}
+        logoExists={logoExists}
+        eventSlug={eventSlug as string}
+        showCodeButton={true}
+        showEdit={false}
+        editingField={undefined}
+        editValue={""}
+        onEditStart={() => {}}
+        onEditChange={() => {}}
+        onEditSave={() => {}}
+        onEditCancel={() => {}}
+        metaEditError=""
+        metaEditSuccess=""
+        logoUploadLoading={false}
+        handleLogoFileChange={() => {}}
+        logoFile={undefined}
+      />
+      <EventMetaCard
+        event={event}
+        logoPreview={logoPreview ?? undefined}
         logoExists={logoExists}
         eventSlug={eventSlug as string}
         showCodeButton={true}
         showEdit={isAdmin || isSuperAdmin}
-        editingField={editingField}
+        editingField={editingField ?? undefined}
         editValue={editValue}
-        onEditStart={startEdit}
+        onEditStart={(field, value) => startEdit(field, value as string | undefined)}
         onEditChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditValue(e.target.value)}
         onEditSave={saveEdit}
         onEditCancel={cancelEdit}
@@ -353,24 +367,20 @@ export default function EventDashboard() {
         metaEditSuccess={metaEditSuccess}
         logoUploadLoading={logoUploadLoading}
         handleLogoFileChange={handleLogoFileChange}
-        logoFile={logoFile}
-        setLogoFile={setLogoFile}
-        setLogoPreview={setLogoPreview}
-        showCodeModal={showCodeModal}
-        setShowCodeModal={setShowCodeModal}
+        logoFile={logoFile ?? undefined}
       />
       <Card className="mb-6 max-w-4xl mx-auto p-4 sm:p-8">
-        <h1 className="text-2xl font-bold mb-4">Event: {event.name}</h1>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-300">
+        <h1 className="text-2xl font-bold mb-4 text-foreground">Event: {event.name}</h1>
+        <p className="text-sm font-medium text-muted-foreground">
           <b>Slug:</b> {event.slug}
         </p>
         <Link
           href="/"
-          className="text-blue-700 dark:text-blue-400 hover:underline"
+          className="text-primary hover:underline"
         >
           ← Back to Events
         </Link>
-        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+        <hr className="my-4 border-border" />
         {/* Submit Report Button */}
         <div className="mb-6 flex justify-start">
           <Button
@@ -380,10 +390,10 @@ export default function EventDashboard() {
             Submit Report
           </Button>
         </div>
-        <hr className="my-4 border-gray-200 dark:border-gray-700" />
+        <hr className="my-4 border-border" />
         {/* Show reports for all roles, but filter for regular users */}
         <div>
-          <h2 className="text-xl font-bold mb-4">
+          <h2 className="text-xl font-bold mb-4 text-foreground">
             {isResponder || isAdmin || isSuperAdmin
               ? "All Reports"
               : "Your Reports"}
@@ -391,7 +401,7 @@ export default function EventDashboard() {
           {/* Card view for mobile */}
           <div className="block sm:hidden">
             {reports.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 No reports yet.
               </p>
             ) : (
@@ -403,8 +413,8 @@ export default function EventDashboard() {
                     )
                 ).map((report) => (
                   <Card key={report.id} className="flex flex-col gap-2 p-4">
-                    <div className="font-semibold text-lg">{report.type}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    <div className="font-semibold text-lg text-foreground">{report.type}</div>
+                    <div className="text-sm text-muted-foreground mb-2">
                       {report.description}
                     </div>
                     <div className="flex flex-col gap-1 text-sm">
@@ -418,7 +428,7 @@ export default function EventDashboard() {
                                 handleStateChange(report.id, e.target.value as ReportState)
                               }
                               disabled={stateChange[report.id]?.loading}
-                              className="mr-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm"
+                              className="mr-2 px-2 py-1 rounded border border-border bg-background text-foreground sm:px-2 sm:py-1 sm:text-sm"
                             >
                               {validStates.map((s) => (
                                 <option key={s} value={s}>
@@ -427,12 +437,12 @@ export default function EventDashboard() {
                               ))}
                             </select>
                             {stateChange[report.id]?.error && (
-                              <span className="text-red-500 dark:text-red-400 ml-2">
+                              <span className="text-destructive ml-2">
                                 {stateChange[report.id].error}
                               </span>
                             )}
                             {stateChange[report.id]?.success && (
-                              <span className="text-green-500 dark:text-green-400 ml-2">
+                              <span className="text-green-600 ml-2">
                                 {stateChange[report.id].success}
                               </span>
                             )}
@@ -442,7 +452,7 @@ export default function EventDashboard() {
                         )}
                       </span>
                       {report.reporter && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           by {report.reporter.email || "anonymous"}
                         </span>
                       )}
@@ -450,7 +460,7 @@ export default function EventDashboard() {
                     <div className="mt-2">
                       <Link
                         href={`/event/${event.slug}/report/${report.id}`}
-                        className="text-blue-500 dark:text-blue-400 underline"
+                        className="text-primary underline"
                       >
                         View Details
                       </Link>
@@ -463,7 +473,7 @@ export default function EventDashboard() {
           {/* List view for desktop */}
           <div className="hidden sm:block">
             {reports.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 No reports yet.
               </p>
             ) : (
@@ -475,7 +485,7 @@ export default function EventDashboard() {
                     )
                 ).map((report) => (
                   <li key={report.id} className="mb-4">
-                    <b>{report.type}</b>: {report.description} (state:{" "}
+                    <b className="text-foreground">{report.type}</b>: {report.description} (state:{" "}
                     {canChangeState ? (
                       <>
                         <select
@@ -484,7 +494,7 @@ export default function EventDashboard() {
                             handleStateChange(report.id, e.target.value as ReportState)
                           }
                           disabled={stateChange[report.id]?.loading}
-                          className="mr-4 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 sm:px-2 sm:py-1 sm:text-sm"
+                          className="mr-4 px-2 py-1 rounded border border-border bg-background text-foreground sm:px-2 sm:py-1 sm:text-sm"
                         >
                           {validStates.map((s) => (
                             <option key={s} value={s}>
@@ -493,12 +503,12 @@ export default function EventDashboard() {
                           ))}
                         </select>
                         {stateChange[report.id]?.error && (
-                          <span className="text-red-500 dark:text-red-400 ml-4">
+                          <span className="text-destructive ml-4">
                             {stateChange[report.id].error}
                           </span>
                         )}
                         {stateChange[report.id]?.success && (
-                          <span className="text-green-500 dark:text-green-400 ml-4">
+                          <span className="text-green-600 ml-4">
                             {stateChange[report.id].success}
                           </span>
                         )}
@@ -508,14 +518,14 @@ export default function EventDashboard() {
                     )}
                     )
                     {report.reporter && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-sm text-muted-foreground">
                         {" "}
                         — by {report.reporter.email || "anonymous"}
                       </span>
                     )}{" "}
                     <Link
                       href={`/event/${event.slug}/report/${report.id}`}
-                      className="text-blue-500 dark:text-blue-400"
+                      className="text-primary"
                     >
                       View Details
                     </Link>

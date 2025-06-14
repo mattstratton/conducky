@@ -124,12 +124,12 @@ export default function RedeemInvitePage() {
 
   return (
     <div className="max-w-lg mx-auto mt-16 p-6 border rounded">
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+      {loading ? <div className="text-muted-foreground">Loading...</div> : error ? <div className="text-destructive">{error}</div> : (
         <>
-          <h2 className="text-xl font-semibold mb-2">Join Event: {event?.name || '...'}</h2>
-          <div className="mb-2">You are about to join as a <b>Reporter</b>.</div>
+          <h2 className="text-xl font-semibold mb-2 text-foreground">Join Event: {event?.name || '...'}</h2>
+          <div className="mb-2 text-muted-foreground">You are about to join as a <b>Reporter</b>.</div>
           {invite && (
-            <div className="mb-4 text-sm text-gray-700">
+            <div className="mb-4 text-sm text-muted-foreground">
               <div><b>Invite Note:</b> {invite.note || '—'}</div>
               <div><b>Expires:</b> {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : '—'}</div>
               <div><b>Uses:</b> {invite.useCount}{invite.maxUses ? ` / ${invite.maxUses}` : ''}</div>
@@ -137,19 +137,19 @@ export default function RedeemInvitePage() {
             </div>
           )}
           {success ? (
-            <div className="text-green-700 font-semibold mb-2">{success}
+            <div className="text-green-600 font-semibold mb-2">{success}
               {event?.slug && (
                 <div className="mt-4">
-                  <a href={`/event/${event.slug}`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go to Event</a>
+                  <a href={`/event/${event.slug}`} className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90">Go to Event</a>
                 </div>
               )}
             </div>
           ) : (
-            <button onClick={handleRedeem} disabled={redeeming || invite?.disabled} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={handleRedeem} disabled={redeeming || invite?.disabled} className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50">
               {redeeming ? 'Joining...' : 'Join Event'}
             </button>
           )}
-          {error && <div className="text-red-600 mt-2">{error}</div>}
+          {error && <div className="text-destructive mt-2">{error}</div>}
         </>
       )}
     </div>

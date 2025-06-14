@@ -21,6 +21,7 @@ services:
     ports:
       - '4000:4000'
       - '5555:5555'
+      - '5556:5556'
     env_file:
       - ./backend/.env
     depends_on:

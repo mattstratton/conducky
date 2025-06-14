@@ -190,3 +190,9 @@ model UserAvatar {
   data      Bytes
   createdAt DateTime @default(now())
 }
+
+model SystemSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+}

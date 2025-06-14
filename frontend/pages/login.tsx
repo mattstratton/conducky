@@ -3,8 +3,16 @@ import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { UserContext } from './_app';
 import { Button } from "@/components/ui/button";
-import { Card } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../components/ui/card";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 // Define User interface
 interface User {
@@ -108,31 +116,31 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4">
-      <Card className="w-full max-w-md p-4 sm:p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
-              htmlFor="email"
-            >
-              Email
-            </label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="email" />
-          </div>
-          <div>
-            <label
-              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="password" />
-          </div>
-          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
-          <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Login</Button>
-        </form>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
+          <CardDescription className="text-center text-muted-foreground">
+            Enter your email and password to access Conducky.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-2">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="you@example.com" />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+            </div>
+            {error && <div className="text-destructive text-sm font-semibold text-center">{error}</div>}
+            <Button type="submit" className="w-full">Sign in</Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-2 items-center">
+          <span className="text-xs text-muted-foreground">Don&apos;t have an account? <Link href="/register" className="text-primary hover:underline">Sign up</Link></span>
+        </CardFooter>
       </Card>
     </div>
   );
