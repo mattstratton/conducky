@@ -99,12 +99,12 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
   return (
     <Card className="max-w-xl mx-auto mt-8">
       {eventName && (
-        <div className="text-sm mb-2 text-gray-500">
+        <div className="text-sm mb-2 text-muted-foreground">
           For event: <b>{eventName}</b>
         </div>
       )}
       {eventSlug && <CoCTeamList eventSlug={eventSlug} />}
-      <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+      <h3 className="text-lg font-semibold mb-4 text-foreground">
         Submit a Report
       </h3>
       <Form {...form}>
@@ -123,7 +123,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
                     minLength={10}
                     maxLength={70}
                     required
-                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground"
                     placeholder="Enter a concise summary (10-70 characters)"
                   />
                 </FormControl>
@@ -142,7 +142,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
                     id="report-type"
                     {...field}
                     required
-                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 bg-white text-foreground"
                   >
                     <option value="">Select type</option>
                     {reportTypes.map((rt) => (
@@ -167,7 +167,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
                     id="report-description"
                     {...field}
                     required
-                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-[80px]"
+                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground min-h-[80px]"
                   />
                 </FormControl>
                 <FormMessage />
@@ -185,11 +185,11 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
                     id="incident-at"
                     type="datetime-local"
                     {...field}
-                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 bg-white text-foreground"
                   />
                 </FormControl>
                 <FormMessage />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   If known, please provide when the incident occurred.
                 </span>
               </FormItem>
@@ -206,12 +206,12 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
                     id="parties"
                     type="text"
                     {...field}
-                    className="mt-1 block w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground"
                     placeholder="List names, emails, or descriptions (comma-separated or freeform)"
                   />
                 </FormControl>
                 <FormMessage />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   List anyone involved, if known. Separate multiple names with commas.
                 </span>
               </FormItem>
@@ -242,7 +242,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
             {submitting ? "Submitting..." : "Submit Report"}
           </Button>
           {message && (
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-2 text-sm text-muted-foreground">
               {message}
             </p>
           )}

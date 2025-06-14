@@ -57,8 +57,8 @@ interface StatBoxProps {
 function StatBox({ label, value }: StatBoxProps) {
   return (
     <div className="flex flex-col items-center flex-1">
-      <span className="text-2xl font-bold text-blue-700 dark:text-blue-400">{value}</span>
-      <span className="text-xs text-gray-600 dark:text-gray-300 mt-1">{label}</span>
+      <span className="text-2xl font-bold text-primary">{value}</span>
+      <span className="text-xs text-muted-foreground mt-1">{label}</span>
     </div>
   );
 } 

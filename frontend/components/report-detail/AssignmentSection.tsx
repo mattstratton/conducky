@@ -56,7 +56,7 @@ export function AssignmentSection({
     <div className="space-y-4">
       {/* Assigned Responder */}
       <div className="mb-2">
-        <label htmlFor="assigned-responder" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned Responder</label>
+        <label htmlFor="assigned-responder" className="block text-sm font-medium text-foreground mb-1">Assigned Responder</label>
         <div>
           {editingField === "assignedResponderId" ? (
             <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export function AssignmentSection({
                 id="assigned-responder"
                 value={localFields.assignedResponderId || ''}
                 onChange={e => handleFieldChange("assignedResponderId", e.target.value)}
-                className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100"
+                className="border px-2 py-1 rounded w-full bg-background text-foreground"
                 disabled={loading}
               >
                 <option value="">(unassigned)</option>
@@ -72,8 +72,8 @@ export function AssignmentSection({
                   <option key={u.id} value={u.id}>{u.name || u.email || 'Unknown'}</option>
                 ))}
               </select>
-              <Button type="button" onClick={handleSave} disabled={loading} className="bg-blue-600 text-white px-2 py-1 text-xs">Save</Button>
-              <Button type="button" onClick={handleCancel} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 text-xs">Cancel</Button>
+              <Button type="button" onClick={handleSave} disabled={loading} className="bg-primary text-foreground px-2 py-1 text-xs">Save</Button>
+              <Button type="button" onClick={handleCancel} className="bg-muted text-foreground px-2 py-1 text-xs">Cancel</Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export function AssignmentSection({
                   : '(unassigned)'}
               </span>
               <button type="button" onClick={() => startEdit("assignedResponderId")}
-                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Edit assigned responder">
+                className="p-1 rounded hover:bg-muted" aria-label="Edit assigned responder">
                 <Pencil size={16} />
               </button>
             </div>
@@ -94,7 +94,7 @@ export function AssignmentSection({
       </div>
       {/* Severity */}
       <div className="mb-2">
-        <label htmlFor="severity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</label>
+        <label htmlFor="severity" className="block text-sm font-medium text-foreground mb-1">Severity</label>
         <div>
           {editingField === "severity" ? (
             <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export function AssignmentSection({
                 id="severity"
                 value={localFields.severity || ''}
                 onChange={e => handleFieldChange("severity", e.target.value)}
-                className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100"
+                className="border px-2 py-1 rounded w-full bg-background text-foreground"
                 disabled={loading}
               >
                 <option value="">(none)</option>
@@ -111,14 +111,14 @@ export function AssignmentSection({
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </select>
-              <Button type="button" onClick={handleSave} disabled={loading} className="bg-blue-600 text-white px-2 py-1 text-xs">Save</Button>
-              <Button type="button" onClick={handleCancel} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 text-xs">Cancel</Button>
+              <Button type="button" onClick={handleSave} disabled={loading} className="bg-primary text-foreground px-2 py-1 text-xs">Save</Button>
+              <Button type="button" onClick={handleCancel} className="bg-muted text-foreground px-2 py-1 text-xs">Cancel</Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <span>{assignmentFields.severity || '(none)'}</span>
               <button type="button" onClick={() => startEdit("severity")}
-                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Edit severity">
+                className="p-1 rounded hover:bg-muted" aria-label="Edit severity">
                 <Pencil size={16} />
               </button>
             </div>
@@ -127,7 +127,7 @@ export function AssignmentSection({
       </div>
       {/* Resolution */}
       <div className="mb-2">
-        <label htmlFor="resolution" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resolution</label>
+        <label htmlFor="resolution" className="block text-sm font-medium text-foreground mb-1">Resolution</label>
         <div>
           {editingField === "resolution" ? (
             <div className="flex items-center gap-2">
@@ -135,18 +135,18 @@ export function AssignmentSection({
                 id="resolution"
                 value={localFields.resolution || ''}
                 onChange={e => handleFieldChange("resolution", e.target.value)}
-                className="border px-2 py-1 rounded w-full dark:bg-gray-800 dark:text-gray-100 min-h-[60px]"
+                className="border px-2 py-1 rounded w-full bg-background text-foreground min-h-[60px]"
                 placeholder="Enter resolution details (required if resolved/closed)"
                 disabled={loading}
               />
-              <Button type="button" onClick={handleSave} disabled={loading} className="bg-blue-600 text-white px-2 py-1 text-xs">Save</Button>
-              <Button type="button" onClick={handleCancel} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 text-xs">Cancel</Button>
+              <Button type="button" onClick={handleSave} disabled={loading} className="bg-primary text-foreground px-2 py-1 text-xs">Save</Button>
+              <Button type="button" onClick={handleCancel} className="bg-muted text-foreground px-2 py-1 text-xs">Cancel</Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span>{assignmentFields.resolution || <span className="italic text-gray-400">(none)</span>}</span>
+              <span>{assignmentFields.resolution || <span className="italic text-muted-foreground">(none)</span>}</span>
               <button type="button" onClick={() => startEdit("resolution")}
-                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Edit resolution">
+                className="p-1 rounded hover:bg-muted" aria-label="Edit resolution">
                 <Pencil size={16} />
               </button>
             </div>
@@ -156,8 +156,8 @@ export function AssignmentSection({
       {/* Feedback */}
       {(error || success) && (
         <div className="flex gap-4 items-center mt-2">
-          {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
-          {success && <span className="text-green-600 dark:text-green-400">{success}</span>}
+          {error && <span className="text-destructive">{error}</span>}
+          {success && <span className="text-green-600">{success}</span>}
         </div>
       )}
     </div>

@@ -108,13 +108,13 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
       <Card className="w-full max-w-md p-4 sm:p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-foreground">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
+              className="block text-foreground text-sm font-bold mb-2"
               htmlFor="email"
             >
               Email
@@ -123,14 +123,14 @@ function Login() {
           </div>
           <div>
             <label
-              className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2"
+              className="block text-foreground text-sm font-bold mb-2"
               htmlFor="password"
             >
               Password
             </label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" id="password" />
           </div>
-          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+          {error && <div className="text-destructive text-sm font-semibold">{error}</div>}
           <Button type="submit" className="w-full px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Login</Button>
         </form>
       </Card>

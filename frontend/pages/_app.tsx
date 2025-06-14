@@ -10,6 +10,7 @@ import { ThemeProvider } from "next-themes";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Users } from "lucide-react";
 
 // User context for global user state
 interface User {
@@ -24,6 +25,12 @@ interface UserContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
 }
 export const UserContext = createContext<UserContextType>({ user: null, setUser: () => {} });
+
+interface SidebarEvent {
+  name: string;
+  slug: string;
+  roles?: string[];
+}
 
 const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -77,6 +84,29 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         .catch(() => setEventName(eventSlugForModal));
     }
   }, [modalOpen, eventSlugForModal]);
+
+  useEffect(() => {
+    if (user) {
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/events", {
+        credentials: "include",
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.events)) {
+            setEvents(
+              data.events.map((event: SidebarEvent) => ({
+                name: event.name,
+                url: `/event/${event.slug}`,
+                icon: Users,
+                role: event.roles && event.roles.length > 0 ? event.roles[0] : undefined,
+              }))
+            );
+          }
+        })
+        .catch(() => setEvents([]));
+    }
+  }, [user]);
+
   const openModal = (slug: string, name?: string) => {
     setEventSlugForModal(slug);
     setEventName(name || "");

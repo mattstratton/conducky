@@ -178,21 +178,21 @@ export default function GlobalAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4 transition-colors duration-200">
+    <div className="min-h-screen bg-background py-8 px-4 transition-colors duration-200">
       <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mb-8 p-4 sm:p-8">
-        <h2 className="text-xl font-semibold mb-4">Create New Event</h2>
+        <h2 className="text-xl font-semibold mb-4 text-foreground">Create New Event</h2>
         <form onSubmit={handleCreateEvent} className="space-y-4 max-w-md">
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Name</label>
+            <label className="block text-foreground text-sm font-bold mb-2">Name</label>
             <Input type="text" value={name} onChange={e => setName(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
           </div>
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Slug</label>
+            <label className="block text-foreground text-sm font-bold mb-2">Slug</label>
             <Input type="text" value={slug} onChange={e => setSlug(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
           </div>
-          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
-          {success && <div className="text-green-600 dark:text-green-400 text-sm font-semibold">{success}</div>}
-          <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create Event</Button>
+          {error && <div className="text-destructive text-sm font-semibold">{error}</div>}
+          {success && <div className="text-green-600 text-sm font-semibold">{success}</div>}
+          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create Event</Button>
         </form>
       </Card>
       <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto p-4 sm:p-8">
@@ -356,19 +356,19 @@ function LoginForm() {
     }
   };
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200">
       <Card className="w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-foreground">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Email</label>
+            <label className="block text-foreground text-sm font-bold mb-2">Email</label>
             <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
           </div>
           <div>
-            <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">Password</label>
+            <label className="block text-foreground text-sm font-bold mb-2">Password</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
-          {error && <div className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+          {error && <div className="text-destructive text-sm font-semibold">{error}</div>}
           <Button type="submit" className="w-full">Login</Button>
         </form>
       </Card>
