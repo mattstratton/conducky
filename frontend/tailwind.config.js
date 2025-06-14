@@ -1,9 +1,12 @@
-module.exports = {
+import typography from '@tailwindcss/typography';
+import tailwindcssAnimate from 'tailwindcss-animate';
+
+export default {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: ['class', "class"], // enables dark mode via a class
+  darkMode: 'class', // enables dark mode via a class
   theme: {
   	extend: {
   		colors: {
@@ -68,5 +71,5 @@ module.exports = {
   variants: {
     extend: {},
   },
-  plugins: [require('@tailwindcss/typography'), require("tailwindcss-animate")],
+  plugins: [typography, tailwindcssAnimate],
 }

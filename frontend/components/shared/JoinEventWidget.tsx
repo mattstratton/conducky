@@ -33,7 +33,7 @@ export function JoinEventWidget({ onJoin }: { onJoin?: () => void }) {
   function extractCode(val: string): string | null {
     const trimmed = val.trim();
     if (/^[a-zA-Z0-9]{6,}$/.test(trimmed)) return trimmed;
-    const match = trimmed.match(/invite\/(\w{6,})/);
+    const match = trimmed.match(/invite\/([a-zA-Z0-9]{6,})/);
     return match ? match[1] : null;
   }
 
