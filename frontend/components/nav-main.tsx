@@ -22,6 +22,7 @@ import {
 
 export function NavMain({
   items,
+  label = "Platform",
 }: {
   items: {
     title: string
@@ -33,10 +34,11 @@ export function NavMain({
       url: string
     }[]
   }[]
+  label?: string
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) =>
           item.items && item.items.length > 0 ? (

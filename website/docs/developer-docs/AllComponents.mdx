@@ -41,6 +41,11 @@ This page documents all React components in the frontend codebase. Each section 
 
 ## Top-level Components
 
+Components located in the root of the `frontend/components/` directory.
+
+### AppSidebar
+<PropTable name="AppSidebar" />
+
 ### CoCTeamList
 <PropTable name="CoCTeamList" />
 
@@ -55,6 +60,15 @@ This page documents all React components in the frontend codebase. Each section 
 
 ### InviteManager
 <PropTable name="InviteManager" />
+
+### NavEvents
+<PropTable name="NavEvents" />
+
+### NavMain
+<PropTable name="NavMain" />
+
+### NavUser
+<PropTable name="NavUser" />
 
 ### ReportDetailView
 <PropTable name="ReportDetailView" />
@@ -72,6 +86,8 @@ This page documents all React components in the frontend codebase. Each section 
 <PropTable name="UserRegistrationForm" />
 
 ## report-detail
+
+Components located in `frontend/components/report-detail/`.
 
 ### AssignmentSection
 <PropTable name="AssignmentSection" />
@@ -91,7 +107,28 @@ This page documents all React components in the frontend codebase. Each section 
 ### TitleEditForm
 <PropTable name="TitleEditForm" />
 
+## shared
+
+Components located in `frontend/components/shared/`.
+
+### ActivityFeed
+<PropTable name="ActivityFeed" />
+
+### EventCard
+<PropTable name="EventCard" />
+
+### JoinEventWidget
+<PropTable name="JoinEventWidget" />
+
+### QuickStats
+<PropTable name="QuickStats" />
+
+### TeamSwitcher
+<PropTable name="TeamSwitcher" />
+
 ## ui
+
+Components located in `frontend/components/ui/` (Shadcn/ui components).
 
 ### alert-dialog
 <PropTable name="alert-dialog" />
@@ -141,33 +178,12 @@ This page documents all React components in the frontend codebase. Each section 
 ### toaster
 <PropTable name="toaster" />
 
-## AppSidebar
-<PropTable name="AppSidebar" />
-
-## NavMain
-<PropTable name="NavMain" />
-
-## NavEvents
-<PropTable name="NavEvents" />
-
-## NavUser
-<PropTable name="NavUser" />
-
-## JoinEventWidget
-<PropTable name="JoinEventWidget" />
-
-## QuickStats
-<PropTable name="QuickStats" />
-
-## ActivityFeed
-<PropTable name="ActivityFeed" />
-
-## EventCard
-<PropTable name="EventCard" />
-
-## TeamSwitcher
-<PropTable name="TeamSwitcher" />
-
 ---
 
 > **Note:** These prop tables are auto-generated from the TypeScript source using [docusaurus-plugin-react-docgen-typescript](https://github.com/atomicpages/docusaurus-plugin-react-docgen-typescript). 
+
+> **Adding New Components:** When you add a new React component to the codebase, update this file by adding a new section for your component in the appropriate location section above, using the format:
+> ```mdx
+> ### ComponentName
+> <PropTable name="ComponentName" />
+> ```

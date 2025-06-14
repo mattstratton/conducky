@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import {
   BookOpen,
   ClipboardList,
@@ -39,6 +39,32 @@ export function AppSidebar({ user, events, ...props }: {
 } & React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const router = useRouter();
+  
+  // Track the user's selected event (persists when navigating out of event context)
+  const [selectedEventSlug, setSelectedEventSlug] = useState<string | null>(null);
+  
+  // Update selected event when in event context
+  useEffect(() => {
+    const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
+    const currentEventSlug = eventSlugMatch ? eventSlugMatch[1] : null;
+    
+    if (currentEventSlug) {
+      setSelectedEventSlug(currentEventSlug);
+    }
+  }, [router.asPath]);
+  
+  // Initialize selected event to first available event if none selected
+  useEffect(() => {
+    if (!selectedEventSlug && events.length > 0) {
+      const firstEventUrl = events[0]?.url;
+      if (firstEventUrl) {
+        const match = firstEventUrl.match(/\/events\/([^/]+)/);
+        if (match) {
+          setSelectedEventSlug(match[1]);
+        }
+      }
+    }
+  }, [events, selectedEventSlug]);
   
   // Wait for router to be ready to avoid hydration issues
   if (!router.isReady) {
@@ -95,6 +121,7 @@ export function AppSidebar({ user, events, ...props }: {
     isActive?: boolean;
     items?: Array<{ title: string; url: string; }>;
   }> = [];
+  let showEventNav = false;
 
   if (isSystemAdmin && isSuperAdmin) {
     // System Admin Navigation (replaces everything)
@@ -179,11 +206,33 @@ export function AppSidebar({ user, events, ...props }: {
       });
     }
 
-    // Event-specific navigation (only when in event context)
+    // Event-specific navigation
+    let targetEventSlug = currentEventSlug;
+
     if (isEventContext && currentEventSlug) {
-      // Get user's role for the current event
-      const currentEvent = events.find(event => event.url.includes(currentEventSlug));
-      const userEventRole = currentEvent?.role;
+      // In event context with a specific event
+      targetEventSlug = currentEventSlug;
+      showEventNav = true;
+    } else if (!isEventContext && selectedEventSlug && events.length > 0) {
+      // On global dashboard - show navigation for the user's selected event
+      targetEventSlug = selectedEventSlug;
+      showEventNav = true;
+    } else if (isEventContext && !currentEventSlug) {
+      // Show loading state for event navigation when in event context but slug not yet available
+      showEventNav = true;
+      eventNav = [
+        {
+          title: "Loading...",
+          url: "#",
+          icon: Home,
+        },
+      ];
+    }
+
+    if (showEventNav && targetEventSlug) {
+      // Get user's role for the target event
+      const targetEvent = events.find(event => event.url.includes(targetEventSlug));
+      const userEventRole = targetEvent?.role;
       
       // Check role permissions
       const isEventAdmin = userEventRole === 'Admin' || isSuperAdmin;
@@ -193,22 +242,22 @@ export function AppSidebar({ user, events, ...props }: {
       eventNav = [
         {
           title: "Event Dashboard",
-          url: `/events/${currentEventSlug}/dashboard`,
+          url: `/events/${targetEventSlug}/dashboard`,
           icon: Home,
-          isActive: router.asPath === `/events/${currentEventSlug}/dashboard`,
+          isActive: router.asPath === `/events/${targetEventSlug}/dashboard`,
         },
         {
           title: "Reports",
-          url: `/events/${currentEventSlug}/reports`,
+          url: `/events/${targetEventSlug}/reports`,
           icon: ClipboardList,
           items: [
             {
               title: "All Reports",
-              url: `/events/${currentEventSlug}/reports`,
+              url: `/events/${targetEventSlug}/reports`,
             },
             {
               title: "Submit Report",
-              url: `/events/${currentEventSlug}/reports/new`,
+              url: `/events/${targetEventSlug}/reports/new`,
             },
           ],
         },
@@ -219,7 +268,7 @@ export function AppSidebar({ user, events, ...props }: {
         const teamItems = [
           {
             title: "Team Members",
-            url: `/events/${currentEventSlug}/team`,
+            url: `/events/${targetEventSlug}/team`,
           },
         ];
 
@@ -227,13 +276,13 @@ export function AppSidebar({ user, events, ...props }: {
         if (isEventAdmin) {
           teamItems.push({
             title: "Send Invites",
-            url: `/events/${currentEventSlug}/team/invite`,
+            url: `/events/${targetEventSlug}/team/invite`,
           });
         }
 
         eventNav.push({
           title: "Team",
-          url: `/events/${currentEventSlug}/team`,
+          url: `/events/${targetEventSlug}/team`,
           icon: Users,
           items: teamItems,
         });
@@ -243,20 +292,20 @@ export function AppSidebar({ user, events, ...props }: {
       if (isEventAdmin) {
         eventNav.push({
           title: "Event Settings",
-          url: `/events/${currentEventSlug}/settings`,
+          url: `/events/${targetEventSlug}/settings`,
           icon: Settings2,
           items: [
             {
               title: "General Settings",
-              url: `/events/${currentEventSlug}/settings`,
+              url: `/events/${targetEventSlug}/settings`,
             },
             {
               title: "Code of Conduct",
-              url: `/events/${currentEventSlug}/settings/code-of-conduct`,
+              url: `/events/${targetEventSlug}/settings/code-of-conduct`,
             },
             {
               title: "Notifications",
-              url: `/events/${currentEventSlug}/settings/notifications`,
+              url: `/events/${targetEventSlug}/settings/notifications`,
             },
           ],
         });
@@ -269,7 +318,7 @@ export function AppSidebar({ user, events, ...props }: {
     if (!events.length) return null;
     return (
       <div className="flex flex-col items-center py-2">
-        <NavEvents events={events} collapsed />
+        <NavEvents events={events} collapsed selectedEventSlug={selectedEventSlug} />
       </div>
     );
   };
@@ -281,18 +330,18 @@ export function AppSidebar({ user, events, ...props }: {
       </SidebarHeader>
       <SidebarContent>
         {/* Global Navigation */}
-        <NavMain items={globalNav} />
+        <NavMain items={globalNav} label={isSystemAdmin ? "System" : "Platform"} />
         
-        {/* Event Navigation Section (only show if not in system admin and has event nav) */}
+        {/* Event Navigation Section (only show if not in system admin) */}
         {!isSystemAdmin && (
           <>
             {/* Event Switcher */}
-            {state === "expanded" && <NavEvents events={events} />}
+            {state === "expanded" && <NavEvents events={events} selectedEventSlug={selectedEventSlug} />}
             
-            {/* Event-specific Navigation */}
-            {eventNav.length > 0 && (
-              <div className="mt-4">
-                <NavMain items={eventNav} />
+            {/* Event-specific Navigation - tighter integration with event picker */}
+            {(showEventNav || eventNav.length > 0) && (
+              <div className="mt-0">
+                <NavMain items={eventNav} label="" />
               </div>
             )}
           </>

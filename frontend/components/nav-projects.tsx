@@ -11,6 +11,7 @@ import { useRouter } from "next/router";
 export function NavEvents({
   events,
   collapsed = false,
+  selectedEventSlug,
 }: {
   events: {
     name: string
@@ -19,10 +20,13 @@ export function NavEvents({
     role?: string
   }[]
   collapsed?: boolean
+  selectedEventSlug?: string | null
 }) {
   const router = useRouter();
-  // Determine current event by matching current path to event url
-  const currentEvent = events.find(e => router.asPath.startsWith(e.url)) || events[0];
+  // Determine current event by matching current path to event url, or use selectedEventSlug
+  const currentEvent = events.find(e => router.asPath.startsWith(e.url)) 
+    || (selectedEventSlug ? events.find(e => e.url.includes(selectedEventSlug)) : null)
+    || events[0];
 
   if (collapsed) {
     // Only show the icon, but still open the dropdown

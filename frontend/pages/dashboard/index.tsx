@@ -35,12 +35,19 @@ export default function GlobalDashboard() {
   const [userEvents, setUserEvents] = useState<Event[] | null>(null);
   const [userEventsLoading, setUserEventsLoading] = useState(false);
   const [userEventsError, setUserEventsError] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Check authentication status and redirect if needed
   useEffect(() => {
-    if (!user) {
-      router.replace('/login?next=' + encodeURIComponent('/dashboard'));
-    }
+    // Wait a moment for the session check in _app.tsx to complete
+    const timer = setTimeout(() => {
+      setAuthChecked(true);
+      if (!user) {
+        router.replace('/login?next=' + encodeURIComponent('/dashboard'));
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [user, router]);
 
   // Authenticated user: fetch their events
@@ -63,8 +70,14 @@ export default function GlobalDashboard() {
   }, [user]);
 
   // Don't render anything while checking authentication
-  if (!user) {
-    return null;
+  if (!authChecked || !user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
+        <Card className="w-full max-w-md text-center p-4 sm:p-8">
+          <p className="text-muted-foreground">Loading...</p>
+        </Card>
+      </div>
+    );
   }
 
   // Show empty state if user has no events

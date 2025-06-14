@@ -68,11 +68,11 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
           // No-op for now; events are fetched from /api/users/me/events
         })
         .catch(() => {
-          setEvents([]);
+          // Don't clear events here - they should persist across pages
         });
     } else {
       setEventName("");
-      setEvents([]);
+      // Don't clear events when not in event context - events should persist
     }
   }, [eventSlug, user]);
 
