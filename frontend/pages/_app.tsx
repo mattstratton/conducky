@@ -67,7 +67,8 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         .then(() => {
           // No-op for now; events are fetched from /api/users/me/events
         })
-        .catch(() => {
+        .catch((error) => {
+          console.warn('Failed to fetch event data:', error);
           // Don't clear events here - they should persist across pages
         });
     } else {

@@ -39,16 +39,17 @@ export default function GlobalDashboard() {
 
   // Check authentication status and redirect if needed
   useEffect(() => {
-    // Wait a moment for the session check in _app.tsx to complete
-    const timer = setTimeout(() => {
-      setAuthChecked(true);
-      if (!user) {
-        router.replace('/login?next=' + encodeURIComponent('/dashboard'));
-      }
-    }, 100);
+    // Only redirect if we're certain user is null after context initialization
+    if (user === null && authChecked) {
+      router.replace('/login?next=' + encodeURIComponent('/dashboard'));
+    }
+  }, [user, authChecked, router]);
 
+  // Separate effect to mark auth as checked after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthChecked(true), 0);
     return () => clearTimeout(timer);
-  }, [user, router]);
+  }, []);
 
   // Authenticated user: fetch their events
   useEffect(() => {

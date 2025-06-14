@@ -25,7 +25,7 @@ export function NavEvents({
   const router = useRouter();
   // Determine current event by matching current path to event url, or use selectedEventSlug
   const currentEvent = events.find(e => router.asPath.startsWith(e.url)) 
-    || (selectedEventSlug ? events.find(e => e.url.includes(selectedEventSlug)) : null)
+    || (selectedEventSlug ? events.find(e => e.url.endsWith(`/${selectedEventSlug}/dashboard`)) : null)
     || events[0];
 
   if (collapsed) {

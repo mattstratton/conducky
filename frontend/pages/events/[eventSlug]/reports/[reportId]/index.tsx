@@ -79,7 +79,12 @@ interface ReportDetailProps {
 
 export default function ReportDetail({ initialReport, error }: ReportDetailProps) {
   const router = useRouter();
-  const { eventSlug, reportId } = router.query;
+  const eventSlug = Array.isArray(router.query.eventSlug) 
+    ? router.query.eventSlug[0] 
+    : router.query.eventSlug;
+  const reportId = Array.isArray(router.query.reportId) 
+    ? router.query.reportId[0] 
+    : router.query.reportId;
   const [report, setReport] = useState<Report | null>(initialReport);
   const [loading, setLoading] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(error);
@@ -551,7 +556,12 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { reportId, eventSlug } = context.params as { reportId: string, eventSlug: string };
+  const reportId = Array.isArray(context.params?.reportId) 
+    ? context.params.reportId[0] 
+    : context.params?.reportId;
+  const eventSlug = Array.isArray(context.params?.eventSlug) 
+    ? context.params.eventSlug[0] 
+    : context.params?.eventSlug;
   let initialReport: Report | null = null;
   let error: string | null = null;
   
