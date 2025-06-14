@@ -11,6 +11,8 @@ import {
   Settings2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/router"
+import { UserContext } from "@/pages/_app"
 
 import {
   Avatar,
@@ -49,6 +51,24 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const isSuperAdmin = user.roles?.includes("SuperAdmin")
+  const router = useRouter()
+  const { setUser } = React.useContext(UserContext)
+  const [loggingOut, setLoggingOut] = React.useState(false)
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    try {
+      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch {
+      // Ignore errors
+    }
+    setUser(null)
+    setLoggingOut(false)
+    router.push("/login")
+  }
 
   return (
     <SidebarMenu>
@@ -143,10 +163,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a href="/logout">
+              <button type="button" onClick={handleLogout} disabled={loggingOut} className="flex items-center w-full">
                 <LogOut />
-                Log out
-              </a>
+                {loggingOut ? "Logging out..." : "Log out"}
+              </button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
