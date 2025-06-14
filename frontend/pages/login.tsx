@@ -92,7 +92,7 @@ function Login() {
                 const inviteData: InviteResponse = await inviteRes.json();
                 const eventSlug = inviteData?.event?.slug;
                 if (eventSlug) {
-                  router.push(`/event/${eventSlug}`);
+                  router.push(`/events/${eventSlug}/dashboard`);
                   return;
                 }
               }

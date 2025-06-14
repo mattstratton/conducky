@@ -140,7 +140,7 @@ export default function RedeemInvitePage() {
             <div className="text-green-600 font-semibold mb-2">{success}
               {event?.slug && (
                 <div className="mt-4">
-                  <a href={`/event/${event.slug}`} className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90">Go to Event</a>
+                  <a href={`/events/${event.slug}/dashboard`} className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90">Go to Event</a>
                 </div>
               )}
             </div>

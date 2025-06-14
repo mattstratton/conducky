@@ -130,8 +130,9 @@ Admins and SuperAdmins can upload a custom logo image for each event. This logo 
 
 ## Event Slugs
 
-- Slugs are used in URLs (e.g., `/event/[slug]`).
+- Slugs are used in URLs (e.g., `/events/[slug]/dashboard`).
 - Must be unique, lowercase, and contain only letters, numbers, and hyphens.
+- Event URLs follow the pattern `/events/[eventSlug]/` for all event-scoped pages.
 
 ---
 
