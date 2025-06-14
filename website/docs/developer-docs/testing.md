@@ -412,3 +412,37 @@ See the full migration checklist in `/reference/shadcn-migration-checklist.md` a
 - Shadcn UI docs: https://ui.shadcn.com/
 
 For questions or improvements, see the project README or contact the maintainers.
+
+---
+
+## Testing New UI and Navigation Features
+
+### Sidebar Navigation
+- Test sidebar expansion/collapse (click toggle, keyboard shortcut `Cmd/Ctrl+B`).
+- Verify sidebar is responsive: expands on desktop, collapses to icons on mobile.
+- Check accessibility: all nav items are keyboard accessible, ARIA labels are present.
+- Confirm user menu and event switcher are visible in both expanded and collapsed states.
+- Automated: See `frontend/components/ui/sidebar.test.tsx` (if present) or add tests for sidebar state and navigation.
+
+### Login Page
+- Test login form UI matches Shadcn block.
+- Test error states (invalid credentials, network error).
+- Test redirect logic: after login, user is sent to correct page or event.
+- Automated: See `frontend/pages/login.test.tsx`.
+
+### Event Switcher (NavEvents/TeamSwitcher)
+- Test event dropdown shows all user events.
+- Test switching events updates context and navigation.
+- Test collapsed and expanded sidebar states.
+- Automated: Add tests for event switching logic and UI.
+
+### JoinEventWidget
+- Test entering valid/invalid invite codes and links.
+- Test joining event updates dashboard/events list.
+- Test error and success states.
+- Automated: Add tests for widget logic and API calls.
+
+### QuickStats & ActivityFeed
+- Test dashboard widgets load and display correct data.
+- Test loading and error states.
+- Automated: Add tests for data fetching and rendering.
