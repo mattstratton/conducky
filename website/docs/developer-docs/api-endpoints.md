@@ -64,6 +64,7 @@ This document describes all API endpoints provided by the backend Express server
 - **GET** `/event/slug/:slug`
 - **Description:** Get event details by slug (public)
 - **Response:** `{ event }`
+- **Note:** This endpoint uses the singular "event" path for backward compatibility. Frontend pages use `/events/[eventSlug]/` URLs but call this API endpoint.
 
 ### List Users for Event (by Slug)
 

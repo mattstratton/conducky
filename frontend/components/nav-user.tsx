@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import Link from "next/link"
 import {
   BadgeCheck,
   ChevronsUpDown,
@@ -127,23 +128,23 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href="/profile">
+                <Link href="/profile">
                   <BadgeCheck />
                   Profile
-                </a>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/settings">
+                <Link href="/profile/settings">
                   <Settings2 />
                   Settings
-                </a>
+                </Link>
               </DropdownMenuItem>
               {isSuperAdmin && (
                 <DropdownMenuItem asChild>
-                  <a href="/admin">
+                  <Link href="/admin/dashboard">
                     <Sparkles />
                     System Admin Dashboard
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>

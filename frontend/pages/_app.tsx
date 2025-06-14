@@ -39,7 +39,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Array<{ name: string; url: string; icon: React.ElementType; role?: string }>>([]);
   const router = useRouter();
-  const eventSlugMatch = router.asPath.match(/^\/event\/([^/]+)/);
+  const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
   const eventSlug = eventSlugMatch ? eventSlugMatch[1] : null;
 
   // Restore user from session cookie on mount
@@ -58,7 +58,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   useEffect(() => {
     if (eventSlug) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.event) setEventName(data.event.name);
@@ -78,7 +78,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   useEffect(() => {
     if (modalOpen && eventSlugForModal) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlugForModal}`)
+              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlugForModal}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => setEventName(data && data.event ? data.event.name : eventSlugForModal))
         .catch(() => setEventName(eventSlugForModal));
@@ -96,7 +96,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
             setEvents(
               data.events.map((event: SidebarEvent) => ({
                 name: event.name,
-                url: `/event/${event.slug}`,
+                url: `/events/${event.slug}/dashboard`,
                 icon: Users,
                 role: event.roles && event.roles.length > 0 ? event.roles[0] : undefined,
               }))
@@ -167,7 +167,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                     eventName={eventName}
                     onSuccess={() => {
                       setModalOpen(false);
-                      const eventUrl = `/event/${eventSlugForModal}`;
+                      const eventUrl = `/events/${eventSlugForModal}/dashboard`;
                       if (router.asPath === eventUrl) {
                         router.reload();
                       } else {

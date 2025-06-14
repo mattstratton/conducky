@@ -12,7 +12,7 @@ interface Event {
 
 export default function EventCodeOfConductPage() {
   const router = useRouter();
-  const { "event-slug": eventSlug } = router.query;
+  const { eventSlug } = router.query;
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");

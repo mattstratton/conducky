@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import { Card } from "../ui/card";
 
 interface InviteInfo {
@@ -129,7 +130,7 @@ export function JoinEventWidget({ onJoin }: { onJoin?: () => void }) {
           {success}
           {eventSlug && (
             <div className="mt-4">
-              <a href={`/events/${eventSlug}/dashboard`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go to Event</a>
+              <Link href={`/events/${eventSlug}/dashboard`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go to Event</Link>
             </div>
           )}
         </div>

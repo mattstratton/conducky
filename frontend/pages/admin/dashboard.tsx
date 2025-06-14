@@ -227,7 +227,7 @@ export default function GlobalAdmin() {
                     <div className="font-semibold text-lg">{editEventId === ev.id ? (
                       <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
                     ) : (
-                      <Link href={`/event/${ev.slug}`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
+                      <Link href={`/events/${ev.slug}/dashboard`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
                     )}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-300">Slug: {editEventId === ev.id ? (
                       <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
@@ -259,7 +259,7 @@ export default function GlobalAdmin() {
                             </AlertDialogContent>
                           </AlertDialog>
                           <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
-                          <Link href={`/event/${ev.slug}/admin`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm w-full inline-block text-center">Admin</Link>
+                          <Link href={`/events/${ev.slug}/settings`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm w-full inline-block text-center">Admin</Link>
                         </>
                       )}
                     </div>
@@ -285,7 +285,7 @@ export default function GlobalAdmin() {
                       <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
                         <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
                       ) : (
-                        <Link href={`/event/${ev.slug}`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
+                        <Link href={`/events/${ev.slug}/dashboard`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
                       )}</td>
                       <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
                         <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
@@ -317,7 +317,7 @@ export default function GlobalAdmin() {
                               </AlertDialogContent>
                             </AlertDialog>
                             <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
-                            <Link href={`/event/${ev.slug}/admin`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm inline-block text-center">Admin</Link>
+                            <Link href={`/events/${ev.slug}/settings`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm inline-block text-center">Admin</Link>
                           </div>
                         )}
                       </td>
