@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, createContext, useContext, Dispatch, SetStateAction } from "react";
+import React, { useEffect, useState, createContext, useContext, Dispatch, SetStateAction } from "react";
 import Link from "next/link";
 import "../styles.css";
 import { useRouter } from "next/router";
@@ -13,6 +13,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "../components/ui/navigation-menu";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 
 // User context for global user state
 interface User {
@@ -50,56 +51,48 @@ function DarkModeToggle() {
   );
 }
 
-function MyEventsDropdown() {
-  const [open, setOpen] = useState(false);
-  const [events, setEvents] = useState<{ id: string; slug: string; name: string; roles: string[] }[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/users/me/events", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { events: [] }))
-      .then((data) => setEvents(data.events || []));
-  }, []);
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+function UserContextDropdown({ user }: { user: User }) {
+  const router = useRouter();
+  const isSuperAdmin = user?.roles?.includes("SuperAdmin");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  let avatarSrc: string | undefined = undefined;
+  if (user?.avatarUrl) {
+    avatarSrc = user.avatarUrl.startsWith("/") ? apiUrl + user.avatarUrl : user.avatarUrl;
+  }
+  const initials = user?.name
+    ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+    : user?.email
+    ? user.email[0].toUpperCase()
+    : "U";
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-      >
-        My Events {" "}
-        <svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
-          <div className="p-2 text-gray-700 dark:text-gray-100 font-semibold border-b border-gray-200 dark:border-gray-700">My Events</div>
-          {events.length === 0 ? (
-            <div className="p-3 text-gray-500 text-sm">No events found.</div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white dark:bg-gray-800">
+          {avatarSrc ? (
+            <img src={avatarSrc} alt={user?.name || user?.email || "User avatar"} className="w-8 h-8 rounded-full object-cover" />
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {events.map((ev) => (
-                <li key={ev.id}>
-                  <Link
-                    href={`/event/${ev.slug}`}
-                    className="block px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{ev.name}</span>{" "}
-                    <span className="text-xs text-gray-500">({ev.roles.join(", ")})</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <span className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-400 text-gray-900 font-bold text-lg">{initials}</span>
           )}
-        </div>
-      )}
-    </div>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {isSuperAdmin && (
+          <DropdownMenuItem onClick={() => router.push("/admin") }>
+            <span role="img" aria-label="system" className="mr-2">🦆</span> System Admin Dashboard
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => router.push("/") }>
+          <span role="img" aria-label="personal" className="mr-2">👤</span> My Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/profile") }>
+          <span role="img" aria-label="settings" className="mr-2">⚙️</span> Profile Settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={async () => { await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/logout", { method: "POST", credentials: "include" }); window.location.href = "/"; }}>
+          <span role="img" aria-label="logout" className="mr-2">🚪</span> Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -287,7 +280,6 @@ function Header() {
                       )}
                     </span>
                   </Link>
-                  <MyEventsDropdown />
                   <Button onClick={handleLogout} className="mt-2">
                     Logout
                   </Button>
@@ -323,51 +315,8 @@ function Header() {
         </NavigationMenuList>
       </NavigationMenu>
       {/* Right: Actions */}
-      <div className="hidden md:flex items-center gap-4">
-        {user ? (
-          <>
-            <Link href="/profile" className="flex items-center gap-2 group">
-              {(() => {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-                let avatarSrc: string | undefined = undefined;
-                if (user?.avatarUrl) {
-                  avatarSrc = user.avatarUrl.startsWith("/")
-                    ? apiUrl + user.avatarUrl
-                    : user.avatarUrl;
-                }
-                return (
-                  <Avatar className="border-2 border-yellow-400 group-hover:border-yellow-300 transition" style={{ width: 36, height: 36 }}>
-                    <AvatarImage src={avatarSrc} alt={user?.name || user?.email || "User avatar"} />
-                    <AvatarFallback>
-                      {user?.name
-                        ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
-                        : user?.email
-                          ? user.email[0].toUpperCase()
-                          : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                );
-              })()}
-              <span className="text-sm md:text-base">
-                Logged in as <b>{user.email}</b>
-                {user.name && (
-                  <span className="text-gray-300"> ({user.name})</span>
-                )}
-              </span>
-            </Link>
-            <MyEventsDropdown />
-            <Button onClick={handleLogout} className="ml-2">
-              Logout
-            </Button>
-          </>
-        ) : (
-          <Link
-            href="/login"
-            className="underline font-semibold hover:text-yellow-300 transition"
-          >
-            Login
-          </Link>
-        )}
+      <div className="flex items-center gap-4">
+        {user && <UserContextDropdown user={user} />}
         <DarkModeToggle />
       </div>
     </header>

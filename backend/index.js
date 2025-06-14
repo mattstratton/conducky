@@ -2168,3 +2168,199 @@ if (process.env.NODE_ENV === "test") {
   const { PrismaClient } = require("@prisma/client");
   prisma = new PrismaClient();
 }
+
+// System Settings API
+// Get all system settings (public)
+app.get("/api/system/settings", async (req, res) => {
+  try {
+    const settings = await prisma.systemSetting.findMany();
+    const result = {};
+    for (const s of settings) result[s.key] = s.value;
+    res.json({ settings: result });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch system settings.", details: err.message });
+  }
+});
+
+// Update a system setting (SuperAdmin only)
+app.put("/api/system/settings/:key", requireSuperAdmin(), async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+  if (typeof value !== "string") {
+    return res.status(400).json({ error: "Value must be a string." });
+  }
+  try {
+    const updated = await prisma.systemSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+    res.json({ setting: { key: updated.key, value: updated.value } });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update system setting.", details: err.message });
+  }
+});
+
+// Get all events for the current user (with roles)
+app.get("/api/users/me/events", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const userId = req.user.id;
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId },
+      include: { event: true, role: true },
+    });
+    // Group by event, include roles
+    const eventsMap = {};
+    for (const uer of userEventRoles) {
+      if (!uer.event) continue;
+      if (!eventsMap[uer.event.id]) {
+        eventsMap[uer.event.id] = {
+          id: uer.event.id,
+          name: uer.event.name,
+          slug: uer.event.slug,
+          description: uer.event.description,
+          roles: [],
+        };
+      }
+      eventsMap[uer.event.id].roles.push(uer.role.name);
+    }
+    const events = Object.values(eventsMap);
+    res.json({ events });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch user events", details: err.message });
+  }
+});
+
+// Get quick stats for the current user
+app.get("/api/users/me/quickstats", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const userId = req.user.id;
+    // Get all event memberships
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId },
+      include: { event: true, role: true },
+    });
+    const eventIds = userEventRoles.map(uer => uer.eventId).filter(Boolean);
+    const eventCount = new Set(eventIds).size;
+
+    // Count reports where user is reporter OR assigned responder OR admin in event
+    const reportsAsReporter = await prisma.report.count({ where: { reporterId: userId } });
+    const reportsAsResponder = await prisma.report.count({ where: { assignedResponderId: userId } });
+    // Count events where user is admin
+    const adminEventIds = userEventRoles.filter(uer => uer.role.name === 'Admin').map(uer => uer.eventId);
+    let reportsAsAdmin = 0;
+    if (adminEventIds.length > 0) {
+      reportsAsAdmin = await prisma.report.count({ where: { eventId: { in: adminEventIds } } });
+    }
+    // Total unique reports
+    const reportCount = reportsAsReporter + reportsAsResponder + reportsAsAdmin;
+
+    // Needs response: reports assigned to user as responder and not closed/resolved
+    const needsResponseCount = await prisma.report.count({
+      where: {
+        assignedResponderId: userId,
+        state: { in: ['submitted', 'acknowledged', 'investigating'] },
+      },
+    });
+
+    res.json({ eventCount, reportCount, needsResponseCount });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch quick stats", details: err.message });
+  }
+});
+
+// Placeholder: Get recent activity for the current user
+// TODO: Replace with real AuditLog queries when implemented
+// TODO: When using real data, limit to the last 10-20 items for performance and UX (e.g., .take(10) in Prisma)
+// TODO: Include enough info in each activity item to allow the frontend to link to the relevant event/report/user (e.g., eventSlug, reportId, etc.)
+// Each activity item: { type, message, timestamp, eventSlug, reportId, ... }
+app.get("/api/users/me/activity", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  // Mock data for now
+  const mockActivity = [
+    {
+      type: "report_submitted",
+      message: "You submitted a new report in DuckCon.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+      eventSlug: "duckcon",
+      reportId: "rpt1",
+    },
+    {
+      type: "report_assigned",
+      message: "A report was assigned to you in TechFest.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      eventSlug: "techfest",
+      reportId: "rpt2",
+    },
+    {
+      type: "invited",
+      message: "You were invited to PyData Chicago.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+      eventSlug: "pydata-chicago",
+    },
+    {
+      type: "status_changed",
+      message: "A report you submitted was marked as resolved.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      eventSlug: "duckcon",
+      reportId: "rpt3",
+    },
+  ];
+  res.json({ activity: mockActivity });
+});
+
+// Redeem an invite link (for logged-in users to join an event)
+app.post("/invites/:code/redeem", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const { code } = req.params;
+  try {
+    const invite = await prisma.eventInviteLink.findUnique({ where: { code } });
+    if (!invite || invite.disabled) {
+      return res.status(400).json({ error: "Invalid or disabled invite link." });
+    }
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return res.status(400).json({ error: "Invite link has expired." });
+    }
+    if (invite.maxUses && invite.useCount >= invite.maxUses) {
+      return res.status(400).json({ error: "Invite link has reached its maximum uses." });
+    }
+    // Check if user is already a member of the event
+    const existing = await prisma.userEventRole.findFirst({
+      where: {
+        userId: req.user.id,
+        eventId: invite.eventId,
+      },
+    });
+    if (existing) {
+      return res.status(409).json({ error: "You are already a member of this event." });
+    }
+    // Assign role for the event from invite
+    await prisma.userEventRole.create({
+      data: {
+        userId: req.user.id,
+        eventId: invite.eventId,
+        roleId: invite.roleId,
+      },
+    });
+    // Increment useCount
+    await prisma.eventInviteLink.update({
+      where: { code },
+      data: { useCount: { increment: 1 } },
+    });
+    // Get event slug for redirect
+    const event = await prisma.event.findUnique({ where: { id: invite.eventId } });
+    res.status(200).json({ message: "Joined event successfully!", eventSlug: event?.slug });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to join event.", details: err.message });
+  }
+});
