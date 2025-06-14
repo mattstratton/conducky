@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
   BookOpen,
   ClipboardList,
@@ -95,7 +95,7 @@ export function AppSidebar({ user, events, ...props }: {
     ? (router.query.eventSlug as string) || router.asPath.split('/')[2] 
     : null;
   
-  // Debug logging to help troubleshoot (remove in production)
+  // Debug logging for development troubleshooting
   if (process.env.NODE_ENV === 'development') {
     console.log('Sidebar Debug:', {
       asPath: router.asPath,
@@ -106,212 +106,229 @@ export function AppSidebar({ user, events, ...props }: {
     });
   }
 
-  // Global navigation (always visible except in system admin)
-  let globalNav: Array<{
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: Array<{ title: string; url: string; }>;
-  }> = [];
-  let eventNav: Array<{
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: Array<{ title: string; url: string; }>;
-  }> = [];
-  let showEventNav = false;
+  // Memoize navigation building logic to improve performance
+  const { globalNav, eventNav, showEventNav } = useMemo(() => {
+    // Global navigation (always visible except in system admin)
+    let globalNavItems: Array<{
+      title: string;
+      url: string;
+      icon?: LucideIcon;
+      isActive?: boolean;
+      items?: Array<{ title: string; url: string; }>;
+    }> = [];
+    let eventNavItems: Array<{
+      title: string;
+      url: string;
+      icon?: LucideIcon;
+      isActive?: boolean;
+      items?: Array<{ title: string; url: string; }>;
+    }> = [];
+    let shouldShowEventNav = false;
 
-  if (isSystemAdmin && isSuperAdmin) {
-    // System Admin Navigation (replaces everything)
-    globalNav = [
-      {
-        title: "System Dashboard",
-        url: "/admin/dashboard",
-        icon: Home,
-        isActive: router.asPath === "/admin/dashboard",
-      },
-      {
-        title: "Events Management",
-        url: "/admin/events",
-        icon: Users,
-        items: [
-          {
-            title: "All Events",
-            url: "/admin/events",
-          },
-          {
-            title: "Create Event",
-            url: "/admin/events/new",
-          },
-          {
-            title: "Disabled Events",
-            url: "/admin/events/disabled",
-          },
-        ],
-      },
-      {
-        title: "System Settings",
-        url: "/admin/system",
-        icon: Settings2,
-        items: [
-          {
-            title: "General Settings",
-            url: "/admin/system/settings",
-          },
-          {
-            title: "Backups",
-            url: "/admin/system/backups",
-          },
-          {
-            title: "Logs",
-            url: "/admin/system/logs",
-          },
-        ],
-      },
-      {
-        title: "User Management",
-        url: "/admin/users",
-        icon: UserCog,
-      },
-    ];
-  } else {
-    // Global Navigation (always visible)
-    globalNav = [
-      {
-        title: "Home",
-        url: "/dashboard",
-        icon: Home,
-        isActive: router.asPath === "/dashboard",
-      },
-      {
-        title: "All Reports",
-        url: "/dashboard/reports",
-        icon: ClipboardList,
-      },
-      {
-        title: "Notifications",
-        url: "/dashboard/notifications",
-        icon: BookOpen,
-      },
-    ];
-
-    // Add System Admin link if user is SuperAdmin
-    if (isSuperAdmin) {
-      globalNav.push({
-        title: "System Admin",
-        url: "/admin/dashboard",
-        icon: Shield,
-      });
-    }
-
-    // Event-specific navigation
-    let targetEventSlug = currentEventSlug;
-
-    if (isEventContext && currentEventSlug) {
-      // In event context with a specific event
-      targetEventSlug = currentEventSlug;
-      showEventNav = true;
-    } else if (!isEventContext && selectedEventSlug && events.length > 0) {
-      // On global dashboard - show navigation for the user's selected event
-      targetEventSlug = selectedEventSlug;
-      showEventNav = true;
-    } else if (isEventContext && !currentEventSlug) {
-      // Show loading state for event navigation when in event context but slug not yet available
-      showEventNav = true;
-      eventNav = [
+    if (isSystemAdmin && isSuperAdmin) {
+      // System Admin Navigation (replaces everything)
+      globalNavItems = [
         {
-          title: "Loading...",
-          url: "#",
+          title: "System Dashboard",
+          url: "/admin/dashboard",
           icon: Home,
-        },
-      ];
-    }
-
-    if (showEventNav && targetEventSlug) {
-      // Get user's role for the target event
-      const targetEvent = events.find(event => event.url.includes(targetEventSlug));
-      const userEventRole = targetEvent?.role;
-      
-      // Check role permissions
-      const isEventAdmin = userEventRole === 'Admin' || isSuperAdmin;
-      const isEventResponder = userEventRole === 'Responder' || isEventAdmin;
-
-      // Base navigation items (available to all roles)
-      eventNav = [
-        {
-          title: "Event Dashboard",
-          url: `/events/${targetEventSlug}/dashboard`,
-          icon: Home,
-          isActive: router.asPath === `/events/${targetEventSlug}/dashboard`,
+          isActive: router.asPath === "/admin/dashboard",
         },
         {
-          title: "Reports",
-          url: `/events/${targetEventSlug}/reports`,
-          icon: ClipboardList,
+          title: "Events Management",
+          url: "/admin/events",
+          icon: Users,
           items: [
             {
-              title: "All Reports",
-              url: `/events/${targetEventSlug}/reports`,
+              title: "All Events",
+              url: "/admin/events",
             },
             {
-              title: "Submit Report",
-              url: `/events/${targetEventSlug}/reports/new`,
+              title: "Create Event",
+              url: "/admin/events/new",
+            },
+            {
+              title: "Disabled Events",
+              url: "/admin/events/disabled",
             },
           ],
         },
-      ];
-
-      // Team section (Responders and Admins only)
-      if (isEventResponder) {
-        const teamItems = [
-          {
-            title: "Team Members",
-            url: `/events/${targetEventSlug}/team`,
-          },
-        ];
-
-        // Send Invites only for Admins
-        if (isEventAdmin) {
-          teamItems.push({
-            title: "Send Invites",
-            url: `/events/${targetEventSlug}/team/invite`,
-          });
-        }
-
-        eventNav.push({
-          title: "Team",
-          url: `/events/${targetEventSlug}/team`,
-          icon: Users,
-          items: teamItems,
-        });
-      }
-
-      // Event Settings (Admins only)
-      if (isEventAdmin) {
-        eventNav.push({
-          title: "Event Settings",
-          url: `/events/${targetEventSlug}/settings`,
+        {
+          title: "System Settings",
+          url: "/admin/system",
           icon: Settings2,
           items: [
             {
               title: "General Settings",
-              url: `/events/${targetEventSlug}/settings`,
+              url: "/admin/system/settings",
             },
             {
-              title: "Code of Conduct",
-              url: `/events/${targetEventSlug}/settings/code-of-conduct`,
+              title: "Backups",
+              url: "/admin/system/backups",
             },
             {
-              title: "Notifications",
-              url: `/events/${targetEventSlug}/settings/notifications`,
+              title: "Logs",
+              url: "/admin/system/logs",
             },
           ],
+        },
+        {
+          title: "User Management",
+          url: "/admin/users",
+          icon: UserCog,
+        },
+      ];
+    } else {
+      // Global Navigation (always visible)
+      globalNavItems = [
+        {
+          title: "Home",
+          url: "/dashboard",
+          icon: Home,
+          isActive: router.asPath === "/dashboard",
+        },
+        {
+          title: "All Reports",
+          url: "/dashboard/reports",
+          icon: ClipboardList,
+        },
+        {
+          title: "Notifications",
+          url: "/dashboard/notifications",
+          icon: BookOpen,
+        },
+      ];
+
+      // Add System Admin link if user is SuperAdmin
+      if (isSuperAdmin) {
+        globalNavItems.push({
+          title: "System Admin",
+          url: "/admin/dashboard",
+          icon: Shield,
         });
       }
+
+      // Event-specific navigation
+      let targetEventSlug = currentEventSlug;
+
+      if (isEventContext && currentEventSlug) {
+        // In event context with a specific event
+        targetEventSlug = currentEventSlug;
+        shouldShowEventNav = true;
+      } else if (!isEventContext && selectedEventSlug && events.length > 0) {
+        // On global dashboard - show navigation for the user's selected event
+        targetEventSlug = selectedEventSlug;
+        shouldShowEventNav = true;
+      } else if (isEventContext && !currentEventSlug) {
+        // Show loading state for event navigation when in event context but slug not yet available
+        shouldShowEventNav = true;
+        eventNavItems = [
+          {
+            title: "Loading...",
+            url: "#",
+            icon: Home,
+          },
+        ];
+      }
+
+      if (shouldShowEventNav && targetEventSlug) {
+        // Get user's role for the target event
+        const targetEvent = events.find(event => event.url.includes(targetEventSlug));
+        const userEventRole = targetEvent?.role;
+        
+        // Check role permissions
+        const isEventAdmin = userEventRole === 'Admin' || isSuperAdmin;
+        const isEventResponder = userEventRole === 'Responder' || isEventAdmin;
+
+        // Base navigation items (available to all roles)
+        eventNavItems = [
+          {
+            title: "Event Dashboard",
+            url: `/events/${targetEventSlug}/dashboard`,
+            icon: Home,
+            isActive: router.asPath === `/events/${targetEventSlug}/dashboard`,
+          },
+          {
+            title: "Reports",
+            url: `/events/${targetEventSlug}/reports`,
+            icon: ClipboardList,
+            items: [
+              {
+                title: "All Reports",
+                url: `/events/${targetEventSlug}/reports`,
+              },
+              {
+                title: "Submit Report",
+                url: `/events/${targetEventSlug}/reports/new`,
+              },
+            ],
+          },
+        ];
+
+        // Team section (Responders and Admins only)
+        if (isEventResponder) {
+          const teamItems = [
+            {
+              title: "Team Members",
+              url: `/events/${targetEventSlug}/team`,
+            },
+          ];
+
+          // Send Invites only for Admins
+          if (isEventAdmin) {
+            teamItems.push({
+              title: "Send Invites",
+              url: `/events/${targetEventSlug}/team/invite`,
+            });
+          }
+
+          eventNavItems.push({
+            title: "Team",
+            url: `/events/${targetEventSlug}/team`,
+            icon: Users,
+            items: teamItems,
+          });
+        }
+
+        // Event Settings (Admins only)
+        if (isEventAdmin) {
+          eventNavItems.push({
+            title: "Event Settings",
+            url: `/events/${targetEventSlug}/settings`,
+            icon: Settings2,
+            items: [
+              {
+                title: "General Settings",
+                url: `/events/${targetEventSlug}/settings`,
+              },
+              {
+                title: "Code of Conduct",
+                url: `/events/${targetEventSlug}/settings/code-of-conduct`,
+              },
+              {
+                title: "Notifications",
+                url: `/events/${targetEventSlug}/settings/notifications`,
+              },
+            ],
+          });
+        }
+      }
     }
-  }
+
+    return {
+      globalNav: globalNavItems,
+      eventNav: eventNavItems,
+      showEventNav: shouldShowEventNav,
+    };
+  }, [
+    isSystemAdmin,
+    isSuperAdmin,
+    router.asPath,
+    isEventContext,
+    currentEventSlug,
+    selectedEventSlug,
+    events,
+  ]);
 
   // Collapsed event switcher: just the icon, opens the dropdown
   const CollapsedEventSwitcher = () => {

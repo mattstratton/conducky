@@ -39,8 +39,6 @@ describe("UserRegistrationForm", () => {
     const form = container.querySelector("form");
     if (!form) throw new Error("Form element not found");
     fireEvent.submit(form);
-    // eslint-disable-next-line no-console
-    console.log(document.body.textContent);
     const errors = await screen.findAllByText(/please enter a valid email address/i);
     expect(errors.length).toBeGreaterThan(0);
   });
