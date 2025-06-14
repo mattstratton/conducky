@@ -117,9 +117,9 @@ Create the complete directory structure and stub pages first:
 ### Phase 2: Critical Path Migrations (High Priority)
 These are essential for the new navigation structure to work:
 
-4. [ ] **Create `/dashboard/index.tsx`** - Extract global dashboard from index.tsx
+4. [x] **Create `/dashboard/index.tsx`** - Extract global dashboard from index.tsx
 5. [ ] **Migrate `/event/[event-slug].tsx` → `/events/[eventSlug]/dashboard.tsx`**
-6. [ ] **Migrate `/admin.tsx` → `/admin/dashboard.tsx`**
+6. [x] **Migrate `/admin.tsx` → `/admin/dashboard.tsx`**
 7. [ ] **Update all internal navigation links** to use new paths
 8. [ ] **Update sidebar navigation** to reflect new structure
 
