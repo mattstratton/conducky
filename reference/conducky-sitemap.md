@@ -224,13 +224,13 @@ SuperAdmins have **dual access** - they can:
 
 ## Navigation Patterns by Context
 
-### SuperAdmin System Navigation (Bottom Tabs/Sidebar)
+### SuperAdmin System Navigation Sidebar)
 - 🏠 **System Dashboard** (installation overview, stats)
 - 🎯 **All Events** (create, edit, enable/disable events)
 - ⚙️ **System Settings** (future - email, backups, etc.)
 - 👤 **My Profile** (can still access personal dashboard)
 
-### Global Navigation (Bottom Tabs/Sidebar)
+### Global Navigation Sidebar)
 - 🏠 **Dashboard** (multi-event overview)
 - 📊 **All Reports** (cross-event report view)
 - 📝 **Quick Submit** (choose event, then submit)
@@ -307,15 +307,15 @@ MY EVENTS
 
 #### 1. Global Multi-Event Dashboard
 **Current**: Users land directly in event context
-**Needed**: `/dashboard` showing all user's events with role-based previews
+**Needed**: `/dashboard` showing all user's events with role-based previews (this is in progress but needs updates)
 
 #### 2. Event Context Switching
 **Current**: "My Events" dropdown in header (good!)
-**Enhancement**: More prominent context switching within app
+**Enhancement**: More prominent context switching within app (note: this is mostly working but needs refinement)
 
 #### 3. SuperAdmin System View
 **Current**: SuperAdmin has same interface as event admin
-**Needed**: Separate `/admin/` system management interface
+**Needed**: Separate `/admin/` system management interface (this might be in progress, please review)
 
 #### 4. Cross-Event Features
 **Current**: All features are event-scoped (which is good!)
@@ -330,17 +330,19 @@ MY EVENTS
 Current Header: TurboBotBot | Submit Report | My Reports | Event Reports | Admin
 Enhanced:       TurboBotBot ▼ | 🏠 Dashboard | 📝 Submit | 📋 My Reports | 👥 Reports | ⚙️ Admin
 ```
+(note: this was written prior to the sidebar implementation, but the sidebar is now in place. Please review the sidebar implementation and update this section accordingly, and make sure we have all of these features in the sidebar)
 
 #### B. Add Breadcrumbs for Context Clarity
 ```
 Home > TurboBotBot > Event Reports
 Home > TurboBotBot > Admin > User Management
 ```
+This can go in the small header at the top of the page
 
 #### C. Mobile Responsiveness Improvements
 - Convert admin tables to cards on mobile
 - Optimize report submission form for mobile
-- Add bottom navigation for mobile users
+- Add bottom navigation for mobile users (perhaps not needed, we have the sidebar now which works pretty well for mobile navigation)
 
 ### Phase 2: Add Multi-Event Dashboard (Medium Effort)
 
@@ -394,7 +396,7 @@ Login → Global Dashboard → See all events with role-specific previews
 ### 3. Mobile User Experience
 ```
 Login → Mobile dashboard with event cards
-     → Tap event → Bottom tab navigation within event
+     → Tap event → Bottom tab navigation within event (perhaps not needed, we have the sidebar now which works pretty well for mobile navigation)
      → Swipe or tap to switch between events
 ```
 ```
