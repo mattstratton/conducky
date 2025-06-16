@@ -459,7 +459,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     setAssignmentError('');
     setAssignmentSuccess('');
     
-    console.log('[DEBUG] handleAssignmentChange called with fieldsToSave:', fieldsToSave);
+
     
     if ((fieldsToSave.state === 'resolved' || fieldsToSave.state === 'closed') && 
         !fieldsToSave.resolution?.trim()) {
@@ -474,7 +474,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       resolution: fieldsToSave.resolution ? fieldsToSave.resolution : null,
     };
     
-    console.log('[DEBUG] Sending payload:', payload);
+    
     
     try {
       const res = await fetch(
@@ -555,19 +555,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       stateChangeSuccess={stateChangeSuccess}
       adminMode={isResponderOrAbove}
       assignmentFields={assignmentFields}
-      setAssignmentFields={(fields) => {
-        console.log('[DEBUG] setAssignmentFields called with:', fields);
-        if (typeof fields === 'function') {
-          setAssignmentFields((prev) => {
-            const newFields = fields(prev);
-            console.log('[DEBUG] Function update - prev:', prev, 'new:', newFields);
-            return newFields;
-          });
-        } else {
-          console.log('[DEBUG] Direct update with:', fields);
-          setAssignmentFields(fields);
-        }
-      }}
+      setAssignmentFields={setAssignmentFields}
       eventUsers={eventUsers}
       onAssignmentChange={handleAssignmentChange}
       assignmentLoading={assignmentLoading}
