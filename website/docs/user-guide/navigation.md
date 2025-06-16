@@ -67,8 +67,9 @@ Event Admins see full event management capabilities:
 
 **Global Context**:
 - 🏠 Home (Dashboard)
-- 📋 All Reports
-- 📝 Notifications
+- 📋 All Reports (Cross-Event Reports Dashboard)
+- 👤 Profile (Settings and Event Management)
+- 📝 Notifications (Future)
 
 **Event Context** (when in `/events/[eventSlug]/`):
 - 🏠 Event Dashboard
@@ -90,8 +91,9 @@ Responders see report management and team information:
 
 **Global Context**:
 - 🏠 Home (Dashboard)
-- 📋 All Reports
-- 📝 Notifications
+- 📋 All Reports (Cross-Event Reports Dashboard)
+- 👤 Profile (Settings and Event Management)
+- 📝 Notifications (Future)
 
 **Event Context**:
 - 🏠 Event Dashboard
@@ -106,8 +108,9 @@ Reporters see basic event information and their own reports:
 
 **Global Context**:
 - 🏠 Home (Dashboard)
-- 📋 All Reports
-- 📝 Notifications
+- 📋 All Reports (Cross-Event Reports Dashboard)
+- 👤 Profile (Settings and Event Management)
+- 📝 Notifications (Future)
 
 **Event Context**:
 - 🏠 Event Dashboard
@@ -138,9 +141,10 @@ The global dashboard (`/dashboard`) provides:
 
 ### Global URLs
 - `/dashboard` - Multi-event overview
-- `/dashboard/reports` - All reports across events
-- `/dashboard/notifications` - Cross-event notifications
-- `/profile` - User profile and settings
+- `/dashboard/reports` - All reports across events (Cross-Event Reports Dashboard)
+- `/dashboard/notifications` - Cross-event notifications (Future)
+- `/profile/settings` - User profile and account settings
+- `/profile/events` - Event membership management
 
 ### Event URLs
 - `/events/[eventSlug]/dashboard` - Event-specific dashboard

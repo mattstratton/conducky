@@ -54,6 +54,7 @@ These enhance the event-scoped functionality with better forms and team manageme
   - Multiple file upload support
   - Auto-save draft functionality
   - Event-specific field customization
+  - Note that we have a component that can be used here (might need updating) which is `components/ReportForm.tsx`
 
 ### Event Team Management
 - [ ] **Issue #169**: Implement Event Team Management Page (`/events/[eventSlug]/team/index`)

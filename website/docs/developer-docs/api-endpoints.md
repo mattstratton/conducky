@@ -190,6 +190,42 @@ This document describes all API endpoints provided by the backend Express server
 
 ## Reports
 
+### Cross-Event Reports
+
+- **GET** `/api/users/me/reports`
+- **Description:** Get reports across all events the authenticated user has access to. Provides role-based filtering and comprehensive search/filter capabilities.
+- **Authentication:** Required (401 if not authenticated)
+- **Query Parameters:**
+  - `page` (integer, optional): Page number for pagination (default: 1, min: 1)
+  - `limit` (integer, optional): Number of reports per page (default: 50, min: 1, max: 100)
+  - `search` (string, optional): Search across report titles, descriptions, and reporter names
+  - `status` (string, optional): Filter by report status (`submitted`, `acknowledged`, `investigating`, `resolved`, `closed`)
+  - `eventId` (string, optional): Filter by specific event ID
+  - `assignedTo` (string, optional): Filter by assignment status:
+    - `me`: Reports assigned to the current user
+    - `unassigned`: Reports with no assignee
+    - `others`: Reports assigned to other users
+  - `sortBy` (string, optional): Sort field (`title`, `createdAt`, `status`) (default: `createdAt`)
+  - `sortOrder` (string, optional): Sort direction (`asc`, `desc`) (default: `desc`)
+- **Response:** `{ reports: [...], pagination: { page, limit, total, totalPages } }`
+- **Access Control:**
+  - **Reporters**: See only their own reports across all events
+  - **Responders**: See all reports in events where they're responders, plus their own reports in other events
+  - **Admins**: See all reports in events where they're admins, plus role-appropriate reports in other events
+- **Report Data Includes:**
+  - Full report details (title, description, status, dates, etc.)
+  - Event information (name, slug)
+  - Reporter information (name, email, avatar)
+  - Assigned responder information (if assigned)
+  - Evidence file count
+  - Comment count (internal/external based on permissions)
+- **Notes:**
+  - All query parameters can be combined for advanced filtering
+  - Pagination is enforced with validation (max 100 items per page)
+  - Search is case-insensitive and supports partial matches
+  - Results are ordered by creation date (newest first) by default
+  - Role-based access control is enforced at the database level
+
 ### Submit Report (by Event ID)
 
 - **POST** `/events/:eventId/reports`

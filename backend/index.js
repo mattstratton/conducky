@@ -2764,6 +2764,195 @@ app.get("/api/users/me/events", async (req, res) => {
   }
 });
 
+// Get user's reports across all accessible events
+app.get("/api/users/me/reports", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      event: eventFilter,
+      assigned,
+      sort = 'createdAt',
+      order = 'desc'
+    } = req.query;
+
+    // Validate and parse pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    
+    if (pageNum < 1 || limitNum < 1) {
+      return res.status(400).json({ error: "Invalid pagination parameters. Page and limit must be positive integers." });
+    }
+    
+    if (limitNum > 100) {
+      return res.status(400).json({ error: "Limit cannot exceed 100 items per page." });
+    }
+    
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get user's event roles to determine access
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    if (userEventRoles.length === 0) {
+      return res.json({ reports: [], total: 0, page: pageNum, limit: limitNum });
+    }
+
+    // Group roles by event for access control
+    const eventRoles = new Map();
+    userEventRoles.forEach(uer => {
+      const eventId = uer.event.id;
+      if (!eventRoles.has(eventId)) {
+        eventRoles.set(eventId, {
+          event: uer.event,
+          roles: []
+        });
+      }
+      eventRoles.get(eventId).roles.push(uer.role.name);
+    });
+
+    // Build where clause based on user's access
+    const eventIds = Array.from(eventRoles.keys());
+    let whereClause = {
+      eventId: { in: eventIds }
+    };
+
+    // Role-based filtering: Reporters only see their own reports
+    const reporterOnlyEvents = [];
+    const responderAdminEvents = [];
+    
+    eventRoles.forEach((eventData, eventId) => {
+      const roles = eventData.roles;
+      const hasResponderOrAdmin = roles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+      
+      if (hasResponderOrAdmin) {
+        responderAdminEvents.push(eventId);
+      } else {
+        reporterOnlyEvents.push(eventId);
+      }
+    });
+
+    // Build complex where clause for role-based access
+    if (reporterOnlyEvents.length > 0 && responderAdminEvents.length > 0) {
+      whereClause = {
+        OR: [
+          // Reports in events where user is responder/admin (all reports)
+          { eventId: { in: responderAdminEvents } },
+          // Reports in events where user is only reporter (only their reports)
+          { 
+            AND: [
+              { eventId: { in: reporterOnlyEvents } },
+              { reporterId: req.user.id }
+            ]
+          }
+        ]
+      };
+    } else if (reporterOnlyEvents.length > 0) {
+      // User is only reporter in all events
+      whereClause = {
+        eventId: { in: reporterOnlyEvents },
+        reporterId: req.user.id
+      };
+    } else {
+      // User is responder/admin in all events
+      whereClause = {
+        eventId: { in: responderAdminEvents }
+      };
+    }
+
+    // Apply filters
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (status) {
+      whereClause.state = status;
+    }
+
+    if (eventFilter) {
+      // Filter by specific event slug
+      const targetEvent = Array.from(eventRoles.values()).find(e => e.event.slug === eventFilter);
+      if (targetEvent) {
+        whereClause.eventId = targetEvent.event.id;
+      } else {
+        // User doesn't have access to this event
+        return res.json({ reports: [], total: 0, page: pageNum, limit: limitNum });
+      }
+    }
+
+    if (assigned === 'me') {
+      whereClause.assignedResponderId = req.user.id;
+    } else if (assigned === 'unassigned') {
+      whereClause.assignedResponderId = null;
+    }
+
+    // Build sort clause
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'state'];
+    const sortField = validSortFields.includes(sort) ? sort : 'createdAt';
+    const sortOrder = order === 'asc' ? 'asc' : 'desc';
+
+    // Get total count
+    const total = await prisma.report.count({ where: whereClause });
+
+    // Get reports with pagination
+    const reports = await prisma.report.findMany({
+      where: whereClause,
+      include: {
+        event: {
+          select: { id: true, name: true, slug: true }
+        },
+        reporter: {
+          select: { id: true, name: true, email: true }
+        },
+        assignedResponder: {
+          select: { id: true, name: true, email: true }
+        },
+        evidenceFiles: {
+          select: { id: true, filename: true, mimetype: true, size: true }
+        },
+        _count: {
+          select: { comments: true }
+        }
+      },
+      orderBy: { [sortField]: sortOrder },
+      skip,
+      take: limitNum
+    });
+
+    // Add user's role in each event to the response
+    const reportsWithRoles = reports.map(report => ({
+      ...report,
+      userRoles: eventRoles.get(report.eventId)?.roles || []
+    }));
+
+    res.json({
+      reports: reportsWithRoles,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
+  } catch (err) {
+    console.error("Error fetching user reports:", err);
+    res.status(500).json({ error: "Failed to fetch reports." });
+  }
+});
+
 // Leave an event
 app.delete("/users/me/events/:eventId", async (req, res) => {
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {

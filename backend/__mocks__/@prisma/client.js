@@ -292,17 +292,159 @@ class PrismaClient {
         inMemoryStore.reports.push(newReport);
         return newReport;
       }),
-      findMany: jest.fn(({ where }) => {
-        if (!where || !where.eventId) return [];
-        const eventExists = inMemoryStore.events.some(
-          (e) => e.id === where.eventId,
-        );
-        if (!eventExists) {
-          const err = new Error("Event not found");
-          err.code = "P2025";
-          throw err;
+      findMany: jest.fn(({ where, include, orderBy, skip, take }) => {
+        let results = [...inMemoryStore.reports];
+        
+        // Apply where filters
+        if (where) {
+          if (where.eventId && !where.eventId.in) {
+            // Single event filter
+            const eventExists = inMemoryStore.events.some(
+              (e) => e.id === where.eventId,
+            );
+            if (!eventExists) {
+              const err = new Error("Event not found");
+              err.code = "P2025";
+              throw err;
+            }
+            results = results.filter((r) => r.eventId === where.eventId);
+          }
+          
+          if (where.eventId && where.eventId.in) {
+            // Multiple events filter (for cross-event queries)
+            results = results.filter((r) => where.eventId.in.includes(r.eventId));
+          }
+          
+          if (where.state) {
+            results = results.filter((r) => r.state === where.state);
+          }
+          
+          if (where.assignedResponderId) {
+            results = results.filter((r) => r.assignedResponderId === where.assignedResponderId);
+          }
+          
+          if (where.assignedResponderId === null) {
+            results = results.filter((r) => !r.assignedResponderId);
+          }
+          
+          if (where.OR) {
+            results = results.filter((r) => {
+              return where.OR.some(condition => {
+                if (condition.title && condition.title.contains) {
+                  return r.title.toLowerCase().includes(condition.title.contains.toLowerCase());
+                }
+                if (condition.description && condition.description.contains) {
+                  return r.description.toLowerCase().includes(condition.description.contains.toLowerCase());
+                }
+                return false;
+              });
+            });
+          }
         }
-        return inMemoryStore.reports.filter((r) => r.eventId === where.eventId);
+        
+        // Apply includes
+        if (include) {
+          results = results.map(report => {
+            const enrichedReport = { ...report };
+            
+            if (include.event) {
+              enrichedReport.event = inMemoryStore.events.find(e => e.id === report.eventId);
+            }
+            
+            if (include.reporter) {
+              enrichedReport.reporter = inMemoryStore.users.find(u => u.id === report.reporterId);
+            }
+            
+            if (include.assignedResponder) {
+              enrichedReport.assignedResponder = report.assignedResponderId ? 
+                inMemoryStore.users.find(u => u.id === report.assignedResponderId) : null;
+            }
+            
+            if (include.evidenceFiles) {
+              enrichedReport.evidenceFiles = report.evidenceFiles || [];
+            }
+            
+            if (include._count) {
+              enrichedReport._count = report._count || { comments: 0 };
+            }
+            
+            return enrichedReport;
+          });
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          results.sort((a, b) => {
+            for (const order of Array.isArray(orderBy) ? orderBy : [orderBy]) {
+              const field = Object.keys(order)[0];
+              const direction = order[field];
+              
+              let aVal = a[field];
+              let bVal = b[field];
+              
+              if (field === 'createdAt' || field === 'updatedAt') {
+                aVal = new Date(aVal);
+                bVal = new Date(bVal);
+              }
+              
+              if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+              if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+          });
+        }
+        
+        // Apply pagination
+        if (skip) {
+          results = results.slice(skip);
+        }
+        if (take) {
+          results = results.slice(0, take);
+        }
+        
+        return results;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.reports];
+        
+        // Apply same where filters as findMany
+        if (where) {
+          if (where.eventId && !where.eventId.in) {
+            results = results.filter((r) => r.eventId === where.eventId);
+          }
+          
+          if (where.eventId && where.eventId.in) {
+            results = results.filter((r) => where.eventId.in.includes(r.eventId));
+          }
+          
+          if (where.state) {
+            results = results.filter((r) => r.state === where.state);
+          }
+          
+          if (where.assignedResponderId) {
+            results = results.filter((r) => r.assignedResponderId === where.assignedResponderId);
+          }
+          
+          if (where.assignedResponderId === null) {
+            results = results.filter((r) => !r.assignedResponderId);
+          }
+          
+          if (where.OR) {
+            results = results.filter((r) => {
+              return where.OR.some(condition => {
+                if (condition.title && condition.title.contains) {
+                  return r.title.toLowerCase().includes(condition.title.contains.toLowerCase());
+                }
+                if (condition.description && condition.description.contains) {
+                  return r.description.toLowerCase().includes(condition.description.contains.toLowerCase());
+                }
+                return false;
+              });
+            });
+          }
+        }
+        
+        return results.length;
       }),
     };
     this.auditLog = {
