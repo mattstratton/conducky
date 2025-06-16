@@ -1408,10 +1408,20 @@ app.patch('/events/slug/:slug/reports/:reportId', async (req: any, res: any) => 
 // Slug-based: Update event metadata
 app.patch('/events/slug/:slug', async (req: any, res: any) => {
   const { slug } = req.params;
-  const { name, description, contactEmail, newSlug } = req.body;
+  const { 
+    name, 
+    description, 
+    contactEmail, 
+    newSlug, 
+    logo, 
+    startDate, 
+    endDate, 
+    website, 
+    codeOfConduct 
+  } = req.body;
   
   // Check if there's anything to update
-  if (!name && !description && !contactEmail && !newSlug) {
+  if (!name && !description && !contactEmail && !newSlug && !logo && !startDate && !endDate && !website && !codeOfConduct) {
     return res.status(400).json({ error: 'Nothing to update.' });
   }
   
@@ -1441,9 +1451,14 @@ app.patch('/events/slug/:slug', async (req: any, res: any) => {
     
     const updateData: any = {};
     if (name) updateData.name = name;
-    if (description) updateData.description = description;
-    if (contactEmail) updateData.contactEmail = contactEmail;
     if (newSlug) updateData.slug = newSlug;
+    if (description !== undefined) updateData.description = description;
+    if (logo !== undefined) updateData.logo = logo;
+    if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
+    if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
+    if (website !== undefined) updateData.website = website;
+    if (codeOfConduct !== undefined) updateData.codeOfConduct = codeOfConduct;
+    if (contactEmail !== undefined) updateData.contactEmail = contactEmail;
     
     const event = await prisma.event.update({
       where: { id: eventId },
