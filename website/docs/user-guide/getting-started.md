@@ -103,6 +103,18 @@ If you belong to multiple events, you can view reports across all your events:
 - **Unified View**: Manage reports from multiple events in one place
 - **Quick Actions**: Perform common actions without switching event contexts
 
+### Notification Center (`/dashboard/notifications`)
+
+Stay informed about important activities across all your events:
+
+- **Automatic Notifications**: Receive notifications for report submissions, assignments, status changes, and comments
+- **Priority Levels**: Notifications are categorized by urgency (urgent, high, normal, low)
+- **Advanced Filtering**: Filter by type, priority, and read status
+- **Direct Actions**: Click notifications to navigate directly to related reports
+- **Mobile Optimized**: Fully responsive design for mobile and desktop use
+
+See the [Notification Center Guide](./notification-center.md) for complete details.
+
 ## Environment Variables
 
 Before running Conducky, you must set the required environment variables for both backend and frontend. See the [Developer Docs Introduction](../developer-docs/intro.md#environment-variables-standardized) for the full list and details.

@@ -134,6 +134,12 @@ _Checklist items with a GitHub issue are now linked for traceability._
 
 ## Phase 5: Notifications
 
+- [X] Implement in-app notification center ([#167](https://github.com/mattstratton/conducky/issues/167))
+  - [X] Database schema for notifications (type, priority, read status, action URLs)
+  - [X] Backend API endpoints (fetch, mark as read, delete, statistics)
+  - [X] Frontend notification center UI with filtering and pagination
+  - [X] Automated notification creation for report events
+  - [X] Comprehensive test coverage for all notification functionality
 - [ ] Integrate flexible transactional email service (supporting multiple providers)
 - [ ] Document setup for each supported email provider (e.g., SendGrid, Mailgun, SMTP, etc.)
 - [ ] Notify submitters on report submission, acknowledgment, resolution, and updates
