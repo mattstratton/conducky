@@ -54,13 +54,16 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["./*"],
-      "@/types/*": ["./types/*"],
-      "@/utils/*": ["./utils/*"],
-      "@/controllers/*": ["./controllers/*"],
-      "@/services/*": ["./services/*"],
-      "@/middleware/*": ["./middleware/*"],
-      "@/routes/*": ["./routes/*"],
-      "@/config/*": ["./config/*"]
+      "@/src/*": ["./src/*"],
+      "@/types/*": ["./src/types/*", "./types/*"],
+      "@/utils/*": ["./src/utils/*", "./utils/*"],
+      "@/controllers/*": ["./src/controllers/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/middleware/*": ["./src/middleware/*"],
+      "@/routes/*": ["./src/routes/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/validators/*": ["./src/validators/*"],
+      "@/errors/*": ["./src/errors/*"]
     }
   },
   "include": [

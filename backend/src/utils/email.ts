@@ -1,23 +1,74 @@
-const nodemailer = require('nodemailer');
+import nodemailer = require('nodemailer');
+
+/**
+ * Email configuration for different providers
+ */
+interface EmailConfig {
+  provider: string;
+  from: string;
+  replyTo?: string | null;
+  smtp?: {
+    host: string;
+    port: number;
+    secure: boolean;
+    auth?: {
+      user?: string;
+      pass?: string;
+    };
+  };
+  sendgrid?: {
+    apiKey?: string;
+  };
+  console?: boolean;
+}
+
+/**
+ * Email sending options
+ */
+export interface EmailOptions {
+  /** Recipient email address */
+  to: string;
+  /** Email subject line */
+  subject: string;
+  /** Plain text content */
+  text: string;
+  /** HTML content (optional) */
+  html?: string;
+  /** Sender email (optional, uses default from config) */
+  from?: string;
+  /** Reply-to address (optional) */
+  replyTo?: string;
+}
+
+/**
+ * Email sending result
+ */
+export interface EmailResult {
+  success: boolean;
+  messageId: string;
+  provider: string;
+}
 
 /**
  * Email Service - Flexible email sending with multiple provider support
- * Supports SMTP, SendGrid, and other providers
+ * Supports SMTP, SendGrid, and console logging for development
  */
-class EmailService {
+export class EmailService {
+  private transporter: nodemailer.Transporter | null = null;
+  private isInitialized: boolean = false;
+  private config: EmailConfig;
+
   constructor() {
-    this.transporter = null;
-    this.isInitialized = false;
     this.config = this.getEmailConfig();
   }
 
   /**
    * Get email configuration from environment variables
    */
-  getEmailConfig() {
+  private getEmailConfig(): EmailConfig {
     const provider = process.env.EMAIL_PROVIDER || 'console'; // Default to console for development
 
-    const config = {
+    const config: EmailConfig = {
       provider,
       from: process.env.EMAIL_FROM || 'noreply@conducky.local',
       replyTo: process.env.EMAIL_REPLY_TO || null,
@@ -25,21 +76,23 @@ class EmailService {
 
     switch (provider.toLowerCase()) {
       case 'smtp':
+        const smtpAuth: { user?: string; pass?: string } | undefined = 
+          process.env.SMTP_USER && process.env.SMTP_PASS
+            ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+            : undefined;
+        
         config.smtp = {
           host: process.env.SMTP_HOST || 'localhost',
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
+          ...(smtpAuth && { auth: smtpAuth }),
         };
         break;
 
       case 'sendgrid':
-        config.sendgrid = {
-          apiKey: process.env.SENDGRID_API_KEY,
-        };
+        if (process.env.SENDGRID_API_KEY) {
+          config.sendgrid = { apiKey: process.env.SENDGRID_API_KEY };
+        }
         break;
 
       case 'console':
@@ -55,16 +108,22 @@ class EmailService {
   /**
    * Initialize the email transporter based on configuration
    */
-  async initialize() {
+  private async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
     try {
       switch (this.config.provider.toLowerCase()) {
         case 'smtp':
+          if (!this.config.smtp) {
+            throw new Error('SMTP configuration is missing');
+          }
           this.transporter = nodemailer.createTransport(this.config.smtp);
           break;
 
         case 'sendgrid':
+          if (!this.config.sendgrid?.apiKey) {
+            throw new Error('SendGrid API key is missing');
+          }
           // For SendGrid, we'll use nodemailer with SendGrid's SMTP
           this.transporter = nodemailer.createTransport({
             host: 'smtp.sendgrid.net',
@@ -89,7 +148,7 @@ class EmailService {
       }
 
       // Test the connection for non-console providers
-      if (this.config.provider !== 'console') {
+      if (this.config.provider !== 'console' && this.transporter) {
         await this.transporter.verify();
         console.log(`[Email] ${this.config.provider} transporter initialized successfully`);
       } else {
@@ -97,7 +156,7 @@ class EmailService {
       }
 
       this.isInitialized = true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Email] Failed to initialize transporter:', error);
       // Fall back to console mode in case of configuration errors
       this.config.provider = 'console';
@@ -111,26 +170,28 @@ class EmailService {
   }
 
   /**
-   * Send an email
-   * @param {Object} options - Email options
-   * @param {string} options.to - Recipient email address
-   * @param {string} options.subject - Email subject
-   * @param {string} options.text - Plain text content
-   * @param {string} options.html - HTML content
-   * @param {string} options.from - Sender (optional, uses default)
-   * @param {string} options.replyTo - Reply-to address (optional)
+   * Send an email using the configured transporter
+   * @param options - Email sending options
+   * @returns Promise resolving to email result
    */
-  async sendEmail({ to, subject, text, html, from, replyTo }) {
+  async sendEmail(options: EmailOptions): Promise<EmailResult> {
     await this.initialize();
 
-    const mailOptions = {
+    const { to, subject, text, html, from, replyTo } = options;
+
+    const mailOptions: any = {
       from: from || this.config.from,
       to,
       subject,
       text,
       html,
-      replyTo: replyTo || this.config.replyTo,
     };
+
+    // Only add replyTo if it's not null/undefined
+    const finalReplyTo = replyTo || this.config.replyTo;
+    if (finalReplyTo) {
+      mailOptions.replyTo = finalReplyTo;
+    }
 
     try {
       if (this.config.provider === 'console') {
@@ -152,15 +213,19 @@ class EmailService {
         };
       }
 
-      const result = await this.transporter.sendMail(mailOptions);
+      if (!this.transporter) {
+        throw new Error('Email transporter not initialized');
+      }
+
+      const result: any = await this.transporter.sendMail(mailOptions);
       console.log(`[Email] Sent successfully via ${this.config.provider}:`, result.messageId);
       
       return {
         success: true,
-        messageId: result.messageId,
+        messageId: result.messageId || `sent-${Date.now()}`,
         provider: this.config.provider,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Email] Failed to send email:', error);
       throw new Error(`Failed to send email: ${error.message}`);
     }
@@ -168,12 +233,18 @@ class EmailService {
 
   /**
    * Send a password reset email
-   * @param {string} to - Recipient email
-   * @param {string} name - User's name
-   * @param {string} resetToken - Password reset token
-   * @param {string} frontendUrl - Frontend base URL
+   * @param to - Recipient email address
+   * @param name - User's display name
+   * @param resetToken - Password reset token
+   * @param frontendUrl - Frontend base URL (optional)
+   * @returns Promise resolving to email result
    */
-  async sendPasswordReset(to, name, resetToken, frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000') {
+  async sendPasswordReset(
+    to: string, 
+    name: string, 
+    resetToken: string, 
+    frontendUrl: string = process.env.FRONTEND_BASE_URL || 'http://localhost:3000'
+  ): Promise<EmailResult> {
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     
     const subject = 'Reset Your Conducky Password';
@@ -259,10 +330,11 @@ The Conducky Team
 
   /**
    * Send a welcome email for new users
-   * @param {string} to - Recipient email
-   * @param {string} name - User's name  
+   * @param to - Recipient email address
+   * @param name - User's display name
+   * @returns Promise resolving to email result
    */
-  async sendWelcomeEmail(to, name) {
+  async sendWelcomeEmail(to: string, name: string): Promise<EmailResult> {
     const subject = 'Welcome to Conducky!';
     
     const text = `
@@ -332,9 +404,4 @@ The Conducky Team
 }
 
 // Create and export a singleton instance
-const emailService = new EmailService();
-
-module.exports = {
-  EmailService,
-  emailService,
-}; 
+export const emailService = new EmailService(); 

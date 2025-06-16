@@ -297,4 +297,346 @@ The TypeScript backend now provides better type safety, enhanced developer exper
 **Final Status**: ✅ **100% COMPLETE - PRODUCTION READY**
 **Test Results**: 156/156 tests passing (100% success rate)
 **TypeScript Compilation**: 0 errors
-**Recommendation**: ✅ **Safe to deploy to production** 
+**Recommendation**: ✅ **Safe to deploy to production**
+
+---
+
+# 🔄 **PHASE 2: MODULAR REFACTORING** 
+
+## Overview
+With the TypeScript migration complete (100% success), Phase 2 focuses on refactoring the monolithic 3,024-line `index.ts` file into a well-structured, maintainable modular architecture.
+
+## 📊 **Phase 2 Progress Status**
+- **Step 2.1: Project Structure Setup** ✅ **COMPLETE** (156/156 tests passing)
+- **Step 2.2: Extract Configuration Layer** ✅ **COMPLETE** (156/156 tests passing)
+- **Step 2.3: Extract Utility Layer** ✅ **COMPLETE** (156/156 tests passing)
+- **Step 2.4: Extract Middleware Layer** ✅ **COMPLETE** (156/156 tests passing)
+- **Step 2.5: Extract Service Layer** ⏳ **PENDING**
+- **Step 2.6: Extract Controller Layer** ⏳ **PENDING**
+- **Step 2.7: Extract Route Layer** ⏳ **PENDING**
+- **Step 2.8: Add Validation Layer** ⏳ **PENDING**
+- **Step 2.9: Enhance Error Handling** ⏳ **PENDING**
+- **Step 2.10: Update Main Application File** ⏳ **PENDING**
+
+**Current Status**: 4/10 steps complete, maintaining 100% test success rate
+
+## 🎯 **Refactoring Strategy**
+
+### **Approach**: Incremental Modular Extraction
+- **Preserve Functionality**: Maintain 100% test success rate throughout refactoring
+- **Gradual Migration**: Extract modules one at a time with immediate testing
+- **Clear Separation**: Implement proper separation of concerns
+- **Type Safety**: Maintain strict TypeScript typing throughout
+
+### **Target Architecture**
+```
+backend/src/
+├── config/           # Configuration management
+├── controllers/      # Request handlers (business logic interface)
+├── services/         # Business logic layer
+├── middleware/       # Express middleware functions
+├── routes/          # Route definitions and organization
+├── utils/           # Utility functions and helpers
+├── types/           # TypeScript type definitions
+└── validators/      # Request validation schemas
+```
+
+## 📋 **PHASE 2 IMPLEMENTATION PLAN**
+
+### **Step 2.1: Project Structure Setup** 🏗️ ✅ **COMPLETE**
+**Goal**: Create the new modular directory structure
+**Estimated Lines**: ~50 lines (config files)
+
+**Tasks**:
+- [x] ✅ Create `backend/src/` directory structure
+- [x] ✅ Set up TypeScript path mapping for clean imports
+- [x] ✅ Update `tsconfig.json` with new paths
+- [x] ✅ Create index files for clean module exports
+- [ ] Update Docker and build scripts (deferred to later step)
+
+**Files Created**:
+- ✅ `src/config/index.ts` - Configuration aggregation
+- ✅ `src/types/index.ts` - Centralized type exports
+- ✅ `src/utils/index.ts` - Utility exports
+- ✅ `src/middleware/index.ts` - Middleware exports
+- ✅ Complete directory structure: `config/`, `controllers/`, `services/`, `middleware/`, `routes/`, `utils/`, `types/`, `validators/`, `errors/`
+
+**Test Results**: 156/156 tests passing (100% success rate maintained)
+
+### **Step 2.2: Extract Configuration Layer** ⚙️ ✅ **COMPLETE**
+**Goal**: Centralize all configuration management
+**Estimated Lines**: ~200 lines
+
+**Tasks**:
+- [x] ✅ Extract database configuration
+- [x] ✅ Extract session configuration  
+- [x] ✅ Extract CORS and middleware configuration
+- [x] ✅ Extract environment variable management
+- [x] ✅ Create configuration validation
+
+**Files Created**:
+- ✅ `src/config/database.ts` - Prisma client with environment-specific logging
+- ✅ `src/config/session.ts` - Environment-aware session configuration
+- ✅ `src/config/cors.ts` - Security-focused CORS configuration
+- ✅ `src/config/environment.ts` - Environment validation and type safety
+- ✅ `src/config/index.ts` - Aggregated configuration exports
+
+**Key Achievements**:
+- Environment-specific configurations (production security, development flexibility)
+- TypeScript interfaces for all configuration objects
+- Environment variable validation with detailed error messages
+- Backward compatibility maintained
+
+**Test Results**: 156/156 tests passing (100% success rate maintained)
+
+### **Step 2.3: Extract Utility Layer** 🔧 ✅ **COMPLETE**
+**Goal**: Move existing utilities to proper structure
+**Estimated Lines**: ~400 lines (existing utilities)
+
+**Tasks**:
+- [x] ✅ Move `utils/audit.ts` to `src/utils/audit.ts`
+- [x] ✅ Move `utils/email.ts` to `src/utils/email.ts`
+- [x] ✅ Move `utils/rbac.ts` to `src/utils/rbac.ts`
+- [x] ✅ Move `utils/upload.ts` to `src/utils/upload.ts`
+- [x] ✅ Extract helper functions from main file
+
+**Files Migrated/Created**:
+- ✅ `src/utils/audit.ts` - Audit logging
+- ✅ `src/utils/email.ts` - Email service
+- ✅ `src/utils/rbac.ts` - Role-based access control
+- ✅ `src/utils/upload.ts` - File upload handling
+- ✅ `src/utils/validation.ts` - Password and input validation
+- ✅ `src/utils/helpers.ts` - General helper functions (getEventIdBySlug, generateInviteCode, getUserRoleForEvent, checkResetRateLimit, generateSecureToken, sleep)
+- ✅ `src/utils/notifications.ts` - Notification management (createNotification, notifyReportEvent, markNotificationAsRead, markAllNotificationsAsRead, getNotificationStats)
+- ✅ `src/utils/index.ts` - Updated to export all utility modules
+
+**Key Achievements**:
+- All existing utilities successfully migrated to modular structure
+- Created comprehensive notification utility with 5 key functions
+- Added general helpers extracted from main index.ts file
+- Removed old JavaScript utility files (utils/*.js)
+- Maintained clean module exports through index.ts
+
+**Test Results**: 156/156 tests passing (100% success rate maintained)
+
+### **Step 2.4: Extract Middleware Layer** 🛡️ ✅ **COMPLETE**
+**Goal**: Organize all middleware functions
+**Estimated Lines**: ~300 lines
+
+**Tasks**:
+- [x] ✅ Extract authentication middleware
+- [x] ✅ Extract RBAC middleware (refactor existing)
+- [x] ✅ Create validation middleware
+- [x] ✅ Create logging middleware
+
+**Files Created**:
+- ✅ `src/middleware/auth.ts` - Authentication middleware (configurePassport, requireAuth, testAuthMiddleware, loginMiddleware, logoutMiddleware)
+- ✅ `src/middleware/rbac.ts` - Role-based access control (re-exports requireRole, requireSuperAdmin from utils)
+- ✅ `src/middleware/validation.ts` - Request validation (validateRequired, validatePasswordStrength, validateEmailFormat, validateRegistration, validateLogin, validateEventCreation)
+- ✅ `src/middleware/logging.ts` - Request/response logging (requestLogger, enhancedRequestLogger, errorLogger, devRequestLogger)
+- ✅ `src/middleware/index.ts` - Updated to export all middleware modules
+
+**Key Achievements**:
+- Extracted Passport.js configuration and authentication logic into dedicated module
+- Created comprehensive validation middleware with reusable validators
+- Built flexible logging middleware with different levels of detail
+- Maintained clean separation between RBAC utilities and middleware layer
+- All middleware properly typed with TypeScript interfaces
+
+**Test Results**: 156/156 tests passing (100% success rate maintained)
+
+### **Step 2.5: Extract Service Layer** 🏢
+**Goal**: Extract business logic into services
+**Estimated Lines**: ~1,200 lines
+
+**Tasks**:
+- [ ] **AuthService** (~200 lines) - Authentication logic, password validation, rate limiting
+- [ ] **UserService** (~150 lines) - User CRUD, profile management, avatar handling
+- [ ] **EventService** (~200 lines) - Event management, access control, metadata
+- [ ] **ReportService** (~300 lines) - Report workflow, state management, assignments
+- [ ] **NotificationService** (~150 lines) - Notification creation, templates, delivery
+- [ ] **CommentService** (~100 lines) - Comment CRUD, visibility management
+- [ ] **InviteService** (~100 lines) - Invite link management, redemption
+
+**Files to Create**:
+- `src/services/auth.service.ts` - Authentication business logic
+- `src/services/user.service.ts` - User management logic
+- `src/services/event.service.ts` - Event management logic
+- `src/services/report.service.ts` - Report workflow logic
+- `src/services/notification.service.ts` - Notification logic
+- `src/services/comment.service.ts` - Comment management logic
+- `src/services/invite.service.ts` - Invite management logic
+
+### **Step 2.6: Extract Controller Layer** 🎮
+**Goal**: Create clean request handlers
+**Estimated Lines**: ~1,000 lines
+
+**Tasks**:
+- [ ] **AuthController** (~150 lines) - Register, login, logout, password reset
+- [ ] **UserController** (~120 lines) - Profile, avatars, user management
+- [ ] **EventController** (~200 lines) - Event CRUD, logos, metadata
+- [ ] **ReportController** (~300 lines) - Report submission, updates, evidence
+- [ ] **CommentController** (~80 lines) - Comment CRUD operations
+- [ ] **NotificationController** (~100 lines) - Notification management
+- [ ] **AdminController** (~50 lines) - Admin-only operations
+
+**Files to Create**:
+- `src/controllers/auth.controller.ts` - Authentication endpoints
+- `src/controllers/user.controller.ts` - User management endpoints
+- `src/controllers/event.controller.ts` - Event management endpoints
+- `src/controllers/report.controller.ts` - Report management endpoints
+- `src/controllers/comment.controller.ts` - Comment endpoints
+- `src/controllers/notification.controller.ts` - Notification endpoints
+- `src/controllers/admin.controller.ts` - Admin endpoints
+
+### **Step 2.7: Extract Route Layer** 🛣️
+**Goal**: Organize routes by domain
+**Estimated Lines**: ~400 lines
+
+**Tasks**:
+- [ ] Create route files for each domain
+- [ ] Apply appropriate middleware to routes
+- [ ] Implement consistent routing patterns
+- [ ] Add route-level documentation
+
+**Files to Create**:
+- `src/routes/auth.routes.ts` - Authentication routes
+- `src/routes/user.routes.ts` - User management routes
+- `src/routes/event.routes.ts` - Event management routes
+- `src/routes/report.routes.ts` - Report management routes
+- `src/routes/comment.routes.ts` - Comment routes
+- `src/routes/notification.routes.ts` - Notification routes
+- `src/routes/admin.routes.ts` - Admin routes
+- `src/routes/index.ts` - Route aggregation
+
+### **Step 2.8: Add Validation Layer** ✅
+**Goal**: Implement comprehensive request validation
+**Estimated Lines**: ~300 lines
+
+**Tasks**:
+- [ ] Install and configure Zod validation library
+- [ ] Create validation schemas for all endpoints
+- [ ] Add validation middleware to routes
+- [ ] Improve error messages with detailed feedback
+
+**Files to Create**:
+- `src/validators/auth.validator.ts` - Authentication validation schemas
+- `src/validators/user.validator.ts` - User validation schemas
+- `src/validators/event.validator.ts` - Event validation schemas
+- `src/validators/report.validator.ts` - Report validation schemas
+- `src/validators/common.validator.ts` - Common validation schemas
+
+### **Step 2.9: Enhance Error Handling** 🚨
+**Goal**: Implement comprehensive error management
+**Estimated Lines**: ~200 lines
+
+**Tasks**:
+- [ ] Create custom error classes
+- [ ] Implement global error handler middleware
+- [ ] Add consistent error response format
+- [ ] Add error logging and monitoring hooks
+
+**Files to Create**:
+- `src/errors/AppError.ts` - Base error class
+- `src/errors/ValidationError.ts` - Validation error class
+- `src/errors/AuthError.ts` - Authentication error class
+- `src/errors/NotFoundError.ts` - Not found error class
+- `src/middleware/errorHandler.ts` - Global error handler
+
+### **Step 2.10: Update Main Application File** 🎯
+**Goal**: Create clean, minimal main application file
+**Estimated Lines**: ~100 lines
+
+**Tasks**:
+- [ ] Create new `src/app.ts` with modular imports
+- [ ] Update `index.ts` to be minimal server startup
+- [ ] Ensure all routes are properly connected
+- [ ] Verify all middleware is applied correctly
+
+**Files to Create/Update**:
+- `src/app.ts` - Main Express application setup
+- `index.ts` - Minimal server startup (updated)
+
+## 🧪 **Testing Strategy**
+
+### **Continuous Testing Approach**
+- **After Each Step**: Run full test suite (must maintain 156/156 passing)
+- **Integration Testing**: Verify all endpoints work after each module extraction
+- **Regression Testing**: Ensure no functionality is lost during refactoring
+- **Performance Testing**: Verify response times remain equivalent
+
+### **Test Maintenance**
+- **No Test Changes**: All existing tests should continue to pass unchanged
+- **Import Updates**: Update test imports to use new module structure
+- **Mock Updates**: Update mocks to work with new service layer
+
+## 📊 **Success Criteria**
+
+### **Functional Requirements**
+- [ ] All 156 tests continue to pass (100% success rate)
+- [ ] All API endpoints function identically
+- [ ] No performance degradation
+- [ ] All TypeScript compilation successful (0 errors)
+
+### **Code Quality Requirements**
+- [ ] Clear separation of concerns
+- [ ] Improved code maintainability
+- [ ] Better developer experience
+- [ ] Comprehensive error handling
+- [ ] Input validation on all endpoints
+
+### **Architecture Requirements**
+- [ ] Modular, scalable structure
+- [ ] Clean import/export patterns
+- [ ] Consistent coding patterns
+- [ ] Proper dependency injection
+- [ ] Type safety maintained throughout
+
+## 🎯 **Expected Benefits**
+
+### **Developer Experience**
+- **Easier Navigation**: Clear file organization by domain
+- **Faster Development**: Smaller, focused files
+- **Better Testing**: Isolated unit testing of services
+- **Improved Debugging**: Clear error handling and logging
+
+### **Maintainability**
+- **Separation of Concerns**: Business logic separated from HTTP handling
+- **Reusability**: Services can be reused across controllers
+- **Scalability**: Easy to add new features and endpoints
+- **Code Quality**: Better organization and structure
+
+### **Production Benefits**
+- **Better Error Handling**: Comprehensive error management
+- **Input Validation**: Robust request validation
+- **Monitoring**: Enhanced logging and error tracking
+- **Security**: Improved middleware organization
+
+## 📋 **Implementation Order**
+
+### **Phase 2A: Foundation** (Steps 2.1-2.4)
+1. Project structure setup
+2. Configuration extraction
+3. Utility layer migration
+4. Middleware extraction
+
+### **Phase 2B: Core Logic** (Steps 2.5-2.7)
+1. Service layer extraction
+2. Controller layer creation
+3. Route organization
+
+### **Phase 2C: Enhancement** (Steps 2.8-2.10)
+1. Validation layer addition
+2. Error handling enhancement
+3. Main application cleanup
+
+## 🚀 **Ready to Begin Phase 2**
+
+With Phase 1 (TypeScript Migration) successfully completed at 100%, we're ready to begin the modular refactoring. The foundation is solid with:
+
+- ✅ **100% test coverage** (156/156 tests passing)
+- ✅ **Complete TypeScript implementation** (0 compilation errors)
+- ✅ **All functionality working** (production ready)
+- ✅ **Clean codebase** ready for modularization
+
+**Next Step**: Begin with Step 2.1 (Project Structure Setup) to establish the new modular architecture foundation. 
