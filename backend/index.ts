@@ -29,6 +29,12 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
 });
 
+// Multer setup for event logo uploads (memory storage, 10MB limit)
+const uploadLogo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+});
+
 // Global request logger
 app.use((req: any, _res: any, next: any) => {
   console.log('[GLOBAL] Incoming request:', req.method, req.url);
@@ -892,31 +898,220 @@ async function getEventIdBySlug(slug: string) {
   return event ? event.id : null;
 }
 
+function generateInviteCode(length = 16) {
+  return crypto.randomBytes(length).toString('hex');
+}
+
+async function getUserRoleForEvent(userId: string, eventId: string) {
+  try {
+    const userEventRole = await prisma.userEventRole.findFirst({
+      where: { userId, eventId },
+      include: { role: true },
+    });
+    return userEventRole?.role.name || null;
+  } catch (err) {
+    console.error('[getUserRoleForEvent] Error:', err);
+    return null;
+  }
+}
+
 // Slug-based: List users and their roles for an event
 app.get('/events/slug/:slug/users', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
   const { slug } = req.params;
+  const {
+    search,
+    sort = 'name',
+    order = 'asc',
+    page = 1,
+    limit = 10,
+    role,
+  } = req.query;
+  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit as string, 10) || 10);
+  if (!slug) {
+    return res.status(400).json({ error: 'Missing slug in params' });
+  }
   try {
     const eventId = await getEventIdBySlug(slug);
     if (!eventId) {
       return res.status(404).json({ error: 'Event not found.' });
     }
-    
+    // Check for SuperAdmin role globally
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      // Otherwise, check for allowed roles for this event
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) =>
+        ['Admin', 'Responder', 'SuperAdmin', 'Reporter'].includes(
+          uer.role.name,
+        ),
+      );
+      if (!hasRole) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // Handler logic: fetch users for the event
+    const userEventRoleWhere: any = { eventId };
+    if (role) {
+      userEventRoleWhere.role = { name: role };
+    }
+    if (search) {
+      userEventRoleWhere.user = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      };
+    }
     const userEventRoles = await prisma.userEventRole.findMany({
-      where: { eventId },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        role: { select: { id: true, name: true } },
+      where: userEventRoleWhere,
+      include: { user: true, role: true },
+      orderBy: [{ user: { [sort as string]: order } }],
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+    });
+    // Group roles by user
+    const users: any = {};
+    for (const uer of userEventRoles) {
+      if (!users[uer.userId]) {
+        // Fetch avatar for each user
+        const avatar = await prisma.userAvatar.findUnique({
+          where: { userId: uer.user.id },
+        });
+        users[uer.userId] = {
+          id: uer.user.id,
+          email: uer.user.email,
+          name: uer.user.name,
+          roles: [],
+          avatarUrl: avatar ? `/users/${uer.user.id}/avatar` : null,
+        };
+      }
+      users[uer.userId].roles.push(uer.role.name);
+    }
+    // For pagination: count total matching users
+    const total = await prisma.userEventRole.count({
+      where: userEventRoleWhere,
+    });
+    res.json({ users: Object.values(users), total });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ error: 'Failed to list users for event.', details: err.message });
+  }
+});
+
+// PATCH: Update a user's name, email, and role for a specific event
+app.patch('/events/slug/:slug/users/:userId', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug, userId } = req.params;
+  const { name, email, role } = req.body;
+  if (!slug || !userId || !role) {
+    return res.status(400).json({ error: 'Missing slug, userId, or role' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // Check for SuperAdmin role globally
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      // Otherwise, check for Admin role for this event
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!hasRole) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // Update user name/email if changed
+    await prisma.user.update({
+      where: { id: userId },
+      data: { name, email },
+    });
+    // Update role for this event: remove old roles, add new one
+    const eventRoles = await prisma.userEventRole.findMany({
+      where: { userId, eventId },
+    });
+    for (const er of eventRoles) {
+      await prisma.userEventRole.delete({ where: { id: er.id } });
+    }
+    const roleRecord = await prisma.role.findUnique({ where: { name: role } });
+    if (!roleRecord) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    await prisma.userEventRole.create({
+      data: {
+        userId,
+        eventId,
+        roleId: roleRecord.id,
       },
     });
-    
-    const users = userEventRoles.map((uer: any) => ({
-      ...uer.user,
-      role: uer.role,
-    }));
-    
-    res.json({ users });
+    res.json({ message: 'User updated.' });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to fetch users', details: err.message });
+    res.status(500).json({
+      error: 'Failed to update user for event.',
+      details: err.message,
+    });
+  }
+});
+
+// DELETE: Remove all roles for a user for a specific event
+app.delete('/events/slug/:slug/users/:userId', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug, userId } = req.params;
+  if (!slug || !userId) {
+    return res.status(400).json({ error: 'Missing slug or userId' });
+  }
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // Check for SuperAdmin role globally
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      // Otherwise, check for Admin role for this event
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!hasRole) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    // Remove all roles for this user for this event
+    await prisma.userEventRole.deleteMany({
+      where: { userId, eventId },
+    });
+    res.json({ message: 'User removed from event.' });
+  } catch (err: any) {
+    res.status(500).json({
+      error: 'Failed to remove user from event.',
+      details: err.message,
+    });
   }
 });
 
@@ -984,6 +1179,16 @@ app.patch('/events/slug/:slug', async (req: any, res: any) => {
       return res.status(404).json({ error: 'Event not found.' });
     }
     
+    // Check user permissions - only SuperAdmin and Admin can update events
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+    
+    const userRole = await getUserRoleForEvent(req.user.id, eventId);
+    if (!userRole || !['SuperAdmin', 'Admin'].includes(userRole)) {
+      return res.status(403).json({ error: 'Insufficient permissions to update event.' });
+    }
+    
     // Check if newSlug already exists (if provided)
     if (newSlug && newSlug !== slug) {
       const existingEvent = await prisma.event.findUnique({ where: { slug: newSlug } });
@@ -1006,6 +1211,1236 @@ app.patch('/events/slug/:slug', async (req: any, res: any) => {
     res.json({ event });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update event', details: err.message });
+  }
+});
+
+// User avatar endpoints
+app.post('/users/:userId/avatar', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || req.user.id !== req.params.userId) {
+    console.error('[Avatar Upload] Not authorized', {
+      userId: req.user?.id,
+      paramsUserId: req.params.userId,
+    });
+    return res.status(401).json({ error: 'Not authorized' });
+  }
+
+  // Use multer middleware for single file upload
+  upload.single('avatar')(req, res, async (err: any) => {
+    if (err) {
+      console.error('[Avatar Upload] Multer error:', err);
+      return res.status(400).json({ error: 'File upload failed', details: err.message });
+    }
+
+    if (!req.file) {
+      console.error('[Avatar Upload] No file uploaded');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'Invalid file type. Only PNG and JPEG are allowed.' });
+    }
+
+    // Validate file size (2MB limit)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (req.file.size > maxSize) {
+      return res.status(400).json({ error: 'File too large. Maximum size is 2MB.' });
+    }
+
+    try {
+      // Remove existing avatar
+      await prisma.userAvatar.deleteMany({ where: { userId: req.user.id } });
+
+      // Create new avatar
+      const avatar = await prisma.userAvatar.create({
+        data: {
+          userId: req.user.id,
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          data: req.file.buffer,
+        },
+      });
+
+      res.status(200).json({ success: true, avatarId: avatar.id });
+    } catch (err: any) {
+      console.error('[Avatar Upload] Failed to upload avatar', err);
+      res.status(500).json({ error: 'Failed to upload avatar.', details: err.message });
+    }
+  });
+});
+
+app.delete('/users/:userId/avatar', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || req.user.id !== req.params.userId) {
+    console.error('[Avatar Delete] Not authorized', {
+      userId: req.user?.id,
+      paramsUserId: req.params.userId,
+    });
+    return res.status(401).json({ error: 'Not authorized' });
+  }
+
+  try {
+    await prisma.userAvatar.deleteMany({ where: { userId: req.user.id } });
+    res.status(204).send();
+  } catch (err: any) {
+    console.error('[Avatar Delete] Failed to delete avatar', err);
+    res.status(500).json({ error: 'Failed to delete avatar.', details: err.message });
+  }
+});
+
+app.get('/users/:userId/avatar', async (req: any, res: any) => {
+  try {
+    const avatar = await prisma.userAvatar.findUnique({
+      where: { userId: req.params.userId },
+    });
+
+    if (!avatar) {
+      console.error('[Avatar Fetch] No avatar found', {
+        userId: req.params.userId,
+      });
+      return res.status(404).send('No avatar');
+    }
+
+    res.setHeader('Content-Type', avatar.mimetype);
+    res.setHeader('Content-Disposition', `inline; filename="${avatar.filename}"`);
+    res.send(avatar.data);
+  } catch (err: any) {
+    console.error('[Avatar Fetch] Failed to fetch avatar', err);
+    res.status(500).json({ error: 'Failed to fetch avatar.', details: err.message });
+  }
+});
+
+// Evidence file management routes
+// Upload one or more evidence files to a report
+app.post('/reports/:reportId/evidence', upload.array('evidence', 10), async (req: any, res: any) => {
+  const { reportId } = req.params;
+  
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+    });
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found.' });
+    }
+    
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+    
+    const uploaderId = req.isAuthenticated && req.isAuthenticated() && req.user ? req.user.id : null;
+    const created = [];
+    
+    for (const file of req.files) {
+      const evidence = await prisma.evidenceFile.create({
+        data: {
+          reportId: report.id,
+          filename: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          data: file.buffer,
+          uploaderId,
+        },
+        include: {
+          uploader: { select: { id: true, name: true, email: true } },
+        },
+      });
+      
+      created.push({
+        id: evidence.id,
+        filename: evidence.filename,
+        mimetype: evidence.mimetype,
+        size: evidence.size,
+        createdAt: evidence.createdAt,
+        uploader: evidence.uploader,
+      });
+    }
+    
+    res.status(201).json({ files: created });
+  } catch (err: any) {
+    res.status(500).json({
+      error: 'Failed to upload evidence files.',
+      details: err.message,
+    });
+  }
+});
+
+// List all evidence files for a report (metadata only)
+app.get('/reports/:reportId/evidence', async (req: any, res: any) => {
+  const { reportId } = req.params;
+  
+  try {
+    // Add access control before querying files
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: { event: true }
+    });
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    // Verify user has access to this report
+    const isReporter = report.reporterId && req.user && req.user.id === report.reporterId;
+    const userEventRoles = req.user ? await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId: report.eventId },
+      include: { role: true },
+    }) : [];
+    const roles = userEventRoles.map((uer) => uer.role.name);
+    const isResponderOrAbove = roles.some((r) =>
+      ['Responder', 'Admin', 'SuperAdmin'].includes(r)
+    );
+    
+    if (!isReporter && !isResponderOrAbove) {
+      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    
+    const files = await prisma.evidenceFile.findMany({
+      where: { reportId },
+      select: {
+        id: true,
+        filename: true,
+        mimetype: true,
+        size: true,
+        createdAt: true,
+        uploader: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    
+    res.json({ files });
+  } catch (err: any) {
+    res.status(500).json({ 
+      error: 'Failed to list evidence files.', 
+      details: err.message 
+    });
+  }
+});
+
+// Download a specific evidence file by its ID
+app.get('/evidence/:evidenceId/download', async (req: any, res: any) => {
+  const { evidenceId } = req.params;
+  
+  try {
+    const evidence = await prisma.evidenceFile.findUnique({
+      where: { id: evidenceId },
+    });
+    
+    if (!evidence) {
+      return res.status(404).json({ error: 'Evidence file not found.' });
+    }
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${evidence.filename}"`);
+    // Always use application/octet-stream for downloads
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Length', evidence.size);
+    res.send(evidence.data);
+  } catch (err: any) {
+    res.status(500).json({
+      error: 'Failed to download evidence file.',
+      details: err.message,
+    });
+  }
+});
+
+// Delete an evidence file
+app.delete('/evidence/:evidenceId', async (req: any, res: any) => {
+  const { evidenceId } = req.params;
+  
+  try {
+    const evidence = await prisma.evidenceFile.findUnique({
+      where: { id: evidenceId },
+    });
+    
+    if (!evidence) {
+      return res.status(404).json({ error: 'Evidence file not found.' });
+    }
+    
+    await prisma.evidenceFile.delete({ where: { id: evidenceId } });
+    res.json({ message: 'Evidence file deleted.' });
+  } catch (err: any) {
+    res.status(500).json({ 
+      error: 'Failed to delete evidence file.', 
+      details: err.message 
+    });
+  }
+});
+
+// ============================================================================
+// EVENT INVITE MANAGEMENT ROUTES
+// ============================================================================
+
+// List all invite links for an event (admin only)
+app.get('/events/slug/:slug/invites', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    // Check admin rights
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!hasRole)
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    const invites = await prisma.eventInviteLink.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+      include: { role: true },
+    });
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
+    const invitesWithUrl = invites.map((invite: any) => ({
+      ...invite,
+      url: `${baseUrl}/invite/${invite.code}`,
+    }));
+    res.json({ invites: invitesWithUrl });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ error: 'Failed to list invites.', details: err.message });
+  }
+});
+
+// Create a new invite link for an event (admin only)
+app.post('/events/slug/:slug/invites', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  const { maxUses, expiresAt, note, role } = req.body;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    // Check admin rights
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!hasRole)
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    // Look up role
+    const roleName = role || 'Reporter';
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: roleName },
+    });
+    if (!roleRecord) return res.status(400).json({ error: 'Invalid role' });
+    const code = generateInviteCode(8);
+    const invite = await prisma.eventInviteLink.create({
+      data: {
+        eventId,
+        code,
+        createdByUserId: req.user.id,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        maxUses: maxUses ? Number(maxUses) : null,
+        note: note || null,
+        roleId: roleRecord.id,
+      },
+    });
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
+    res.status(201).json({
+      invite: {
+        ...invite,
+        url: `${baseUrl}/invite/${invite.code}`,
+      },
+    });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ error: 'Failed to create invite.', details: err.message });
+  }
+});
+
+// Disable (or update) an invite link (admin only)
+app.patch('/events/slug/:slug/invites/:inviteId', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug, inviteId } = req.params;
+  const { disabled, note, expiresAt, maxUses } = req.body;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) return res.status(404).json({ error: 'Event not found.' });
+    // Check admin rights
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === eventId);
+      const hasRole = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!hasRole)
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    const updateData: any = {};
+    if (typeof disabled === 'boolean') updateData.disabled = disabled;
+    if (note !== undefined) updateData.note = note;
+    if (expiresAt !== undefined)
+      updateData.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (maxUses !== undefined)
+      updateData.maxUses = maxUses ? Number(maxUses) : null;
+    const invite = await prisma.eventInviteLink.update({
+      where: { id: inviteId },
+      data: updateData,
+    });
+    res.json({ invite });
+  } catch (err: any) {
+    if ((err as any).code === 'P2025') {
+      return res.status(404).json({ error: 'Invite not found.' });
+    }
+    res
+      .status(500)
+      .json({ error: 'Failed to update invite.', details: err.message });
+  }
+});
+
+// ============================================================================
+// EVENT LOGO ROUTES
+// ============================================================================
+
+// Upload a new logo for an event (Admins/SuperAdmins only)
+app.post('/events/slug/:slug/logo', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const { slug } = req.params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    // RBAC: allow SuperAdmin or Admin for this event
+    const allUserRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: { role: true },
+    });
+    const isSuperAdmin = allUserRoles.some(
+      (uer: any) => uer.role.name === 'SuperAdmin',
+    );
+    let isEventAdmin = false;
+    if (!isSuperAdmin) {
+      const userRoles = allUserRoles.filter((uer: any) => uer.eventId === event.id);
+      isEventAdmin = userRoles.some((uer: any) => uer.role.name === 'Admin');
+      if (!isEventAdmin) {
+        return res.status(403).json({ error: 'Forbidden: insufficient role' });
+      }
+    }
+    uploadLogo.single('logo')(req, res, async function (err: any) {
+      if (err) {
+        return res
+          .status(400)
+          .json({ error: 'File upload failed', details: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+      }
+      // Remove any existing logo for this event
+      await prisma.eventLogo.deleteMany({ where: { eventId: event.id } });
+      // Store new logo in DB
+      await prisma.eventLogo.create({
+        data: {
+          eventId: event.id,
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          data: req.file.buffer,
+        },
+      });
+      // No need to update event.logo field; just return the event
+      res.status(200).json({ event });
+    });
+  } catch (err: any) {
+    console.error('Failed to upload logo:', err);
+    res.status(500).send(`Failed to upload logo: ${err.message}`);
+  }
+});
+
+// Serve the event logo by slug (public)
+app.get('/events/slug/:slug/logo', async (req: any, res: any) => {
+  const { slug } = req.params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) return res.status(404).send('Event not found');
+    const logo = await prisma.eventLogo.findUnique({
+      where: { eventId: event.id },
+    });
+    if (!logo) return res.status(404).send('Logo not found');
+    res.setHeader('Content-Type', logo.mimetype);
+    res.setHeader('Content-Disposition', `inline; filename="${logo.filename}"`);
+    res.send(logo.data);
+  } catch (err: any) {
+    console.error('Failed to fetch logo:', err);
+    res.status(500).send(`Failed to fetch logo: ${err.message}`);
+  }
+});
+
+// ============================================================================
+// PROFILE MANAGEMENT ROUTES
+// ============================================================================
+
+// Update user profile
+app.patch('/users/me/profile', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { name, email } = req.body;
+
+  try {
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+      }
+
+      // Check if email is already in use by another user
+      const normalizedEmail = email.toLowerCase();
+      const existingUser = await prisma.user.findUnique({ 
+        where: { email: normalizedEmail } 
+      });
+      
+      if (existingUser && existingUser.id !== req.user.id) {
+        return res.status(409).json({ error: 'This email address is already in use.' });
+      }
+    }
+
+    // Update user profile
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email.toLowerCase();
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+
+    // Get avatar if exists
+    const avatar = await prisma.userAvatar.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    const userResponse = {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
+    };
+
+    res.json({ 
+      message: 'Profile updated successfully!',
+      user: userResponse 
+    });
+  } catch (err: any) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ error: 'Failed to update profile.' });
+  }
+});
+
+// Change user password
+app.patch('/users/me/password', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
+  }
+
+  try {
+    // Get user with password hash
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Verify current password
+    let isCurrentPasswordValid;
+    try {
+      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash || '');
+    } catch (err) {
+      console.error('Error comparing passwords:', err);
+      return res.status(400).json({ error: 'Unable to verify current password.' });
+    }
+
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect.' });
+    }
+
+    // Validate new password strength
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'New password must meet all security requirements: at least 8 characters, uppercase letter, lowercase letter, number, and special character.' 
+      });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash: newPasswordHash }
+    });
+
+    res.json({ message: 'Password updated successfully!' });
+  } catch (err: any) {
+    console.error('Error changing password:', err);
+    res.status(500).json({ error: 'Failed to change password.' });
+  }
+});
+
+// Get user's events with roles
+app.get('/api/users/me/events', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    // Group by event and collect roles
+    const eventsMap = new Map();
+    
+    userEventRoles.forEach(uer => {
+      if (!uer.event) return; // Skip if event is null
+      const eventId = uer.event.id;
+      if (!eventsMap.has(eventId)) {
+        eventsMap.set(eventId, {
+          id: uer.event.id,
+          name: uer.event.name,
+          slug: uer.event.slug,
+          description: uer.event.description,
+          roles: []
+        });
+      }
+      eventsMap.get(eventId)?.roles.push(uer.role.name);
+    });
+
+    const events = Array.from(eventsMap.values());
+
+    res.json({ events });
+  } catch (err: any) {
+    console.error('Error fetching user events:', err);
+    res.status(500).json({ error: 'Failed to fetch events.' });
+  }
+});
+
+// Get user's reports across all accessible events
+app.get('/api/users/me/reports', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      event: eventFilter,
+      assigned,
+      sort = 'createdAt',
+      order = 'desc'
+    } = req.query;
+
+    // Validate and parse pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    
+    if (pageNum < 1 || limitNum < 1) {
+      return res.status(400).json({ error: 'Invalid pagination parameters. Page and limit must be positive integers.' });
+    }
+    
+    if (limitNum > 100) {
+      return res.status(400).json({ error: 'Limit cannot exceed 100 items per page.' });
+    }
+    
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get user's event roles to determine access
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    if (userEventRoles.length === 0) {
+      return res.json({ reports: [], total: 0, page: pageNum, limit: limitNum });
+    }
+
+    // Group roles by event for access control
+    const eventRoles = new Map();
+    userEventRoles.forEach(uer => {
+      if (!uer.event) return; // Skip if event is null
+      const eventId = uer.event.id;
+      if (!eventRoles.has(eventId)) {
+        eventRoles.set(eventId, {
+          event: uer.event,
+          roles: []
+        });
+      }
+      eventRoles.get(eventId)?.roles.push(uer.role.name);
+    });
+
+    // Build where clause based on user's access
+    const eventIds = Array.from(eventRoles.keys());
+    let whereClause: any = {
+      eventId: { in: eventIds }
+    };
+
+    // Role-based filtering: Reporters only see their own reports
+    const reporterOnlyEvents: string[] = [];
+    const responderAdminEvents: string[] = [];
+    
+    eventRoles.forEach((eventData: any, eventId: string) => {
+      const roles = eventData.roles;
+      const hasResponderOrAdmin = roles.some((r: string) => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+      
+      if (hasResponderOrAdmin) {
+        responderAdminEvents.push(eventId);
+      } else {
+        reporterOnlyEvents.push(eventId);
+      }
+    });
+
+    // Build complex where clause for role-based access
+    if (reporterOnlyEvents.length > 0 && responderAdminEvents.length > 0) {
+      whereClause = {
+        OR: [
+          // Reports in events where user is responder/admin (all reports)
+          { eventId: { in: responderAdminEvents } },
+          // Reports in events where user is only reporter (only their reports)
+          { 
+            AND: [
+              { eventId: { in: reporterOnlyEvents } },
+              { reporterId: req.user.id }
+            ]
+          }
+        ]
+      };
+    } else if (reporterOnlyEvents.length > 0) {
+      // User is only reporter in all events
+      whereClause = {
+        eventId: { in: reporterOnlyEvents },
+        reporterId: req.user.id
+      };
+    } else {
+      // User is responder/admin in all events
+      whereClause = {
+        eventId: { in: responderAdminEvents }
+      };
+    }
+
+    // Apply filters while preserving access control
+    const filters = [];
+    
+    // Preserve the original access control as the base
+    const baseAccessControl = { ...whereClause };
+    
+    if (search) {
+      filters.push({
+        OR: [
+          { title: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } }
+        ]
+      });
+    }
+
+    if (status) {
+      filters.push({ state: status });
+    }
+
+    if (eventFilter) {
+      // Filter by specific event slug
+      const targetEvent = Array.from(eventRoles.values()).find((e: any) => e.event.slug === eventFilter);
+      if (targetEvent) {
+        filters.push({ eventId: targetEvent.event.id });
+      } else {
+        // User doesn't have access to this event
+        return res.json({ reports: [], total: 0, page: pageNum, limit: limitNum });
+      }
+    }
+
+    if (assigned === 'me') {
+      filters.push({ assignedResponderId: req.user.id });
+    } else if (assigned === 'unassigned') {
+      filters.push({ assignedResponderId: null });
+    }
+
+    // Combine base access control with filters using AND
+    if (filters.length > 0) {
+      whereClause = {
+        AND: [
+          baseAccessControl,
+          ...filters
+        ]
+      };
+    }
+
+    // Build sort clause
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'state'];
+    const sortField = validSortFields.includes(sort as string) ? sort as string : 'createdAt';
+    const sortOrder = order === 'asc' ? 'asc' : 'desc';
+
+    // Get total count
+    const total = await prisma.report.count({ where: whereClause });
+
+    // Get reports with pagination
+    const reports = await prisma.report.findMany({
+      where: whereClause,
+      include: {
+        event: {
+          select: { id: true, name: true, slug: true }
+        },
+        reporter: {
+          select: { id: true, name: true, email: true }
+        },
+        assignedResponder: {
+          select: { id: true, name: true, email: true }
+        },
+        evidenceFiles: {
+          select: { id: true, filename: true, mimetype: true, size: true }
+        },
+        _count: {
+          select: { comments: true }
+        }
+      },
+      orderBy: { [sortField]: sortOrder },
+      skip,
+      take: limitNum
+    });
+
+    // Add user's role in each event to the response
+    const reportsWithRoles = reports.map(report => ({
+      ...report,
+      userRoles: eventRoles.get(report.eventId)?.roles || []
+    }));
+
+    res.json({
+      reports: reportsWithRoles,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
+  } catch (err: any) {
+    console.error('Error fetching user reports:', err);
+    res.status(500).json({ error: 'Failed to fetch reports.' });
+  }
+});
+
+// Leave an event
+app.delete('/users/me/events/:eventId', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { eventId } = req.params;
+
+  try {
+    // Check if user is a member of the event
+    const userRoles = await prisma.userEventRole.findMany({
+      where: { 
+        userId: req.user.id, 
+        eventId: eventId 
+      },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    if (userRoles.length === 0) {
+      return res.status(404).json({ error: 'You are not a member of this event.' });
+    }
+
+    // Check if user is the only admin
+    const isAdmin = userRoles.some(ur => ur.role.name === 'Admin');
+    if (isAdmin) {
+      const adminCount = await prisma.userEventRole.count({
+        where: {
+          eventId: eventId,
+          role: { name: 'Admin' }
+        }
+      });
+
+      if (adminCount === 1) {
+        return res.status(400).json({ 
+          error: 'You cannot leave this event as you are the only admin. Please assign another admin first.' 
+        });
+      }
+    }
+
+    // Remove user from event
+    await prisma.userEventRole.deleteMany({
+      where: {
+        userId: req.user.id,
+        eventId: eventId
+      }
+    });
+
+    const eventName = userRoles[0]?.event?.name || 'the event';
+    res.json({ message: `Successfully left ${eventName}.` });
+  } catch (err: any) {
+    console.error('Error leaving event:', err);
+    res.status(500).json({ error: 'Failed to leave event.' });
+  }
+});
+
+// Redeem an invite link (for logged-in users to join an event)
+app.post('/invites/:code/redeem', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  const { code } = req.params;
+  
+  try {
+    const invite = await prisma.eventInviteLink.findUnique({ where: { code } });
+    if (!invite || invite.disabled) {
+      return res.status(400).json({ error: 'Invalid or disabled invite link.' });
+    }
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return res.status(400).json({ error: 'Invite link has expired.' });
+    }
+    if (invite.maxUses && invite.useCount >= invite.maxUses) {
+      return res.status(400).json({ error: 'Invite link has reached its maximum uses.' });
+    }
+    
+    // Check if user is already a member of the event
+    const existing = await prisma.userEventRole.findFirst({
+      where: {
+        userId: req.user.id,
+        eventId: invite.eventId,
+      },
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'You are already a member of this event.' });
+    }
+    
+    // Assign role for the event from invite
+    await prisma.userEventRole.create({
+      data: {
+        userId: req.user.id,
+        eventId: invite.eventId,
+        roleId: invite.roleId,
+      },
+    });
+    
+    // Increment useCount
+    await prisma.eventInviteLink.update({
+      where: { code },
+      data: { useCount: { increment: 1 } },
+    });
+    
+    // Get event slug for redirect
+    const event = await prisma.event.findUnique({ where: { id: invite.eventId } });
+    res.status(200).json({ message: 'Joined event successfully!', eventSlug: event?.slug });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to join event.', details: err.message });
+  }
+});
+
+// Get quick stats for the current user
+app.get('/api/users/me/quickstats', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const userId = req.user.id;
+    
+    // Get all event memberships
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId },
+      include: { event: true, role: true },
+    });
+    const eventIds = userEventRoles.map(uer => uer.eventId).filter(Boolean);
+    const eventCount = new Set(eventIds).size;
+
+    // Count reports where user is reporter OR assigned responder OR admin in event
+    const reportsAsReporter = await prisma.report.count({ where: { reporterId: userId } });
+    const reportsAsResponder = await prisma.report.count({ where: { assignedResponderId: userId } });
+    
+    // Count events where user is admin
+    const adminEventIds = userEventRoles
+      .filter(uer => uer.role.name === 'Admin' && uer.eventId)
+      .map(uer => uer.eventId!)
+      .filter((id): id is string => id !== null);
+    let reportsAsAdmin = 0;
+    if (adminEventIds.length > 0) {
+      reportsAsAdmin = await prisma.report.count({ where: { eventId: { in: adminEventIds } } });
+    }
+    
+    // Total unique reports
+    const reportCount = reportsAsReporter + reportsAsResponder + reportsAsAdmin;
+
+    // Needs response: reports assigned to user as responder and not closed/resolved
+    const needsResponseCount = await prisma.report.count({
+      where: {
+        assignedResponderId: userId,
+        state: { in: ['submitted', 'acknowledged', 'investigating'] },
+      },
+    });
+
+    res.json({ eventCount, reportCount, needsResponseCount });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch quick stats', details: err.message });
+  }
+});
+
+// Get recent activity for the current user (placeholder with mock data)
+app.get('/api/users/me/activity', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  // Mock data for now - TODO: Replace with real AuditLog queries when implemented
+  const mockActivity = [
+    {
+      type: 'report_submitted',
+      message: 'You submitted a new report in DuckCon.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+      eventSlug: 'duckcon',
+      reportId: 'rpt1',
+    },
+    {
+      type: 'report_assigned',
+      message: 'A report was assigned to you in TechFest.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      eventSlug: 'techfest',
+      reportId: 'rpt2',
+    },
+    {
+      type: 'invited',
+      message: 'You were invited to PyData Chicago.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+      eventSlug: 'pydata-chicago',
+    },
+    {
+      type: 'status_changed',
+      message: 'A report you submitted was marked as resolved.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      eventSlug: 'duckcon',
+      reportId: 'rpt3',
+    },
+  ];
+  
+  res.json({ activity: mockActivity });
+});
+
+// ============================================================================
+// NOTIFICATION ROUTES
+// ============================================================================
+
+// Get user's notifications with pagination and filtering
+app.get('/api/users/me/notifications', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      unreadOnly = false,
+      type,
+      priority
+    } = req.query;
+
+    // Validate and parse pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = Math.min(parseInt(limit as string), 100); // Max 100 per page
+    
+    if (pageNum < 1 || limitNum < 1) {
+      return res.status(400).json({ error: 'Invalid pagination parameters' });
+    }
+
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause
+    const whereClause: any = { userId: req.user.id };
+    
+    if (unreadOnly === 'true') {
+      whereClause.isRead = false;
+    }
+    
+    if (type) {
+      whereClause.type = type;
+    }
+    
+    if (priority) {
+      whereClause.priority = priority;
+    }
+
+    // Get total count
+    const total = await prisma.notification.count({ where: whereClause });
+
+    // Get notifications with related data
+    const notifications = await prisma.notification.findMany({
+      where: whereClause,
+      include: {
+        event: {
+          select: { id: true, name: true, slug: true }
+        },
+        report: {
+          select: { id: true, title: true, state: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limitNum
+    });
+
+    // Get unread count for the user
+    const unreadCount = await prisma.notification.count({
+      where: { userId: req.user.id, isRead: false }
+    });
+
+    res.json({
+      notifications,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      },
+      unreadCount
+    });
+
+  } catch (err: any) {
+    console.error('Error fetching notifications:', err);
+    res.status(500).json({ error: 'Failed to fetch notifications.' });
+  }
+});
+
+// Mark notification as read
+app.patch('/api/notifications/:notificationId/read', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { notificationId } = req.params;
+
+  try {
+    // Check if notification belongs to user
+    const notification = await prisma.notification.findUnique({
+      where: { id: notificationId }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    if (notification.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to access this notification' });
+    }
+
+    // Mark as read if not already read
+    if (!notification.isRead) {
+      await prisma.notification.update({
+        where: { id: notificationId },
+        data: { 
+          isRead: true,
+          readAt: new Date()
+        }
+      });
+    }
+
+    res.json({ message: 'Notification marked as read' });
+
+  } catch (err: any) {
+    console.error('Error marking notification as read:', err);
+    res.status(500).json({ error: 'Failed to mark notification as read.' });
+  }
+});
+
+// Get notification statistics for user
+app.get('/api/users/me/notifications/stats', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    // Get counts by type and priority
+    const [
+      totalCount,
+      unreadCount,
+      typeCounts,
+      priorityCounts
+    ] = await Promise.all([
+      prisma.notification.count({ where: { userId } }),
+      prisma.notification.count({ where: { userId, isRead: false } }),
+      prisma.notification.groupBy({
+        by: ['type'],
+        where: { userId },
+        _count: { type: true }
+      }),
+      prisma.notification.groupBy({
+        by: ['priority'],
+        where: { userId },
+        _count: { priority: true }
+      })
+    ]);
+
+    const typeStats: any = {};
+    typeCounts.forEach((item: any) => {
+      typeStats[item.type] = item._count.type;
+    });
+
+    const priorityStats: any = {};
+    priorityCounts.forEach((item: any) => {
+      priorityStats[item.priority] = item._count.priority;
+    });
+
+    res.json({
+      total: totalCount,
+      unread: unreadCount,
+      byType: typeStats,
+      byPriority: priorityStats
+    });
+
+  } catch (err: any) {
+    console.error('Error fetching notification stats:', err);
+    res.status(500).json({ error: 'Failed to fetch notification statistics.' });
   }
 });
 
