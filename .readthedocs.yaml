@@ -7,6 +7,8 @@ build:
 
   commands:
     - cd website
+    - pwd
+    - ls -la
     - npm ci
     - npm run build
     - mkdir -p $READTHEDOCS_OUTPUT/html/
