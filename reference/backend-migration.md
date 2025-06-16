@@ -445,18 +445,117 @@ backend/src/
 
 **Test Results**: 156/156 tests passing (100% success rate maintained)
 
-### **Step 2.5: Extract Service Layer** 🏢
+### **Step 2.5: Extract Service Layer** 🏢 🔄 **IN PROGRESS**
 **Goal**: Extract business logic into services
 **Estimated Lines**: ~1,200 lines
 
-**Tasks**:
-- [ ] **AuthService** (~200 lines) - Authentication logic, password validation, rate limiting
-- [ ] **UserService** (~150 lines) - User CRUD, profile management, avatar handling
-- [ ] **EventService** (~200 lines) - Event management, access control, metadata
-- [ ] **ReportService** (~300 lines) - Report workflow, state management, assignments
-- [ ] **NotificationService** (~150 lines) - Notification creation, templates, delivery
-- [ ] **CommentService** (~100 lines) - Comment CRUD, visibility management
-- [ ] **InviteService** (~100 lines) - Invite link management, redemption
+**Implementation Plan**:
+1. **AuthService** (~200 lines) - Extract authentication and password reset logic
+2. **UserService** (~150 lines) - Extract user management and profile operations  
+3. **EventService** (~200 lines) - Extract event CRUD and management operations
+4. **ReportService** (~300 lines) - Extract report workflow and state management
+5. **NotificationService** (~150 lines) - Extract notification creation and management
+6. **CommentService** (~100 lines) - Extract comment CRUD operations
+7. **InviteService** (~100 lines) - Extract invite link management
+
+**Detailed Tasks**:
+
+#### **5.1: AuthService** (~200 lines) ✅ **COMPLETE**
+- [x] Extract user registration logic (POST /register)
+- [x] Extract password reset request logic (POST /auth/forgot-password) 
+- [x] Extract password reset validation (GET /auth/validate-reset-token)
+- [x] Extract password reset execution (POST /auth/reset-password)
+- [x] Extract session management logic (GET /session)
+- [x] Move password validation and rate limiting functions
+- [x] Create AuthService class with proper error handling
+
+**Completed**: Created `src/services/auth.service.ts` with full authentication business logic:
+- AuthService class with 7 public methods
+- Password validation with strength requirements
+- Rate limiting for password reset attempts (in-memory)
+- User registration with automatic SuperAdmin assignment for first user
+- Email availability checking
+- Password reset workflow (request, validate, reset)
+- Session data retrieval with roles and avatar
+- Proper TypeScript interfaces and error handling
+- **Test Results**: 156/156 tests passing (100% success rate maintained)
+
+#### **5.2: UserService** (~150 lines) ✅ **COMPLETE**
+- [x] Extract user profile operations (PATCH /users/me/profile, PATCH /users/me/password)
+- [x] Extract avatar upload/download/delete (POST/GET/DELETE /users/:userId/avatar)
+- [x] Extract user events listing (GET /api/users/me/events)
+- [x] Extract user reports listing (GET /api/users/me/reports)
+- [x] Extract user activity and quick stats (GET /api/users/me/activity, /quickstats)
+- [x] Extract user event leaving (DELETE /users/me/events/:eventId)
+- [x] Create UserService class with proper validation
+
+**Completed**: Created `src/services/user.service.ts` with comprehensive user management:
+- UserService class with 10 public methods
+- Profile management (update profile, change password)
+- User events and reports with role-based access control
+- Avatar management (upload, download, delete with file validation)
+- Quick stats and activity tracking
+- Event membership management (leave events with admin protection)
+- Complex query handling with pagination, filtering, and sorting
+- Proper TypeScript interfaces and error handling
+- **Test Results**: 156/156 tests passing (100% success rate maintained)
+
+#### **5.3: EventService** (~200 lines) ✅ **COMPLETE**
+- [x] Extract event creation (POST /events)
+- [x] Extract event listing (GET /events)
+- [x] Extract event details (GET /events/:eventId)
+- [x] Extract event updates (PUT /events/:eventId, PATCH /events/:eventId/*)
+- [x] Extract event logo operations (POST/GET /events/:eventId/logo)
+- [x] Extract event user management (POST/DELETE /events/:eventId/roles)
+- [x] Extract event settings and metadata operations
+- [x] Create EventService class with access control
+
+**Completed**: Created `src/services/event.service.ts` with comprehensive event management:
+- EventService class with 15 public methods (744 lines)
+- Event CRUD operations (create, list, get by ID)
+- Role assignment and removal with validation
+- User management with pagination, filtering, and sorting
+- Event metadata updates with slug validation
+- Logo upload/download with file handling
+- Complex access control logic (SuperAdmin, Admin, Responder roles)
+- Helper methods for event ID lookup and user role checking
+- Proper TypeScript interfaces and error handling
+- **Test Results**: 156/156 tests passing (100% success rate maintained)
+
+#### **5.4: ReportService** (~300 lines) - **LARGEST SERVICE**
+- [ ] Extract report creation (POST /events/:slug/reports)
+- [ ] Extract report listing (GET /events/:slug/reports)
+- [ ] Extract report details (GET /events/:slug/reports/:reportId)
+- [ ] Extract report updates (PUT /events/:slug/reports/:reportId)
+- [ ] Extract report state management (PATCH /events/:eventId/reports/:reportId/state)
+- [ ] Extract report assignment operations (PATCH /events/:eventId/reports/:reportId/assignment)
+- [ ] Extract evidence file operations (POST/GET /events/:slug/reports/:reportId/evidence)
+- [ ] Extract report title updates (PATCH /events/:slug/reports/:reportId/title)
+- [ ] Create ReportService class with workflow management
+
+#### **5.5: NotificationService** (~150 lines)
+- [ ] Extract notification listing (GET /api/users/me/notifications)
+- [ ] Extract notification read operations (PATCH /api/notifications/:notificationId/read)
+- [ ] Extract bulk read operations (PATCH /api/users/me/notifications/read-all)
+- [ ] Extract notification deletion (DELETE /api/notifications/:notificationId)
+- [ ] Extract notification statistics (GET /api/users/me/notifications/stats)
+- [ ] Move notification creation logic from utils to service
+- [ ] Create NotificationService class with template management
+
+#### **5.6: CommentService** (~100 lines)
+- [ ] Extract comment creation (POST /events/:slug/reports/:reportId/comments)
+- [ ] Extract comment listing (GET /events/:slug/reports/:reportId/comments)
+- [ ] Extract comment updates (PUT /events/:slug/reports/:reportId/comments/:commentId)
+- [ ] Extract comment deletion (DELETE /events/:slug/reports/:reportId/comments/:commentId)
+- [ ] Create CommentService class with visibility management
+
+#### **5.7: InviteService** (~100 lines)
+- [ ] Extract invite creation (POST /events/:eventId/invites)
+- [ ] Extract invite listing (GET /events/:eventId/invites)
+- [ ] Extract invite details (GET /invites/:code)
+- [ ] Extract invite redemption (POST /invites/:code/redeem)
+- [ ] Extract invite management (PUT/DELETE /events/:eventId/invites/:inviteId)
+- [ ] Create InviteService class with expiration handling
 
 **Files to Create**:
 - `src/services/auth.service.ts` - Authentication business logic
@@ -466,6 +565,36 @@ backend/src/
 - `src/services/notification.service.ts` - Notification logic
 - `src/services/comment.service.ts` - Comment management logic
 - `src/services/invite.service.ts` - Invite management logic
+- `src/services/index.ts` - Service aggregation and exports
+
+**Service Architecture Pattern**:
+Each service will follow this structure:
+```typescript
+export class ServiceName {
+  constructor(private prisma: PrismaClient) {}
+  
+  // Public methods for business operations
+  async operation(params): Promise<ServiceResult<T>> {
+    try {
+      // Business logic
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+}
+```
+
+**Progress Tracking**:
+- [x] 5.1: AuthService (7/7 tasks) ✅ **COMPLETE**
+- [x] 5.2: UserService (7/7 tasks) ✅ **COMPLETE**
+- [x] 5.3: EventService (8/8 tasks) ✅ **COMPLETE**
+- [ ] 5.4: ReportService (0/8 tasks) 🔄 **IN PROGRESS** - **LARGEST**
+- [ ] 5.5: NotificationService (0/6 tasks)
+- [ ] 5.6: CommentService (0/4 tasks)
+- [ ] 5.7: InviteService (0/5 tasks)
+
+**Current Status**: AuthService, UserService & EventService complete, starting ReportService - 22/43 service extraction tasks complete
 
 ### **Step 2.6: Extract Controller Layer** 🎮
 **Goal**: Create clean request handlers
