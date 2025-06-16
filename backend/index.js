@@ -14,6 +14,7 @@ const { logAudit } = require("./utils/audit");
 const { requireRole, requireSuperAdmin } = require("./utils/rbac");
 const crypto = require("crypto");
 const { createUploadMiddleware } = require("./utils/upload");
+const { emailService } = require("./utils/email");
 const avatarUpload = createUploadMiddleware({
   allowedMimeTypes: ["image/png", "image/jpeg"],
   maxSizeMB: 2,
@@ -288,6 +289,125 @@ app.get("/session", async (req, res) => {
     });
   } else {
     res.status(401).json({ error: "Not authenticated" });
+  }
+});
+
+// Forgot password - send reset email
+app.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Please enter a valid email address." });
+  }
+  
+  try {
+    const user = await prisma.user.findUnique({ 
+      where: { email: email.toLowerCase() } 
+    });
+    
+    // Always return success to prevent email enumeration
+    // but only send email if user exists
+    if (user) {
+      // Generate secure reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+      
+      // Clean up old tokens for this user
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id }
+      });
+      
+      // Create new reset token
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: resetToken,
+          expiresAt
+        }
+      });
+      
+      // Send password reset email
+      try {
+        await emailService.sendPasswordReset(user.email, user.name, resetToken);
+        console.log(`[Auth] Password reset email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('[Auth] Failed to send reset email:', emailError);
+        // Continue - don't expose email sending errors to user
+      }
+    }
+    
+    // Always return the same response to prevent email enumeration
+    res.json({ 
+      message: "If an account with that email exists, we've sent a password reset link." 
+    });
+  } catch (err) {
+    console.error('[Auth] Forgot password error:', err);
+    res.status(500).json({ error: "Failed to process password reset request." });
+  }
+});
+
+// Reset password with token
+app.post("/auth/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+  
+  if (!token || !password) {
+    return res.status(400).json({ error: "Token and password are required." });
+  }
+  
+  // Validate password strength
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    return res.status(400).json({ 
+      error: "Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character." 
+    });
+  }
+  
+  try {
+    // Find valid token
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true }
+    });
+    
+    if (!resetToken) {
+      return res.status(400).json({ error: "Invalid or expired reset token." });
+    }
+    
+    if (resetToken.used) {
+      return res.status(400).json({ error: "Reset token has already been used." });
+    }
+    
+    if (new Date() > resetToken.expiresAt) {
+      return res.status(400).json({ error: "Reset token has expired." });
+    }
+    
+    // Hash the new password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Update user password and mark token as used
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash }
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true }
+      })
+    ]);
+    
+    console.log(`[Auth] Password reset successful for user ${resetToken.user.email}`);
+    
+    res.json({ message: "Password has been reset successfully. You can now login with your new password." });
+  } catch (err) {
+    console.error('[Auth] Reset password error:', err);
+    res.status(500).json({ error: "Failed to reset password." });
   }
 });
 

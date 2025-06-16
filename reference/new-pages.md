@@ -10,7 +10,7 @@ These pages are foundational and needed for most other features to work properly
   - Terms of service acceptance
   - Links to/from login page
 
-- [ ] **Issue #163**: Implement Password Reset Form Page (`/reset-password`)
+- [x] **Issue #163**: Implement Password Reset Form Page (`/reset-password`)
   - Reset password using token from email
   - Password strength validation
   - Show/hide password toggle
