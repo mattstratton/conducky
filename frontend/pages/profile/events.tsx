@@ -88,8 +88,15 @@ export default function ProfileEvents() {
   // Join event with invite code
   const handleJoinEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteCode.trim()) {
+    const trimmedCode = inviteCode.trim();
+    if (!trimmedCode) {
       setJoinError('Please enter an invite code.');
+      return;
+    }
+
+    // Basic format validation for invite codes
+    if (trimmedCode.length < 3 || !/^[A-Za-z0-9]+$/.test(trimmedCode)) {
+      setJoinError('Please enter a valid invite code format.');
       return;
     }
 
@@ -98,7 +105,7 @@ export default function ProfileEvents() {
     setJoinLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/invites/${inviteCode.trim()}/redeem`, {
+      const response = await fetch(`${apiUrl}/invites/${trimmedCode}/redeem`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -277,7 +284,7 @@ export default function ProfileEvents() {
             ) : events.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <div className="text-muted-foreground mb-2">You haven't joined any events yet</div>
+                <div className="text-muted-foreground mb-2">You haven&apos;t joined any events yet</div>
                 <div className="text-sm text-muted-foreground">
                   Use an invite code above to join your first event
                 </div>
