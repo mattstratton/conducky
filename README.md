@@ -40,12 +40,30 @@ Both the frontend and backend use `.env` files to manage environment variables a
     ```env
     PORT=4000
     DATABASE_URL=postgres://postgres:postgres@db:5432/conducky
-    JWT_SECRET=changeme
+    SESSION_SECRET=changeme
+    FRONTEND_BASE_URL=http://localhost:3001
+    CORS_ORIGIN=http://localhost:3001
+    # Email Configuration
+    EMAIL_PROVIDER=console
+    EMAIL_FROM=noreply@conducky.local
+    EMAIL_REPLY_TO=
+
+    # SMTP Configuration (if EMAIL_PROVIDER=smtp)
+    SMTP_HOST=
+    SMTP_PORT=587
+    SMTP_SECURE=false
+    SMTP_USER=
+    SMTP_PASS=
+
+    # SendGrid Configuration (if EMAIL_PROVIDER=sendgrid)
+    SENDGRID_API_KEY=
+
     ```
 - **Frontend:**
   - `frontend/.env` (example):
     ```env
     NEXT_PUBLIC_API_URL=http://localhost:4000
+    BACKEND_API_URL=http://localhost:4000
     ```
 
 ### Overriding Variables
