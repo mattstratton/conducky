@@ -17,6 +17,17 @@ This document describes all API endpoints provided by the backend Express server
 - **Body:** `{ email, password, name }`
 - **Response:** `{ message, user, madeSuperAdmin }`
 
+### Register with Invite
+
+- **POST** `/register/invite/:inviteCode`
+- **Description:** Register a new user using an invite code. Automatically assigns the role specified in the invite.
+- **Body:** `{ email, password, name }`
+- **Response:** `{ message, user }`
+- **Notes:**
+  - Validates the invite code and checks if it's not disabled or expired
+  - Automatically assigns the user to the event with the role specified in the invite
+  - Increments the invite's use count
+
 ### Login
 
 - **POST** `/login`
@@ -35,6 +46,30 @@ This document describes all API endpoints provided by the backend Express server
 - **GET** `/session`
 - **Description:** Get current session user and roles.
 - **Response:** `{ user: { id, email, name, roles } }` or 401 if not authenticated
+
+### Check Email Availability
+
+- **GET** `/auth/check-email`
+- **Description:** Check if an email address is available for registration.
+- **Query Parameters:** `email` (required)
+- **Response:** `{ available: boolean }`
+
+### Password Reset
+
+- **POST** `/auth/forgot-password`
+- **Description:** Request a password reset token via email.
+- **Body:** `{ email }`
+- **Response:** `{ message }`
+
+- **POST** `/auth/reset-password`
+- **Description:** Reset password using a valid token.
+- **Body:** `{ token, newPassword }`
+- **Response:** `{ message }`
+
+- **GET** `/auth/validate-reset-token`
+- **Description:** Validate a password reset token.
+- **Query Parameters:** `token` (required)
+- **Response:** `{ valid: boolean, email?: string }`
 
 ---
 
@@ -66,6 +101,13 @@ This document describes all API endpoints provided by the backend Express server
 - **Response:** `{ event }`
 - **Note:** This endpoint uses the singular "event" path for backward compatibility. Frontend pages use `/events/[eventSlug]/` URLs but call this API endpoint.
 
+### Get User Roles for Event
+
+- **GET** `/events/slug/:slug/my-roles`
+- **Description:** Get the authenticated user's roles for a specific event.
+- **Authentication:** Required
+- **Response:** `{ roles: [...] }`
+
 ### List Users for Event (by Slug)
 
 - **GET** `/events/slug/:slug/users`
@@ -86,13 +128,13 @@ This document describes all API endpoints provided by the backend Express server
 
 - **PATCH** `/events/slug/:slug`
 - **Role:** SuperAdmin only
-- **Body:** `{ name, newSlug }` (at least one required)
+- **Body:** `{ name, newSlug, description, logo, startDate, endDate, website, codeOfConduct, contactEmail }` (at least one required)
 - **Response:** `{ event }`
 - **Notes:**
-  - Updates the event's name and/or slug.
+  - Updates the event's metadata fields.
   - If `newSlug` is provided and already exists, returns 409 error.
   - Returns 404 if event not found.
-  - Returns 400 if neither field is provided.
+  - Returns 400 if no fields are provided for update.
 
 ### Upload Event Logo
 
@@ -188,6 +230,46 @@ This document describes all API endpoints provided by the backend Express server
 
 ---
 
+## Profile Management
+
+### Update Profile
+
+- **PATCH** `/users/me/profile`
+- **Description:** Update the authenticated user's profile information.
+- **Authentication:** Required
+- **Body:** `{ name, email }` (at least one required)
+- **Response:** `{ message, user }`
+- **Notes:**
+  - Email must be unique if provided
+  - Returns 400 if email is already taken by another user
+
+### Change Password
+
+- **PATCH** `/users/me/password`
+- **Description:** Change the authenticated user's password.
+- **Authentication:** Required
+- **Body:** `{ currentPassword, newPassword }`
+- **Response:** `{ message }`
+- **Notes:**
+  - Validates current password before allowing change
+  - Returns 400 if current password is incorrect
+
+### Get User Events
+
+- **GET** `/api/users/me/events`
+- **Description:** Get all events the authenticated user has access to with their roles.
+- **Authentication:** Required
+- **Response:** `{ events: [...] }`
+
+### Leave Event
+
+- **DELETE** `/users/me/events/:eventId`
+- **Description:** Remove the authenticated user from an event (leave event).
+- **Authentication:** Required
+- **Response:** `{ message }`
+
+---
+
 ## Reports
 
 ### Cross-Event Reports
@@ -239,34 +321,37 @@ This document describes all API endpoints provided by the backend Express server
   - `parties` can be a comma-separated or freeform list of involved parties.
   - Each evidence file is associated with the uploader (if authenticated).
 
-### Edit Report Title (by Event Slug)
+### Submit Report (by Event Slug)
 
-- **PATCH** `/events/slug/:slug/reports/:reportId/title`
-- **Description:** Edit the title of a report. Only the reporter or an event admin can edit the title.
-- **Body:** `{ title }` (string, required, 10–70 chars)
+- **POST** `/events/slug/:slug/reports`
+- **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
+- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
 - **Response:** `{ report }`
 - **Notes:**
-  - Returns 403 if the user is not authorized to edit the title.
-  - Returns 400 if the title is missing or invalid.
+  - Same functionality as the event ID version but uses event slug
+  - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
+  - Each evidence file is associated with the uploader (if authenticated).
 
 ### List Reports (by Event ID)
 
 - **GET** `/events/:eventId/reports`
 - **Response:** `{ reports }`
 
+### List Reports (by Event Slug)
+
+- **GET** `/events/slug/:slug/reports`
+- **Description:** List all reports for an event by slug with optional filtering.
+- **Query Parameters:**
+  - `userId` (string, optional): Filter reports by specific user ID
+- **Response:** `{ reports }`
+- **Notes:**
+  - Returns reports ordered by creation date (newest first)
+  - Includes full report details with reporter, assignedResponder, and evidenceFiles
+
 ### Get Report by ID
 
 - **GET** `/events/:eventId/reports/:reportId`
 - **Response:** `{ report }`
-
-### Change Report State
-
-- **PATCH** `/events/:eventId/reports/:reportId/state`
-- **Role:** Responder, Admin, or SuperAdmin
-- **Body:** `{ state }`
-- **Response:** `{ report }`
-
-#### Slug-based versions of the above also exist (replace `:eventId` with `slug/:slug`)
 
 ### Get Report by Slug (with Access Control)
 
@@ -280,6 +365,35 @@ This document describes all API endpoints provided by the backend Express server
   - 401 if not authenticated
   - 403 if authenticated but not authorized (not the reporter or event responder/admin)
   - 404 if the report or event does not exist
+- **Response:** `{ report }`
+
+### Update Report
+
+- **PATCH** `/events/slug/:slug/reports/:reportId`
+- **Description:** Update report assignment, severity, resolution, or state.
+- **Role:** Responder, Admin, or SuperAdmin for the event
+- **Body:** `{ assignedResponderId, severity, resolution, state }` (at least one required)
+- **Response:** `{ report }`
+- **Notes:**
+  - Creates notifications when reports are assigned
+  - Only responders/admins can update reports
+  - Returns 400 if no fields provided for update
+
+### Edit Report Title (by Event Slug)
+
+- **PATCH** `/events/slug/:slug/reports/:reportId/title`
+- **Description:** Edit the title of a report. Only the reporter or an event admin can edit the title.
+- **Body:** `{ title }` (string, required, 10–70 chars)
+- **Response:** `{ report }`
+- **Notes:**
+  - Returns 403 if the user is not authorized to edit the title.
+  - Returns 400 if the title is missing or invalid.
+
+### Change Report State
+
+- **PATCH** `/events/:eventId/reports/:reportId/state`
+- **Role:** Responder, Admin, or SuperAdmin
+- **Body:** `{ state }`
 - **Response:** `{ report }`
 
 ### List Evidence Files for a Report
@@ -303,14 +417,139 @@ This document describes all API endpoints provided by the backend Express server
 - **Access Control:** Reporter, responder, or admin for the event associated with the report.
 - **Response:** Binary file data with correct content-type and filename.
 
-### Submit Report (by Event Slug)
+### Delete Evidence File
 
-- **POST** `/events/slug/:slug/reports`
-- **Description:** Submit a report (anonymous or authenticated). Supports multiple file uploads (`evidence[]`).
-- **Body:** `type`, `description`, `evidence[]` (multipart/form-data, zero or more files), `incidentAt` (optional, ISO date string), `parties` (optional, string)
-- **Response:** `{ report }`
+- **DELETE** `/evidence/:evidenceId`
+- **Description:** Delete a specific evidence file by its ID.
+- **Access Control:** Reporter, responder, or admin for the event associated with the report.
+- **Response:** `{ message }`
+
+---
+
+## Invite Management
+
+### Get Invite Details
+
+- **GET** `/invites/:code`
+- **Description:** Get invite details and associated event information by invite code.
+- **Response:** `{ invite, event }`
 - **Notes:**
-  - You can upload multiple evidence files at report creation. Each file is stored and linked to the report.
-  - Each evidence file is associated with the uploader (if authenticated).
+  - Returns 404 if invite not found
+  - Public endpoint for validating invite codes
 
-### Report Comments (by Event ID)
+### List Event Invites
+
+- **GET** `/events/slug/:slug/invites`
+- **Role:** Admin or SuperAdmin for the event
+- **Description:** List all invite links for an event.
+- **Response:** `{ invites }`
+
+### Create Event Invite
+
+- **POST** `/events/slug/:slug/invites`
+- **Role:** Admin or SuperAdmin for the event
+- **Description:** Create a new invite link for an event.
+- **Body:** `{ roleId, expiresAt?, maxUses?, note? }`
+- **Response:** `{ invite }`
+
+### Update Event Invite
+
+- **PATCH** `/events/slug/:slug/invites/:inviteId`
+- **Role:** Admin or SuperAdmin for the event
+- **Description:** Update an existing invite link (enable/disable, change limits, etc.).
+- **Body:** `{ disabled?, expiresAt?, maxUses?, note? }`
+- **Response:** `{ invite }`
+
+### Redeem Invite
+
+- **POST** `/invites/:code/redeem`
+- **Description:** Redeem an invite code (for already registered users).
+- **Authentication:** Required
+- **Response:** `{ message }`
+- **Notes:**
+  - Adds the authenticated user to the event with the invite's specified role
+  - Increments the invite's use count
+
+---
+
+## Dashboard & Analytics
+
+### Quick Stats
+
+- **GET** `/api/users/me/quickstats`
+- **Description:** Get quick statistics for the authenticated user's dashboard.
+- **Authentication:** Required
+- **Response:** `{ totalReports, totalEvents, unreadNotifications, recentActivity }`
+
+### Activity Feed
+
+- **GET** `/api/users/me/activity`
+- **Description:** Get recent activity feed for the authenticated user.
+- **Authentication:** Required
+- **Query Parameters:**
+  - `limit` (integer, optional): Number of activities to return (default: 10, max: 50)
+- **Response:** `{ activities: [...] }`
+
+---
+
+## Notifications
+
+### Get Notifications
+
+- **GET** `/api/users/me/notifications`
+- **Description:** Get notifications for the authenticated user with filtering and pagination.
+- **Authentication:** Required
+- **Query Parameters:**
+  - `page` (integer, optional): Page number (default: 1)
+  - `limit` (integer, optional): Items per page (default: 20, max: 100)
+  - `unreadOnly` (boolean, optional): Show only unread notifications
+  - `type` (string, optional): Filter by notification type
+- **Response:** `{ notifications: [...], pagination: { page, limit, total, totalPages } }`
+
+### Mark Notification as Read
+
+- **PATCH** `/api/notifications/:notificationId/read`
+- **Description:** Mark a specific notification as read.
+- **Authentication:** Required
+- **Response:** `{ message }`
+
+### Get Notification Stats
+
+- **GET** `/api/users/me/notifications/stats`
+- **Description:** Get notification statistics for the authenticated user.
+- **Authentication:** Required
+- **Response:** `{ total, unread, byType: {...}, byPriority: {...} }`
+
+---
+
+## Testing & Development
+
+### Create Test Notification
+
+- **POST** `/api/test/create-notification`
+- **Description:** Create a test notification (development only).
+- **Body:** `{ userId, type, title, message, priority?, eventId?, reportId? }`
+- **Response:** `{ notification }`
+
+### Health Check
+
+- **GET** `/health`
+- **Description:** Basic health check endpoint.
+- **Response:** `{ status: 'ok', timestamp }`
+
+### Audit Test
+
+- **GET** `/audit-test`
+- **Description:** Test audit logging functionality.
+- **Response:** `{ message, auditLog }`
+
+---
+
+## Notes
+
+- All endpoints require proper authentication unless marked as public
+- Role-based access control is enforced at the API level
+- File uploads use multipart/form-data encoding
+- All timestamps are in ISO 8601 format
+- Error responses follow consistent format: `{ error: 'message', details?: 'additional info' }`
+- Pagination follows the pattern: `{ page, limit, total, totalPages }`
