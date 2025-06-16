@@ -7,9 +7,9 @@ build:
 
   commands:
     - cd website
-    - pwd
-    - ls -la
-    - npm ci
-    - npm run build
-    - mkdir -p $READTHEDOCS_OUTPUT/html/
-    - cp -r build/* $READTHEDOCS_OUTPUT/html/
+    - cd website && pwd
+    - cd website && ls -la
+    - cd website && npm ci
+    - cd website && npm run build
+    - cd website && mkdir -p $READTHEDOCS_OUTPUT/html/
+    - cd website && cp -r build/* $READTHEDOCS_OUTPUT/html/
