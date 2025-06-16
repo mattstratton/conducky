@@ -93,7 +93,7 @@ describe("Password Reset Integration Tests", () => {
           id: "token1",
           userId: "1",
           token: validToken,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
           used: false,
           createdAt: new Date(),
           user: { id: "1", email: "test@example.com", name: "Test User" }
@@ -162,7 +162,7 @@ describe("Password Reset Integration Tests", () => {
           id: "token2",
           userId: "1",
           token: expiredToken,
-          expiresAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+          expiresAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
           used: false,
           createdAt: new Date(),
           user: { id: "1", email: "test@example.com", name: "Test User" }
@@ -187,7 +187,7 @@ describe("Password Reset Integration Tests", () => {
           id: "token3",
           userId: "1",
           token: usedToken,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
           used: true,
           createdAt: new Date(),
           user: { id: "1", email: "test@example.com", name: "Test User" }
@@ -224,7 +224,7 @@ describe("Password Reset Integration Tests", () => {
           id: `token-${i}`,
           userId: "1",
           token: uniqueToken,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
           used: false,
           createdAt: new Date(),
           user: { id: "1", email: "test@example.com", name: "Test User" }
@@ -262,7 +262,7 @@ describe("Password Reset Integration Tests", () => {
           id: `weak-token-${i}`,
           userId: "1",
           token: uniqueToken,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
           used: false,
           createdAt: new Date(),
           user: { id: "1", email: "test@example.com", name: "Test User" }
@@ -278,6 +278,135 @@ describe("Password Reset Integration Tests", () => {
         expect(res.statusCode).toBe(400);
         expect(res.body.error).toContain("Password must meet all security requirements");
       }
+    });
+  });
+
+  describe("GET /auth/validate-reset-token", () => {
+    let validToken;
+
+    beforeEach(() => {
+      validToken = "valid-token-for-validation";
+      inMemoryStore.passwordResetTokens = [
+        {
+          id: "validation-token",
+          userId: "1",
+          token: validToken,
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
+          used: false,
+          createdAt: new Date(),
+          user: { id: "1", email: "test@example.com", name: "Test User" }
+        }
+      ];
+    });
+
+    it("should validate a valid token", async () => {
+      const res = await request(app)
+        .get(`/auth/validate-reset-token?token=${validToken}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.valid).toBe(true);
+      expect(res.body.email).toBe("test@example.com");
+      expect(res.body.expiresAt).toBeDefined();
+    });
+
+    it("should reject invalid token", async () => {
+      const res = await request(app)
+        .get("/auth/validate-reset-token?token=invalid-token");
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.valid).toBe(false);
+      expect(res.body.error).toBe("Invalid reset token.");
+    });
+
+    it("should reject used token", async () => {
+      const usedToken = "used-validation-token";
+      inMemoryStore.passwordResetTokens = [
+        {
+          id: "used-validation-token",
+          userId: "1",
+          token: usedToken,
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+          used: true,
+          createdAt: new Date(),
+          user: { id: "1", email: "test@example.com", name: "Test User" }
+        }
+      ];
+
+      const res = await request(app)
+        .get(`/auth/validate-reset-token?token=${usedToken}`);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.valid).toBe(false);
+      expect(res.body.error).toBe("Reset token has already been used.");
+    });
+
+    it("should reject expired token", async () => {
+      const expiredToken = "expired-validation-token";
+      inMemoryStore.passwordResetTokens = [
+        {
+          id: "expired-validation-token",
+          userId: "1",
+          token: expiredToken,
+          expiresAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+          used: false,
+          createdAt: new Date(),
+          user: { id: "1", email: "test@example.com", name: "Test User" }
+        }
+      ];
+
+      const res = await request(app)
+        .get(`/auth/validate-reset-token?token=${expiredToken}`);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.valid).toBe(false);
+      expect(res.body.error).toBe("Reset token has expired.");
+    });
+
+    it("should require token parameter", async () => {
+      const res = await request(app)
+        .get("/auth/validate-reset-token");
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe("Token is required.");
+    });
+  });
+
+  describe("Rate Limiting", () => {
+    beforeEach(() => {
+      // Clear rate limiting state between tests
+      // Note: In a real implementation, you'd want to clear the rate limiting store
+      inMemoryStore.users = [
+        { id: "1", email: "ratelimit@example.com", name: "Rate Test", passwordHash: "hashedpassword" }
+      ];
+    });
+
+    it("should allow first 3 attempts", async () => {
+      for (let i = 0; i < 3; i++) {
+        const res = await request(app)
+          .post("/auth/forgot-password")
+          .send({ email: "ratelimit@example.com" });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toContain("we've sent a password reset link");
+      }
+    });
+
+    it("should block 4th attempt with rate limit error", async () => {
+      // Make 3 successful attempts
+      for (let i = 0; i < 3; i++) {
+        await request(app)
+          .post("/auth/forgot-password")
+          .send({ email: "ratelimit@example.com" });
+      }
+
+      // 4th attempt should be blocked
+      const res = await request(app)
+        .post("/auth/forgot-password")
+        .send({ email: "ratelimit@example.com" });
+
+      expect(res.statusCode).toBe(429);
+      expect(res.body.error).toContain("Too many password reset attempts");
+      expect(res.body.error).toContain("minutes");
     });
   });
 }); 

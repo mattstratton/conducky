@@ -50,6 +50,12 @@ export default function ResetPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [tokenValidation, setTokenValidation] = useState<{
+    isValidating: boolean;
+    isValid: boolean;
+    email?: string;
+    error?: string;
+  }>({ isValidating: false, isValid: false });
 
   useEffect(() => {
     // Get token from URL query parameter
@@ -57,6 +63,50 @@ export default function ResetPasswordPage() {
       setToken(router.query.token as string);
     }
   }, [router.query.token]);
+
+  useEffect(() => {
+    // Validate token when it's available
+    if (token && router.isReady) {
+      validateToken(token);
+    }
+  }, [token, router.isReady]);
+
+  const validateToken = async (tokenToValidate: string) => {
+    setTokenValidation({ isValidating: true, isValid: false });
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/validate-reset-token?token=${encodeURIComponent(tokenToValidate)}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setTokenValidation({
+          isValidating: false,
+          isValid: true,
+          email: data.email,
+        });
+      } else {
+        setTokenValidation({
+          isValidating: false,
+          isValid: false,
+          error: data.error || 'Invalid reset token',
+        });
+      }
+    } catch (err) {
+      console.error('Token validation error:', err);
+      setTokenValidation({
+        isValidating: false,
+        isValid: false,
+        error: 'Failed to validate reset token',
+      });
+    }
+  };
 
   useEffect(() => {
     // Calculate password strength
@@ -171,14 +221,35 @@ export default function ResetPasswordPage() {
     );
   }
 
-  if (!token && router.isReady) {
+  // Show loading state while validating token
+  if (tokenValidation.isValidating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Validating Reset Link</CardTitle>
+            <CardDescription>
+              Please wait while we verify your reset token...
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error if token is invalid or missing
+  if ((!token && router.isReady) || (tokenValidation.isValid === false && !tokenValidation.isValidating)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
             <CardDescription>
-              This password reset link is invalid or has expired
+              {tokenValidation.error || 'This password reset link is invalid or has expired'}
             </CardDescription>
           </CardHeader>
           
@@ -213,7 +284,11 @@ export default function ResetPasswordPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Reset Your Password</CardTitle>
           <CardDescription>
-            Enter your new password below
+            {tokenValidation.email ? (
+              <>Resetting password for <strong>{tokenValidation.email}</strong></>
+            ) : (
+              'Enter your new password below'
+            )}
           </CardDescription>
         </CardHeader>
         

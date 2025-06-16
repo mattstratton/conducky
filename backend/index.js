@@ -292,6 +292,35 @@ app.get("/session", async (req, res) => {
   }
 });
 
+// Rate limiting for password reset attempts
+const resetAttempts = new Map(); // In production, use Redis or database
+const RESET_RATE_LIMIT = 3; // Max attempts per window
+const RESET_RATE_WINDOW = 15 * 60 * 1000; // 15 minutes
+
+function checkResetRateLimit(email) {
+  const now = Date.now();
+  const attempts = resetAttempts.get(email) || { count: 0, firstAttempt: now };
+  
+  // Reset window if enough time has passed
+  if (now - attempts.firstAttempt > RESET_RATE_WINDOW) {
+    attempts.count = 0;
+    attempts.firstAttempt = now;
+  }
+  
+  if (attempts.count >= RESET_RATE_LIMIT) {
+    return {
+      allowed: false,
+      timeRemaining: RESET_RATE_WINDOW - (now - attempts.firstAttempt)
+    };
+  }
+  
+  // Increment attempt count
+  attempts.count++;
+  resetAttempts.set(email, attempts);
+  
+  return { allowed: true };
+}
+
 // Forgot password - send reset email
 app.post("/auth/forgot-password", async (req, res) => {
   const { email } = req.body;
@@ -306,6 +335,15 @@ app.post("/auth/forgot-password", async (req, res) => {
     return res.status(400).json({ error: "Please enter a valid email address." });
   }
   
+  // Check rate limiting
+  const rateCheck = checkResetRateLimit(email.toLowerCase());
+  if (!rateCheck.allowed) {
+    const minutesRemaining = Math.ceil(rateCheck.timeRemaining / (60 * 1000));
+    return res.status(429).json({ 
+      error: `Too many password reset attempts. Please try again in ${minutesRemaining} minutes.` 
+    });
+  }
+  
   try {
     const user = await prisma.user.findUnique({ 
       where: { email: email.toLowerCase() } 
@@ -316,7 +354,7 @@ app.post("/auth/forgot-password", async (req, res) => {
     if (user) {
       // Generate secure reset token
       const resetToken = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
       
       // Clean up old tokens for this user
       await prisma.passwordResetToken.deleteMany({
@@ -408,6 +446,54 @@ app.post("/auth/reset-password", async (req, res) => {
   } catch (err) {
     console.error('[Auth] Reset password error:', err);
     res.status(500).json({ error: "Failed to reset password." });
+  }
+});
+
+// Validate reset token
+app.get("/auth/validate-reset-token", async (req, res) => {
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.status(400).json({ error: "Token is required." });
+  }
+  
+  try {
+    // Find the token
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: { select: { email: true } } }
+    });
+    
+    if (!resetToken) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Invalid reset token." 
+      });
+    }
+    
+    if (resetToken.used) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Reset token has already been used." 
+      });
+    }
+    
+    if (new Date() > resetToken.expiresAt) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Reset token has expired." 
+      });
+    }
+    
+    // Token is valid
+    res.json({ 
+      valid: true, 
+      email: resetToken.user.email,
+      expiresAt: resetToken.expiresAt
+    });
+  } catch (err) {
+    console.error('[Auth] Validate reset token error:', err);
+    res.status(500).json({ error: "Failed to validate reset token." });
   }
 });
 
