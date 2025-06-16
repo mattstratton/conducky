@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
   Settings2,
+  Users,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/router"
@@ -137,6 +138,12 @@ export function NavUser({
                 <Link href="/profile/settings">
                   <Settings2 />
                   Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/profile/events">
+                  <Users />
+                  My Events
                 </Link>
               </DropdownMenuItem>
               {isSuperAdmin && (
