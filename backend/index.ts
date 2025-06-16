@@ -1,6 +1,10 @@
 // Load environment variables first, especially for test environment
 if (process.env.NODE_ENV === 'test') {
-  require('dotenv').config({ path: '.env.test', override: true });
+  try {
+    require('dotenv').config({ path: '.env.test', override: true });
+  } catch (error) {
+    console.warn('Failed to load .env.test file:', error);
+  }
 }
 
 import express from 'express';
@@ -341,6 +345,11 @@ app.get("/auth/check-email", async (req: any, res: any) => {
 const resetAttempts = new Map();
 
 function checkResetRateLimit(email: string) {
+  // TODO: Replace with database or Redis-backed rate limiting for production
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('Using in-memory rate limiting - not suitable for production clusters');
+  }
+  
   const now = Date.now();
   const attempts = resetAttempts.get(email) || [];
   

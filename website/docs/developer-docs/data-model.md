@@ -111,13 +111,13 @@ This document describes the main data models used in the system, based on the Pr
 - **id**: UUID, primary key
 - **eventId**: Event reference
 - **code**: Unique invite code
-- **createdByUserId**: User who created the invite
+- **createdByUserId**: User who created the invite (string, UUID)
 - **roleId**: Role reference (role to assign when invite is redeemed)
 - **createdAt**: Timestamp
 - **expiresAt**: Optional expiration
 - **maxUses**: Optional max uses
-- **useCount**: Number of times used
-- **disabled**: Boolean
+- **useCount**: Number of times used (default: 0)
+- **disabled**: Boolean (default: false)
 - **note**: Optional note
 - **Relations**: event, role
 

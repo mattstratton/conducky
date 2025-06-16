@@ -11,7 +11,7 @@ interface EmailConfig {
     host: string;
     port: number;
     secure: boolean;
-    auth: {
+    auth?: {
       user?: string;
       pass?: string;
     };
@@ -76,22 +76,23 @@ export class EmailService {
 
     switch (provider.toLowerCase()) {
       case 'smtp':
-        const smtpAuth: { user?: string; pass?: string } = {};
-        if (process.env.SMTP_USER) smtpAuth.user = process.env.SMTP_USER;
-        if (process.env.SMTP_PASS) smtpAuth.pass = process.env.SMTP_PASS;
+        const smtpAuth: { user?: string; pass?: string } | undefined = 
+          process.env.SMTP_USER && process.env.SMTP_PASS
+            ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+            : undefined;
         
         config.smtp = {
           host: process.env.SMTP_HOST || 'localhost',
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-          auth: smtpAuth,
+          ...(smtpAuth && { auth: smtpAuth }),
         };
         break;
 
       case 'sendgrid':
-        const sendgridConfig: { apiKey?: string } = {};
-        if (process.env.SENDGRID_API_KEY) sendgridConfig.apiKey = process.env.SENDGRID_API_KEY;
-        config.sendgrid = sendgridConfig;
+        if (process.env.SENDGRID_API_KEY) {
+          config.sendgrid = { apiKey: process.env.SENDGRID_API_KEY };
+        }
         break;
 
       case 'console':
