@@ -3,8 +3,13 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 // Detect if running in Read the Docs
 const isReadTheDocs = process.env.READTHEDOCS === 'True';
+
+// Get raw canonical URL from RTD, or fallback
+const rawRtdUrl = process.env.READTHEDOCS_CANONICAL_URL || 'https://conducky.readthedocs.io';
+
+// Docusaurus requires a bare domain (no subpath), so we strip anything after the domain
 const canonicalUrl = isReadTheDocs
-  ? process.env.READTHEDOCS_CANONICAL_URL || 'https://conducky.readthedocs.io'
+  ? rawRtdUrl.replace(/\/(en|fr|es|pt|de|zh)(\/[^/]+)?\/?$/, '')
   : 'https://conducky.com/';
 
 /** @type {import('@docusaurus/types').Config} */
@@ -36,8 +41,7 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
           routeBasePath: '/',
-          editUrl:
-            'https://github.com/mattstratton/conducky/tree/main/website/',
+          editUrl: 'https://github.com/mattstratton/conducky/tree/main/website/',
         },
         blog: false,
         theme: {
