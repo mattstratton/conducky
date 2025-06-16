@@ -1471,6 +1471,83 @@ app.patch('/events/slug/:slug', async (req: any, res: any) => {
   }
 });
 
+// GET: Get invite details and event info by invite code
+app.get('/invites/:code', async (req: any, res: any) => {
+  const { code } = req.params;
+  try {
+    const invite = await prisma.eventInviteLink.findUnique({ where: { code } });
+    if (!invite) return res.status(404).json({ error: 'Invite not found.' });
+    const event = await prisma.event.findUnique({
+      where: { id: invite.eventId },
+    });
+    if (!event) return res.status(404).json({ error: 'Event not found.' });
+    res.json({ invite, event });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch invite details.', details: err.message });
+  }
+});
+
+// Redeem an invite link (register with invite)
+app.post('/register/invite/:inviteCode', async (req: any, res: any) => {
+  const { inviteCode } = req.params;
+  const { email, password, name } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  try {
+    const invite = await prisma.eventInviteLink.findUnique({
+      where: { code: inviteCode },
+    });
+    if (!invite || invite.disabled) {
+      return res.status(400).json({ error: 'Invalid or disabled invite link.' });
+    }
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return res.status(400).json({ error: 'Invite link has expired.' });
+    }
+    if (invite.maxUses && invite.useCount >= invite.maxUses) {
+      return res.status(400).json({ error: 'Invite link has reached its maximum uses.' });
+    }
+    // Check if user already exists
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ error: 'Email already registered.' });
+    }
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.' 
+      });
+    }
+    
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { email, passwordHash, name },
+    });
+    // Assign role for the event from invite
+    const roleId = invite.roleId;
+    await prisma.userEventRole.create({
+      data: {
+        userId: user.id,
+        eventId: invite.eventId,
+        roleId,
+      },
+    });
+    // Increment useCount
+    await prisma.eventInviteLink.update({
+      where: { code: inviteCode },
+      data: { useCount: { increment: 1 } },
+    });
+    res.status(201).json({
+      message: 'Registration successful!',
+      user: { id: user.id, email: user.email, name: user.name },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to register with invite.', details: err.message });
+  }
+});
+
 // User avatar endpoints
 app.post('/users/:userId/avatar', async (req: any, res: any) => {
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || req.user.id !== req.params.userId) {
