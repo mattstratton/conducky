@@ -446,3 +446,72 @@ For questions or improvements, see the project README or contact the maintainers
 - Test dashboard widgets load and display correct data.
 - Test loading and error states.
 - Automated: Add tests for data fetching and rendering.
+
+### Cross-Event Reports Dashboard
+- Test reports load from multiple events based on user roles.
+- Test filtering by status, event, assignment, and search terms.
+- Test pagination controls and navigation.
+- Test responsive design (table on desktop, cards on mobile).
+- Test role-based access control (reporters see only their reports, responders/admins see appropriate reports).
+- Test empty states when no reports match filters.
+- Test error handling for API failures.
+- Automated: See `backend/tests/integration/cross-event-reports.test.js` for comprehensive API testing.
+
+## Backend Integration Tests
+
+### Cross-Event Reports API (`/api/users/me/reports`)
+
+The cross-event reports endpoint has comprehensive test coverage in `backend/tests/integration/cross-event-reports.test.js`:
+
+#### Test Coverage (15 tests total)
+- **Authentication**: Requires valid authentication (401 for unauthenticated requests)
+- **Role-Based Access Control**: 
+  - Reporters see only their own reports across all events
+  - Responders see all reports in their events plus own reports in other events
+  - Admins see all reports in their events plus role-appropriate reports elsewhere
+- **Filtering**: 
+  - Status filtering (submitted, acknowledged, investigating, resolved, closed)
+  - Event filtering by specific event ID
+  - Assignment filtering (assigned to me, unassigned, assigned to others)
+  - Search functionality across titles, descriptions, and reporter names
+- **Pagination**: 
+  - Validation of page and limit parameters
+  - Error handling for invalid pagination values (negative numbers, excessive limits)
+  - Proper pagination response structure
+- **Sorting**: 
+  - Sort by title, creation date, and status
+  - Ascending and descending order
+- **Data Integrity**:
+  - Includes complete report data with related information
+  - Proper event, reporter, and assignee data population
+  - Evidence file and comment counts
+
+#### Running the Tests
+```bash
+# Run only cross-event reports tests
+cd backend && npm test -- --testPathPattern=cross-event-reports.test.js
+
+# Run with verbose output
+cd backend && npm test -- --testPathPattern=cross-event-reports.test.js --verbose
+
+# Run all backend tests
+cd backend && npm test
+```
+
+#### Test Data Setup
+The tests use a comprehensive mock data setup including:
+- Multiple users with different roles across events
+- Multiple events with various configurations
+- Sample reports with different statuses and assignments
+- Proper role assignments for testing access control
+
+#### Key Test Scenarios
+1. **Basic Functionality**: Authenticated users can access the endpoint
+2. **Role Isolation**: Users only see reports they have permission to access
+3. **Cross-Event Access**: Users with multiple event roles see appropriate reports from each
+4. **Advanced Filtering**: All filter combinations work correctly
+5. **Pagination Edge Cases**: Proper validation and error handling
+6. **Search Functionality**: Text search across multiple fields
+7. **Data Completeness**: All required related data is included in responses
+
+The test suite ensures the cross-event reports feature maintains proper security, performance, and functionality across all supported use cases.

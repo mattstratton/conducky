@@ -33,11 +33,13 @@ These pages are foundational and needed for most other features to work properly
 These provide cross-event functionality for users with multiple event memberships.
 
 ### Global Dashboard
-- [ ] **Issue #165**: Implement Cross-Event Reports Dashboard (`/dashboard/reports`)
+- [X] **Issue #165**: Implement Cross-Event Reports Dashboard (`/dashboard/reports`) ✅ **COMPLETE**
   - View reports across all accessible events
   - Role-based filtering and permissions
   - Search, filter, and pagination
-  - Quick actions and export functionality
+  - Quick actions (assign to me, status changes)
+  - Mobile-responsive design with table/card views
+  - Comprehensive testing with 15 integration tests
 
 - [ ] **Issue #167**: Implement Notification Center (`/dashboard/notifications`)
   - Centralized notifications across events
@@ -54,6 +56,7 @@ These enhance the event-scoped functionality with better forms and team manageme
   - Multiple file upload support
   - Auto-save draft functionality
   - Event-specific field customization
+  - Note that we have a component that can be used here (might need updating) which is `components/ReportForm.tsx`
 
 ### Event Team Management
 - [ ] **Issue #169**: Implement Event Team Management Page (`/events/[eventSlug]/team/index`)
