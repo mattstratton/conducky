@@ -2353,8 +2353,6 @@ if (require.main === module) {
   });
 }
 
-module.exports = app;
-
 // PATCH endpoint to edit report title (eventId-based)
 app.patch(
   "/events/:eventId/reports/:reportId/title",
@@ -3075,3 +3073,408 @@ app.post("/invites/:code/redeem", async (req, res) => {
     res.status(500).json({ error: "Failed to join event.", details: err.message });
   }
 });
+
+// ============================================================================
+// NOTIFICATION ENDPOINTS
+// ============================================================================
+
+// Get user's notifications with pagination and filtering
+app.get("/api/users/me/notifications", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      unreadOnly = false,
+      type,
+      priority
+    } = req.query;
+
+    // Validate and parse pagination
+    const pageNum = parseInt(page);
+    const limitNum = Math.min(parseInt(limit), 100); // Max 100 per page
+    
+    if (pageNum < 1 || limitNum < 1) {
+      return res.status(400).json({ error: "Invalid pagination parameters" });
+    }
+
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause
+    const whereClause = { userId: req.user.id };
+    
+    if (unreadOnly === 'true') {
+      whereClause.isRead = false;
+    }
+    
+    if (type) {
+      whereClause.type = type;
+    }
+    
+    if (priority) {
+      whereClause.priority = priority;
+    }
+
+    // Get total count
+    const total = await prisma.notification.count({ where: whereClause });
+
+    // Get notifications with related data
+    const notifications = await prisma.notification.findMany({
+      where: whereClause,
+      include: {
+        event: {
+          select: { id: true, name: true, slug: true }
+        },
+        report: {
+          select: { id: true, title: true, state: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limitNum
+    });
+
+    // Get unread count for the user
+    const unreadCount = await prisma.notification.count({
+      where: { userId: req.user.id, isRead: false }
+    });
+
+    res.json({
+      notifications,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      },
+      unreadCount
+    });
+
+  } catch (err) {
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Failed to fetch notifications." });
+  }
+});
+
+// Mark notification as read
+app.patch("/api/notifications/:notificationId/read", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { notificationId } = req.params;
+
+  try {
+    // Check if notification belongs to user
+    const notification = await prisma.notification.findUnique({
+      where: { id: notificationId }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    if (notification.userId !== req.user.id) {
+      return res.status(403).json({ error: "Not authorized to access this notification" });
+    }
+
+    // Mark as read if not already read
+    if (!notification.isRead) {
+      await prisma.notification.update({
+        where: { id: notificationId },
+        data: { 
+          isRead: true,
+          readAt: new Date()
+        }
+      });
+    }
+
+    res.json({ message: "Notification marked as read" });
+
+  } catch (err) {
+    console.error("Error marking notification as read:", err);
+    res.status(500).json({ error: "Failed to mark notification as read." });
+  }
+});
+
+// Mark all notifications as read
+app.patch("/api/users/me/notifications/read-all", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    await prisma.notification.updateMany({
+      where: { 
+        userId: req.user.id,
+        isRead: false
+      },
+      data: { 
+        isRead: true,
+        readAt: new Date()
+      }
+    });
+
+    res.json({ message: "All notifications marked as read" });
+
+  } catch (err) {
+    console.error("Error marking all notifications as read:", err);
+    res.status(500).json({ error: "Failed to mark all notifications as read." });
+  }
+});
+
+// Delete a notification
+app.delete("/api/notifications/:notificationId", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { notificationId } = req.params;
+
+  try {
+    // Check if notification belongs to user
+    const notification = await prisma.notification.findUnique({
+      where: { id: notificationId }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    if (notification.userId !== req.user.id) {
+      return res.status(403).json({ error: "Not authorized to delete this notification" });
+    }
+
+    await prisma.notification.delete({
+      where: { id: notificationId }
+    });
+
+    res.json({ message: "Notification deleted" });
+
+  } catch (err) {
+    console.error("Error deleting notification:", err);
+    res.status(500).json({ error: "Failed to delete notification." });
+  }
+});
+
+// Get notification statistics for user
+app.get("/api/users/me/notifications/stats", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    // Get counts by type and priority
+    const [
+      totalCount,
+      unreadCount,
+      typeCounts,
+      priorityCounts
+    ] = await Promise.all([
+      prisma.notification.count({ where: { userId } }),
+      prisma.notification.count({ where: { userId, isRead: false } }),
+      prisma.notification.groupBy({
+        by: ['type'],
+        where: { userId },
+        _count: { type: true }
+      }),
+      prisma.notification.groupBy({
+        by: ['priority'],
+        where: { userId },
+        _count: { priority: true }
+      })
+    ]);
+
+    const typeStats = {};
+    typeCounts.forEach(item => {
+      typeStats[item.type] = item._count.type;
+    });
+
+    const priorityStats = {};
+    priorityCounts.forEach(item => {
+      priorityStats[item.priority] = item._count.priority;
+    });
+
+    res.json({
+      total: totalCount,
+      unread: unreadCount,
+      byType: typeStats,
+      byPriority: priorityStats
+    });
+
+  } catch (err) {
+    console.error("Error fetching notification stats:", err);
+    res.status(500).json({ error: "Failed to fetch notification statistics." });
+  }
+});
+
+// ============================================================================
+// NOTIFICATION HELPER FUNCTIONS
+// ============================================================================
+
+// Helper function to create notifications
+async function createNotification({
+  userId,
+  type,
+  priority = 'normal',
+  title,
+  message,
+  eventId = null,
+  reportId = null,
+  actionData = null,
+  actionUrl = null
+}) {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type,
+        priority,
+        title,
+        message,
+        eventId,
+        reportId,
+        actionData: actionData ? JSON.stringify(actionData) : null,
+        actionUrl
+      }
+    });
+    return notification;
+  } catch (err) {
+    console.error("Error creating notification:", err);
+    throw err;
+  }
+}
+
+// Helper function to notify users about report events
+async function notifyReportEvent(reportId, type, excludeUserId = null) {
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: {
+        event: true,
+        reporter: true,
+        assignedResponder: true
+      }
+    });
+
+    if (!report) return;
+
+    const notifications = [];
+
+    switch (type) {
+      case 'report_submitted':
+        // Notify event admins and responders
+        const eventStaff = await prisma.userEventRole.findMany({
+          where: {
+            eventId: report.eventId,
+            role: { name: { in: ['Admin', 'Responder'] } }
+          },
+          include: { user: true }
+        });
+
+        for (const staff of eventStaff) {
+          if (staff.userId !== excludeUserId) {
+            notifications.push(createNotification({
+              userId: staff.userId,
+              type: 'report_submitted',
+              priority: 'high',
+              title: 'New Report Submitted',
+              message: `A new report "${report.title}" was submitted in ${report.event.name}`,
+              eventId: report.eventId,
+              reportId: report.id,
+              actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+            }));
+          }
+        }
+        break;
+
+      case 'report_assigned':
+        // Notify the assigned responder
+        if (report.assignedResponderId && report.assignedResponderId !== excludeUserId) {
+          notifications.push(createNotification({
+            userId: report.assignedResponderId,
+            type: 'report_assigned',
+            priority: 'high',
+            title: 'Report Assigned to You',
+            message: `You have been assigned to report "${report.title}" in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        }
+        break;
+
+      case 'report_status_changed':
+        // Notify reporter and assigned responder
+        const usersToNotify = [];
+        if (report.reporterId && report.reporterId !== excludeUserId) {
+          usersToNotify.push(report.reporterId);
+        }
+        if (report.assignedResponderId && report.assignedResponderId !== excludeUserId) {
+          usersToNotify.push(report.assignedResponderId);
+        }
+
+        for (const userId of usersToNotify) {
+          notifications.push(createNotification({
+            userId,
+            type: 'report_status_changed',
+            priority: 'normal',
+            title: 'Report Status Updated',
+            message: `Report "${report.title}" status changed to ${report.state} in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        }
+        break;
+
+      case 'report_comment_added':
+        // Notify reporter, assigned responder, and event admins (excluding commenter)
+        const interestedUsers = new Set();
+        if (report.reporterId) interestedUsers.add(report.reporterId);
+        if (report.assignedResponderId) interestedUsers.add(report.assignedResponderId);
+
+        // Add event admins
+        const admins = await prisma.userEventRole.findMany({
+          where: {
+            eventId: report.eventId,
+            role: { name: 'Admin' }
+          }
+        });
+        admins.forEach(admin => interestedUsers.add(admin.userId));
+
+        // Remove the commenter
+        if (excludeUserId) interestedUsers.delete(excludeUserId);
+
+        for (const userId of interestedUsers) {
+          notifications.push(createNotification({
+            userId,
+            type: 'report_comment_added',
+            priority: 'normal',
+            title: 'New Comment on Report',
+            message: `A new comment was added to report "${report.title}" in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        }
+        break;
+    }
+
+    // Create all notifications
+    await Promise.all(notifications);
+
+  } catch (err) {
+    console.error("Error creating report notifications:", err);
+  }
+}
+
+// Export the app for testing and the helper functions
+module.exports = app;
+module.exports.createNotification = createNotification;
+module.exports.notifyReportEvent = notifyReportEvent;

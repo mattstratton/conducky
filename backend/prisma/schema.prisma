@@ -40,6 +40,23 @@ enum ReportSeverity {
   critical
 }
 
+enum NotificationType {
+  report_submitted      // New report submitted
+  report_assigned       // Report assigned to user
+  report_status_changed // Report status changed
+  report_comment_added  // New comment on report
+  event_invitation      // Invited to event
+  event_role_changed    // Role changed in event
+  system_announcement   // System-wide announcement
+}
+
+enum NotificationPriority {
+  low
+  normal
+  high
+  urgent
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -55,6 +72,7 @@ model User {
   assignedReports Report[] @relation("AssignedResponder")
   avatar         UserAvatar?
   passwordResetTokens PasswordResetToken[]
+  notifications  Notification[]
 }
 
 model Event {
@@ -74,6 +92,7 @@ model Event {
   auditLogs      AuditLog[]
   inviteLinks    EventInviteLink[]
   eventLogo      EventLogo?
+  notifications  Notification[]
 }
 
 model Role {
@@ -114,6 +133,7 @@ model Report {
   assignedResponder   User?    @relation("AssignedResponder", fields: [assignedResponderId], references: [id])
   severity            ReportSeverity?
   resolution          String?
+  notifications Notification[]
   // Add more fields as needed (e.g., involved parties)
 }
 
@@ -206,4 +226,29 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      NotificationType
+  priority  NotificationPriority @default(normal)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  
+  // Optional references to related entities
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id])
+  reportId  String?
+  report    Report?  @relation(fields: [reportId], references: [id])
+  
+  // Optional action data (JSON for flexibility)
+  actionData String? // JSON string for action-specific data
+  actionUrl  String? // URL to navigate to when notification is clicked
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

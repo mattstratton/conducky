@@ -25,6 +25,7 @@ const inMemoryStore = {
   eventInvites: [],
   userAvatars: [],
   passwordResetTokens: [],
+  notifications: [],
 };
 
 class PrismaClient {
@@ -651,6 +652,179 @@ class PrismaClient {
           }
         );
         return { count: before - inMemoryStore.passwordResetTokens.length };
+      }),
+    };
+    this.notification = {
+      findMany: jest.fn(({ where, include, orderBy, skip, take }) => {
+        let results = [...inMemoryStore.notifications];
+        
+        // Apply where filters
+        if (where) {
+          if (where.userId) {
+            results = results.filter((n) => n.userId === where.userId);
+          }
+          if (where.isRead !== undefined) {
+            results = results.filter((n) => n.isRead === where.isRead);
+          }
+          if (where.type) {
+            results = results.filter((n) => n.type === where.type);
+          }
+          if (where.priority) {
+            results = results.filter((n) => n.priority === where.priority);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        // Apply pagination
+        if (skip) {
+          results = results.slice(skip);
+        }
+        if (take) {
+          results = results.slice(0, take);
+        }
+        
+        // Apply includes
+        if (include) {
+          results = results.map(notification => {
+            const result = { ...notification };
+            if (include.event && notification.eventId) {
+              result.event = inMemoryStore.events.find(e => e.id === notification.eventId) || null;
+            }
+            if (include.report && notification.reportId) {
+              result.report = inMemoryStore.reports.find(r => r.id === notification.reportId) || null;
+            }
+            return result;
+          });
+        }
+        
+        return results;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.notifications];
+        
+        if (where) {
+          if (where.userId) {
+            results = results.filter((n) => n.userId === where.userId);
+          }
+          if (where.isRead !== undefined) {
+            results = results.filter((n) => n.isRead === where.isRead);
+          }
+          if (where.type) {
+            results = results.filter((n) => n.type === where.type);
+          }
+          if (where.priority) {
+            results = results.filter((n) => n.priority === where.priority);
+          }
+        }
+        
+        return results.length;
+      }),
+      findUnique: jest.fn(({ where }) => {
+        return inMemoryStore.notifications.find((n) => n.id === where.id) || null;
+      }),
+      create: jest.fn(({ data }) => {
+        const notification = {
+          id: `n${inMemoryStore.notifications.length + 1}`,
+          isRead: false,
+          priority: 'normal',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...data,
+        };
+        inMemoryStore.notifications.push(notification);
+        return notification;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.notifications.findIndex((n) => n.id === where.id);
+        if (idx === -1) {
+          const err = new Error("Notification not found");
+          err.code = "P2025";
+          throw err;
+        }
+        
+        inMemoryStore.notifications[idx] = {
+          ...inMemoryStore.notifications[idx],
+          ...data,
+          updatedAt: new Date().toISOString(),
+        };
+        return inMemoryStore.notifications[idx];
+      }),
+      updateMany: jest.fn(({ where, data }) => {
+        let count = 0;
+        inMemoryStore.notifications.forEach((notification, idx) => {
+          let matches = true;
+          
+          if (where.userId && notification.userId !== where.userId) {
+            matches = false;
+          }
+          if (where.isRead !== undefined && notification.isRead !== where.isRead) {
+            matches = false;
+          }
+          
+          if (matches) {
+            inMemoryStore.notifications[idx] = {
+              ...notification,
+              ...data,
+              updatedAt: new Date().toISOString(),
+            };
+            count++;
+          }
+        });
+        
+        return { count };
+      }),
+      delete: jest.fn(({ where }) => {
+        const idx = inMemoryStore.notifications.findIndex((n) => n.id === where.id);
+        if (idx === -1) {
+          const err = new Error("Notification not found");
+          err.code = "P2025";
+          throw err;
+        }
+        
+        const deleted = inMemoryStore.notifications[idx];
+        inMemoryStore.notifications.splice(idx, 1);
+        return deleted;
+      }),
+      groupBy: jest.fn(({ by, where, _count }) => {
+        let results = [...inMemoryStore.notifications];
+        
+        // Apply where filters
+        if (where) {
+          if (where.userId) {
+            results = results.filter((n) => n.userId === where.userId);
+          }
+        }
+        
+        // Group by the specified field
+        const groups = {};
+        results.forEach(notification => {
+          const key = notification[by[0]]; // Assuming single field grouping
+          if (!groups[key]) {
+            groups[key] = [];
+          }
+          groups[key].push(notification);
+        });
+        
+        // Return grouped results with counts
+        return Object.keys(groups).map(key => {
+          const result = {};
+          result[by[0]] = key;
+          if (_count) {
+            result._count = {};
+            Object.keys(_count).forEach(countField => {
+              result._count[countField] = groups[key].length;
+            });
+          }
+          return result;
+        });
       }),
     };
     
