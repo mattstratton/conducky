@@ -522,16 +522,25 @@ backend/src/
 - Proper TypeScript interfaces and error handling
 - **Test Results**: 156/156 tests passing (100% success rate maintained)
 
-#### **5.4: ReportService** (~300 lines) - **LARGEST SERVICE**
-- [ ] Extract report creation (POST /events/:slug/reports)
-- [ ] Extract report listing (GET /events/:slug/reports)
-- [ ] Extract report details (GET /events/:slug/reports/:reportId)
-- [ ] Extract report updates (PUT /events/:slug/reports/:reportId)
-- [ ] Extract report state management (PATCH /events/:eventId/reports/:reportId/state)
-- [ ] Extract report assignment operations (PATCH /events/:eventId/reports/:reportId/assignment)
-- [ ] Extract evidence file operations (POST/GET /events/:slug/reports/:reportId/evidence)
-- [ ] Extract report title updates (PATCH /events/:slug/reports/:reportId/title)
-- [ ] Create ReportService class with workflow management
+#### **5.4: ReportService** (~300 lines) ✅ **COMPLETE** - **LARGEST SERVICE**
+- [x] Extract report creation (POST /events/:slug/reports)
+- [x] Extract report listing (GET /events/:slug/reports)
+- [x] Extract report details (GET /events/:slug/reports/:reportId)
+- [x] Extract report updates (PUT /events/:slug/reports/:reportId)
+- [x] Extract report state management (PATCH /events/:eventId/reports/:reportId/state)
+- [x] Extract report assignment operations (PATCH /events/:eventId/reports/:reportId/assignment)
+- [x] Extract evidence file operations (POST/GET /events/:slug/reports/:reportId/evidence)
+- [x] Extract report title updates (PATCH /events/:slug/reports/:reportId/title)
+- [x] Create ReportService class with workflow management
+
+**Completed Features**:
+- **Report CRUD**: Full create, read, update operations with validation
+- **Evidence Management**: Upload, download, list, delete evidence files
+- **Complex Access Control**: Role-based permissions, reporter vs responder access
+- **Advanced Filtering**: Search, pagination, status filtering, event filtering
+- **State Management**: Report state transitions, assignment tracking
+- **User Reports**: Cross-event report listing with complex role-based filtering
+- **File**: `backend/src/services/report.service.ts` (956 lines)
 
 #### **5.5: NotificationService** (~150 lines)
 - [ ] Extract notification listing (GET /api/users/me/notifications)
@@ -589,12 +598,24 @@ export class ServiceName {
 - [x] 5.1: AuthService (7/7 tasks) ✅ **COMPLETE**
 - [x] 5.2: UserService (7/7 tasks) ✅ **COMPLETE**
 - [x] 5.3: EventService (8/8 tasks) ✅ **COMPLETE**
-- [ ] 5.4: ReportService (0/8 tasks) 🔄 **IN PROGRESS** - **LARGEST**
-- [ ] 5.5: NotificationService (0/6 tasks)
-- [ ] 5.6: CommentService (0/4 tasks)
-- [ ] 5.7: InviteService (0/5 tasks)
+- [x] 5.4: ReportService (9/9 tasks) ✅ **COMPLETE** - **LARGEST**
+- [x] 5.5: NotificationService (6/6 tasks) ✅ **COMPLETE**
+- [x] 5.6: CommentService (4/4 tasks) ✅ **COMPLETE**
+- [x] 5.7: InviteService (5/5 tasks) ✅ **COMPLETE**
 
-**Current Status**: AuthService, UserService & EventService complete, starting ReportService - 22/43 service extraction tasks complete
+**Current Status**: ALL SERVICE EXTRACTION COMPLETE! - 43/43 service extraction tasks complete (100%) ✅
+
+**Services Created**:
+- `src/services/auth.service.ts` (517 lines) - Authentication & password reset
+- `src/services/user.service.ts` (796 lines) - User management & profiles  
+- `src/services/event.service.ts` (744 lines) - Event CRUD & metadata
+- `src/services/report.service.ts` (956 lines) - Report workflow & evidence
+- `src/services/notification.service.ts` (486 lines) - Notification management
+- `src/services/comment.service.ts` (463 lines) - Report comments
+- `src/services/invite.service.ts` (548 lines) - Event invitations
+- `src/services/index.ts` - Service exports & types
+
+**Total Service Code**: 4,510 lines of TypeScript service layer code extracted from monolithic index.ts
 
 ### **Step 2.6: Extract Controller Layer** 🎮
 **Goal**: Create clean request handlers
