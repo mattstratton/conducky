@@ -392,12 +392,12 @@ const NotificationCenter: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <Select value={typeFilter || "all"} onValueChange={(value) => setTypeFilter(value === "all" ? "" : value)}>
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="report_submitted">Report Submitted</SelectItem>
                       <SelectItem value="report_assigned">Report Assigned</SelectItem>
                       <SelectItem value="report_status_changed">Status Changed</SelectItem>
@@ -407,12 +407,12 @@ const NotificationCenter: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <Select value={priorityFilter || "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? "" : value)}>
                     <SelectTrigger className="w-32">
                       <SelectValue placeholder="All Priorities" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Priorities</SelectItem>
+                      <SelectItem value="all">All Priorities</SelectItem>
                       <SelectItem value="urgent">Urgent</SelectItem>
                       <SelectItem value="high">High</SelectItem>
                       <SelectItem value="normal">Normal</SelectItem>
