@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, ChevronLeft, ChevronRight, Eye, FileText, Users, Calendar, AlertCircle } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Eye, FileText, Users, Calendar, AlertCircle, UserPlus, CheckCircle, Clock, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Report {
   id: string;
@@ -97,6 +98,10 @@ export default function CrossEventReports() {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+  const [actionLoading, setActionLoading] = useState<string>('');
+  const [actionError, setActionError] = useState<string>('');
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+
   // Fetch user's events for filter dropdown
   const fetchEvents = async () => {
     try {
@@ -150,6 +155,18 @@ export default function CrossEventReports() {
     }
   };
 
+  // Fetch current user
+  useEffect(() => {
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', { 
+      credentials: 'include' 
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.user) setUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
+
   // Initial load
   useEffect(() => {
     fetchEvents();
@@ -186,7 +203,91 @@ export default function CrossEventReports() {
     });
   };
 
+  // Quick action handlers
+  const handleAssignToMe = async (report: Report) => {
+    if (!user) return;
+    
+    setActionLoading(report.id);
+    setActionError('');
+    
+    try {
+      const res = await fetch(
+        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + 
+        `/events/slug/${report.event.slug}/reports/${report.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ assignedResponderId: user.id }),
+        }
+      );
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || 'Failed to assign report');
+        return;
+      }
+      
+      // Refresh reports to show updated assignment
+      await fetchReports();
+    } catch {
+      setActionError('Network error');
+    } finally {
+      setActionLoading('');
+    }
+  };
 
+  const handleStatusChange = async (report: Report, newStatus: string) => {
+    setActionLoading(report.id);
+    setActionError('');
+    
+    try {
+      const res = await fetch(
+        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + 
+        `/events/slug/${report.event.slug}/reports/${report.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ state: newStatus }),
+        }
+      );
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || 'Failed to update status');
+        return;
+      }
+      
+      // Refresh reports to show updated status
+      await fetchReports();
+    } catch {
+      setActionError('Network error');
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  // Check if user can perform actions on a report
+  const canAssign = (report: Report) => {
+    return report.userRoles.some(role => ['responder', 'admin'].includes(role.toLowerCase()));
+  };
+
+  const canChangeStatus = (report: Report) => {
+    return report.userRoles.some(role => ['responder', 'admin'].includes(role.toLowerCase()));
+  };
+
+  // Get available status transitions
+  const getStatusTransitions = (currentStatus: string) => {
+    const transitions: Record<string, string[]> = {
+      'submitted': ['acknowledged', 'investigating'],
+      'acknowledged': ['investigating', 'resolved'],
+      'investigating': ['resolved', 'closed'],
+      'resolved': ['closed'],
+      'closed': []
+    };
+    return transitions[currentStatus] || [];
+  };
 
   // Mobile card view component
   const ReportCard = ({ report }: { report: Report }) => (
@@ -241,12 +342,47 @@ export default function CrossEventReports() {
             )}
           </div>
           
-          <Link href={`/events/${report.event.slug}/reports/${report.id}`}>
-            <Button size="sm" variant="outline" className="h-7 text-xs">
-              <Eye className="w-3 h-3 mr-1" />
-              View
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/events/${report.event.slug}/reports/${report.id}`}>
+              <Button size="sm" variant="outline" className="h-7 text-xs">
+                <Eye className="w-3 h-3 mr-1" />
+                View
+              </Button>
+            </Link>
+            
+            {/* Quick Actions Dropdown */}
+            {(canAssign(report) || canChangeStatus(report)) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 w-7 p-0"
+                    disabled={actionLoading === report.id}
+                  >
+                    <MoreHorizontal className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canAssign(report) && !report.assignedResponder && (
+                    <DropdownMenuItem onClick={() => handleAssignToMe(report)}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Assign to Me
+                    </DropdownMenuItem>
+                  )}
+                  {canChangeStatus(report) && getStatusTransitions(report.state).map(status => (
+                    <DropdownMenuItem key={status} onClick={() => handleStatusChange(report, status)}>
+                      {status === 'acknowledged' && <CheckCircle className="w-4 h-4 mr-2" />}
+                      {status === 'investigating' && <Clock className="w-4 h-4 mr-2" />}
+                      {status === 'resolved' && <CheckCircle className="w-4 h-4 mr-2" />}
+                      {status === 'closed' && <CheckCircle className="w-4 h-4 mr-2" />}
+                      Mark as {status}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -342,12 +478,12 @@ export default function CrossEventReports() {
           </CardContent>
         </Card>
 
-        {error && (
+        {(error || actionError) && (
           <Card className="mb-6 border-destructive">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
+                <span>{error || actionError}</span>
               </div>
             </CardContent>
           </Card>
@@ -446,12 +582,47 @@ export default function CrossEventReports() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/events/${report.event.slug}/reports/${report.id}`}>
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/events/${report.event.slug}/reports/${report.id}`}>
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                          </Link>
+                          
+                          {/* Quick Actions Dropdown */}
+                          {(canAssign(report) || canChangeStatus(report)) && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="w-8 h-8 p-0"
+                                  disabled={actionLoading === report.id}
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canAssign(report) && !report.assignedResponder && (
+                                  <DropdownMenuItem onClick={() => handleAssignToMe(report)}>
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Assign to Me
+                                  </DropdownMenuItem>
+                                )}
+                                {canChangeStatus(report) && getStatusTransitions(report.state).map(status => (
+                                  <DropdownMenuItem key={status} onClick={() => handleStatusChange(report, status)}>
+                                    {status === 'acknowledged' && <CheckCircle className="w-4 h-4 mr-2" />}
+                                    {status === 'investigating' && <Clock className="w-4 h-4 mr-2" />}
+                                    {status === 'resolved' && <CheckCircle className="w-4 h-4 mr-2" />}
+                                    {status === 'closed' && <CheckCircle className="w-4 h-4 mr-2" />}
+                                    Mark as {status}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
