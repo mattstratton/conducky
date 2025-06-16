@@ -33,7 +33,7 @@ These pages are foundational and needed for most other features to work properly
 These provide cross-event functionality for users with multiple event memberships.
 
 ### Global Dashboard
-- [ ] **Issue #165**: Implement Cross-Event Reports Dashboard (`/dashboard/reports`)
+- [X] **Issue #165**: Implement Cross-Event Reports Dashboard (`/dashboard/reports`)
   - View reports across all accessible events
   - Role-based filtering and permissions
   - Search, filter, and pagination
