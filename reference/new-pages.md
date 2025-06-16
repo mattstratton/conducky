@@ -17,13 +17,13 @@ These pages are foundational and needed for most other features to work properly
   - Handle invalid/expired tokens
 
 ### Profile Management
-- [ ] **Issue #171**: Implement User Profile Settings Page (`/profile/settings`)
+- [X] **Issue #171**: Implement User Profile Settings Page (`/profile/settings`)
   - Profile information management
   - Notification preferences
   - Privacy and security settings
   - Password change functionality
 
-- [ ] **Issue #170**: Implement User Profile Events Management Page (`/profile/events`)
+- [X] **Issue #170**: Implement User Profile Events Management Page (`/profile/events`)
   - View and manage event memberships
   - Join events via invite codes
   - Leave events with confirmation

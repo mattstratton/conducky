@@ -9,6 +9,9 @@ const fs = require("fs");
 const { PrismaClient } = require("@prisma/client");
 const cors = require("cors");
 const app = express();
+
+// Initialize Prisma client
+const prisma = new PrismaClient();
 const PORT = process.env.PORT || 4000;
 const { logAudit } = require("./utils/audit");
 const { requireRole, requireSuperAdmin } = require("./utils/rbac");
@@ -29,15 +32,16 @@ app.use((req, res, next) => {
 // Add test-only authentication middleware for tests
 if (process.env.NODE_ENV === "test") {
   app.use((req, res, next) => {
-    req.isAuthenticated = () => true;
-    req.user = { id: "1", email: "admin@example.com", name: "Admin" };
-    next();
-  });
-}
-
-// Test-only middleware to allow setting req.user via header
-if (process.env.NODE_ENV === "test") {
-  app.use((req, res, next) => {
+    // Allow disabling authentication for specific tests
+    const disableAuth = req.headers["x-test-disable-auth"];
+    if (disableAuth === "true") {
+      req.isAuthenticated = () => false;
+      req.user = null;
+      next();
+      return;
+    }
+    
+    // Allow setting specific user via header
     const testUserId = req.headers["x-test-user-id"];
     if (testUserId) {
       req.isAuthenticated = () => true;
@@ -46,6 +50,10 @@ if (process.env.NODE_ENV === "test") {
         email: `${testUserId}@example.com`,
         name: `User${testUserId}`,
       };
+    } else {
+      // Default authenticated user
+      req.isAuthenticated = () => true;
+      req.user = { id: "1", email: "admin@example.com", name: "Admin" };
     }
     next();
   });
@@ -2439,14 +2447,7 @@ app.patch(
   },
 );
 
-let prisma;
-if (process.env.NODE_ENV === "test") {
-  const { PrismaClient } = require("@prisma/client");
-  prisma = new PrismaClient();
-} else {
-  const { PrismaClient } = require("@prisma/client");
-  prisma = new PrismaClient();
-}
+
 
 // System Settings API
 // Get all system settings (public)
@@ -2594,6 +2595,231 @@ app.get("/api/users/me/activity", async (req, res) => {
     },
   ];
   res.json({ activity: mockActivity });
+});
+
+
+// User profile management endpoints
+
+// Update user profile
+app.patch("/users/me/profile", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { name, email } = req.body;
+
+  try {
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Please enter a valid email address." });
+      }
+
+      // Check if email is already in use by another user
+      const normalizedEmail = email.toLowerCase();
+      const existingUser = await prisma.user.findUnique({ 
+        where: { email: normalizedEmail } 
+      });
+      
+      if (existingUser && existingUser.id !== req.user.id) {
+        return res.status(409).json({ error: "This email address is already in use." });
+      }
+    }
+
+    // Update user profile
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email.toLowerCase();
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+
+    // Get avatar if exists
+    const avatar = await prisma.userAvatar.findUnique({
+      where: { userId: req.user.id }
+    });
+
+    const userResponse = {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      avatarUrl: avatar?.url || null
+    };
+
+    res.json({ 
+      message: "Profile updated successfully!",
+      user: userResponse 
+    });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ error: "Failed to update profile." });
+  }
+});
+
+// Change user password
+app.patch("/users/me/password", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Current password and new password are required." });
+  }
+
+  try {
+    // Get user with password hash
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // Verify current password
+    let isCurrentPasswordValid;
+    try {
+      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    } catch (err) {
+      console.error("Error comparing passwords:", err);
+      return res.status(400).json({ error: "Unable to verify current password." });
+    }
+
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: "Current password is incorrect." });
+    }
+
+    // Validate new password strength
+    const minLength = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+    if (!minLength || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      return res.status(400).json({ 
+        error: "New password must meet all security requirements: at least 8 characters, uppercase letter, lowercase letter, number, and special character." 
+      });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash: newPasswordHash }
+    });
+
+    res.json({ message: "Password updated successfully!" });
+  } catch (err) {
+    console.error("Error changing password:", err);
+    res.status(500).json({ error: "Failed to change password." });
+  }
+});
+
+// Get user's events with roles
+app.get("/api/users/me/events", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    // Group by event and collect roles
+    const eventsMap = new Map();
+    
+    userEventRoles.forEach(uer => {
+      const eventId = uer.event.id;
+      if (!eventsMap.has(eventId)) {
+        eventsMap.set(eventId, {
+          id: uer.event.id,
+          name: uer.event.name,
+          slug: uer.event.slug,
+          description: uer.event.description,
+          roles: []
+        });
+      }
+      eventsMap.get(eventId).roles.push(uer.role.name);
+    });
+
+    const events = Array.from(eventsMap.values());
+
+    res.json({ events });
+  } catch (err) {
+    console.error("Error fetching user events:", err);
+    res.status(500).json({ error: "Failed to fetch events." });
+  }
+});
+
+// Leave an event
+app.delete("/users/me/events/:eventId", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { eventId } = req.params;
+
+  try {
+    // Check if user is a member of the event
+    const userRoles = await prisma.userEventRole.findMany({
+      where: { 
+        userId: req.user.id, 
+        eventId: eventId 
+      },
+      include: {
+        event: true,
+        role: true
+      }
+    });
+
+    if (userRoles.length === 0) {
+      return res.status(404).json({ error: "You are not a member of this event." });
+    }
+
+    // Check if user is the only admin
+    const isAdmin = userRoles.some(ur => ur.role.name === 'Admin');
+    if (isAdmin) {
+      const adminCount = await prisma.userEventRole.count({
+        where: {
+          eventId: eventId,
+          role: { name: 'Admin' }
+        }
+      });
+
+      if (adminCount === 1) {
+        return res.status(400).json({ 
+          error: "You cannot leave this event as you are the only admin. Please assign another admin first." 
+        });
+      }
+    }
+
+    // Remove user from event
+    await prisma.userEventRole.deleteMany({
+      where: {
+        userId: req.user.id,
+        eventId: eventId
+      }
+    });
+
+    const eventName = userRoles[0].event.name;
+    res.json({ message: `Successfully left ${eventName}.` });
+  } catch (err) {
+    console.error("Error leaving event:", err);
+    res.status(500).json({ error: "Failed to leave event." });
+  }
 });
 
 // Redeem an invite link (for logged-in users to join an event)
