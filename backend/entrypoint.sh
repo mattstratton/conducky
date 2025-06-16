@@ -12,5 +12,8 @@ npx prisma generate
 echo "Running Prisma migrations..."
 npx prisma migrate deploy
 
-echo "Starting backend server..."
-npm run dev 
+echo "Building TypeScript..."
+npm run build
+
+echo "Starting TypeScript backend server..."
+npm run start:ts 

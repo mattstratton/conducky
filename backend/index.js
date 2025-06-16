@@ -1,3 +1,8 @@
+// Load environment variables first, especially for test environment
+if (process.env.NODE_ENV === 'test') {
+  require('dotenv').config({ path: '.env.test', override: true });
+}
+
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
@@ -10,7 +15,7 @@ const { PrismaClient } = require("@prisma/client");
 const cors = require("cors");
 const app = express();
 
-// Initialize Prisma client
+// Initialize Prisma client (after environment is loaded)
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 4000;
 const { logAudit } = require("./utils/audit");
@@ -3537,7 +3542,5 @@ async function notifyReportEvent(reportId, type, excludeUserId = null) {
   }
 }
 
-// Export the app for testing and the helper functions
+// Export the app for testing (clean, no custom properties for supertest compatibility)
 module.exports = app;
-module.exports.createNotification = createNotification;
-module.exports.notifyReportEvent = notifyReportEvent;

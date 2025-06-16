@@ -2,6 +2,14 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# TypeScript build outputs
+dist/
+*.tsbuildinfo
+
+# Generated files
 /generated/prisma
+
+# Test outputs
 ctrf/
 junit.xml
+coverage/

@@ -132,7 +132,23 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] At limits for file uploads ([#31](https://github.com/mattstratton/conducky/issues/31))
 - [ ] Make sure there is a public path to the code of conduct of the event ([#28](https://github.com/mattstratton/conducky/issues/28))
 
-## Phase 5: Notifications
+## Phase 5: Backend Architecture & TypeScript Migration
+
+- [ ] Phase 1: Backend TypeScript Migration ([#187](https://github.com/mattstratton/conducky/issues/187))
+  - [ ] Setup TypeScript infrastructure and configuration
+  - [ ] Migrate utility files (audit.js, upload.js, rbac.js, email.js)
+  - [ ] Create comprehensive type definitions
+  - [ ] Migrate main application file (index.js → index.ts)
+  - [ ] Update tests and build process for TypeScript
+- [ ] Phase 2: Backend Refactoring & Modularization ([#188](https://github.com/mattstratton/conducky/issues/188))
+  - [ ] Create modular directory structure
+  - [ ] Extract controllers (Auth, User, Event, Report, Comment, Notification, Admin, System)
+  - [ ] Extract services for business logic
+  - [ ] Extract middleware (Auth, RBAC, Validation, Error Handling, Logging)
+  - [ ] Create route files with proper organization
+  - [ ] Add validation layer and improve error handling
+
+## Phase 6: Notifications
 
 - [X] Implement in-app notification center ([#167](https://github.com/mattstratton/conducky/issues/167))
   - [X] Database schema for notifications (type, priority, read status, action URLs)
@@ -146,12 +162,12 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Notify responders/admins on new/updated reports
 - [ ] Make sure the notification template for a new incident includes SLA etc ([#23](https://github.com/mattstratton/conducky/issues/23))
 
-## Phase 6: Audit Logs & Admin Tools
+## Phase 7: Audit Logs & Admin Tools
 
 - [ ] Log all actions (who, what, when) to the database
 - [ ] Admin UI to view full audit log for an event
 
-## Phase 7: Deployment, Hosting & Documentation
+## Phase 8: Deployment, Hosting & Documentation
 
 - [ ] Finalize Docker image and deployment scripts
 - [ ] Create solution for publshing docker images to docker hub
@@ -164,7 +180,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Set up publishing of docker images on releases ([#11](https://github.com/mattstratton/conducky/issues/11))
 - [ ] Set up for deploy on Render ([#1](https://github.com/mattstratton/conducky/issues/1))
 
-## Phase 7.1: AWS Deployment Checklist
+## Phase 8.1: AWS Deployment Checklist
 
 - [ ] Set AWS region as a repo secret/env variable (e.g., `AWS_REGION`) for flexible deployment
 - [ ] Document and inject all required backend environment variables:
@@ -187,7 +203,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [ ] Failed deploys visible in GitHub Actions
 - [ ] Update this checklist and documentation as requirements evolve
 
-## Phase 8: Frontend MVP (Initial UI for Testing)
+## Phase 9: Frontend MVP (Initial UI for Testing)
 
 - [X] Set up API base URL config for frontend (NEXT_PUBLIC_API_URL)
 - [X] Implement authentication UI (login/logout)
@@ -196,7 +212,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 - [X] Add state change controls for authorized users (Responders/Admins)
 - [ ] Event page needs to list who the admins and responders are for that event ([#10](https://github.com/mattstratton/conducky/issues/10))
 
-## Phase 9: UI/UX Improvements
+## Phase 10: UI/UX Improvements
 
 - [X] Add a dark mode option using best practices (toggle, system preference, etc.)
   - [X] Review the dark mode text colors and make sure they are the proper contrast against the background color
