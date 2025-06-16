@@ -49,6 +49,7 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
   const [nextUrl, setNextUrl] = useState('/');
   const { setUser } = useContext(UserContext) as UserContextType;
@@ -61,7 +62,12 @@ function Login() {
       const refPath = document.referrer.replace(window.location.origin, '');
       setNextUrl(refPath || '/');
     }
-  }, [router.query.next]);
+    
+    // Check for success message from registration
+    if (router.query.message) {
+      setSuccessMessage(router.query.message as string);
+    }
+  }, [router.query.next, router.query.message]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +132,11 @@ function Login() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {successMessage && (
+              <div className="text-green-600 text-sm font-semibold text-center bg-green-50 dark:bg-green-900/20 p-2 rounded">
+                {successMessage}
+              </div>
+            )}
             <div className="grid gap-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
               <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="you@example.com" />

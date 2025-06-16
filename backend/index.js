@@ -130,22 +130,88 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Register route
-app.post("/register", async (req, res) => {
-  const { email, password, name } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required." });
+// Check email availability
+app.get("/auth/check-email", async (req, res) => {
+  const { email } = req.query;
+  if (!email) {
+    return res.status(400).json({ error: "Email parameter is required." });
   }
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
+    res.json({ available: !existing });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to check email availability.", details: err.message });
+  }
+});
+
+// Helper function to validate password strength
+function validatePassword(password) {
+  const requirements = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+  };
+  
+  const score = Object.values(requirements).filter(Boolean).length;
+  const isValid = score === 5; // All requirements must be met
+  
+  return { isValid, requirements, score };
+}
+
+// Register route
+app.post("/register", async (req, res) => {
+  const { email, password, name } = req.body;
+  
+  // Enhanced validation
+  if (!email || !password || !name) {
+    return res.status(400).json({ 
+      error: "Name, email, and password are required." 
+    });
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      error: "Please enter a valid email address." 
+    });
+  }
+  
+  // Validate password strength
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    return res.status(400).json({ 
+      error: "Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character." 
+    });
+  }
+  
+  // Validate name length
+  if (name.trim().length < 1) {
+    return res.status(400).json({ 
+      error: "Name is required." 
+    });
+  }
+  
+  try {
+    const existing = await prisma.user.findUnique({ 
+      where: { email: email.toLowerCase() } 
+    });
     if (existing) {
       return res.status(409).json({ error: "Email already registered." });
     }
+    
     const userCount = await prisma.user.count();
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, passwordHash, name },
+      data: { 
+        email: email.toLowerCase(), 
+        passwordHash, 
+        name: name.trim() 
+      },
     });
+    
     // If this is the first user, assign SuperAdmin role globally (eventId: null)
     let madeSuperAdmin = false;
     if (userCount === 0) {
@@ -166,6 +232,7 @@ app.post("/register", async (req, res) => {
       });
       madeSuperAdmin = true;
     }
+    
     // Respond with success
     return res.json({
       message: "Registration successful!",
@@ -173,6 +240,7 @@ app.post("/register", async (req, res) => {
       madeSuperAdmin,
     });
   } catch (err) {
+    console.error("Registration error:", err);
     return res
       .status(500)
       .json({ error: "Registration failed.", details: err.message });
