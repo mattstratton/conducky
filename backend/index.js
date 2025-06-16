@@ -807,6 +807,15 @@ app.post(
           });
         }
       }
+
+      // Create notification for report submission
+      try {
+        await notifyReportEvent(report.id, 'report_submitted', reporterId);
+      } catch (notifyErr) {
+        console.error('Failed to create notification for report submission:', notifyErr);
+        // Don't fail the request if notification fails
+      }
+
       res.status(201).json({ report });
     } catch (err) {
       console.error("Error creating report:", err);
@@ -961,12 +970,26 @@ app.patch(
           .status(404)
           .json({ error: "Report not found for this event." });
       }
+      // Store original state for notification comparison
+      const originalState = report.state;
+      
       // Update state
       const updated = await prisma.report.update({
         where: { id: reportId },
         data: { state },
         include: { reporter: true },
       });
+
+      // Create notification for state change
+      try {
+        if (state !== originalState) {
+          await notifyReportEvent(reportId, 'report_status_changed', req.user.id);
+        }
+      } catch (notifyErr) {
+        console.error('Failed to create notification for state change:', notifyErr);
+        // Don't fail the request if notification fails
+      }
+
       res.json({ report: updated });
     } catch (err) {
       res
@@ -1086,6 +1109,15 @@ app.post(
           });
         }
       }
+
+      // Create notification for report submission
+      try {
+        await notifyReportEvent(report.id, 'report_submitted', reporterId);
+      } catch (notifyErr) {
+        console.error('Failed to create notification for report submission:', notifyErr);
+        // Don't fail the request if notification fails
+      }
+
       res.status(201).json({ report });
     } catch (err) {
       console.error("Error creating report:", err);
@@ -1170,6 +1202,11 @@ app.patch(
       if (severity !== undefined) data.severity = severity;
       if (resolution !== undefined) data.resolution = resolution;
       if (state !== undefined) data.state = state;
+      
+      // Store original values for notification comparison
+      const originalAssignedResponderId = report.assignedResponderId;
+      const originalState = report.state;
+      
       const updated = await prisma.report.update({
         where: { id: reportId },
         data,
@@ -1183,6 +1220,23 @@ app.patch(
           },
         },
       });
+
+      // Create notifications for changes
+      try {
+        // Notify on assignment change
+        if (assignedResponderId !== undefined && assignedResponderId !== originalAssignedResponderId) {
+          await notifyReportEvent(reportId, 'report_assigned', req.user.id);
+        }
+        
+        // Notify on state change
+        if (state !== undefined && state !== originalState) {
+          await notifyReportEvent(reportId, 'report_status_changed', req.user.id);
+        }
+      } catch (notifyErr) {
+        console.error('Failed to create notifications for report update:', notifyErr);
+        // Don't fail the request if notification fails
+      }
+
       res.json({ report: updated });
     } catch (err) {
       res
@@ -1893,6 +1947,15 @@ app.post("/events/slug/:slug/reports/:reportId/comments", async (req, res) => {
       },
       include: { author: true },
     });
+
+    // Create notification for new comment
+    try {
+      await notifyReportEvent(reportId, 'report_comment_added', req.user.id);
+    } catch (notifyErr) {
+      console.error('Failed to create notification for new comment:', notifyErr);
+      // Don't fail the request if notification fails
+    }
+
     res.status(201).json({ comment });
   } catch (err) {
     res

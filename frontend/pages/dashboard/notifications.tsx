@@ -75,6 +75,9 @@ const NotificationCenter: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string>('');
   const [error, setError] = useState('');
   
+  // API base URL
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  
   // Filters and pagination
   const [currentTab, setCurrentTab] = useState('all');
   const [typeFilter, setTypeFilter] = useState('');
@@ -104,7 +107,9 @@ const NotificationCenter: React.FC = () => {
         params.append('priority', priorityFilter);
       }
 
-      const response = await fetch(`/api/users/me/notifications?${params}`);
+      const response = await fetch(`${apiUrl}/api/users/me/notifications?${params}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -123,7 +128,9 @@ const NotificationCenter: React.FC = () => {
   // Fetch notification statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/users/me/notifications/stats');
+      const response = await fetch(`${apiUrl}/api/users/me/notifications/stats`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -139,8 +146,9 @@ const NotificationCenter: React.FC = () => {
     try {
       setActionLoading(notificationId);
       
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${apiUrl}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -168,8 +176,9 @@ const NotificationCenter: React.FC = () => {
     try {
       setActionLoading('mark-all');
       
-      const response = await fetch('/api/users/me/notifications/read-all', {
+      const response = await fetch(`${apiUrl}/api/users/me/notifications/read-all`, {
         method: 'PATCH',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -193,8 +202,9 @@ const NotificationCenter: React.FC = () => {
     try {
       setActionLoading(notificationId);
       
-      const response = await fetch(`/api/notifications/${notificationId}`, {
+      const response = await fetch(`${apiUrl}/api/notifications/${notificationId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (response.ok) {
