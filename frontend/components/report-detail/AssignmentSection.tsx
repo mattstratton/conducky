@@ -14,7 +14,7 @@ interface AssignmentSectionProps {
   loading?: boolean;
   error?: string;
   success?: string;
-  onSave: () => void;
+  onSave: (updatedFields?: any) => void;
 }
 
 export function AssignmentSection({
@@ -42,9 +42,11 @@ export function AssignmentSection({
   }
 
   function handleSave() {
-    setAssignmentFields((f: any) => ({ ...f, ...localFields }));
+    const updatedFields = { ...assignmentFields, ...localFields };
+    setAssignmentFields(updatedFields);
     setEditingField(null);
-    onSave();
+    // Pass the updated fields to onSave so it doesn't rely on async state
+    onSave(updatedFields);
   }
 
   function handleCancel() {

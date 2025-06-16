@@ -197,17 +197,21 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   // Fetch event users for assignment dropdown if admin/responder
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
+    console.log('[DEBUG] Fetching responders for assignment dropdown');
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
+        console.log('[DEBUG] Fetched responders:', data.users);
         fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
+            console.log('[DEBUG] Fetched admins:', data2.users);
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(all.reduce<Record<string, User>>((acc, u) => { 
               acc[u.id] = u; 
               return acc; 
             }, {}));
+            console.log('[DEBUG] Final eventUsers for assignment dropdown:', deduped);
             setEventUsers(deduped);
           });
       });
@@ -448,17 +452,29 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   };
 
   // Save assignment fields handler
-  const handleAssignmentChange = async () => {
+  const handleAssignmentChange = async (updatedFields?: any) => {
+    // Use the passed fields if available, otherwise use current state
+    const fieldsToSave = updatedFields || assignmentFields;
     setAssignmentLoading(true);
     setAssignmentError('');
     setAssignmentSuccess('');
     
-    if ((assignmentFields.state === 'resolved' || assignmentFields.state === 'closed') && 
-        !assignmentFields.resolution.trim()) {
+    console.log('[DEBUG] handleAssignmentChange called with fieldsToSave:', fieldsToSave);
+    
+    if ((fieldsToSave.state === 'resolved' || fieldsToSave.state === 'closed') && 
+        !fieldsToSave.resolution?.trim()) {
       setAssignmentError('Resolution is required when report is resolved or closed.');
       setAssignmentLoading(false);
       return;
     }
+    
+    const payload = {
+      assignedResponderId: fieldsToSave.assignedResponderId ? fieldsToSave.assignedResponderId : null,
+      severity: fieldsToSave.severity ? fieldsToSave.severity : null,
+      resolution: fieldsToSave.resolution ? fieldsToSave.resolution : null,
+    };
+    
+    console.log('[DEBUG] Sending payload:', payload);
     
     try {
       const res = await fetch(
@@ -468,11 +484,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({
-            assignedResponderId: assignmentFields.assignedResponderId || null,
-            severity: assignmentFields.severity || null,
-            resolution: assignmentFields.resolution || null,
-          }),
+          body: JSON.stringify(payload),
         }
       );
       
@@ -543,7 +555,19 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       stateChangeSuccess={stateChangeSuccess}
       adminMode={isResponderOrAbove}
       assignmentFields={assignmentFields}
-      setAssignmentFields={setAssignmentFields}
+      setAssignmentFields={(fields) => {
+        console.log('[DEBUG] setAssignmentFields called with:', fields);
+        if (typeof fields === 'function') {
+          setAssignmentFields((prev) => {
+            const newFields = fields(prev);
+            console.log('[DEBUG] Function update - prev:', prev, 'new:', newFields);
+            return newFields;
+          });
+        } else {
+          console.log('[DEBUG] Direct update with:', fields);
+          setAssignmentFields(fields);
+        }
+      }}
       eventUsers={eventUsers}
       onAssignmentChange={handleAssignmentChange}
       assignmentLoading={assignmentLoading}

@@ -1225,6 +1225,12 @@ app.patch(
       try {
         // Notify on assignment change
         if (assignedResponderId !== undefined && assignedResponderId !== originalAssignedResponderId) {
+          console.log('[DEBUG] Assignment change detected:', {
+            reportId,
+            originalAssignedResponderId,
+            newAssignedResponderId: assignedResponderId,
+            excludeUserId: req.user.id
+          });
           await notifyReportEvent(reportId, 'report_assigned', req.user.id);
         }
         
@@ -3416,6 +3422,8 @@ async function createNotification({
 // Helper function to notify users about report events
 async function notifyReportEvent(reportId, type, excludeUserId = null) {
   try {
+    console.log('[DEBUG] notifyReportEvent called:', { reportId, type, excludeUserId });
+    
     const report = await prisma.report.findUnique({
       where: { id: reportId },
       include: {
@@ -3425,7 +3433,17 @@ async function notifyReportEvent(reportId, type, excludeUserId = null) {
       }
     });
 
-    if (!report) return;
+    if (!report) {
+      console.log('[DEBUG] Report not found:', reportId);
+      return;
+    }
+
+    console.log('[DEBUG] Report found:', {
+      id: report.id,
+      title: report.title,
+      assignedResponderId: report.assignedResponderId,
+      assignedResponder: report.assignedResponder ? report.assignedResponder.email : null
+    });
 
     const notifications = [];
 
@@ -3458,7 +3476,14 @@ async function notifyReportEvent(reportId, type, excludeUserId = null) {
 
       case 'report_assigned':
         // Notify the assigned responder
+        console.log('[DEBUG] Processing report_assigned notification:', {
+          assignedResponderId: report.assignedResponderId,
+          excludeUserId,
+          shouldNotify: report.assignedResponderId && report.assignedResponderId !== excludeUserId
+        });
+        
         if (report.assignedResponderId && report.assignedResponderId !== excludeUserId) {
+          console.log('[DEBUG] Creating assignment notification for user:', report.assignedResponderId);
           notifications.push(createNotification({
             userId: report.assignedResponderId,
             type: 'report_assigned',
@@ -3530,7 +3555,9 @@ async function notifyReportEvent(reportId, type, excludeUserId = null) {
     }
 
     // Create all notifications
+    console.log('[DEBUG] Creating', notifications.length, 'notifications');
     await Promise.all(notifications);
+    console.log('[DEBUG] All notifications created successfully');
 
   } catch (err) {
     console.error("Error creating report notifications:", err);
