@@ -37,7 +37,7 @@ System-level management for SuperAdmins only:
 
 The sidebar navigation automatically adapts based on your current context and role:
 
-- **Always visible**: Global navigation items (Home, All Reports, Notifications)
+- **Always visible**: Global navigation items (Home, All Reports, Notification Center)
 - **Event section**: Shows when in event context with event-specific navigation
 - **Role-based filtering**: Only shows navigation items you have permission to access
 - **Event switcher**: Dropdown to switch between events (when applicable)
@@ -68,8 +68,8 @@ Event Admins see full event management capabilities:
 **Global Context**:
 - 🏠 Home (Dashboard)
 - 📋 All Reports (Cross-Event Reports Dashboard)
+- 🔔 Notifications (Notification Center)
 - 👤 Profile (Settings and Event Management)
-- 📝 Notifications (Future)
 
 **Event Context** (when in `/events/[eventSlug]/`):
 - 🏠 Event Dashboard
@@ -92,8 +92,8 @@ Responders see report management and team information:
 **Global Context**:
 - 🏠 Home (Dashboard)
 - 📋 All Reports (Cross-Event Reports Dashboard)
+- 🔔 Notifications (Notification Center)
 - 👤 Profile (Settings and Event Management)
-- 📝 Notifications (Future)
 
 **Event Context**:
 - 🏠 Event Dashboard
@@ -109,8 +109,8 @@ Reporters see basic event information and their own reports:
 **Global Context**:
 - 🏠 Home (Dashboard)
 - 📋 All Reports (Cross-Event Reports Dashboard)
+- 🔔 Notifications (Notification Center)
 - 👤 Profile (Settings and Event Management)
-- 📝 Notifications (Future)
 
 **Event Context**:
 - 🏠 Event Dashboard
@@ -142,7 +142,7 @@ The global dashboard (`/dashboard`) provides:
 ### Global URLs
 - `/dashboard` - Multi-event overview
 - `/dashboard/reports` - All reports across events (Cross-Event Reports Dashboard)
-- `/dashboard/notifications` - Cross-event notifications (Future)
+- `/dashboard/notifications` - Cross-event notifications (Notification Center)
 - `/profile/settings` - User profile and account settings
 - `/profile/events` - Event membership management
 
