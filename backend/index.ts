@@ -1154,6 +1154,111 @@ app.delete('/events/slug/:slug/users/:userId', async (req: any, res: any) => {
   }
 });
 
+// Slug-based: List all reports for an event
+app.get('/events/slug/:slug/reports', async (req: any, res: any) => {
+  const { slug } = req.params;
+  const { userId } = req.query;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    const where: any = { eventId };
+    if (userId) {
+      where.reporterId = userId;
+    }
+    const reports = await prisma.report.findMany({
+      where,
+      include: {
+        reporter: true,
+        assignedResponder: true,
+        evidenceFiles: {
+          include: {
+            uploader: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ reports });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch reports', details: err.message });
+  }
+});
+
+// Slug-based: Submit a report for an event (anonymous or authenticated, with evidence upload)
+app.post(
+  '/events/slug/:slug/reports',
+  upload.array('evidence', 10),
+  async (req: any, res: any) => {
+    const { slug } = req.params;
+    const { type, description, incidentAt, parties, title } = req.body;
+    if (!type || !description || !title) {
+      return res
+        .status(400)
+        .json({ error: 'type, title, and description are required.' });
+    }
+    if (typeof title !== 'string' || title.length < 10 || title.length > 70) {
+      return res.status(400).json({ error: 'title must be 10-70 characters.' });
+    }
+    try {
+      const eventId = await getEventIdBySlug(slug);
+      if (!eventId) {
+        return res.status(404).json({ error: 'Event not found.' });
+      }
+      // If authenticated, use req.user.id as reporterId; else null
+      const reporterId =
+        req.isAuthenticated && req.isAuthenticated() && req.user
+          ? req.user.id
+          : null;
+      // Create report first
+      const report = await prisma.report.create({
+        data: {
+          eventId,
+          reporterId,
+          type,
+          title,
+          description,
+          state: 'submitted',
+          incidentAt: incidentAt ? new Date(incidentAt) : null,
+          parties: parties || null,
+        },
+      });
+      // If evidence files are uploaded, store in DB
+      const uploaderId = reporterId;
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          await prisma.evidenceFile.create({
+            data: {
+              reportId: report.id,
+              filename: file.originalname,
+              mimetype: file.mimetype,
+              size: file.size,
+              data: file.buffer,
+              uploaderId,
+            },
+          });
+        }
+      }
+
+      // Create notification for report submission
+      try {
+        await notifyReportEvent(report.id, 'report_submitted', req.user?.id || null);
+      } catch (notifyErr) {
+        console.error('Failed to create notification for report submission:', notifyErr);
+        // Don't fail the request if notification fails
+      }
+
+      res.status(201).json({ report });
+    } catch (err: any) {
+      console.error('Error creating report:', err);
+      res
+        .status(500)
+        .json({ error: 'Failed to submit report.', details: err.message });
+    }
+  },
+);
+
 // Slug-based: Get a single report for an event by report ID
 app.get('/events/slug/:slug/reports/:reportId', async (req: any, res: any) => {
   const { slug, reportId } = req.params;
