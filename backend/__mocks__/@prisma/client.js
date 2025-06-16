@@ -295,50 +295,65 @@ class PrismaClient {
       findMany: jest.fn(({ where, include, orderBy, skip, take }) => {
         let results = [...inMemoryStore.reports];
         
-        // Apply where filters
-        if (where) {
-          if (where.eventId && !where.eventId.in) {
+        // Helper function to apply a single where condition
+        const applyWhereCondition = (results, condition) => {
+          if (condition.eventId && !condition.eventId.in) {
             // Single event filter
             const eventExists = inMemoryStore.events.some(
-              (e) => e.id === where.eventId,
+              (e) => e.id === condition.eventId,
             );
             if (!eventExists) {
               const err = new Error("Event not found");
               err.code = "P2025";
               throw err;
             }
-            results = results.filter((r) => r.eventId === where.eventId);
+            results = results.filter((r) => r.eventId === condition.eventId);
           }
           
-          if (where.eventId && where.eventId.in) {
+          if (condition.eventId && condition.eventId.in) {
             // Multiple events filter (for cross-event queries)
-            results = results.filter((r) => where.eventId.in.includes(r.eventId));
+            results = results.filter((r) => condition.eventId.in.includes(r.eventId));
           }
           
-          if (where.state) {
-            results = results.filter((r) => r.state === where.state);
+          if (condition.state) {
+            results = results.filter((r) => r.state === condition.state);
           }
           
-          if (where.assignedResponderId) {
-            results = results.filter((r) => r.assignedResponderId === where.assignedResponderId);
+          if (condition.assignedResponderId) {
+            results = results.filter((r) => r.assignedResponderId === condition.assignedResponderId);
           }
           
-          if (where.assignedResponderId === null) {
+          if (condition.assignedResponderId === null) {
             results = results.filter((r) => !r.assignedResponderId);
           }
           
-          if (where.OR) {
+          if (condition.OR) {
             results = results.filter((r) => {
-              return where.OR.some(condition => {
-                if (condition.title && condition.title.contains) {
-                  return r.title.toLowerCase().includes(condition.title.contains.toLowerCase());
+              return condition.OR.some(orCondition => {
+                if (orCondition.title && orCondition.title.contains) {
+                  return r.title.toLowerCase().includes(orCondition.title.contains.toLowerCase());
                 }
-                if (condition.description && condition.description.contains) {
-                  return r.description.toLowerCase().includes(condition.description.contains.toLowerCase());
+                if (orCondition.description && orCondition.description.contains) {
+                  return r.description.toLowerCase().includes(orCondition.description.contains.toLowerCase());
                 }
                 return false;
               });
             });
+          }
+          
+          return results;
+        };
+        
+        // Apply where filters
+        if (where) {
+          if (where.AND) {
+            // Handle AND clauses - apply each condition sequentially
+            for (const condition of where.AND) {
+              results = applyWhereCondition(results, condition);
+            }
+          } else {
+            // Handle direct where conditions
+            results = applyWhereCondition(results, where);
           }
         }
         
@@ -407,40 +422,55 @@ class PrismaClient {
       count: jest.fn(({ where }) => {
         let results = [...inMemoryStore.reports];
         
-        // Apply same where filters as findMany
-        if (where) {
-          if (where.eventId && !where.eventId.in) {
-            results = results.filter((r) => r.eventId === where.eventId);
+        // Helper function to apply a single where condition (same as in findMany)
+        const applyWhereCondition = (results, condition) => {
+          if (condition.eventId && !condition.eventId.in) {
+            results = results.filter((r) => r.eventId === condition.eventId);
           }
           
-          if (where.eventId && where.eventId.in) {
-            results = results.filter((r) => where.eventId.in.includes(r.eventId));
+          if (condition.eventId && condition.eventId.in) {
+            results = results.filter((r) => condition.eventId.in.includes(r.eventId));
           }
           
-          if (where.state) {
-            results = results.filter((r) => r.state === where.state);
+          if (condition.state) {
+            results = results.filter((r) => r.state === condition.state);
           }
           
-          if (where.assignedResponderId) {
-            results = results.filter((r) => r.assignedResponderId === where.assignedResponderId);
+          if (condition.assignedResponderId) {
+            results = results.filter((r) => r.assignedResponderId === condition.assignedResponderId);
           }
           
-          if (where.assignedResponderId === null) {
+          if (condition.assignedResponderId === null) {
             results = results.filter((r) => !r.assignedResponderId);
           }
           
-          if (where.OR) {
+          if (condition.OR) {
             results = results.filter((r) => {
-              return where.OR.some(condition => {
-                if (condition.title && condition.title.contains) {
-                  return r.title.toLowerCase().includes(condition.title.contains.toLowerCase());
+              return condition.OR.some(orCondition => {
+                if (orCondition.title && orCondition.title.contains) {
+                  return r.title.toLowerCase().includes(orCondition.title.contains.toLowerCase());
                 }
-                if (condition.description && condition.description.contains) {
-                  return r.description.toLowerCase().includes(condition.description.contains.toLowerCase());
+                if (orCondition.description && orCondition.description.contains) {
+                  return r.description.toLowerCase().includes(orCondition.description.contains.toLowerCase());
                 }
                 return false;
               });
             });
+          }
+          
+          return results;
+        };
+        
+        // Apply same where filters as findMany
+        if (where) {
+          if (where.AND) {
+            // Handle AND clauses - apply each condition sequentially
+            for (const condition of where.AND) {
+              results = applyWhereCondition(results, condition);
+            }
+          } else {
+            // Handle direct where conditions
+            results = applyWhereCondition(results, where);
           }
         }
         

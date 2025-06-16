@@ -29,7 +29,7 @@ Your password must meet the following security requirements:
 - **At least one uppercase letter** (A-Z)
 - **At least one lowercase letter** (a-z)
 - **At least one number** (0-9)
-- **At least one special character** (!@#$%^&*()_+-=[]{}|;:,.<>?)
+- **At least one special character** (!@#$%^&*()_+-=[]{}|;:,.&lt;&gt;?)
 
 #### Special Registration Rules
 - **First User**: The first person to register becomes a SuperAdmin automatically

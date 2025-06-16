@@ -2871,23 +2871,30 @@ app.get("/api/users/me/reports", async (req, res) => {
       };
     }
 
-    // Apply filters
+    // Apply filters while preserving access control
+    const filters = [];
+    
+    // Preserve the original access control as the base
+    const baseAccessControl = { ...whereClause };
+    
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ];
+      filters.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      });
     }
 
     if (status) {
-      whereClause.state = status;
+      filters.push({ state: status });
     }
 
     if (eventFilter) {
       // Filter by specific event slug
       const targetEvent = Array.from(eventRoles.values()).find(e => e.event.slug === eventFilter);
       if (targetEvent) {
-        whereClause.eventId = targetEvent.event.id;
+        filters.push({ eventId: targetEvent.event.id });
       } else {
         // User doesn't have access to this event
         return res.json({ reports: [], total: 0, page: pageNum, limit: limitNum });
@@ -2895,9 +2902,19 @@ app.get("/api/users/me/reports", async (req, res) => {
     }
 
     if (assigned === 'me') {
-      whereClause.assignedResponderId = req.user.id;
+      filters.push({ assignedResponderId: req.user.id });
     } else if (assigned === 'unassigned') {
-      whereClause.assignedResponderId = null;
+      filters.push({ assignedResponderId: null });
+    }
+
+    // Combine base access control with filters using AND
+    if (filters.length > 0) {
+      whereClause = {
+        AND: [
+          baseAccessControl,
+          ...filters
+        ]
+      };
     }
 
     // Build sort clause
