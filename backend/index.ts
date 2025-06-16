@@ -915,6 +915,45 @@ async function getUserRoleForEvent(userId: string, eventId: string) {
   }
 }
 
+// Get event details by slug (public, for routing)
+app.get("/event/slug/:slug", async (req: any, res: any) => {
+  const { slug } = req.params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event) {
+      return res.status(404).json({ error: "Event not found." });
+    }
+    res.json({ event });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch event by slug.", details: err.message });
+  }
+});
+
+// Get current user's roles for an event by slug
+app.get("/events/slug/:slug/my-roles", async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const { slug } = req.params;
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: "Event not found." });
+    }
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map((uer: any) => uer.role.name);
+    res.json({ roles });
+  } catch (err: any) {
+    res.status(500).json({
+      error: "Failed to fetch user roles for event.",
+      details: err.message,
+    });
+  }
+});
+
 // Slug-based: List users and their roles for an event
 app.get('/events/slug/:slug/users', async (req: any, res: any) => {
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
@@ -1160,6 +1199,104 @@ app.get('/events/slug/:slug/reports/:reportId', async (req: any, res: any) => {
     res.json({ report });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch report', details: err.message });
+  }
+});
+
+// Slug-based: Update a report (assignment, severity, resolution, state)
+app.patch('/events/slug/:slug/reports/:reportId', async (req: any, res: any) => {
+  const { slug, reportId } = req.params;
+  const { assignedResponderId, severity, resolution, state } = req.body;
+  
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const eventId = await getEventIdBySlug(slug);
+    if (!eventId) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    
+    // Check user permissions
+    const userEventRoles = await prisma.userEventRole.findMany({
+      where: { userId: req.user.id, eventId },
+      include: { role: true },
+    });
+    const roles = userEventRoles.map((uer: any) => uer.role.name);
+    const hasPermission = roles.some((r: string) =>
+      ['Responder', 'Admin', 'SuperAdmin'].includes(r)
+    );
+    
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+    });
+    
+    if (!report || report.eventId !== eventId) {
+      return res.status(404).json({ error: 'Report not found for this event.' });
+    }
+    
+    // Build update data
+    const data: any = {};
+    if (assignedResponderId !== undefined) data.assignedResponderId = assignedResponderId;
+    if (severity !== undefined) data.severity = severity;
+    if (resolution !== undefined) data.resolution = resolution;
+    if (state !== undefined) data.state = state;
+    
+    // Store original values for notification comparison
+    const originalAssignedResponderId = report.assignedResponderId;
+    const originalState = report.state;
+    
+    const updated = await prisma.report.update({
+      where: { id: reportId },
+      data,
+      include: {
+        reporter: true,
+        assignedResponder: true,
+        evidenceFiles: {
+          include: {
+            uploader: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
+
+    // Create notifications for changes
+    try {
+      console.log(`[DEBUG] Checking notification conditions:`, {
+        assignedResponderId,
+        originalAssignedResponderId,
+        state,
+        originalState,
+        reportId,
+        userId: req.user.id
+      });
+      
+      // Notify on assignment change
+      if (assignedResponderId !== undefined && assignedResponderId !== originalAssignedResponderId) {
+        console.log(`[DEBUG] Creating assignment notification for report ${reportId} assigned to ${assignedResponderId}`);
+        // For assignments, don't exclude the user - they should see notifications when reports are assigned to them
+        await notifyReportEvent(reportId, 'report_assigned', null);
+        console.log(`[Notification] Report ${reportId} assigned to ${assignedResponderId} - notification created`);
+      }
+      
+      // Notify on state change
+      if (state !== undefined && state !== originalState) {
+        console.log(`[DEBUG] Creating state change notification for report ${reportId} state changed to ${state}`);
+        await notifyReportEvent(reportId, 'report_status_changed', req.user.id);
+        console.log(`[Notification] Report ${reportId} state changed to ${state} - notification created`);
+      }
+    } catch (notifyErr) {
+      console.error('Failed to create notifications for report update:', notifyErr);
+      // Don't fail the request if notification fails
+    }
+
+    res.json({ report: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update report', details: err.message });
   }
 });
 
@@ -2443,6 +2580,234 @@ app.get('/api/users/me/notifications/stats', async (req: any, res: any) => {
     res.status(500).json({ error: 'Failed to fetch notification statistics.' });
   }
 });
+
+// TEST ROUTE: Create a test notification (remove this in production)
+app.post('/api/test/create-notification', async (req: any, res: any) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const notification = await createNotification({
+      userId: req.user.id,
+      type: 'system_announcement',
+      priority: 'normal',
+      title: 'Test Notification',
+      message: 'This is a test notification to verify the notification system is working.',
+      actionUrl: '/dashboard'
+    });
+
+    res.json({ 
+      message: 'Test notification created successfully!',
+      notification: {
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        priority: notification.priority,
+        createdAt: notification.createdAt
+      }
+    });
+  } catch (err: any) {
+    console.error('Error creating test notification:', err);
+    res.status(500).json({ error: 'Failed to create test notification.' });
+  }
+});
+
+// ============================================================================
+// NOTIFICATION HELPER FUNCTIONS
+// ============================================================================
+
+// Helper function to create notifications
+async function createNotification({
+  userId,
+  type,
+  priority = 'normal',
+  title,
+  message,
+  eventId = null,
+  reportId = null,
+  actionData = null,
+  actionUrl = null
+}: {
+  userId: string;
+  type: 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' | 'event_invitation' | 'event_role_changed' | 'system_announcement';
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  title: string;
+  message: string;
+  eventId?: string | null;
+  reportId?: string | null;
+  actionData?: any;
+  actionUrl?: string | null;
+}) {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type,
+        priority,
+        title,
+        message,
+        eventId,
+        reportId,
+        actionData: actionData ? JSON.stringify(actionData) : null,
+        actionUrl
+      }
+    });
+    return notification;
+  } catch (err: any) {
+    console.error('Error creating notification:', err);
+    throw err;
+  }
+}
+
+// Helper function to notify users about report events
+async function notifyReportEvent(reportId: string, type: string, excludeUserId: string | null = null) {
+  console.log(`[DEBUG] notifyReportEvent called:`, { reportId, type, excludeUserId });
+  
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: {
+        event: true,
+        reporter: true,
+        assignedResponder: true
+      }
+    });
+
+    if (!report) {
+      console.log(`[DEBUG] Report not found: ${reportId}`);
+      return;
+    }
+    
+    console.log(`[DEBUG] Report found:`, {
+      id: report.id,
+      title: report.title,
+      eventName: report.event.name,
+      reporterId: report.reporterId,
+      assignedResponderId: report.assignedResponderId
+    });
+
+    const notifications: Promise<any>[] = [];
+
+    switch (type) {
+      case 'report_submitted':
+        // Notify event admins and responders
+        const eventStaff = await prisma.userEventRole.findMany({
+          where: {
+            eventId: report.eventId,
+            role: { name: { in: ['Admin', 'Responder'] } }
+          },
+          include: { user: true }
+        });
+
+        for (const staff of eventStaff) {
+          if (staff.userId !== excludeUserId) {
+            notifications.push(createNotification({
+              userId: staff.userId,
+              type: 'report_submitted',
+              priority: 'high',
+              title: 'New Report Submitted',
+              message: `A new report "${report.title}" was submitted in ${report.event.name}`,
+              eventId: report.eventId,
+              reportId: report.id,
+              actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+            }));
+          }
+        }
+        break;
+
+      case 'report_assigned':
+        // Notify the assigned responder
+        console.log(`[DEBUG] Processing report_assigned notification:`, {
+          assignedResponderId: report.assignedResponderId,
+          excludeUserId,
+          shouldNotify: report.assignedResponderId && report.assignedResponderId !== excludeUserId
+        });
+        
+        if (report.assignedResponderId && report.assignedResponderId !== excludeUserId) {
+          console.log(`[DEBUG] Creating assignment notification for user: ${report.assignedResponderId}`);
+          notifications.push(createNotification({
+            userId: report.assignedResponderId,
+            type: 'report_assigned',
+            priority: 'high',
+            title: 'Report Assigned to You',
+            message: `You have been assigned to report "${report.title}" in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        } else {
+          console.log(`[DEBUG] Skipping assignment notification - no assignee or assignee is excludeUserId`);
+        }
+        break;
+
+      case 'report_status_changed':
+        // Notify reporter and assigned responder
+        const usersToNotify: string[] = [];
+        if (report.reporterId && report.reporterId !== excludeUserId) {
+          usersToNotify.push(report.reporterId);
+        }
+        if (report.assignedResponderId && report.assignedResponderId !== excludeUserId) {
+          usersToNotify.push(report.assignedResponderId);
+        }
+
+        for (const userId of usersToNotify) {
+          notifications.push(createNotification({
+            userId,
+            type: 'report_status_changed',
+            priority: 'normal',
+            title: 'Report Status Updated',
+            message: `Report "${report.title}" status changed to ${report.state} in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        }
+        break;
+
+      case 'report_comment_added':
+        // Notify reporter, assigned responder, and event admins (excluding commenter)
+        const interestedUsers = new Set<string>();
+        if (report.reporterId) interestedUsers.add(report.reporterId);
+        if (report.assignedResponderId) interestedUsers.add(report.assignedResponderId);
+
+        // Add event admins
+        const admins = await prisma.userEventRole.findMany({
+          where: {
+            eventId: report.eventId,
+            role: { name: 'Admin' }
+          }
+        });
+        admins.forEach((admin: any) => interestedUsers.add(admin.userId));
+
+        // Remove the commenter
+        if (excludeUserId) interestedUsers.delete(excludeUserId);
+
+        for (const userId of interestedUsers) {
+          notifications.push(createNotification({
+            userId,
+            type: 'report_comment_added',
+            priority: 'normal',
+            title: 'New Comment on Report',
+            message: `A new comment was added to report "${report.title}" in ${report.event.name}`,
+            eventId: report.eventId,
+            reportId: report.id,
+            actionUrl: `/events/${report.event.slug}/reports/${report.id}`
+          }));
+        }
+        break;
+    }
+
+    // Create all notifications
+    console.log(`[DEBUG] Creating ${notifications.length} notifications`);
+    const results = await Promise.all(notifications);
+    console.log(`[DEBUG] Successfully created ${results.length} notifications`);
+
+  } catch (err: any) {
+    console.error('Error creating report notifications:', err);
+  }
+}
 
 // Startup check for required environment variables
 const requiredEnv = ['DATABASE_URL', 'SESSION_SECRET', 'FRONTEND_BASE_URL'];
