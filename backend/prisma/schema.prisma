@@ -54,6 +54,7 @@ model User {
   evidenceFilesUploaded EvidenceFile[] @relation("EvidenceFileUploader")
   assignedReports Report[] @relation("AssignedResponder")
   avatar         UserAvatar?
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Event {
@@ -195,4 +196,14 @@ model SystemSetting {
   id    String @id @default(uuid())
   key   String @unique
   value String
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

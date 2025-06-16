@@ -150,6 +150,11 @@ function Login() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-2 items-center">
+          <span className="text-xs text-muted-foreground">
+            <Link href="/forgot-password" className="text-primary hover:underline">
+              Forgot your password?
+            </Link>
+          </span>
           <span className="text-xs text-muted-foreground">Don&apos;t have an account? <Link href="/register" className="text-primary hover:underline">Sign up</Link></span>
         </CardFooter>
       </Card>

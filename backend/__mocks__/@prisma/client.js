@@ -23,6 +23,7 @@ const inMemoryStore = {
   eventLogos: [],
   eventInvites: [],
   userAvatars: [],
+  passwordResetTokens: [],
 };
 
 class PrismaClient {
@@ -391,6 +392,76 @@ class PrismaClient {
         return { count: before - inMemoryStore.userAvatars.length };
       }),
     };
+    this.passwordResetToken = {
+      findUnique: jest.fn(({ where, include }) => {
+        const token = inMemoryStore.passwordResetTokens.find(
+          (t) => t.token === where.token
+        );
+        if (token && include && include.user) {
+          token.user = inMemoryStore.users.find((u) => u.id === token.userId);
+        }
+        return token || null;
+      }),
+      create: jest.fn(({ data }) => {
+        const token = {
+          id: String(inMemoryStore.passwordResetTokens.length + 1),
+          ...data,
+        };
+        inMemoryStore.passwordResetTokens.push(token);
+        return token;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.passwordResetTokens.findIndex(
+          (t) => t.token === where.token
+        );
+        if (idx !== -1) {
+          inMemoryStore.passwordResetTokens[idx] = {
+            ...inMemoryStore.passwordResetTokens[idx],
+            ...data,
+          };
+          return inMemoryStore.passwordResetTokens[idx];
+        }
+        return null;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.passwordResetTokens.length;
+        inMemoryStore.passwordResetTokens = inMemoryStore.passwordResetTokens.filter(
+          (t) => {
+            // Handle OR condition
+            if (where.OR) {
+              return !where.OR.some(condition => {
+                if (condition.userId && t.userId === condition.userId) return true;
+                if (condition.expiresAt && condition.expiresAt.lt && t.expiresAt < condition.expiresAt.lt) return true;
+                return false;
+              });
+            }
+            
+            // Handle direct conditions (keep tokens that don't match the delete criteria)
+            if (where.userId && t.userId === where.userId) return false;
+            if (where.expiresAt && where.expiresAt.lt && t.expiresAt < where.expiresAt.lt) return false;
+            return true;
+          }
+        );
+        return { count: before - inMemoryStore.passwordResetTokens.length };
+      }),
+    };
+    
+    // Add transaction support for the mock
+    this.$transaction = jest.fn().mockImplementation(async (operations) => {
+      // Handle both callback and array patterns
+      if (typeof operations === 'function') {
+        // Callback pattern: prisma.$transaction(async (tx) => { ... })
+        return await operations(this);
+      } else if (Array.isArray(operations)) {
+        // Array pattern: prisma.$transaction([op1, op2, ...])
+        const results = [];
+        for (const operation of operations) {
+          results.push(await operation);
+        }
+        return results;
+      }
+      throw new Error('Transaction must be called with a function or array of operations');
+    });
   }
 }
 
