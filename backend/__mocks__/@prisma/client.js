@@ -7,6 +7,7 @@ const inMemoryStore = {
     { id: "1", name: "SuperAdmin" },
     { id: "2", name: "Admin" },
     { id: "3", name: "Responder" },
+    { id: "4", name: "Reporter" },
   ],
   users: [{ id: "1", email: "admin@example.com", name: "Admin" }],
   userEventRoles: [
@@ -223,6 +224,33 @@ class PrismaClient {
         );
         return { count: before - inMemoryStore.userEventRoles.length };
       }),
+      findFirst: jest.fn(({ where, include }) => {
+        let results = inMemoryStore.userEventRoles;
+        if (where) {
+          if (where.userId) {
+            results = results.filter((uer) => uer.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter(
+              (uer) => String(uer.eventId) === String(where.eventId),
+            );
+          }
+          if (where.role && where.role.name) {
+            results = results.filter(
+              (uer) => uer.role && uer.role.name === where.role.name,
+            );
+          }
+        }
+        // If include.role is true, populate the role property from inMemoryStore.roles
+        if (include && include.role) {
+          results = results.map((uer) => ({
+            ...uer,
+            role:
+              inMemoryStore.roles.find((r) => r.id === uer.roleId) || uer.role,
+          }));
+        }
+        return results.length > 0 ? results[0] : null;
+      }),
       upsert: jest.fn(async ({ where, update, create }) => {
         // Find by unique keys (simulate composite unique constraint)
         const idx = inMemoryStore.userEventRoles.findIndex(
@@ -312,22 +340,30 @@ class PrismaClient {
     this.eventInviteLink = {
       findUnique: jest.fn(({ where }) => {
         return (
-          (inMemoryStore.eventInvites || []).find((i) => i.id === where.id) ||
-          null
+          (inMemoryStore.eventInvites || []).find((i) => 
+            (where.id && i.id === where.id) || (where.code && i.code === where.code)
+          ) || null
         );
       }),
       update: jest.fn(({ where, data }) => {
         const idx = (inMemoryStore.eventInvites || []).findIndex(
-          (i) => i.id === where.id,
+          (i) => (where.id && i.id === where.id) || (where.code && i.code === where.code),
         );
         if (idx === -1) {
           const err = new Error("Invite not found");
           err.code = "P2025";
           throw err;
         }
+        
+        // Handle increment operations
+        const updatedData = { ...data };
+        if (data.useCount && data.useCount.increment) {
+          updatedData.useCount = (inMemoryStore.eventInvites[idx].useCount || 0) + data.useCount.increment;
+        }
+        
         inMemoryStore.eventInvites[idx] = {
           ...inMemoryStore.eventInvites[idx],
-          ...data,
+          ...updatedData,
         };
         return inMemoryStore.eventInvites[idx];
       }),
