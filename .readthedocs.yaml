@@ -12,10 +12,10 @@ build:
 
   commands:
     # Install Docusaurus dependencies
-    - cd docs/ && npm install
+    - cd website/ && npm install
     # Build the site
-    - cd docs/ && npm run build
+    - cd website/ && npm run build
     # Copy generated files into Read the Docs directory
     - mkdir --parents $READTHEDOCS_OUTPUT/html/
-    - cp --recursive docs/build/* $READTHEDOCS_OUTPUT/html/
+    - cp --recursive website/build/* $READTHEDOCS_OUTPUT/html/
         
