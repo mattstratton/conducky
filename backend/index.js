@@ -356,9 +356,14 @@ app.post("/auth/forgot-password", async (req, res) => {
       const resetToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
       
-      // Clean up old tokens for this user
+      // Clean up old tokens for this user and expired tokens system-wide
       await prisma.passwordResetToken.deleteMany({
-        where: { userId: user.id }
+        where: {
+          OR: [
+            { userId: user.id },
+            { expiresAt: { lt: new Date() } }
+          ]
+        }
       });
       
       // Create new reset token

@@ -409,4 +409,67 @@ describe("Password Reset Integration Tests", () => {
       expect(res.body.error).toContain("minutes");
     });
   });
+
+  describe("Token Cleanup", () => {
+    it("should clean up expired tokens from all users when creating new token", async () => {
+      // Add some expired tokens for different users
+      const expiredTokens = [
+        {
+          id: "expired1",
+          userId: "user1",
+          token: "expired-token-1",
+          expiresAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+          used: false,
+          createdAt: new Date(),
+          user: { id: "user1", email: "user1@example.com", name: "User 1" }
+        },
+        {
+          id: "expired2", 
+          userId: "user2",
+          token: "expired-token-2",
+          expiresAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+          used: false,
+          createdAt: new Date(),
+          user: { id: "user2", email: "user2@example.com", name: "User 2" }
+        },
+        {
+          id: "valid1",
+          userId: "user3",
+          token: "valid-token-1",
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
+          used: false,
+          createdAt: new Date(),
+          user: { id: "user3", email: "user3@example.com", name: "User 3" }
+        }
+      ];
+
+      inMemoryStore.passwordResetTokens = [...expiredTokens];
+      inMemoryStore.users = [
+        { id: "1", email: "test@example.com", name: "Test User", passwordHash: "hashedpassword" }
+      ];
+
+      // Request password reset for test@example.com
+      const res = await request(app)
+        .post("/auth/forgot-password")
+        .send({ email: "test@example.com" });
+
+      expect(res.statusCode).toBe(200);
+
+      // Check that expired tokens were cleaned up but valid ones remain
+      const remainingTokens = inMemoryStore.passwordResetTokens;
+      
+      // Should have the new token for test@example.com and the valid token for user3
+      expect(remainingTokens.length).toBe(2);
+      
+      // Should not have the expired tokens
+      expect(remainingTokens.find(t => t.token === "expired-token-1")).toBeUndefined();
+      expect(remainingTokens.find(t => t.token === "expired-token-2")).toBeUndefined();
+      
+      // Should still have the valid token
+      expect(remainingTokens.find(t => t.token === "valid-token-1")).toBeDefined();
+      
+      // Should have the new token for our user
+      expect(remainingTokens.find(t => t.userId === "1")).toBeDefined();
+    });
+  });
 }); 

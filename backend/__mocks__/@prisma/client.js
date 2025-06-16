@@ -427,9 +427,19 @@ class PrismaClient {
         const before = inMemoryStore.passwordResetTokens.length;
         inMemoryStore.passwordResetTokens = inMemoryStore.passwordResetTokens.filter(
           (t) => {
-            if (where.userId && t.userId !== where.userId) return true;
-            if (where.expiresAt && where.expiresAt.lt && t.expiresAt >= where.expiresAt.lt) return true;
-            return false;
+            // Handle OR condition
+            if (where.OR) {
+              return !where.OR.some(condition => {
+                if (condition.userId && t.userId === condition.userId) return true;
+                if (condition.expiresAt && condition.expiresAt.lt && t.expiresAt < condition.expiresAt.lt) return true;
+                return false;
+              });
+            }
+            
+            // Handle direct conditions (keep tokens that don't match the delete criteria)
+            if (where.userId && t.userId === where.userId) return false;
+            if (where.expiresAt && where.expiresAt.lt && t.expiresAt < where.expiresAt.lt) return false;
+            return true;
           }
         );
         return { count: before - inMemoryStore.passwordResetTokens.length };
