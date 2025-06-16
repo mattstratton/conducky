@@ -810,7 +810,7 @@ app.post(
 
       // Create notification for report submission
       try {
-        await notifyReportEvent(report.id, 'report_submitted', reporterId);
+        await notifyReportEvent(report.id, 'report_submitted', req.user?.id || null);
       } catch (notifyErr) {
         console.error('Failed to create notification for report submission:', notifyErr);
         // Don't fail the request if notification fails
@@ -1112,7 +1112,7 @@ app.post(
 
       // Create notification for report submission
       try {
-        await notifyReportEvent(report.id, 'report_submitted', reporterId);
+        await notifyReportEvent(report.id, 'report_submitted', req.user?.id || null);
       } catch (notifyErr) {
         console.error('Failed to create notification for report submission:', notifyErr);
         // Don't fail the request if notification fails

@@ -68,7 +68,8 @@ interface NotificationStats {
 }
 
 const NotificationCenter: React.FC = () => {
-  const { user } = useContext(UserContext) as UserContextType;
+  const userContext = useContext(UserContext);
+  const { user } = userContext || { user: null };
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotificationStats | null>(null);
   const [loading, setLoading] = useState(true);
