@@ -66,11 +66,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
-      httpOnly: true, // Prevent XSS attacks
+      secure: false, // Temporarily disable secure cookies to test
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax', // Secure default - allows same-site and top-level navigation
-      domain: process.env.COOKIE_DOMAIN || undefined, // Share cookies across subdomains if configured (e.g., '.example.com')
     },
   }),
 );
