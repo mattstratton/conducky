@@ -43,6 +43,9 @@ export function AppSidebar({ user, events, ...props }: {
   // Track the user's selected event (persists when navigating out of event context)
   const [selectedEventSlug, setSelectedEventSlug] = useState<string | null>(null);
   
+  // Track unread notification count
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  
   // Update selected event when in event context
   useEffect(() => {
     const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
@@ -65,6 +68,35 @@ export function AppSidebar({ user, events, ...props }: {
       }
     }
   }, [events, selectedEventSlug]);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(
+          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/notifications/stats",
+          { credentials: "include" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadCount(data.unread || 0);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch notification stats:", error);
+      }
+    };
+
+    // Fetch on mount and when user changes
+    if (user) {
+      fetchUnreadCount();
+      
+      // Set up interval to refresh every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [user]);
   
   // Wait for router to be ready to avoid hydration issues
   if (!router.isReady) {
@@ -196,6 +228,8 @@ export function AppSidebar({ user, events, ...props }: {
           title: "Notifications",
           url: "/dashboard/notifications",
           icon: BookOpen,
+          // TODO: Add badge support to NavMain component to show unread count
+          // badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
         },
       ];
 

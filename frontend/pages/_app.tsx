@@ -110,6 +110,9 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
           }
         })
         .catch(() => setEvents([]));
+    } else {
+      // Clear events when user is logged out or session is lost
+      setEvents([]);
     }
   }, [user]);
 
