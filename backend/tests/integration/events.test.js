@@ -5,12 +5,69 @@ const app = require("../../index");
 jest.mock("../../src/utils/rbac", () => ({
   requireSuperAdmin: () => (req, res, next) => {
     req.isAuthenticated = () => true;
-    req.user = { id: "1", email: "admin@example.com", name: "Admin" };
+    
+    // Check if user has SuperAdmin role in any event
+    const { inMemoryStore } = require("../../__mocks__/@prisma/client");
+    
+    // Use test user ID from header if provided, otherwise default to user 1
+    const testUserId = req.headers['x-test-user-id'] || "1";
+    const testUser = inMemoryStore.users.find(u => u.id === testUserId) || { id: testUserId, email: `user${testUserId}@example.com`, name: `User${testUserId}` };
+    req.user = testUser;
+    const isSuperAdmin = inMemoryStore.userEventRoles.some(
+      (uer) => uer.userId === req.user.id && uer.role.name === "SuperAdmin"
+    );
+    
+    if (!isSuperAdmin) {
+      res.status(403).json({ error: "Forbidden: insufficient role" });
+      return;
+    }
+    
     next();
   },
-  requireRole: () => (req, res, next) => {
+  requireRole: (allowedRoles) => (req, res, next) => {
     req.isAuthenticated = () => true;
-    req.user = { id: "1", email: "admin@example.com", name: "Admin" };
+    
+    const { inMemoryStore } = require("../../__mocks__/@prisma/client");
+    
+    // Use test user ID from header if provided, otherwise default to user 1
+    const testUserId = req.headers['x-test-user-id'] || "1";
+    const testUser = inMemoryStore.users.find(u => u.id === testUserId) || { id: testUserId, email: `user${testUserId}@example.com`, name: `User${testUserId}` };
+    req.user = testUser;
+    
+    // Get eventId from params
+    let eventId = req.params.eventId || req.params.slug;
+    
+    // If slug is provided, resolve to eventId
+    if (req.params.slug && !eventId.match(/^\d+$/)) {
+      const event = inMemoryStore.events.find(e => e.slug === req.params.slug);
+      if (event) {
+        eventId = event.id;
+      }
+    }
+    
+    // Check for SuperAdmin role globally
+    const isSuperAdmin = inMemoryStore.userEventRoles.some(
+      (uer) => uer.userId === req.user.id && uer.role.name === "SuperAdmin"
+    );
+    
+    if (allowedRoles.includes("SuperAdmin") && isSuperAdmin) {
+      return next();
+    }
+    
+    // Check for allowed roles for this specific event
+    const userRoles = inMemoryStore.userEventRoles.filter(
+      (uer) => uer.userId === req.user.id && uer.eventId === eventId
+    );
+    
+    const hasRole = userRoles.some((uer) =>
+      allowedRoles.includes(uer.role.name)
+    );
+    
+    if (!hasRole) {
+      res.status(403).json({ error: "Forbidden: insufficient role" });
+      return;
+    }
+    
     next();
   },
 }));

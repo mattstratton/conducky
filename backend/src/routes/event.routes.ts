@@ -198,7 +198,11 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
     const result = await reportService.createReport(reportData, evidenceFiles);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -227,7 +231,11 @@ router.get('/:eventId/reports', async (req: Request, res: Response): Promise<voi
     });
     
     if (!result.success) {
-      res.status(500).json({ error: result.error });
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
       return;
     }
 
@@ -261,19 +269,19 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
 router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
-    const { status, priority, assignedToUserId, resolution } = req.body;
+    const { state, status, priority, assignedToUserId, resolution } = req.body;
     
-    const updateData = {
-      status,
-      priority,
-      assignedToUserId,
-      resolution
-    };
+    // Handle both 'state' and 'status' parameters for compatibility
+    const stateValue = state || status;
     
-    const result = await reportService.updateReportState(eventId, reportId, status);
+    const result = await reportService.updateReportState(eventId, reportId, stateValue);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -285,9 +293,9 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
 });
 
 // Update report title
-router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAdmin', 'Reporter']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { reportId } = req.params;
+    const { eventId, reportId } = req.params;
     const { title } = req.body;
     
     if (!title) {
@@ -306,10 +314,14 @@ router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAd
       return;
     }
     
-    const result = await reportService.updateReport(reportId, { title });
+    const result = await reportService.updateReportTitle(eventId, reportId, title, req.user?.id);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -384,7 +396,7 @@ router.get('/:eventId/reports/:reportId/evidence/:evidenceId/download', async (r
   try {
     const { evidenceId } = req.params;
     
-    const result = await reportService.downloadEvidenceFile(evidenceId);
+    const result = await reportService.getEvidenceFile(evidenceId);
     
     if (!result.success) {
       res.status(404).json({ error: result.error });
@@ -407,7 +419,7 @@ router.delete('/:eventId/reports/:reportId/evidence/:evidenceId', requireRole(['
   try {
     const { evidenceId } = req.params;
     
-    const result = await reportService.deleteEvidence(evidenceId);
+    const result = await reportService.deleteEvidenceFile(evidenceId);
     
     if (!result.success) {
       res.status(400).json({ error: result.error });
@@ -629,6 +641,35 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
   } catch (error: any) {
     console.error('Get report by slug error:', error);
     res.status(500).json({ error: 'Failed to fetch report.' });
+  }
+});
+
+// Upload event logo by slug
+router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const logoFile = req.file;
+    
+    if (!logoFile) {
+      res.status(400).json({ error: 'No file uploaded.' });
+      return;
+    }
+    
+    const result = await eventService.uploadEventLogo(slug, logoFile);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Upload logo by slug error:', error);
+    res.status(500).json({ error: 'Failed to upload logo.' });
   }
 });
 
