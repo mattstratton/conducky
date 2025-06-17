@@ -64,7 +64,7 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar updated!");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, {
+        const sessionRes = await fetch(`${apiUrl}/api/session`, {
           credentials: "include",
         });
         const sessionData = await sessionRes.json();
@@ -97,7 +97,7 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar removed.");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, {
+        const sessionRes = await fetch(`${apiUrl}/api/session`, {
           credentials: "include",
         });
         const sessionData = await sessionRes.json();

@@ -74,7 +74,7 @@ export default function EventAdminPage() {
 
   useEffect(() => {
     if (!eventSlug) return;
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+            fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
       .then((res) => {
         if (!res.ok) throw new Error("Event not found");
         return res.json();
@@ -82,12 +82,12 @@ export default function EventAdminPage() {
       .then((data) => {
         setEvent(data.event);
       });
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session", { credentials: "include" })
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setUser(data ? data.user : null));
     fetchEventUsers();
     fetchInvites();
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/logo`, { method: "HEAD" })
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/logo`, { method: "HEAD" })
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
   }, [eventSlug]);
@@ -97,7 +97,7 @@ export default function EventAdminPage() {
   useEffect(() => { setPage(1); }, [sort, order, limit, roleFilter]);
   useEffect(() => {
     if (!eventSlug) return;
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/logo`, { method: "HEAD" })
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/logo`, { method: "HEAD" })
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
   }, [eventSlug]);
@@ -160,7 +160,7 @@ export default function EventAdminPage() {
                   setLogoUploadLoading(true);
                   const formData = new FormData();
                   formData.append("logo", value);
-                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${event.slug}/logo`, {
+                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${event.slug}/logo`, {
                     method: "POST",
                     credentials: "include",
                     body: formData,

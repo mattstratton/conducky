@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { NotificationService } from '../services/notification.service';
-import { requireAuth } from '../middleware/auth';
-import { AuthenticatedRequest } from '../types';
+import { UserResponse } from '../types';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
@@ -9,8 +8,14 @@ const prisma = new PrismaClient();
 const notificationService = new NotificationService(prisma);
 
 // Get user's notifications with pagination and filtering
-router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/users/me/notifications', async (req: any, res: Response): Promise<void> => {
   try {
+    // Check authentication first
+    if (!req.user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
     const {
       page = 1,
       limit = 20,
@@ -29,12 +34,6 @@ router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequ
     }
 
     const skip = (pageNum - 1) * limitNum;
-
-    // Validate user authentication
-    if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
-      return;
-    }
 
     // Build where clause
     const whereClause: any = { userId: req.user.id };
@@ -85,7 +84,6 @@ router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequ
       },
       unreadCount
     });
-    return;
 
   } catch (err: any) {
     console.error('Error fetching notifications:', err);
@@ -94,10 +92,16 @@ router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequ
 });
 
 // Mark notification as read
-router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:notificationId/read', async (req: any, res: Response): Promise<void> => {
   const { notificationId } = req.params;
 
   try {
+    // Check authentication first
+    if (!req.user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
     // Check if notification belongs to user
     const notification = await prisma.notification.findUnique({
       where: { id: notificationId }
@@ -108,7 +112,7 @@ router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequ
       return;
     }
 
-    if (!req.user || notification.userId !== req.user.id) {
+    if (notification.userId !== req.user.id) {
       res.status(403).json({ error: 'Not authorized to access this notification' });
       return;
     }
@@ -133,10 +137,11 @@ router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequ
 });
 
 // Get notification statistics for user
-router.get('/users/me/notifications/stats', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/users/me/notifications/stats', async (req: any, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
+    // Check authentication first
+    if (!req.user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     

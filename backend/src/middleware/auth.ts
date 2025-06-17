@@ -21,13 +21,6 @@ export interface AuthUser {
 }
 
 /**
- * Extended Request interface with user information
- */
-export interface AuthenticatedRequest extends Request {
-  user?: AuthUser;
-}
-
-/**
  * Configure Passport.js local strategy
  */
 export function configurePassport() {

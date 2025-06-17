@@ -35,7 +35,7 @@ export default function MyReportsPage() {
     setLoading(true);
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/reports?userId=${user.id}`,
+        `/api/events/slug/${eventSlug}/reports?userId=${user.id}`,
       { credentials: "include" }
     )
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))

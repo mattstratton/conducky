@@ -30,10 +30,7 @@ export interface PaginationResponse {
   totalPages: number;
 }
 
-// Request/Response types for controllers - using UserResponse for API contexts
-export interface AuthenticatedRequest extends Request {
-  user?: UserResponse | undefined;
-}
+// Note: Use standard Express Request type directly in routes
 
 // Service response types
 export interface ServiceResult<T = any> {

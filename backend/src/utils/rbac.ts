@@ -13,13 +13,6 @@ interface User {
 }
 
 /**
- * Express Request with Passport.js authentication extensions
- */
-interface AuthenticatedRequest extends Request {
-  user?: User;
-}
-
-/**
  * Role names supported by the RBAC system
  */
 type RoleName = "SuperAdmin" | "Admin" | "Responder" | "Reporter";
@@ -37,7 +30,7 @@ type RoleName = "SuperAdmin" | "Admin" | "Responder" | "Reporter";
  * ```
  */
 export function requireRole(allowedRoles: RoleName[]) {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log("[RBAC DEBUG] Function entry");
     console.log("[RBAC DEBUG] req.params:", req.params);
     
@@ -130,8 +123,9 @@ export function requireRole(allowedRoles: RoleName[]) {
 
     try {
       // Check for SuperAdmin role globally
+      const user = req.user as any; // Type assertion for user with id property
       const allUserRoles = await prisma.userEventRole.findMany({
-        where: { userId: req.user.id },
+        where: { userId: user.id },
         include: { role: true },
       });
       
@@ -201,16 +195,17 @@ export function requireRole(allowedRoles: RoleName[]) {
  * ```
  */
 export function requireSuperAdmin() {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
 
     try {
+      const user = req.user as any; // Type assertion for user with id property
       const userRoles = await prisma.userEventRole.findMany({
         where: {
-          userId: req.user.id,
+          userId: user.id,
         },
         include: { role: true },
       });

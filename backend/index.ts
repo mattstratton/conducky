@@ -137,6 +137,61 @@ app.use('/invites', inviteRoutes); // Backward compatibility for tests
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Missing API routes that frontend expects
+// Session route (frontend expects /api/session)
+app.get('/api/session', async (req: any, res: any) => {
+  if (req.user) {
+    try {
+      // Get avatar if exists
+      const avatar = await prisma.userAvatar.findUnique({
+        where: { userId: req.user.id }
+      });
+
+      res.json({ 
+        authenticated: true, 
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
+        }
+      });
+    } catch (err: any) {
+      console.error('Error fetching user avatar for session:', err);
+      res.json({ 
+        authenticated: true, 
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          avatarUrl: null
+        }
+      });
+    }
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
+// System settings route (frontend expects /api/system/settings)
+app.get('/api/system/settings', async (_req: any, res: any) => {
+  try {
+    // Get system settings from database
+    const settings = await prisma.systemSetting.findMany();
+    
+    // Convert array to object for easier frontend usage
+    const settingsObj: Record<string, string> = {};
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    res.json({ settings: settingsObj });
+  } catch (err: any) {
+    console.error('Error fetching system settings:', err);
+    res.status(500).json({ error: 'Failed to fetch system settings', details: err.message });
+  }
+});
+
 // Evidence download route (standalone for public access)
 app.get('/api/evidence/:evidenceId/download', async (req: any, res: any) => {
   try {

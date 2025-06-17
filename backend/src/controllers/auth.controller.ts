@@ -9,10 +9,7 @@ interface AuthUser {
   [key: string]: any; // For other Prisma fields
 }
 
-// Extend Request to include authenticated user
-interface AuthenticatedRequest extends Request {
-  user?: AuthUser;
-}
+// Using standard Express Request type
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -125,9 +122,10 @@ export class AuthController {
     }
   }
 
-  async getSession(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getSession(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; // Type assertion for user with id property
+      const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });

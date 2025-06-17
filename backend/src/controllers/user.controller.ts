@@ -9,17 +9,14 @@ interface AuthUser {
   [key: string]: any; // For other Prisma fields
 }
 
-// Extend Request to include authenticated user
-interface AuthenticatedRequest extends Request {
-  user?: AuthUser;
-}
+// Using standard Express Request type
 
 export class UserController {
   constructor(private userService: UserService) {}
 
-  async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async updateProfile(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -40,9 +37,9 @@ export class UserController {
     }
   }
 
-  async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async changePassword(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -144,9 +141,9 @@ export class UserController {
     }
   }
 
-  async getUserEvents(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getUserEvents(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -167,9 +164,9 @@ export class UserController {
     }
   }
 
-  async getUserReports(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getUserReports(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -205,9 +202,9 @@ export class UserController {
     }
   }
 
-  async getQuickStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getQuickStats(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -228,9 +225,9 @@ export class UserController {
     }
   }
 
-  async getActivity(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getActivity(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       
       if (!userId) {
         res.status(401).json({ error: 'Not authenticated' });
@@ -251,9 +248,9 @@ export class UserController {
     }
   }
 
-  async leaveEvent(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async leaveEvent(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
+      const user = req.user as any; const userId = user?.id;
       const { eventId } = req.params;
       
       if (!userId) {

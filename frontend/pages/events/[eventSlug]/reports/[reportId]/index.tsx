@@ -132,7 +132,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   // Fetch user info
   useEffect(() => {
     fetch(
-      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session",
+              (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session",
       { credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : null))
@@ -146,7 +146,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     if (eventSlug && user) {
       fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/my-roles`,
+          `/api/events/slug/${eventSlug}/my-roles`,
         { credentials: "include" },
       )
         .then((res) => (res.ok ? res.json() : null))
@@ -162,7 +162,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     setCommentsLoading(true);
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+        `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
       { credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : { comments: [] }))
@@ -225,7 +225,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

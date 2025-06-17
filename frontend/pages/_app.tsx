@@ -45,7 +45,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   // Restore user from session cookie on mount
   React.useEffect(() => {
     if (!user) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session", {
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
         credentials: "include",
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -58,12 +58,12 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   useEffect(() => {
     if (eventSlug) {
-              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.event) setEventName(data.event.name);
         });
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users`, { credentials: "include" })
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users`, { credentials: "include" })
         .then(() => {
           // No-op for now; events are fetched from /api/users/me/events
         })
@@ -79,7 +79,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   useEffect(() => {
     if (modalOpen && eventSlugForModal) {
-              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlugForModal}`)
+              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlugForModal}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => setEventName(data && data.event ? data.event.name : eventSlugForModal))
         .catch(() => setEventName(eventSlugForModal));

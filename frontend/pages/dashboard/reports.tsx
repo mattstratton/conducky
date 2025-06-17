@@ -213,7 +213,7 @@ export default function CrossEventReports() {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + 
-        `/events/slug/${report.event.slug}/reports/${report.id}`,
+        `/api/events/slug/${report.event.slug}/reports/${report.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -244,7 +244,7 @@ export default function CrossEventReports() {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + 
-        `/events/slug/${report.event.slug}/reports/${report.id}`,
+        `/api/events/slug/${report.event.slug}/reports/${report.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },

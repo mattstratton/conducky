@@ -4,7 +4,7 @@ import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
 import { InviteService } from '../services/invite.service';
 import { requireRole } from '../middleware/rbac';
-import { AuthenticatedRequest } from '../types';
+import { UserResponse } from '../types';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 
@@ -137,7 +137,7 @@ router.post('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req:
 });
 
 // Remove role from user
-router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { userId, roleName } = req.body;
@@ -273,7 +273,7 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
 });
 
 // Update report state
-router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
     const { state, status, priority, assignedToUserId, resolution } = req.body;
@@ -300,7 +300,7 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
 });
 
 // Update report title
-router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAdmin', 'Reporter']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAdmin', 'Reporter']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
     const { title } = req.body;
@@ -321,7 +321,8 @@ router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAd
       return;
     }
     
-    const result = await reportService.updateReportTitle(eventId, reportId, title, req.user?.id);
+    const user = req.user as any;
+    const result = await reportService.updateReportTitle(eventId, reportId, title, user?.id);
     
     if (!result.success) {
       if (result.error?.includes('Insufficient permissions')) {
@@ -340,7 +341,7 @@ router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAd
 });
 
 // Upload evidence for report
-router.post('/:eventId/reports/:reportId/evidence', requireRole(['Admin', 'SuperAdmin', 'Responder']), uploadEvidence.array('evidence'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/:eventId/reports/:reportId/evidence', requireRole(['Admin', 'SuperAdmin', 'Responder']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { reportId } = req.params;
     const evidenceFiles = req.files as Express.Multer.File[];
@@ -350,7 +351,8 @@ router.post('/:eventId/reports/:reportId/evidence', requireRole(['Admin', 'Super
       return;
     }
     
-    const uploaderId = req.user?.id;
+    const user = req.user as any;
+    const uploaderId = user?.id;
     
     if (!uploaderId) {
       res.status(401).json({ error: 'User not authenticated.' });
@@ -427,7 +429,7 @@ router.get('/:eventId/reports/:reportId/evidence/:evidenceId/download', async (r
 });
 
 // Delete evidence file
-router.delete('/:eventId/reports/:reportId/evidence/:evidenceId', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:eventId/reports/:reportId/evidence/:evidenceId', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { evidenceId } = req.params;
     
@@ -446,7 +448,7 @@ router.delete('/:eventId/reports/:reportId/evidence/:evidenceId', requireRole(['
 });
 
 // Upload event logo
-router.post('/:eventId/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/:eventId/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const logoFile = req.file;
@@ -456,7 +458,15 @@ router.post('/:eventId/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.s
       return;
     }
     
-    const result = await eventService.uploadEventLogo(eventId, logoFile);
+    // Convert Multer File to EventLogo format
+    const logoData = {
+      filename: logoFile.originalname,
+      mimetype: logoFile.mimetype,
+      size: logoFile.size,
+      data: logoFile.buffer
+    };
+    
+    const result = await eventService.uploadEventLogo(eventId, logoData);
     
     if (!result.success) {
       res.status(400).json({ error: result.error });
@@ -495,6 +505,33 @@ router.get('/:eventId/logo', async (req: Request, res: Response): Promise<void> 
   } catch (error: any) {
     console.error('Get logo error:', error);
     res.status(500).json({ error: 'Failed to get logo.' });
+  }
+});
+
+// Get event by slug
+router.get('/slug/:slug', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // First get the event ID by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Then get the full event details
+    const result = await eventService.getEventById(eventId);
+    
+    if (!result.success) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event by slug error:', error);
+    res.status(500).json({ error: 'Failed to fetch event.' });
   }
 });
 
@@ -618,6 +655,69 @@ router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']),
   }
 });
 
+// Get all reports for an event by slug
+router.get('/slug/:slug/reports', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    // Get event ID by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Get reports for this event
+    const result = await reportService.getReportsByEventId(eventId);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch event reports.' });
+  }
+});
+
+// Get user's roles for an event by slug
+router.get('/slug/:slug/my-roles', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    const result = await eventService.getUserRolesBySlug(user.id, slug);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user roles by slug error:', error);
+    res.status(500).json({ error: 'Failed to fetch user roles.' });
+  }
+});
+
 // Get event reports by slug (with access control)
 router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response): Promise<void> => {
   const { slug, reportId } = req.params;
@@ -642,7 +742,8 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
     }
 
     // Check access control using the service
-    const accessResult = await reportService.checkReportAccess(req.user.id, reportId);
+    const user = req.user as any; // Type assertion to bypass strict typing
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
     
     if (!accessResult.success) {
       res.status(500).json({ error: accessResult.error });
@@ -661,8 +762,30 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
   }
 });
 
+// Get event logo by slug
+router.get('/slug/:slug/logo', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    const result = await eventService.getEventLogo(slug);
+    
+    if (!result.success) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+
+    const { filename, mimetype, data } = result.data!;
+    res.setHeader('Content-Type', mimetype);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(data);
+  } catch (error: any) {
+    console.error('Get event logo error:', error);
+    res.status(500).json({ error: 'Failed to get event logo.' });
+  }
+});
+
 // Upload event logo by slug
-router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const logoFile = req.file;
