@@ -338,7 +338,15 @@ router.post('/:eventId/reports/:reportId/evidence', requireRole(['Admin', 'Super
       return;
     }
     
-    const result = await reportService.uploadEvidence(reportId, evidenceFiles, uploaderId);
+    const evidenceData = evidenceFiles.map(file => ({
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      data: file.buffer,
+      uploaderId
+    }));
+    
+    const result = await reportService.uploadEvidenceFiles(reportId, evidenceData);
     
     if (!result.success) {
       res.status(400).json({ error: result.error });
@@ -357,7 +365,7 @@ router.get('/:eventId/reports/:reportId/evidence', async (req: Request, res: Res
   try {
     const { reportId } = req.params;
     
-    const result = await reportService.getReportEvidence(reportId);
+    const result = await reportService.getEvidenceFiles(reportId);
     
     if (!result.success) {
       res.status(500).json({ error: result.error });
@@ -376,7 +384,7 @@ router.get('/:eventId/reports/:reportId/evidence/:evidenceId/download', async (r
   try {
     const { evidenceId } = req.params;
     
-    const result = await reportService.downloadEvidence(evidenceId);
+    const result = await reportService.downloadEvidenceFile(evidenceId);
     
     if (!result.success) {
       res.status(404).json({ error: result.error });
