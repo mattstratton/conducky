@@ -146,6 +146,7 @@ export function AppSidebar({ user, events, ...props }: {
       url: string;
       icon?: LucideIcon;
       isActive?: boolean;
+      badge?: string;
       items?: Array<{ title: string; url: string; }>;
     }> = [];
     let eventNavItems: Array<{
@@ -153,6 +154,7 @@ export function AppSidebar({ user, events, ...props }: {
       url: string;
       icon?: LucideIcon;
       isActive?: boolean;
+      badge?: string;
       items?: Array<{ title: string; url: string; }>;
     }> = [];
     let shouldShowEventNav = false;
@@ -228,8 +230,7 @@ export function AppSidebar({ user, events, ...props }: {
           title: "Notifications",
           url: "/dashboard/notifications",
           icon: BookOpen,
-          // TODO: Add badge support to NavMain component to show unread count
-          // badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
+          badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
         },
       ];
 

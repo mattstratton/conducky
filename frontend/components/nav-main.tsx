@@ -19,6 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { Badge } from "@/components/ui/badge"
 
 export function NavMain({
   items,
@@ -29,6 +30,7 @@ export function NavMain({
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    badge?: string
     items?: {
       title: string
       url: string
@@ -53,6 +55,11 @@ export function NavMain({
                   <SidebarMenuButton tooltip={item.title}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
+                    {item.badge && (
+                      <Badge variant="destructive" className="ml-auto mr-2 h-5 w-5 p-0 text-xs flex items-center justify-center">
+                        {item.badge}
+                      </Badge>
+                    )}
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
@@ -77,6 +84,11 @@ export function NavMain({
                 <Link href={item.url} className={item.isActive ? "font-semibold" : undefined}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
+                  {item.badge && (
+                    <Badge variant="destructive" className="ml-auto h-5 w-5 p-0 text-xs flex items-center justify-center">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
