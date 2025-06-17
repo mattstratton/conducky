@@ -603,22 +603,33 @@ export class UserService {
       const eventIds = userEventRoles.map(uer => uer.eventId).filter(Boolean);
       const eventCount = new Set(eventIds).size;
 
-      // Count reports where user is reporter OR assigned responder OR admin in event
-      const reportsAsReporter = await this.prisma.report.count({ where: { reporterId: userId } });
-      const reportsAsResponder = await this.prisma.report.count({ where: { assignedResponderId: userId } });
+      // Get unique report IDs to avoid double counting when user has multiple roles for same report
+      const reporterIds = await this.prisma.report.findMany({ 
+        where: { reporterId: userId }, 
+        select: { id: true } 
+      });
+      const responderIds = await this.prisma.report.findMany({ 
+        where: { assignedResponderId: userId }, 
+        select: { id: true } 
+      });
       
       // Count events where user is admin
       const adminEventIds = userEventRoles
         .filter(uer => uer.role.name === 'Admin' && uer.eventId)
         .map(uer => uer.eventId!)
         .filter((id): id is string => id !== null);
-      let reportsAsAdmin = 0;
-      if (adminEventIds.length > 0) {
-        reportsAsAdmin = await this.prisma.report.count({ where: { eventId: { in: adminEventIds } } });
-      }
-      
-      // Total unique reports
-      const reportCount = reportsAsReporter + reportsAsResponder + reportsAsAdmin;
+      const adminIds = adminEventIds.length > 0 ? await this.prisma.report.findMany({ 
+        where: { eventId: { in: adminEventIds } }, 
+        select: { id: true } 
+      }) : [];
+
+      // Use Set to get unique report IDs across all roles
+      const uniqueReportIds = new Set([
+        ...reporterIds.map(r => r.id),
+        ...responderIds.map(r => r.id),
+        ...adminIds.map(r => r.id)
+      ]);
+      const reportCount = uniqueReportIds.size;
 
       // Needs response: reports assigned to user as responder and not closed/resolved
       const needsResponseCount = await this.prisma.report.count({
