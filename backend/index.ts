@@ -50,6 +50,8 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   }),
 );
 
@@ -63,6 +65,12 @@ app.use(
     secret: process.env.SESSION_SECRET || 'changeme',
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
+      httpOnly: true, // Prevent XSS attacks
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site cookies in production
+    },
   }),
 );
 
