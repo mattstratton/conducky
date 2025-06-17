@@ -222,4 +222,35 @@ router.delete('/:notificationId', async (req: any, res: Response): Promise<void>
   }
 });
 
+// Mark all notifications as read for the current user
+router.patch('/users/me/notifications/read-all', async (req: any, res: Response): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    // Update all unread notifications for the user
+    const result = await prisma.notification.updateMany({
+      where: {
+        userId: req.user.id,
+        isRead: false
+      },
+      data: {
+        isRead: true,
+        readAt: new Date()
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: `Marked ${result.count} notifications as read` 
+    });
+
+  } catch (err: any) {
+    console.error('Error marking all notifications as read:', err);
+    res.status(500).json({ error: 'Failed to mark notifications as read.' });
+  }
+});
+
 export default router; 

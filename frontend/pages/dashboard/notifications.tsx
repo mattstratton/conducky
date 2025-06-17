@@ -23,20 +23,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-// User context type
-interface User {
-  id: string;
-  email?: string;
-  name?: string;
-  roles?: string[];
-  avatarUrl?: string;
-}
-
-interface UserContextType {
-  user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
-}
-
 interface Notification {
   id: string;
   type: string;
@@ -80,7 +66,7 @@ const NotificationCenter: React.FC = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   
   // Filters and pagination
-  const [currentTab, setCurrentTab] = useState('all');
+  const [currentTab, setCurrentTab] = useState('unread');
   const [typeFilter, setTypeFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -390,15 +376,15 @@ const NotificationCenter: React.FC = () => {
             <Tabs value={currentTab} onValueChange={setCurrentTab}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="unread" className="relative">
                     Unread
                     {stats && stats.unread > 0 && (
-                      <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs">
+                      <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center min-w-[20px]">
                         {stats.unread > 99 ? '99+' : stats.unread}
                       </Badge>
                     )}
                   </TabsTrigger>
+                  <TabsTrigger value="all">All</TabsTrigger>
                 </TabsList>
 
                 <div className="flex items-center gap-2">
@@ -433,10 +419,10 @@ const NotificationCenter: React.FC = () => {
                 </div>
               </div>
 
-              <TabsContent value="all" className="mt-0">
+              <TabsContent value="unread" className="mt-0">
                 <NotificationList />
               </TabsContent>
-              <TabsContent value="unread" className="mt-0">
+              <TabsContent value="all" className="mt-0">
                 <NotificationList />
               </TabsContent>
             </Tabs>

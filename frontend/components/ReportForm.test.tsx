@@ -24,7 +24,7 @@ describe("ReportForm", () => {
   it("renders all fields", () => {
     render(<ReportForm {...baseProps} />);
     expect(screen.getByLabelText(/report title/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/type/i)).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/date\/time of incident/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/involved parties/i)).toBeInTheDocument();
@@ -35,7 +35,15 @@ describe("ReportForm", () => {
   it("shows error for short title", async () => {
     render(<ReportForm {...baseProps} />);
     fireEvent.change(screen.getByLabelText(/report title/i), { target: { value: "short" } });
-    fireEvent.change(screen.getByLabelText(/type/i), { target: { value: "harassment" } });
+    
+    const selectTrigger = screen.getByRole("combobox");
+    fireEvent.click(selectTrigger);
+    
+    await waitFor(() => {
+      const harassmentOption = screen.getByText("Harassment");
+      fireEvent.click(harassmentOption);
+    });
+    
     fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "desc" } });
     fireEvent.click(screen.getByRole("button", { name: /submit report/i }));
     await waitFor(() => {
@@ -51,7 +59,15 @@ describe("ReportForm", () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true });
     render(<ReportForm {...baseProps} />);
     fireEvent.change(screen.getByLabelText(/report title/i), { target: { value: "A valid report title" } });
-    fireEvent.change(screen.getByLabelText(/type/i), { target: { value: "harassment" } });
+    
+    const selectTrigger = screen.getByRole("combobox");
+    fireEvent.click(selectTrigger);
+    
+    await waitFor(() => {
+      const harassmentOption = screen.getByText("Harassment");
+      fireEvent.click(harassmentOption);
+    });
+    
     fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "A valid description" } });
     fireEvent.click(screen.getByRole("button", { name: /submit report/i }));
     await waitFor(() => {
