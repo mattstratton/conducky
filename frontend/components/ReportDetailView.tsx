@@ -141,6 +141,40 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
         type={report.type}
         description={report.description}
         reporter={report.reporter}
+        location={report.location}
+        contactPreference={report.contactPreference}
+        incidentAt={report.incidentAt}
+        parties={report.parties}
+        canEditLocation={isResponderOrAbove || (user && user.id === report.reporterId)}
+        canEditContactPreference={user && user.id === report.reporterId}
+        canEditIncidentAt={isResponderOrAbove || (user && user.id === report.reporterId)}
+        canEditParties={isResponderOrAbove || (user && user.id === report.reporterId)}
+        canEditDescription={isAdminOrSuperAdmin || (user && user.id === report.reporterId)}
+        canEditType={isResponderOrAbove || (user && user.id === report.reporterId)}
+        onLocationEdit={async (location) => {
+          // TODO: Implement location edit API call
+          console.log('Edit location:', location);
+        }}
+        onContactPreferenceEdit={async (contactPreference) => {
+          // TODO: Implement contact preference edit API call
+          console.log('Edit contact preference:', contactPreference);
+        }}
+        onIncidentAtEdit={async (incidentAt) => {
+          // TODO: Implement incident date edit API call
+          console.log('Edit incident date:', incidentAt);
+        }}
+        onPartiesEdit={async (parties) => {
+          // TODO: Implement parties edit API call
+          console.log('Edit parties:', parties);
+        }}
+        onDescriptionEdit={async (description) => {
+          // TODO: Implement description edit API call
+          console.log('Edit description:', description);
+        }}
+        onTypeEdit={async (type) => {
+          // TODO: Implement type edit API call
+          console.log('Edit type:', type);
+        }}
       />
       <Table>
         <TableBody>

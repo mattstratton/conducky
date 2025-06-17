@@ -48,7 +48,7 @@ describe("ReportDetailView", () => {
     );
     expect(screen.getByText("Test Title")).toBeInTheDocument();
     expect(screen.getByText("Test report")).toBeInTheDocument();
-    expect(screen.getByText("incident")).toBeInTheDocument();
+    expect(screen.getByText("Incident")).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 
