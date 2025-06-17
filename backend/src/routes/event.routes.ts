@@ -166,7 +166,7 @@ router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (re
 });
 
 // Create report for event
-router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
+router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { type, description, title } = req.body;
@@ -187,13 +187,19 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
       return;
     }
     
+    // Get authenticated user
+    const user = req.user as any;
+    if (!user?.id) {
+      res.status(401).json({ error: 'User not authenticated.' });
+      return;
+    }
+    
     const reportData = {
       eventId,
       type,
       description,
       title,
-      // TODO: Add reporter from authentication
-      reporterId: 'temp-reporter-id'
+      reporterId: user.id
     };
     
     // Handle file uploads if any
@@ -203,7 +209,7 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
       mimetype: file.mimetype,
       size: file.size,
       data: file.buffer,
-      uploaderId: null // Will be set when authentication is properly implemented
+      uploaderId: user.id
     }));
     
     const result = await reportService.createReport(reportData, evidenceFiles);
