@@ -34,12 +34,12 @@ export interface UserReport {
   };
   reporter: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
-  };
+  } | null;
   assignedResponder: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
   } | null;
   evidenceFiles: {
@@ -782,7 +782,7 @@ export class UserService {
         data: {
           filename: avatar.filename,
           mimetype: avatar.mimetype,
-          data: avatar.data
+          data: Buffer.from(avatar.data)
         }
       };
     } catch (error: any) {

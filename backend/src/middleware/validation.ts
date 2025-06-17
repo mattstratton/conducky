@@ -19,7 +19,7 @@ export function validateRequired(fields: string[]) {
         missing: validation.missingFields,
       });
     }
-    next();
+    return next();
   };
 }
 
@@ -40,7 +40,7 @@ export function validatePasswordStrength(req: Request, res: Response, next: Next
     });
   }
   
-  next();
+  return next();
 }
 
 /**
@@ -57,7 +57,7 @@ export function validateEmailFormat(req: Request, res: Response, next: NextFunct
     return res.status(400).json({ error: 'Invalid email format' });
   }
   
-  next();
+  return next();
 }
 
 /**
@@ -87,7 +87,7 @@ export function validateRegistration(req: Request, res: Response, next: NextFunc
     });
   }
   
-  next();
+  return next();
 }
 
 /**
@@ -109,7 +109,7 @@ export function validateLogin(req: Request, res: Response, next: NextFunction) {
     return res.status(400).json({ error: 'Invalid email format' });
   }
   
-  next();
+  return next();
 }
 
 /**
@@ -134,5 +134,5 @@ export function validateEventCreation(req: Request, res: Response, next: NextFun
     });
   }
   
-  next();
+  return next();
 } 

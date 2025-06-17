@@ -3,13 +3,13 @@ const request = require("supertest");
 const app = require("../../index");
 
 // Mock the email service
-jest.mock("../../utils/email", () => ({
+jest.mock("../../src/utils/email", () => ({
   emailService: {
     sendPasswordReset: jest.fn().mockResolvedValue({ success: true, messageId: "test-123" }),
   },
 }));
 
-const { emailService } = require("../../utils/email");
+const { emailService } = require("../../src/utils/email");
 
 describe("Password Reset Integration Tests", () => {
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe("Password Reset Integration Tests", () => {
   describe("POST /auth/forgot-password", () => {
     it("should return success message for existing user", async () => {
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "test@example.com" });
 
       expect(res.statusCode).toBe(200);
@@ -45,7 +45,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should return same success message for non-existing user", async () => {
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "nonexistent@example.com" });
 
       expect(res.statusCode).toBe(200);
@@ -55,7 +55,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with missing email", async () => {
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({});
 
       expect(res.statusCode).toBe(400);
@@ -64,7 +64,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with invalid email format", async () => {
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "invalid-email" });
 
       expect(res.statusCode).toBe(400);
@@ -75,7 +75,7 @@ describe("Password Reset Integration Tests", () => {
       emailService.sendPasswordReset.mockRejectedValueOnce(new Error("Email service down"));
 
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "test@example.com" });
 
       expect(res.statusCode).toBe(200);
@@ -103,7 +103,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should reset password with valid token and strong password", async () => {
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ 
           token: validToken,
           password: "NewStrongPass123!"
@@ -115,7 +115,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with weak password", async () => {
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ 
           token: validToken,
           password: "weak"
@@ -127,7 +127,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with missing token", async () => {
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ password: "NewStrongPass123!" });
 
       expect(res.statusCode).toBe(400);
@@ -136,7 +136,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with missing password", async () => {
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ token: validToken });
 
       expect(res.statusCode).toBe(400);
@@ -145,7 +145,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should fail with invalid token", async () => {
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ 
           token: "invalid-token",
           password: "NewStrongPass123!"
@@ -170,7 +170,7 @@ describe("Password Reset Integration Tests", () => {
       ];
 
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ 
           token: expiredToken,
           password: "NewStrongPass123!"
@@ -195,7 +195,7 @@ describe("Password Reset Integration Tests", () => {
       ];
 
       const res = await request(app)
-        .post("/auth/reset-password")
+        .post("/api/auth/reset-password")
         .send({ 
           token: usedToken,
           password: "NewStrongPass123!"
@@ -231,7 +231,7 @@ describe("Password Reset Integration Tests", () => {
         });
         
         const res = await request(app)
-          .post("/auth/reset-password")
+          .post("/api/auth/reset-password")
           .send({ 
             token: uniqueToken,
             password
@@ -269,7 +269,7 @@ describe("Password Reset Integration Tests", () => {
         });
         
         const res = await request(app)
-          .post("/auth/reset-password")
+          .post("/api/auth/reset-password")
           .send({ 
             token: uniqueToken,
             password
@@ -281,7 +281,7 @@ describe("Password Reset Integration Tests", () => {
     });
   });
 
-  describe("GET /auth/validate-reset-token", () => {
+  describe("GET /api/auth/validate-reset-token", () => {
     let validToken;
 
     beforeEach(() => {
@@ -301,7 +301,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should validate a valid token", async () => {
       const res = await request(app)
-        .get(`/auth/validate-reset-token?token=${validToken}`);
+        .get(`/api/auth/validate-reset-token?token=${validToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.valid).toBe(true);
@@ -311,7 +311,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should reject invalid token", async () => {
       const res = await request(app)
-        .get("/auth/validate-reset-token?token=invalid-token");
+        .get("/api/auth/validate-reset-token?token=invalid-token");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.valid).toBe(false);
@@ -333,7 +333,7 @@ describe("Password Reset Integration Tests", () => {
       ];
 
       const res = await request(app)
-        .get(`/auth/validate-reset-token?token=${usedToken}`);
+        .get(`/api/auth/validate-reset-token?token=${usedToken}`);
 
       expect(res.statusCode).toBe(400);
       expect(res.body.valid).toBe(false);
@@ -355,7 +355,7 @@ describe("Password Reset Integration Tests", () => {
       ];
 
       const res = await request(app)
-        .get(`/auth/validate-reset-token?token=${expiredToken}`);
+        .get(`/api/auth/validate-reset-token?token=${expiredToken}`);
 
       expect(res.statusCode).toBe(400);
       expect(res.body.valid).toBe(false);
@@ -364,7 +364,7 @@ describe("Password Reset Integration Tests", () => {
 
     it("should require token parameter", async () => {
       const res = await request(app)
-        .get("/auth/validate-reset-token");
+        .get("/api/auth/validate-reset-token");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toBe("Token is required.");
@@ -383,7 +383,7 @@ describe("Password Reset Integration Tests", () => {
     it("should allow first 3 attempts", async () => {
       for (let i = 0; i < 3; i++) {
         const res = await request(app)
-          .post("/auth/forgot-password")
+          .post("/api/auth/forgot-password")
           .send({ email: "ratelimit@example.com" });
 
         expect(res.statusCode).toBe(200);
@@ -395,13 +395,13 @@ describe("Password Reset Integration Tests", () => {
       // Make 3 successful attempts
       for (let i = 0; i < 3; i++) {
         await request(app)
-          .post("/auth/forgot-password")
+          .post("/api/auth/forgot-password")
           .send({ email: "ratelimit@example.com" });
       }
 
       // 4th attempt should be blocked
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "ratelimit@example.com" });
 
       expect(res.statusCode).toBe(429);
@@ -450,7 +450,7 @@ describe("Password Reset Integration Tests", () => {
 
       // Request password reset for test@example.com
       const res = await request(app)
-        .post("/auth/forgot-password")
+        .post("/api/auth/forgot-password")
         .send({ email: "test@example.com" });
 
       expect(res.statusCode).toBe(200);

@@ -80,7 +80,7 @@ export function requireAuth(req: any, res: Response, next: NextFunction) {
 /**
  * Test-only authentication middleware for testing environment
  */
-export function testAuthMiddleware(req: any, res: Response, next: NextFunction) {
+export function testAuthMiddleware(req: any, res: Response, next: NextFunction): void {
   if (process.env.NODE_ENV !== 'test') {
     return next();
   }
@@ -90,8 +90,7 @@ export function testAuthMiddleware(req: any, res: Response, next: NextFunction) 
   if (disableAuth === 'true') {
     req.isAuthenticated = () => false;
     req.user = null;
-    next();
-    return;
+    return next();
   }
   
   // Allow setting specific user via header
@@ -108,14 +107,14 @@ export function testAuthMiddleware(req: any, res: Response, next: NextFunction) 
     req.isAuthenticated = () => true;
     req.user = { id: '1', email: 'admin@example.com', name: 'Admin' };
   }
-  next();
+  return next();
 }
 
 /**
  * Middleware to handle login with Passport
  */
-export function loginMiddleware(req: Request, res: Response, next: NextFunction) {
-  passport.authenticate('local', (err: any, user: any, info: any) => {
+export function loginMiddleware(req: Request, res: Response, next: NextFunction): void {
+  return passport.authenticate('local', (err: any, user: any, info: any) => {
     if (err) {
       return res.status(500).json({ error: 'Authentication error', details: err.message });
     }
@@ -123,12 +122,12 @@ export function loginMiddleware(req: Request, res: Response, next: NextFunction)
       return res.status(401).json({ error: info?.message || 'Invalid credentials' });
     }
     
-    req.logIn(user, (loginErr: any) => {
+    return req.logIn(user, (loginErr: any) => {
       if (loginErr) {
         return res.status(500).json({ error: 'Login failed', details: loginErr.message });
       }
       
-      res.json({
+      return res.json({
         message: 'Logged in!',
         user: { id: user.id, email: user.email, name: user.name },
       });
@@ -139,11 +138,11 @@ export function loginMiddleware(req: Request, res: Response, next: NextFunction)
 /**
  * Middleware to handle logout
  */
-export function logoutMiddleware(req: Request, res: Response) {
+export function logoutMiddleware(req: Request, res: Response): void {
   req.logout((err: any) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed.' });
     }
-    res.json({ message: 'Logged out!' });
+    return res.json({ message: 'Logged out!' });
   });
 } 

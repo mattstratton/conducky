@@ -730,7 +730,7 @@ export class EventService {
         data: {
           filename: logo.filename,
           mimetype: logo.mimetype,
-          data: logo.data
+          data: Buffer.from(logo.data)
         }
       };
     } catch (error: any) {

@@ -46,7 +46,7 @@ describe("Event endpoints RBAC/forbidden tests", () => {
     const agent = request.agent(app);
     // Patch the session or authentication as needed here if required by your app
     const res = await agent
-      .patch("/events/1/reports/r6/state")
+      .patch("/api/events/1/reports/r6/state")
       .send({ state: "acknowledged" })
       .set("Accept", "application/json");
     expect(res.statusCode).toBe(403);

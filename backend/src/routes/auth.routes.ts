@@ -1,0 +1,188 @@
+import { Router, Request, Response } from 'express';
+import { AuthService } from '../services/auth.service';
+import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
+import { PrismaClient } from '@prisma/client';
+
+const router = Router();
+const prisma = new PrismaClient();
+const authService = new AuthService(prisma);
+
+// Registration route
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password, name } = req.body;
+    
+    // Basic validation
+    if (!email || !password || !name) {
+      res.status(400).json({ error: 'Email, password, and name are required.' });
+      return;
+    }
+    
+    const result = await authService.registerUser({
+      email,
+      password,
+      name
+    });
+
+    if (!result.success) {
+      // Check if it's a duplicate email error
+      if (result.error === 'Email already registered.') {
+        res.status(409).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Registration successful!',
+      user: result.data?.user
+    });
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed.' });
+  }
+});
+
+// Login route
+router.post('/login', loginMiddleware);
+
+// Logout route  
+router.post('/logout', logoutMiddleware);
+
+// Get session status
+router.get('/session', async (req: any, res: Response): Promise<void> => {
+  try {
+    if (req.user) {
+      res.json({ 
+        authenticated: true, 
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name
+        }
+      });
+    } else {
+      res.json({ authenticated: false });
+    }
+  } catch (error: any) {
+    console.error('Session check error:', error);
+    res.status(500).json({ error: 'Failed to check session.' });
+  }
+});
+
+// Check email availability
+router.get('/check-email', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      res.status(400).json({ error: 'Email parameter is required.' });
+      return;
+    }
+
+    const result = await authService.checkEmailAvailability(email as string);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ available: result.data?.available });
+  } catch (error: any) {
+    console.error('Email check error:', error);
+    res.status(500).json({ error: 'Email check failed.' });
+  }
+});
+
+// Forgot password
+router.post('/forgot-password', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      res.status(400).json({ error: 'Email is required.' });
+      return;
+    }
+    
+    const result = await authService.requestPasswordReset({ email });
+    
+    if (!result.success) {
+      // Check if it's a rate limiting error
+      if (result.error && result.error.includes('Too many password reset attempts')) {
+        res.status(429).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ message: result.data?.message });
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Password reset request failed.' });
+  }
+});
+
+// Reset password
+router.post('/reset-password', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      res.status(400).json({ error: 'Token and password are required.' });
+      return;
+    }
+
+    const result = await authService.resetPassword({ token, password });
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ message: result.data?.message });
+  } catch (error: any) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Password reset failed.' });
+  }
+});
+
+// Validate reset token
+router.get('/validate-reset-token', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      res.status(400).json({ error: 'Token is required.' });
+      return;
+    }
+
+    const result = await authService.validateResetToken(token as string);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    // If token is invalid, return 400 with error details
+    if (!result.data?.valid) {
+      res.status(400).json({ 
+        valid: false,
+        error: result.data?.error 
+      });
+      return;
+    }
+
+    res.json({ 
+      valid: result.data.valid,
+      email: result.data.email,
+      expiresAt: result.data.expiresAt
+    });
+  } catch (error: any) {
+    console.error('Token validation error:', error);
+    res.status(500).json({ error: 'Token validation failed.' });
+  }
+});
+
+export default router; 

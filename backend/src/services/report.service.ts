@@ -56,12 +56,12 @@ export interface ReportWithDetails {
   assignedResponderId?: string | null;
   reporter?: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
   } | null;
   assignedResponder?: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
   } | null;
   evidenceFiles?: Array<{
@@ -72,7 +72,7 @@ export interface ReportWithDetails {
     createdAt: Date;
     uploader?: {
       id: string;
-      name: string;
+      name: string | null;
       email: string;
     } | null;
   }>;
@@ -155,7 +155,7 @@ export class ReportService {
               mimetype: file.mimetype,
               size: file.size,
               data: file.data,
-              uploaderId: file.uploaderId,
+              uploaderId: file.uploaderId || null,
             },
           });
         }
@@ -334,7 +334,7 @@ export class ReportService {
       // Update state
       const updated = await this.prisma.report.update({
         where: { id: reportId },
-        data: { state },
+        data: { state: state as any },
       });
 
       return {
@@ -497,7 +497,7 @@ export class ReportService {
             mimetype: file.mimetype,
             size: file.size,
             data: file.data,
-            uploaderId: file.uploaderId,
+            uploaderId: file.uploaderId ?? null,
           },
           include: {
             uploader: { select: { id: true, name: true, email: true } },
@@ -592,7 +592,7 @@ export class ReportService {
           filename: evidence.filename,
           mimetype: evidence.mimetype,
           size: evidence.size,
-          data: evidence.data
+          data: Buffer.from(evidence.data)
         }
       };
     } catch (error: any) {
@@ -821,7 +821,16 @@ export class ReportService {
             select: { id: true, name: true, email: true }
           },
           evidenceFiles: {
-            select: { id: true, filename: true, mimetype: true, size: true }
+            select: { 
+              id: true, 
+              filename: true, 
+              mimetype: true, 
+              size: true, 
+              createdAt: true,
+              uploader: {
+                select: { id: true, name: true, email: true }
+              }
+            }
           },
           _count: {
             select: { comments: true }
@@ -882,7 +891,7 @@ export class ReportService {
       }
 
       // Check if user is the reporter
-      const isReporter = report.reporterId && userId === report.reporterId;
+      const isReporter = !!(report.reporterId && userId === report.reporterId);
 
       // Get user's roles for this event
       const userEventRoles = await this.prisma.userEventRole.findMany({
@@ -926,7 +935,7 @@ export class ReportService {
       }
 
       // Check permissions: reporter can edit their own report, or user must be Admin/SuperAdmin
-      const isReporter = userId === report.reporterId;
+      const isReporter = !!(report.reporterId && userId === report.reporterId);
 
       const userEventRoles = await this.prisma.userEventRole.findMany({
         where: { userId, eventId },
@@ -942,7 +951,7 @@ export class ReportService {
         success: true,
         data: { 
           canEdit, 
-          reason: canEdit ? undefined : 'Insufficient permissions to edit this report title.' 
+          ...(canEdit ? {} : { reason: 'Insufficient permissions to edit this report title.' })
         }
       };
     } catch (error: any) {
