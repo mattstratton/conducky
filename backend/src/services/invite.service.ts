@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 import { ServiceResult } from '../types';
 
 export interface InviteCreateData {
@@ -465,7 +466,6 @@ export class InviteService {
       }
 
       // Hash password and create user
-      const bcrypt = require('bcrypt');
       const passwordHash = await bcrypt.hash(password, 10);
       
       const user = await this.prisma.user.create({

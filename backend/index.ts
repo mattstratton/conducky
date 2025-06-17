@@ -159,15 +159,7 @@ app.get('/api/session', async (req: any, res: any) => {
       });
     } catch (err: any) {
       console.error('Error fetching user avatar for session:', err);
-      res.json({ 
-        authenticated: true, 
-        user: {
-          id: req.user.id,
-          email: req.user.email,
-          name: req.user.name,
-          avatarUrl: null
-        }
-      });
+      res.status(500).json({ error: 'Failed to fetch session data' });
     }
   } else {
     res.json({ authenticated: false });
@@ -238,15 +230,7 @@ app.get('/session', async (req: any, res: any) => {
       });
     } catch (err: any) {
       console.error('Error fetching user avatar for session:', err);
-      res.json({ 
-        authenticated: true, 
-        user: {
-          id: req.user.id,
-          email: req.user.email,
-          name: req.user.name,
-          avatarUrl: null
-        }
-      });
+      res.status(500).json({ error: 'Failed to fetch session data' });
     }
   } else {
     res.json({ authenticated: false });
