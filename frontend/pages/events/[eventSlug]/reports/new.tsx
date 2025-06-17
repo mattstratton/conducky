@@ -116,24 +116,8 @@ export default function NewReport() {
   return (
     <div className="min-h-screen bg-background py-8 px-4 transition-colors duration-200">
       <div className="w-full max-w-4xl mx-auto">
-        {/* Header with navigation */}
+        {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link href="/dashboard" className="hover:text-foreground">
-              Dashboard
-            </Link>
-            <span>›</span>
-            <Link href={`/events/${eventSlug}/dashboard`} className="hover:text-foreground">
-              {event.name}
-            </Link>
-            <span>›</span>
-            <Link href={`/events/${eventSlug}/reports`} className="hover:text-foreground">
-              Reports
-            </Link>
-            <span>›</span>
-            <span className="text-foreground">New Report</span>
-          </div>
-          
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Submit New Report</h1>

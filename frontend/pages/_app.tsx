@@ -10,6 +10,7 @@ import { ThemeProvider } from "next-themes";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { Users } from "lucide-react";
 
 // User context for global user state
@@ -137,6 +138,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                 <div className="fixed top-0 left-0 right-0 z-50 h-12 bg-background border-b flex items-center px-2">
                   <SidebarTrigger />
                   <span className="ml-3 font-bold text-lg text-yellow-500">Conducky</span>
+                  <AppBreadcrumbs eventName={eventName} />
                 </div>
                 <div className="flex flex-1 pt-12 md:pt-12">
                   <AppSidebar user={{
