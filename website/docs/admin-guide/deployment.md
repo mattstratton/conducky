@@ -25,7 +25,7 @@ Conducky requires specific environment variables to function properly. See the [
 - `SESSION_SECRET` - Secret for session management
 - `FRONTEND_BASE_URL` - URL of your frontend deployment
 - `CORS_ORIGIN` - Public URL of frontend for CORS
-- `COOKIE_DOMAIN` - Domain for session cookies (optional, for subdomain deployments like `.example.com`)
+
 - `PORT` - Backend port (optional, defaults to 4000)
 
 **Frontend** (`.env` in `/frontend`):
@@ -126,17 +126,6 @@ After deployment:
 - **Updates**: Keep Conducky updated by pulling the latest changes
 - **Backups**: Regularly backup your PostgreSQL database
 
-## Subdomain Deployments
-
-If you're deploying with the frontend and backend on different subdomains (e.g., `app.example.com` and `api.example.com`), you'll need to configure cookie sharing:
-
-**Backend Environment Variable:**
-```
-COOKIE_DOMAIN=.example.com
-```
-
-**Note**: The leading dot (`.`) is important - it allows cookies to be shared across all subdomains of your domain. This is only needed for subdomain deployments, not for same-domain deployments.
-
 ## Troubleshooting
 
 Common deployment issues:
@@ -144,7 +133,7 @@ Common deployment issues:
 - **Database connection errors**: Verify `DATABASE_URL` format and database accessibility
 - **CORS errors**: Ensure `CORS_ORIGIN` matches your frontend URL exactly
 - **Session issues**: Verify `SESSION_SECRET` is set and consistent across restarts
-- **Subdomain authentication issues**: Set `COOKIE_DOMAIN` if using different subdomains for frontend/backend
+
 - **File upload issues**: Check disk space and file permissions
 
 For more troubleshooting help, see the [User Guide Troubleshooting](../user-guide/troubleshooting) section. 
