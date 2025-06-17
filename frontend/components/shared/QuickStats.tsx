@@ -33,13 +33,13 @@ export function QuickStats() {
   }, []);
 
   return (
-    <Card className="w-full max-w-md mx-auto mb-6 p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <Card className="w-full p-6">
       {loading ? (
-        <div className="w-full text-center text-gray-500">Loading stats...</div>
+        <div className="w-full text-center text-muted-foreground">Loading stats...</div>
       ) : error ? (
-        <div className="w-full text-center text-red-500">{error}</div>
+        <div className="w-full text-center text-destructive">{error}</div>
       ) : stats ? (
-        <div className="flex w-full justify-between gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <StatBox label="Events" value={stats.eventCount} />
           <StatBox label="Reports" value={stats.reportCount} />
           <StatBox label="Needs Response" value={stats.needsResponseCount} />
@@ -56,9 +56,9 @@ interface StatBoxProps {
 
 function StatBox({ label, value }: StatBoxProps) {
   return (
-    <div className="flex flex-col items-center flex-1">
-      <span className="text-2xl font-bold text-primary">{value}</span>
-      <span className="text-xs text-muted-foreground mt-1">{label}</span>
+    <div className="flex flex-col items-center text-center">
+      <span className="text-3xl font-bold text-primary mb-1">{value}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
     </div>
   );
 } 

@@ -1,6 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { Card } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
 
 interface EventCardProps {
   event: {
@@ -18,48 +20,78 @@ export function EventCard({ event }: EventCardProps) {
   const isResponder = roles.includes("Responder");
   const isReporter = roles.includes("Reporter");
 
-  const actionBtnClass = "inline-block bg-blue-700 text-white text-xs px-3 py-1 rounded hover:bg-blue-800 transition mb-1";
-
   return (
-    <Card className="p-4 text-left flex flex-col gap-2">
-      <div className="flex items-center gap-2 mb-1">
-        <h3 className="text-lg font-semibold">{name}</h3>
+    <Card className="p-4 h-full flex flex-col">
+      {/* Header */}
+      <div className="mb-3">
+        <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">{name}</h3>
         <div className="flex gap-1 flex-wrap">
           {roles.map((role) => (
-            <span key={role} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+            <Badge key={role} variant="secondary" className="text-xs">
               {role}
-            </span>
+            </Badge>
           ))}
         </div>
       </div>
-      {description && <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">{description}</p>}
-      <div className="flex flex-wrap gap-2 mt-2">
+
+      {/* Description */}
+      {description && (
+        <p className="text-muted-foreground mb-3 text-sm line-clamp-3 flex-grow">
+          {description}
+        </p>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2 mt-auto">
         {/* Admin actions */}
         {isAdmin && (
-          <>
-            <Link href={`/events/${slug}/team`} className={actionBtnClass}>Manage Team</Link>
-            <Link href={`/events/${slug}/reports`} className={actionBtnClass}>View All Reports</Link>
-            <Link href={`/events/${slug}/settings`} className={actionBtnClass}>Event Settings</Link>
-          </>
+          <div className="space-y-1">
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/team`}>Manage Team</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports`}>View All Reports</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/settings`}>Event Settings</Link>
+            </Button>
+          </div>
         )}
+
         {/* Responder actions */}
         {isResponder && (
-          <>
-            <Link href={`/events/${slug}/reports?assigned=me`} className={actionBtnClass}>Assigned to Me</Link>
-            <Link href={`/events/${slug}/reports`} className={actionBtnClass}>All Reports</Link>
-            <Link href={`/events/${slug}/reports/new`} className={actionBtnClass}>Submit Report</Link>
-          </>
+          <div className="space-y-1">
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports?assigned=me`}>Assigned to Me</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports`}>All Reports</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports/new`}>Submit Report</Link>
+            </Button>
+          </div>
         )}
+
         {/* Reporter actions */}
         {isReporter && (
-          <>
-            <Link href={`/events/${slug}/reports/new`} className={actionBtnClass}>Submit Report</Link>
-            <Link href={`/events/${slug}/reports?mine=1`} className={actionBtnClass}>My Reports</Link>
-            <Link href={`/events/${slug}/code-of-conduct`} className={actionBtnClass}>Code of Conduct</Link>
-          </>
+          <div className="space-y-1">
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports/new`}>Submit Report</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/reports?mine=1`}>My Reports</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="w-full justify-start">
+              <Link href={`/events/${slug}/code-of-conduct`}>Code of Conduct</Link>
+            </Button>
+          </div>
         )}
-        {/* Always show Go to Event */}
-        <Link href={`/events/${slug}/dashboard`} className={actionBtnClass + " font-semibold"}>Go to Event</Link>
+
+        {/* Primary action - always show */}
+        <Button asChild className="w-full mt-2">
+          <Link href={`/events/${slug}/dashboard`}>Go to Event</Link>
+        </Button>
       </div>
     </Card>
   );

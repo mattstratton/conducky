@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Card } from "../ui/card";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 
 interface InviteInfo {
   invite: {
@@ -87,50 +89,60 @@ export function JoinEventWidget({ onJoin }: { onJoin?: () => void }) {
   }
 
   return (
-    <Card className="w-full max-w-md p-4 sm:p-6 mb-6">
-      <h2 className="text-xl font-bold mb-2 text-center">Join an Event</h2>
-      <form onSubmit={handleCheckInvite} className="flex flex-col gap-2 mb-2">
-        <input
+    <Card className="w-full h-fit p-6">
+      <h2 className="text-xl font-bold mb-4 text-center text-foreground">Join an Event</h2>
+      <form onSubmit={handleCheckInvite} className="space-y-3 mb-4">
+        <Input
           type="text"
-          className="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-400"
           placeholder="Paste invite code or link"
           value={input}
           onChange={e => setInput(e.target.value)}
           disabled={loading}
         />
-        <button
+        <Button
           type="submit"
-          className="bg-blue-700 text-white rounded px-4 py-2 font-semibold hover:bg-blue-800 transition disabled:opacity-50"
+          className="w-full"
           disabled={loading || !input.trim()}
         >
           {loading ? "Checking..." : "Check Invite"}
-        </button>
+        </Button>
       </form>
-      {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
-      {inviteInfo && (
-        <div className="mb-2 text-sm text-gray-700 dark:text-gray-200">
-          <div><b>Event:</b> {inviteInfo.event?.name || "Unknown"}</div>
-          <div><b>Role:</b> Reporter</div>
-          <div><b>Note:</b> {inviteInfo.invite?.note || "—"}</div>
-          <div><b>Expires:</b> {inviteInfo.invite?.expiresAt ? new Date(inviteInfo.invite.expiresAt).toLocaleString() : "—"}</div>
-          <div><b>Uses:</b> {inviteInfo.invite?.useCount}{inviteInfo.invite?.maxUses ? ` / ${inviteInfo.invite.maxUses}` : ""}</div>
-          <div><b>Status:</b> {inviteInfo.invite?.disabled ? "Disabled" : "Active"}</div>
-          <button
-            type="button"
-            onClick={handleJoin}
-            className="mt-2 bg-green-700 text-white rounded px-4 py-2 font-semibold hover:bg-green-800 transition disabled:opacity-50"
-            disabled={loading || inviteInfo.invite?.disabled}
-          >
-            {loading ? "Joining..." : "Join Event"}
-          </button>
+      
+      {error && (
+        <div className="text-destructive text-sm mb-4 p-3 bg-destructive/10 rounded-md">
+          {error}
         </div>
       )}
+      
+      {inviteInfo && (
+        <div className="mb-4 p-4 bg-muted rounded-md">
+          <div className="space-y-2 text-sm">
+            <div><span className="font-medium">Event:</span> {inviteInfo.event?.name || "Unknown"}</div>
+            <div><span className="font-medium">Role:</span> Reporter</div>
+            <div><span className="font-medium">Note:</span> {inviteInfo.invite?.note || "—"}</div>
+            <div><span className="font-medium">Expires:</span> {inviteInfo.invite?.expiresAt ? new Date(inviteInfo.invite.expiresAt).toLocaleString() : "—"}</div>
+            <div><span className="font-medium">Uses:</span> {inviteInfo.invite?.useCount}{inviteInfo.invite?.maxUses ? ` / ${inviteInfo.invite.maxUses}` : ""}</div>
+            <div><span className="font-medium">Status:</span> {inviteInfo.invite?.disabled ? "Disabled" : "Active"}</div>
+          </div>
+          <Button
+            onClick={handleJoin}
+            className="w-full mt-4"
+            disabled={loading || inviteInfo.invite?.disabled}
+            variant="default"
+          >
+            {loading ? "Joining..." : "Join Event"}
+          </Button>
+        </div>
+      )}
+      
       {success && (
-        <div className="text-green-700 font-semibold mt-2">
+        <div className="text-green-700 dark:text-green-400 font-semibold p-3 bg-green-100 dark:bg-green-900/20 rounded-md">
           {success}
           {eventSlug && (
-            <div className="mt-4">
-              <Link href={`/events/${eventSlug}/dashboard`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go to Event</Link>
+            <div className="mt-3">
+              <Button asChild className="w-full">
+                <Link href={`/events/${eventSlug}/dashboard`}>Go to Event</Link>
+              </Button>
             </div>
           )}
         </div>

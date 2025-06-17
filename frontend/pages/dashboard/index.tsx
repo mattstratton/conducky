@@ -119,33 +119,56 @@ export default function GlobalDashboard() {
   // Show global dashboard for user with one or more events
   if (userEvents && userEvents.length > 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
-        <QuickStats />
-        <ActivityFeed />
-        <JoinEventWidget onJoin={() => {
-          // Refetch user events after joining
-          setUserEventsLoading(true);
-          fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/users/me/events', {
-            credentials: 'include',
-          })
-            .then(res => res.json())
-            .then(data => {
-              setUserEvents(data.events || []);
-              setUserEventsLoading(false);
-            })
-            .catch(() => {
-              setUserEventsError('Could not load your events.');
-              setUserEventsLoading(false);
-            });
-        }} />
-        <Card className="w-full max-w-md text-center p-4 sm:p-8 mb-6">
-          <h1 className="text-2xl font-bold mb-4">Your Global Dashboard</h1>
-          <p className="mb-4 text-muted-foreground">Here are your events. (Full dashboard UI coming next!)</p>
-        </Card>
-        <div className="w-full max-w-md flex flex-col gap-4">
-          {userEvents.map(event => (
-            <EventCard key={event.id} event={event} />
-          ))}
+      <div className="min-h-screen bg-background transition-colors duration-200">
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2 text-foreground">Your Global Dashboard</h1>
+            <p className="text-muted-foreground">Overview of your events and recent activity</p>
+          </div>
+
+          {/* Quick Stats Section - Full width */}
+          <div className="mb-8">
+            <QuickStats />
+          </div>
+
+          {/* Main Content Grid - Two columns on desktop, single column on mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Left Column - Activity Feed (2/3 width on desktop) */}
+            <div className="lg:col-span-2">
+              <ActivityFeed />
+            </div>
+            
+            {/* Right Column - Join Event Widget (1/3 width on desktop) */}
+            <div className="lg:col-span-1">
+              <JoinEventWidget onJoin={() => {
+                // Refetch user events after joining
+                setUserEventsLoading(true);
+                fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/users/me/events', {
+                  credentials: 'include',
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    setUserEvents(data.events || []);
+                    setUserEventsLoading(false);
+                  })
+                  .catch(() => {
+                    setUserEventsError('Could not load your events.');
+                    setUserEventsLoading(false);
+                  });
+              }} />
+            </div>
+          </div>
+
+          {/* Events Section */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4 text-foreground">Your Events</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {userEvents.map(event => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

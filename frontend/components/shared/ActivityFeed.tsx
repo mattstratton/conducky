@@ -37,22 +37,22 @@ export function ActivityFeed() {
   }, []);
 
   return (
-    <Card className="w-full max-w-md mx-auto mb-6 p-4">
-      <h2 className="text-lg font-bold mb-3">Recent Activity</h2>
+    <Card className="w-full h-fit p-6">
+      <h2 className="text-xl font-bold mb-4 text-foreground">Recent Activity</h2>
       {loading ? (
-        <div className="text-center text-gray-500">Loading activity...</div>
+        <div className="text-center text-muted-foreground py-8">Loading activity...</div>
       ) : error ? (
-        <div className="text-center text-red-500">{error}</div>
+        <div className="text-center text-destructive py-8">{error}</div>
       ) : activity.length === 0 ? (
-        <div className="text-center text-gray-500">No recent activity.</div>
+        <div className="text-center text-muted-foreground py-8">No recent activity.</div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-4">
           {activity.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2">
-              <span className="mt-1 w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" aria-hidden="true" />
-              <div className="flex-1">
-                <div className="text-sm text-gray-800 dark:text-gray-100">{item.message}</div>
-                <div className="text-xs text-gray-400 mt-1">{formatTimeAgo(item.timestamp)}</div>
+            <li key={idx} className="flex items-start gap-3">
+              <span className="mt-2 w-2 h-2 rounded-full bg-primary flex-shrink-0" aria-hidden="true" />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-foreground leading-relaxed">{item.message}</div>
+                <div className="text-xs text-muted-foreground mt-1">{formatTimeAgo(item.timestamp)}</div>
               </div>
             </li>
           ))}
