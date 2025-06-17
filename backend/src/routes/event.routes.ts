@@ -169,7 +169,7 @@ router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (re
 router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
-    const { type, description, title } = req.body;
+    const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;
     
     if (!type || !description || !title) {
       res.status(400).json({ error: 'Type, description, and title are required.' });
@@ -199,7 +199,12 @@ router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 
       type,
       description,
       title,
-      reporterId: user.id
+      reporterId: user.id,
+      incidentAt: incidentAt ? new Date(incidentAt) : null,
+      parties,
+      location,
+      contactPreference,
+      urgency
     };
     
     // Handle file uploads if any
@@ -696,7 +701,7 @@ router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin',
 router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const { type, description, title } = req.body;
+    const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;
     
     if (!type || !description || !title) {
       res.status(400).json({ error: 'Type, description, and title are required.' });
@@ -733,7 +738,12 @@ router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin'
       type,
       description,
       title,
-      reporterId: user.id
+      reporterId: user.id,
+      incidentAt: incidentAt ? new Date(incidentAt) : null,
+      parties,
+      location,
+      contactPreference,
+      urgency
     };
     
     // Handle file uploads if any

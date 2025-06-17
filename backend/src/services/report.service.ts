@@ -9,6 +9,9 @@ export interface ReportCreateData {
   description: string;
   incidentAt?: Date | null;
   parties?: string | null;
+  location?: string | null;
+  contactPreference?: string;
+  urgency?: string;
 }
 
 export interface ReportUpdateData {
@@ -49,6 +52,8 @@ export interface ReportWithDetails {
   resolution?: string | null;
   incidentAt?: Date | null;
   parties?: string | null;
+  location?: string | null;
+  contactPreference?: string;
   createdAt: Date;
   updatedAt: Date;
   eventId: string;
@@ -103,7 +108,7 @@ export class ReportService {
    */
   async createReport(data: ReportCreateData, evidenceFiles?: EvidenceFile[]): Promise<ServiceResult<{ report: any }>> {
     try {
-      const { eventId, reporterId, type, title, description, incidentAt, parties } = data;
+      const { eventId, reporterId, type, title, description, incidentAt, parties, location, contactPreference, urgency } = data;
 
       if (!type || !description || !title) {
         return {
@@ -136,10 +141,17 @@ export class ReportService {
         title,
         description,
         state: 'submitted',
+        contactPreference: contactPreference || 'email', // default to email
       };
 
       if (incidentAt) reportData.incidentAt = incidentAt;
       if (parties) reportData.parties = parties;
+      if (location) reportData.location = location;
+      
+      // Map urgency to severity (frontend uses urgency, backend uses severity)
+      if (urgency) {
+        reportData.severity = urgency;
+      }
 
       const report = await this.prisma.report.create({
         data: reportData,
