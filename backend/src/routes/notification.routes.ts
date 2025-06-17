@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { NotificationService } from '../services/notification.service';
 import { requireAuth } from '../middleware/auth';
+import { AuthenticatedRequest } from '../types';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
 const notificationService = new NotificationService(prisma);
 
 // Get user's notifications with pagination and filtering
-router.get('/users/me/notifications', requireAuth, async (req: Request, res: Response) => {
+router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const {
       page = 1,

@@ -193,7 +193,14 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
     };
     
     // Handle file uploads if any
-    const evidenceFiles = req.files as Express.Multer.File[] | undefined;
+    const multerFiles = req.files as Express.Multer.File[] | undefined;
+    const evidenceFiles = multerFiles?.map(file => ({
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      data: file.buffer,
+      uploaderId: null // Will be set when authentication is properly implemented
+    }));
     
     const result = await reportService.createReport(reportData, evidenceFiles);
     
@@ -655,7 +662,15 @@ router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo
       return;
     }
     
-    const result = await eventService.uploadEventLogo(slug, logoFile);
+    // Convert Multer File to EventLogo format
+    const logoData = {
+      filename: logoFile.originalname,
+      mimetype: logoFile.mimetype,
+      size: logoFile.size,
+      data: logoFile.buffer
+    };
+    
+    const result = await eventService.uploadEventLogo(slug, logoData);
     
     if (!result.success) {
       if (result.error?.includes('not found')) {

@@ -5,6 +5,7 @@
  */
 
 import { Request } from 'express';
+import { UserResponse } from '../../types';
 
 // Re-export existing types from the current types directory
 export * from '../../types';
@@ -29,17 +30,9 @@ export interface PaginationResponse {
   totalPages: number;
 }
 
-// User interface for authentication context
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl?: string | null;
-}
-
-// Request/Response types for controllers
+// Request/Response types for controllers - using UserResponse for API contexts
 export interface AuthenticatedRequest extends Request {
-  user?: AuthUser;
+  user?: UserResponse;
 }
 
 // Service response types
