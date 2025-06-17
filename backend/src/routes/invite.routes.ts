@@ -11,7 +11,7 @@ router.post('/:code/redeem', async (req: any, res: Response): Promise<void> => {
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -23,6 +23,11 @@ router.post('/:code/redeem', async (req: any, res: Response): Promise<void> => {
     });
     
     if (!result.success) {
+      // Check for already member conflict to return correct status code
+      if (result.error === 'You are already a member of this event.') {
+        res.status(409).json({ error: result.error });
+        return;
+      }
       res.status(400).json({ error: result.error });
       return;
     }

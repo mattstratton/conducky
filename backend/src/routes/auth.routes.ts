@@ -1,48 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
 const authService = new AuthService(prisma);
+const authController = new AuthController(authService);
 
 // Registration route
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password, name } = req.body;
-    
-    // Basic validation
-    if (!email || !password || !name) {
-      res.status(400).json({ error: 'Email, password, and name are required.' });
-      return;
-    }
-    
-    const result = await authService.registerUser({
-      email,
-      password,
-      name
-    });
-
-    if (!result.success) {
-      // Check if it's a duplicate email error
-      if (result.error === 'Email already registered.') {
-        res.status(409).json({ error: result.error });
-        return;
-      }
-      res.status(400).json({ error: result.error });
-      return;
-    }
-
-    res.status(200).json({
-      message: 'Registration successful!',
-      user: result.data?.user
-    });
-  } catch (error: any) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed.' });
-  }
-});
+router.post('/register', authController.register.bind(authController));
 
 // Login route
 router.post('/login', loginMiddleware);
@@ -72,28 +40,7 @@ router.get('/session', async (req: any, res: Response): Promise<void> => {
 });
 
 // Check email availability
-router.get('/check-email', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email } = req.query;
-    
-    if (!email) {
-      res.status(400).json({ error: 'Email parameter is required.' });
-      return;
-    }
-
-    const result = await authService.checkEmailAvailability(email as string);
-    
-    if (!result.success) {
-      res.status(400).json({ error: result.error });
-      return;
-    }
-
-    res.json({ available: result.data?.available });
-  } catch (error: any) {
-    console.error('Email check error:', error);
-    res.status(500).json({ error: 'Email check failed.' });
-  }
-});
+router.get('/check-email', authController.checkEmail.bind(authController));
 
 // Forgot password
 router.post('/forgot-password', async (req: Request, res: Response): Promise<void> => {

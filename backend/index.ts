@@ -129,8 +129,11 @@ app.get('/health', (_req: any, res: any) => {
 // Mount route modules
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/users', userRoutes); // Backward compatibility for tests
 app.use('/api/events', eventRoutes);
+app.use('/events', eventRoutes); // Backward compatibility for tests (slug routes)
 app.use('/api/invites', inviteRoutes);
+app.use('/invites', inviteRoutes); // Backward compatibility for tests
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 
@@ -150,8 +153,35 @@ app.get('/session', (req: any, res: any) => {
   }
 });
 
-// TODO: Add invite routes and other missing routes that tests expect
-// These routes were in the original monolithic index.ts but not yet extracted to services
+// Testing/utility routes
+app.get('/audit-test', async (req: any, res: any) => {
+  try {
+    // Import the audit utility
+    const { logAudit } = await import('./src/utils/audit');
+    await logAudit({
+      eventId: 'test-event',
+      userId: null,
+      action: 'audit-test',
+      targetType: 'System',
+      targetId: 'test'
+    });
+    res.json({ message: 'Audit event logged!' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Audit test failed', details: error.message });
+  }
+});
+
+app.get('/admin-only', async (req: any, res: any) => {
+  try {
+    const { requireSuperAdmin } = await import('./src/utils/rbac');
+    // Apply RBAC middleware inline for testing
+    requireSuperAdmin()(req, res, () => {
+      res.json({ message: 'SuperAdmin access granted!' });
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'RBAC test failed', details: error.message });
+  }
+});
 
 // Error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {

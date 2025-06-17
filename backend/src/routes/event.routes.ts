@@ -2,8 +2,18 @@ import { Router, Request, Response } from 'express';
 import { EventService } from '../services/event.service';
 import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
+import { requireRole } from '../middleware/rbac';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
+
+// Authenticated request type
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -256,8 +266,8 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
   }
 });
 
-// Update report state
-router.patch('/:eventId/reports/:reportId/state', async (req: Request, res: Response): Promise<void> => {
+// Update report state (Responder/Admin/SuperAdmin only)
+router.patch('/:eventId/reports/:reportId/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
     const { state } = req.body;

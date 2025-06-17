@@ -1,11 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { UserService } from '../services/user.service';
+import { UserController } from '../controllers/user.controller';
+import { requireAuth } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 
 const router = Router();
 const prisma = new PrismaClient();
 const userService = new UserService(prisma);
+const userController = new UserController(userService);
 
 // Multer setup for avatar uploads (memory storage, 2MB limit)
 const uploadAvatar = multer({
@@ -18,7 +21,6 @@ router.patch('/me/profile', async (req: any, res: Response): Promise<void> => {
   try {
     const { name, email } = req.body;
     
-    // TODO: Add authentication check
     if (!req.user?.id) {
       res.status(401).json({ error: 'Authentication required.' });
       return;
@@ -27,6 +29,11 @@ router.patch('/me/profile', async (req: any, res: Response): Promise<void> => {
     const result = await userService.updateProfile(req.user.id, { name, email });
     
     if (!result.success) {
+      // Check for email conflict to return correct status code
+      if (result.error === 'This email address is already in use.') {
+        res.status(409).json({ error: 'This email address is already in use.' });
+        return;
+      }
       res.status(400).json({ error: result.error });
       return;
     }
