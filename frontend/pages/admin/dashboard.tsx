@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from "../../components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table } from '../../components/Table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -270,29 +270,29 @@ export default function GlobalAdmin() {
             {/* Table view for desktop */}
             <div className="hidden sm:block overflow-x-auto">
               <Table>
-                <thead>
-                  <tr>
-                    <th className="border border-gray-200 dark:border-gray-700 p-2">Name</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-2">Slug</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-2">Created At</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-2">Updated At</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Created At</TableHead>
+                    <TableHead>Updated At</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {events.map(ev => (
-                    <tr key={ev.id}>
-                      <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
+                    <TableRow key={ev.id}>
+                      <TableCell>{editEventId === ev.id ? (
                         <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
                       ) : (
                         <Link href={`/events/${ev.slug}/dashboard`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
-                      )}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-2">{editEventId === ev.id ? (
+                      )}</TableCell>
+                      <TableCell>{editEventId === ev.id ? (
                         <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
-                      ) : ev.slug}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-2">{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-2">{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-2">
+                      ) : ev.slug}</TableCell>
+                      <TableCell>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</TableCell>
+                      <TableCell>{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</TableCell>
+                      <TableCell>
                         {editEventId === ev.id ? (
                           <div className="flex gap-2">
                             <Button onClick={handleEditSubmit} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
@@ -320,10 +320,10 @@ export default function GlobalAdmin() {
                             <Link href={`/events/${ev.slug}/settings`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm inline-block text-center">Admin</Link>
                           </div>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </Table>
             </div>
           </>

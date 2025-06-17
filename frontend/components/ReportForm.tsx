@@ -4,6 +4,9 @@ import { useRouter } from "next/router";
 import { CoCTeamList } from "./CoCTeamList";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Form,
   FormField,
@@ -116,14 +119,13 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
               <FormItem>
                 <FormLabel htmlFor="report-title">Report Title</FormLabel>
                 <FormControl>
-                  <input
+                  <Input
                     id="report-title"
                     type="text"
                     {...field}
                     minLength={10}
                     maxLength={70}
                     required
-                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground"
                     placeholder="Enter a concise summary (10-70 characters)"
                   />
                 </FormControl>
@@ -138,19 +140,18 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
               <FormItem>
                 <FormLabel htmlFor="report-type">Type</FormLabel>
                 <FormControl>
-                  <select
-                    id="report-type"
-                    {...field}
-                    required
-                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 bg-white text-foreground"
-                  >
-                    <option value="">Select type</option>
-                    {reportTypes.map((rt) => (
-                      <option key={rt.value} value={rt.value}>
-                        {rt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={field.value} onValueChange={field.onChange} required>
+                    <SelectTrigger className="w-64 max-w-xs">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reportTypes.map((rt) => (
+                        <SelectItem key={rt.value} value={rt.value}>
+                          {rt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -163,11 +164,11 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
               <FormItem>
                 <FormLabel htmlFor="report-description">Description</FormLabel>
                 <FormControl>
-                  <textarea
+                  <Textarea
                     id="report-description"
                     {...field}
                     required
-                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground min-h-[80px]"
+                    className="min-h-[80px]"
                   />
                 </FormControl>
                 <FormMessage />
@@ -181,11 +182,11 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
               <FormItem>
                 <FormLabel htmlFor="incident-at">Date/Time of Incident (optional)</FormLabel>
                 <FormControl>
-                  <input
+                  <Input
                     id="incident-at"
                     type="datetime-local"
                     {...field}
-                    className="mt-1 block w-64 max-w-xs rounded border border-gray-300 bg-white text-foreground"
+                    className="w-64 max-w-xs"
                   />
                 </FormControl>
                 <FormMessage />
@@ -202,11 +203,10 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
               <FormItem>
                 <FormLabel htmlFor="parties">Involved Parties (optional)</FormLabel>
                 <FormControl>
-                  <input
+                  <Input
                     id="parties"
                     type="text"
                     {...field}
-                    className="mt-1 block w-full rounded border border-gray-300 bg-white text-foreground"
                     placeholder="List names, emails, or descriptions (comma-separated or freeform)"
                   />
                 </FormControl>

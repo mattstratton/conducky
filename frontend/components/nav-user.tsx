@@ -52,10 +52,16 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
   const isSuperAdmin = user.roles?.includes("SuperAdmin")
   const router = useRouter()
   const { setUser } = React.useContext(UserContext)
   const [loggingOut, setLoggingOut] = React.useState(false)
+
+  // Avoid hydration mismatch
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   async function handleLogout() {
     setLoggingOut(true)
@@ -159,12 +165,13 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <div className="flex items-center w-full" tabIndex={-1} role="menuitem">
-                  {theme === "dark" ? <Sun className="mr-2" /> : <Moon className="mr-2" />}
+                  {mounted && theme === "dark" ? <Sun className="mr-2" /> : <Moon className="mr-2" />}
                   <span className="flex-1">Dark Mode</span>
                   <Switch
-                    checked={theme === "dark"}
+                    checked={mounted ? theme === "dark" : false}
                     onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
                     aria-label="Toggle dark mode"
+                    disabled={!mounted}
                   />
                 </div>
               </DropdownMenuItem>

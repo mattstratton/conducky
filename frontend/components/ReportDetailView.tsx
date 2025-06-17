@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent } from "react";
 import { Card } from "./ui/card";
-import { Table } from "./Table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { TitleEditForm } from "./report-detail/TitleEditForm";
 import { ReportStateSelector } from "./report-detail/ReportStateSelector";
 import { AssignmentSection } from "./report-detail/AssignmentSection";
@@ -143,10 +143,10 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
         reporter={report.reporter}
       />
       <Table>
-        <tbody>
-          <tr>
-            <td className="font-bold">State</td>
-            <td>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-bold">State</TableCell>
+            <TableCell>
               {canChangeState ? (
                 editingState ? (
                   <div className="flex items-center gap-2">
@@ -171,11 +171,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
               ) : (
                 report.state
               )}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
           {adminMode && (
-            <tr>
-              <td colSpan={2}>
+            <TableRow>
+              <TableCell colSpan={2}>
                 <AssignmentSection
                   assignmentFields={assignmentFields}
                   setAssignmentFields={setAssignmentFields}
@@ -185,10 +185,10 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                   success={assignmentSuccess}
                   onSave={onAssignmentChange}
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
+        </TableBody>
       </Table>
       <EvidenceSection
         evidenceFiles={evidenceFiles}
