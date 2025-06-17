@@ -45,7 +45,7 @@ export default function RedeemInvitePage() {
     if (!code) return;
     setLoading(true);
     setError('');
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/invites/${code}`)
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/invites/${code}`)
       .then(res => res.ok ? res.json() : Promise.reject('Invite not found'))
       .then(data => {
         setInvite(data.invite);
@@ -61,7 +61,7 @@ export default function RedeemInvitePage() {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/invites/${code}/redeem`, {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/invites/${code}/redeem`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -102,7 +102,7 @@ export default function RedeemInvitePage() {
                 setRegError('');
                 setRegLoading(true);
                 try {
-                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/register/invite/${code}`, {
+                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/auth/register/invite/${code}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password }),

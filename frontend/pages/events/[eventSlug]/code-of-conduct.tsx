@@ -22,7 +22,7 @@ export default function EventCodeOfConductPage() {
     setLoading(true);
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/event/slug/${eventSlug}`,
+        `/api/events/slug/${eventSlug}`,
     )
       .then((res) => {
         if (!res.ok) throw new Error("Event not found");

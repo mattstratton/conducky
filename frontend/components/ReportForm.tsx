@@ -71,7 +71,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
     }
     const res = await fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/reports`,
+        `/api/events/slug/${eventSlug}/reports`,
       {
         method: "POST",
         body: formData,

@@ -2,15 +2,72 @@ const { inMemoryStore } = require("../../__mocks__/@prisma/client");
 const request = require("supertest");
 const app = require("../../index");
 
-jest.mock("../../utils/rbac", () => ({
+jest.mock("../../src/utils/rbac", () => ({
   requireSuperAdmin: () => (req, res, next) => {
     req.isAuthenticated = () => true;
-    req.user = { id: "1", email: "admin@example.com", name: "Admin" };
+    
+    // Check if user has SuperAdmin role in any event
+    const { inMemoryStore } = require("../../__mocks__/@prisma/client");
+    
+    // Use test user ID from header if provided, otherwise default to user 1
+    const testUserId = req.headers['x-test-user-id'] || "1";
+    const testUser = inMemoryStore.users.find(u => u.id === testUserId) || { id: testUserId, email: `user${testUserId}@example.com`, name: `User${testUserId}` };
+    req.user = testUser;
+    const isSuperAdmin = inMemoryStore.userEventRoles.some(
+      (uer) => uer.userId === req.user.id && uer.role.name === "SuperAdmin"
+    );
+    
+    if (!isSuperAdmin) {
+      res.status(403).json({ error: "Forbidden: insufficient role" });
+      return;
+    }
+    
     next();
   },
-  requireRole: () => (req, res, next) => {
+  requireRole: (allowedRoles) => (req, res, next) => {
     req.isAuthenticated = () => true;
-    req.user = { id: "1", email: "admin@example.com", name: "Admin" };
+    
+    const { inMemoryStore } = require("../../__mocks__/@prisma/client");
+    
+    // Use test user ID from header if provided, otherwise default to user 1
+    const testUserId = req.headers['x-test-user-id'] || "1";
+    const testUser = inMemoryStore.users.find(u => u.id === testUserId) || { id: testUserId, email: `user${testUserId}@example.com`, name: `User${testUserId}` };
+    req.user = testUser;
+    
+    // Get eventId from params
+    let eventId = req.params.eventId || req.params.slug;
+    
+    // If slug is provided, resolve to eventId
+    if (req.params.slug && !eventId.match(/^\d+$/)) {
+      const event = inMemoryStore.events.find(e => e.slug === req.params.slug);
+      if (event) {
+        eventId = event.id;
+      }
+    }
+    
+    // Check for SuperAdmin role globally
+    const isSuperAdmin = inMemoryStore.userEventRoles.some(
+      (uer) => uer.userId === req.user.id && uer.role.name === "SuperAdmin"
+    );
+    
+    if (allowedRoles.includes("SuperAdmin") && isSuperAdmin) {
+      return next();
+    }
+    
+    // Check for allowed roles for this specific event
+    const userRoles = inMemoryStore.userEventRoles.filter(
+      (uer) => uer.userId === req.user.id && uer.eventId === eventId
+    );
+    
+    const hasRole = userRoles.some((uer) =>
+      allowedRoles.includes(uer.role.name)
+    );
+    
+    if (!hasRole) {
+      res.status(403).json({ error: "Forbidden: insufficient role" });
+      return;
+    }
+    
     next();
   },
 }));
@@ -49,7 +106,7 @@ describe("Event endpoints", () => {
   describe("POST /events", () => {
     it("should create an event as SuperAdmin", async () => {
       const res = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Test Event", slug: "test-event" });
       console.log(
         "DEBUG: Assertion line, expecting [200, 201], got:",
@@ -60,21 +117,21 @@ describe("Event endpoints", () => {
       expect(res.body.event).toHaveProperty("slug", "test-event");
     });
     it("should fail if missing fields", async () => {
-      const res = await request(app).post("/events").send({ name: "" });
+      const res = await request(app).post("/api/events").send({ name: "" });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
     });
     it("should fail if slug is invalid", async () => {
       const res = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Event", slug: "Invalid Slug!" });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
     });
     it("should fail if slug already exists", async () => {
-      await request(app).post("/events").send({ name: "Event1", slug: "dupe" });
+      await request(app).post("/api/events").send({ name: "Event1", slug: "dupe" });
       const res = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Event2", slug: "dupe" });
       expect(res.statusCode).toBe(409);
       expect(res.body).toHaveProperty("error", "Slug already exists.");
@@ -84,11 +141,11 @@ describe("Event endpoints", () => {
   describe("POST /events/:eventId/roles", () => {
     it("should assign a role to a user", async () => {
       const eventRes = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Role Event", slug: "role-event" });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
-        .post(`/events/${eventId}/roles`)
+        .post(`/api/events/${eventId}/roles`)
         .send({ userId: "1", roleName: "Admin" });
       console.log("DEBUG: assign a role to a user, response body:", res.body);
       console.log(
@@ -100,31 +157,31 @@ describe("Event endpoints", () => {
     });
     it("should fail if missing fields", async () => {
       const eventRes = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Role Event2", slug: "role-event2" });
       const eventId = eventRes.body.event.id;
-      const res = await request(app).post(`/events/${eventId}/roles`).send({});
+      const res = await request(app).post(`/api/events/${eventId}/roles`).send({});
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
     });
     it("should fail if user does not exist", async () => {
       const eventRes = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Role Event3", slug: "role-event3" });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
-        .post(`/events/${eventId}/roles`)
+        .post(`/api/events/${eventId}/roles`)
         .send({ userId: "999", roleName: "Admin" });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error", "User does not exist.");
     });
     it("should fail if role does not exist", async () => {
       const eventRes = await request(app)
-        .post("/events")
+        .post("/api/events")
         .send({ name: "Role Event4", slug: "role-event4" });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
-        .post(`/events/${eventId}/roles`)
+        .post(`/api/events/${eventId}/roles`)
         .send({ userId: "1", roleName: "NotARole" });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error", "Role does not exist.");
@@ -133,13 +190,13 @@ describe("Event endpoints", () => {
 
   describe("GET /events/:eventId", () => {
     it("should return event details (success)", async () => {
-      const res = await request(app).get("/events/1");
+      const res = await request(app).get("/api/events/1");
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("event");
       expect(res.body.event).toHaveProperty("id", "1");
     });
     it("should return 404 if event not found", async () => {
-      const res = await request(app).get("/events/999");
+      const res = await request(app).get("/api/events/999");
       expect(res.statusCode).toBe(404);
     });
     // Forbidden case is handled by RBAC middleware mock (always allows)
@@ -148,18 +205,18 @@ describe("Event endpoints", () => {
   describe("DELETE /events/:eventId/roles", () => {
     it("should remove a role from a user (success)", async () => {
       const res = await request(app)
-        .delete("/events/1/roles")
+        .delete("/api/events/1/roles")
         .send({ userId: "1", roleName: "SuperAdmin" });
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("message", "Role removed.");
     });
     it("should fail if missing fields", async () => {
-      const res = await request(app).delete("/events/1/roles").send({});
+      const res = await request(app).delete("/api/events/1/roles").send({});
       expect(res.statusCode).toBe(400);
     });
     it("should fail if user or role not found", async () => {
       const res = await request(app)
-        .delete("/events/1/roles")
+        .delete("/api/events/1/roles")
         .send({ userId: "999", roleName: "NotARole" });
       expect(res.statusCode).toBe(400);
     });
@@ -167,7 +224,7 @@ describe("Event endpoints", () => {
 
   describe("GET /events/:eventId/users", () => {
     it("should list users and their roles for an event (success)", async () => {
-      const res = await request(app).get("/events/1/users");
+      const res = await request(app).get("/api/events/1/users");
       console.log(
         "DEBUG: list users and their roles, response body:",
         res.body,
@@ -194,7 +251,7 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r4/state")
+        .patch("/api/events/1/reports/r4/state")
         .send({ state: "acknowledged" });
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("report");
@@ -210,14 +267,14 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r5/state")
+        .patch("/api/events/1/reports/r5/state")
         .send({ state: "not-a-state" });
       expect(res.statusCode).toBe(400);
     });
 
     it("should return 404 if report not found", async () => {
       const res = await request(app)
-        .patch("/events/1/reports/doesnotexist/state")
+        .patch("/api/events/1/reports/doesnotexist/state")
         .send({ state: "acknowledged" });
       expect(res.statusCode).toBe(404);
     });
@@ -226,7 +283,7 @@ describe("Event endpoints", () => {
   describe("POST /events/:eventId/reports", () => {
     it("should create a report (success)", async () => {
       const res = await request(app)
-        .post("/events/1/reports")
+        .post("/api/events/1/reports")
         .send({ type: "harassment", description: "Test report", title: "A valid report title" });
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty("report");
@@ -237,7 +294,7 @@ describe("Event endpoints", () => {
 
     it("should fail if missing required fields", async () => {
       const res = await request(app)
-        .post("/events/1/reports")
+        .post("/api/events/1/reports")
         .send({ type: "harassment" }); // missing description and title
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
@@ -245,7 +302,7 @@ describe("Event endpoints", () => {
 
     it("should fail if title is too short", async () => {
       const res = await request(app)
-        .post("/events/1/reports")
+        .post("/api/events/1/reports")
         .send({ type: "harassment", description: "desc", title: "short" });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
@@ -254,7 +311,7 @@ describe("Event endpoints", () => {
     it("should fail if title is too long", async () => {
       const longTitle = "a".repeat(71);
       const res = await request(app)
-        .post("/events/1/reports")
+        .post("/api/events/1/reports")
         .send({ type: "harassment", description: "desc", title: longTitle });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error");
@@ -262,14 +319,14 @@ describe("Event endpoints", () => {
 
     it("should return 404 if event not found", async () => {
       const res = await request(app)
-        .post("/events/999/reports")
+        .post("/api/events/999/reports")
         .send({ type: "harassment", description: "Test report", title: "A valid report title" });
       expect(res.statusCode).toBe(404);
     });
 
     it("should create a report with evidence file upload", async () => {
       const res = await request(app)
-        .post("/events/1/reports")
+        .post("/api/events/1/reports")
         .attach("evidence", Buffer.from("fake evidence data"), "evidence.txt")
         .field("type", "harassment")
         .field("description", "Test with file")
@@ -290,7 +347,7 @@ describe("Event endpoints", () => {
         description: "Report 2",
         state: "submitted",
       });
-      const res = await request(app).get("/events/1/reports");
+      const res = await request(app).get("/api/events/1/reports");
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("reports");
       expect(Array.isArray(res.body.reports)).toBe(true);
@@ -298,7 +355,7 @@ describe("Event endpoints", () => {
     });
 
     it("should return 404 if event not found", async () => {
-      const res = await request(app).get("/events/999/reports");
+      const res = await request(app).get("/api/events/999/reports");
       expect(res.statusCode).toBe(404);
     });
   });
@@ -313,19 +370,19 @@ describe("Event endpoints", () => {
         description: "Report 3",
         state: "submitted",
       });
-      const res = await request(app).get("/events/1/reports/r3");
+      const res = await request(app).get("/api/events/1/reports/r3");
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("report");
       expect(res.body.report).toHaveProperty("id", "r3");
     });
 
     it("should return 400 or 404 if missing eventId", async () => {
-      const res = await request(app).get("/events//reports/r1");
+      const res = await request(app).get("/api/events//reports/r1");
       expect([400, 404]).toContain(res.statusCode);
     });
 
     it("should return 404 if report not found", async () => {
-      const res = await request(app).get("/events/1/reports/doesnotexist");
+      const res = await request(app).get("/api/events/1/reports/doesnotexist");
       expect(res.statusCode).toBe(404);
     });
   });
@@ -343,7 +400,7 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r10/title")
+        .patch("/api/events/1/reports/r10/title")
         .set("x-test-user-id", "1")
         .send({ title: "Updated Report Title" });
       expect(res.statusCode).toBe(200);
@@ -363,7 +420,7 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r11/title")
+        .patch("/api/events/1/reports/r11/title")
         .set("x-test-user-id", "2")
         .send({ title: "Admin Updated Title" });
       expect(res.statusCode).toBe(200);
@@ -383,7 +440,7 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r12/title")
+        .patch("/api/events/1/reports/r12/title")
         .set("x-test-user-id", "3")
         .send({ title: "Responder Update Attempt" });
       expect(res.statusCode).toBe(403);
@@ -399,7 +456,7 @@ describe("Event endpoints", () => {
         state: "submitted",
       });
       const res = await request(app)
-        .patch("/events/1/reports/r13/title")
+        .patch("/api/events/1/reports/r13/title")
         .set("x-test-user-id", "1")
         .send({ title: "short" });
       expect(res.statusCode).toBe(400);
@@ -429,14 +486,14 @@ describe("Slug-based Event/User Endpoints", () => {
   });
 
   it("should list users and their roles for an event by slug (success)", async () => {
-    const res = await request(app).get(`/events/slug/${slug}/users`);
+    const res = await request(app).get(`/api/events/slug/${slug}/users`);
     expect([200, 201]).toContain(res.statusCode);
     expect(res.body).toHaveProperty("users");
     expect(Array.isArray(res.body.users)).toBe(true);
   });
 
   it("should return 404 if event not found", async () => {
-    const res = await request(app).get("/events/slug/doesnotexist/users");
+    const res = await request(app).get("/api/events/slug/doesnotexist/users");
     expect(res.statusCode).toBe(404);
   });
 
@@ -470,7 +527,7 @@ describe("Slug-based Event/User Endpoints", () => {
       "DEBUG: Roles for user 1, event 2 before request:",
       rolesForUserEvent,
     );
-    const res = await request(app).get(`/events/slug/${slug}/users`);
+    const res = await request(app).get(`/api/events/slug/${slug}/users`);
     expect(res.statusCode).toBe(403);
   });
 
@@ -488,7 +545,7 @@ describe("Slug-based Event/User Endpoints", () => {
       role: { name: "Reporter" },
       user: { id: "2", email: "user2@example.com", name: "User2" },
     });
-    const res = await request(app).patch(`/events/slug/${slug}/users/2`).send({
+    const res = await request(app).patch(`/api/events/slug/${slug}/users/2`).send({
       name: "User2 Updated",
       email: "user2updated@example.com",
       role: "Responder",
@@ -499,7 +556,7 @@ describe("Slug-based Event/User Endpoints", () => {
 
   it("should fail to update user if missing fields", async () => {
     const res = await request(app)
-      .patch(`/events/slug/${slug}/users/2`)
+      .patch(`/api/events/slug/${slug}/users/2`)
       .send({ name: "User2 Updated" }); // missing email and role
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty("error");
@@ -507,7 +564,7 @@ describe("Slug-based Event/User Endpoints", () => {
 
   it("should return 404 if event not found on update", async () => {
     const res = await request(app)
-      .patch("/events/slug/doesnotexist/users/2")
+      .patch("/api/events/slug/doesnotexist/users/2")
       .send({ name: "User2", email: "user2@example.com", role: "Responder" });
     expect(res.statusCode).toBe(404);
   });
@@ -535,7 +592,7 @@ describe("Slug-based Event/User Endpoints", () => {
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     });
     const res = await request(app)
-      .patch(`/events/slug/${slug}/users/2`)
+      .patch(`/api/events/slug/${slug}/users/2`)
       .send({ name: "User2", email: "user2@example.com", role: "Responder" });
     expect(res.statusCode).toBe(403);
   });
@@ -554,13 +611,13 @@ describe("Slug-based Event/User Endpoints", () => {
       role: { name: "Reporter" },
       user: { id: "3", email: "user3@example.com", name: "User3" },
     });
-    const res = await request(app).delete(`/events/slug/${slug}/users/3`);
+    const res = await request(app).delete(`/api/events/slug/${slug}/users/3`);
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("message", "User removed from event.");
   });
 
   it("should return 404 if event not found on delete", async () => {
-    const res = await request(app).delete("/events/slug/doesnotexist/users/3");
+    const res = await request(app).delete("/api/events/slug/doesnotexist/users/3");
     expect(res.statusCode).toBe(404);
   });
 
@@ -586,7 +643,7 @@ describe("Slug-based Event/User Endpoints", () => {
       role: { name: "Reporter" },
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     });
-    const res = await request(app).delete(`/events/slug/${slug}/users/3`);
+    const res = await request(app).delete(`/api/events/slug/${slug}/users/3`);
     expect(res.statusCode).toBe(403);
   });
 });
@@ -614,7 +671,7 @@ describe("Slug-based Event Endpoints", () => {
 
   it("should update event metadata by slug (success)", async () => {
     const res = await request(app)
-      .patch(`/events/slug/${slug}`)
+      .patch(`/api/events/slug/${slug}`)
       .send({ name: "Updated Event", description: "Updated desc" });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("event");
@@ -623,7 +680,7 @@ describe("Slug-based Event Endpoints", () => {
 
   it("should update contactEmail for an event", async () => {
     const res = await request(app)
-      .patch(`/events/slug/${slug}`)
+      .patch(`/api/events/slug/${slug}`)
       .send({ contactEmail: "contact@example.com" });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("event");
@@ -634,14 +691,14 @@ describe("Slug-based Event Endpoints", () => {
   });
 
   it("should fail with 400 if nothing to update", async () => {
-    const res = await request(app).patch(`/events/slug/${slug}`).send({});
+    const res = await request(app).patch(`/api/events/slug/${slug}`).send({});
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty("error", "Nothing to update.");
   });
 
   it("should return 404 if event not found", async () => {
     const res = await request(app)
-      .patch("/events/slug/doesnotexist")
+      .patch("/api/events/slug/doesnotexist")
       .send({ name: "No Event" });
     expect(res.statusCode).toBe(404);
   });
@@ -650,7 +707,7 @@ describe("Slug-based Event Endpoints", () => {
     // Add a conflicting event
     inMemoryStore.events.push({ id: "3", name: "Other", slug: "conflict" });
     const res = await request(app)
-      .patch(`/events/slug/${slug}`)
+      .patch(`/api/events/slug/${slug}`)
       .send({ newSlug: "conflict" });
     expect(res.statusCode).toBe(409);
     expect(res.body).toHaveProperty("error", "Slug already exists.");
@@ -673,7 +730,7 @@ describe("Slug-based Event Endpoints", () => {
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     });
     const res = await request(app)
-      .patch(`/events/slug/${slug}`)
+      .patch(`/api/events/slug/${slug}`)
       .send({ name: "Should Fail" });
     expect(res.statusCode).toBe(403);
   });
@@ -681,21 +738,21 @@ describe("Slug-based Event Endpoints", () => {
   it("should upload a logo for an event (success)", async () => {
     // Mock file upload
     const res = await request(app)
-      .post(`/events/slug/${slug}/logo`)
+      .post(`/api/events/slug/${slug}/logo`)
       .attach("logo", Buffer.from("fake image data"), "logo.png");
     expect([200, 201]).toContain(res.statusCode);
     expect(res.body).toHaveProperty("event");
   });
 
   it("should return 400 if no file uploaded", async () => {
-    const res = await request(app).post(`/events/slug/${slug}/logo`);
+    const res = await request(app).post(`/api/events/slug/${slug}/logo`);
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty("error", "No file uploaded.");
   });
 
   it("should return 404 if event not found for logo upload", async () => {
     const res = await request(app)
-      .post("/events/slug/doesnotexist/logo")
+      .post("/api/events/slug/doesnotexist/logo")
       .attach("logo", Buffer.from("fake image data"), "logo.png");
     expect(res.statusCode).toBe(404);
   });
@@ -717,7 +774,7 @@ describe("Slug-based Event Endpoints", () => {
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     });
     const res = await request(app)
-      .post(`/events/slug/${slug}/logo`)
+      .post(`/api/events/slug/${slug}/logo`)
       .attach("logo", Buffer.from("fake image data"), "logo.png");
     expect(res.statusCode).toBe(403);
   });
@@ -759,7 +816,7 @@ describe("Slug-based Invite Endpoints", () => {
 
   it("should update an invite (success)", async () => {
     const res = await request(app)
-      .patch(`/events/slug/${slug}/invites/${inviteId}`)
+      .patch(`/api/events/slug/${slug}/invites/${inviteId}`)
       .send({ disabled: true, note: "Disabled for testing", maxUses: 5 });
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty("invite");
@@ -770,14 +827,14 @@ describe("Slug-based Invite Endpoints", () => {
 
   it("should return 404 if event not found", async () => {
     const res = await request(app)
-      .patch(`/events/slug/doesnotexist/invites/${inviteId}`)
+      .patch(`/api/events/slug/doesnotexist/invites/${inviteId}`)
       .send({ disabled: true });
     expect(res.statusCode).toBe(404);
   });
 
   it("should return 404 if invite not found", async () => {
     const res = await request(app)
-      .patch(`/events/slug/${slug}/invites/doesnotexist`)
+      .patch(`/api/events/slug/${slug}/invites/doesnotexist`)
       .send({ disabled: true });
     expect(res.statusCode).toBe(404);
   });
@@ -799,7 +856,7 @@ describe("Slug-based Invite Endpoints", () => {
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     });
     const res = await request(app)
-      .patch(`/events/slug/${slug}/invites/${inviteId}`)
+      .patch(`/api/events/slug/${slug}/invites/${inviteId}`)
       .send({ disabled: true });
     expect(res.statusCode).toBe(403);
   });
@@ -814,7 +871,7 @@ describe("User Avatar endpoints", () => {
 
   it("should upload a valid PNG avatar", async () => {
     const res = await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", avatarPng, {
         filename: "avatar.png",
         contentType: "image/png",
@@ -826,7 +883,7 @@ describe("User Avatar endpoints", () => {
 
   it("should upload a valid JPG avatar", async () => {
     const res = await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", avatarJpg, {
         filename: "avatar.jpg",
         contentType: "image/jpeg",
@@ -838,7 +895,7 @@ describe("User Avatar endpoints", () => {
 
   it("should reject an invalid file type", async () => {
     const res = await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", Buffer.from([0x00, 0x01]), {
         filename: "avatar.gif",
         contentType: "image/gif",
@@ -848,32 +905,32 @@ describe("User Avatar endpoints", () => {
 
   it("should fetch the uploaded avatar", async () => {
     await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", avatarPng, {
         filename: "avatar.png",
         contentType: "image/png",
       });
-    const res = await request(app).get(`/users/${userId}/avatar`);
+    const res = await request(app).get(`/api/users/${userId}/avatar`);
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toMatch(/image\/png/);
     expect(res.body.length).toBeGreaterThan(0);
   });
 
   it("should return 404 for missing avatar", async () => {
-    const res = await request(app).get(`/users/999/avatar`);
+    const res = await request(app).get(`/api/users/999/avatar`);
     expect(res.statusCode).toBe(404);
   });
 
   it("should delete the avatar", async () => {
     await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", avatarPng, {
         filename: "avatar.png",
         contentType: "image/png",
       });
-    const delRes = await request(app).delete(`/users/${userId}/avatar`);
+    const delRes = await request(app).delete(`/api/users/${userId}/avatar`);
     expect([200, 204]).toContain(delRes.statusCode);
-    const getRes = await request(app).get(`/users/${userId}/avatar`);
+    const getRes = await request(app).get(`/api/users/${userId}/avatar`);
     expect(getRes.statusCode).toBe(404);
   });
 
@@ -886,7 +943,7 @@ describe("User Avatar endpoints", () => {
       name: "Other",
     });
     const res = await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .set("x-test-user-id", otherUserId)
       .attach("avatar", avatarPng, {
         filename: "avatar.png",
@@ -894,15 +951,15 @@ describe("User Avatar endpoints", () => {
       });
     expect([401, 403]).toContain(res.statusCode);
     const delRes = await request(app)
-      .delete(`/users/${userId}/avatar`)
+      .delete(`/api/users/${userId}/avatar`)
       .set("x-test-user-id", otherUserId);
     expect([401, 403]).toContain(delRes.statusCode);
   });
 
-  it("should include avatarUrl in /session and /events/slug/:slug/users", async () => {
+  it("should include avatarUrl in /session and /api/events/slug/:slug/users", async () => {
     // Upload avatar
     await request(app)
-      .post(`/users/${userId}/avatar`)
+      .post(`/api/users/${userId}/avatar`)
       .attach("avatar", avatarPng, {
         filename: "avatar.png",
         contentType: "image/png",
@@ -911,9 +968,9 @@ describe("User Avatar endpoints", () => {
     const sessionRes = await request(app).get("/session");
     expect(sessionRes.statusCode).toBe(200);
     expect(sessionRes.body.user).toHaveProperty("avatarUrl");
-    // /events/slug/:slug/users
+    // /api/events/slug/:slug/users
     inMemoryStore.events[0].slug = "event1";
-    const usersRes = await request(app).get("/events/slug/event1/users");
+    const usersRes = await request(app).get("/api/events/slug/event1/users");
     expect(usersRes.statusCode).toBe(200);
     expect(usersRes.body.users[0]).toHaveProperty("avatarUrl");
   });
@@ -924,14 +981,14 @@ describe("Evidence endpoints", () => {
   beforeEach(async () => {
     // Create a report to attach evidence to
     const res = await request(app)
-      .post("/events/1/reports")
+      .post("/api/events/1/reports")
       .send({ type: "harassment", description: "Report for evidence", title: "Evidence Report Title" });
     reportId = res.body.report.id;
   });
 
   it("should upload multiple evidence files to a report", async () => {
     const res = await request(app)
-      .post(`/reports/${reportId}/evidence`)
+      .post(`/api/reports/${reportId}/evidence`)
       .attach("evidence", Buffer.from("file1data"), "file1.txt")
       .attach("evidence", Buffer.from("file2data"), "file2.txt");
     expect(res.statusCode).toBe(201);
@@ -943,10 +1000,10 @@ describe("Evidence endpoints", () => {
   it("should list all evidence files for a report", async () => {
     // Upload files first
     await request(app)
-      .post(`/reports/${reportId}/evidence`)
+      .post(`/api/reports/${reportId}/evidence`)
       .attach("evidence", Buffer.from("file1data"), "file1.txt")
       .attach("evidence", Buffer.from("file2data"), "file2.txt");
-    const res = await request(app).get(`/reports/${reportId}/evidence`);
+    const res = await request(app).get(`/api/reports/${reportId}/evidence`);
     expect(res.statusCode).toBe(200);
     expect(res.body.files).toHaveLength(2);
     expect(res.body.files[0]).toHaveProperty("filename", "file1.txt");
@@ -956,10 +1013,10 @@ describe("Evidence endpoints", () => {
   it("should download a specific evidence file by its ID", async () => {
     // Upload a file
     const uploadRes = await request(app)
-      .post(`/reports/${reportId}/evidence`)
+      .post(`/api/reports/${reportId}/evidence`)
       .attach("evidence", Buffer.from("downloadme"), "download.txt");
     const evidenceId = uploadRes.body.files[0].id;
-    const res = await request(app).get(`/evidence/${evidenceId}/download`);
+    const res = await request(app).get(`/api/evidence/${evidenceId}/download`);
     expect(res.statusCode).toBe(200);
     expect(res.header["content-type"]).toBe("application/octet-stream");
     expect(res.header["content-disposition"]).toContain("download.txt");
@@ -993,7 +1050,7 @@ describe("Report detail access control (slug-based)", () => {
 
   it("allows the reporter to access the report detail", async () => {
     const res = await request(app)
-      .get("/events/slug/event1/reports/r1")
+      .get("/api/events/slug/event1/reports/r1")
       .set("x-test-user-id", "u1");
     expect(res.statusCode).toBe(200);
     expect(res.body.report).toHaveProperty("id", "r1");
@@ -1001,7 +1058,7 @@ describe("Report detail access control (slug-based)", () => {
 
   it("allows a responder to access the report detail", async () => {
     const res = await request(app)
-      .get("/events/slug/event1/reports/r1")
+      .get("/api/events/slug/event1/reports/r1")
       .set("x-test-user-id", "u2");
     expect(res.statusCode).toBe(200);
     expect(res.body.report).toHaveProperty("id", "r1");
@@ -1009,7 +1066,7 @@ describe("Report detail access control (slug-based)", () => {
 
   it("forbids a user who is not the reporter or responder", async () => {
     const res = await request(app)
-      .get("/events/slug/event1/reports/r1")
+      .get("/api/events/slug/event1/reports/r1")
       .set("x-test-user-id", "u3");
     expect(res.statusCode).toBe(403);
     expect(res.body).toHaveProperty("error");

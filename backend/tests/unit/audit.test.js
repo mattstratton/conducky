@@ -1,4 +1,4 @@
-const { logAudit } = require('../../utils/audit');
+const { logAudit } = require('../../src/utils/audit');
 const { inMemoryStore } = require('@prisma/client');
 
 beforeEach(() => {

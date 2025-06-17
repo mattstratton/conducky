@@ -7,7 +7,7 @@
     "build:watch": "tsc --watch",
     "dev": "nodemon index.js",
     "dev:ts": "nodemon --exec ts-node index.ts",
-    "start": "node index.js",
+    "start": "node dist/index.js",
     "start:ts": "node dist/index.js",
     "seed": "node prisma/seed.js",
     "sample-data": "node prisma/sample-data-seed.js",

@@ -45,7 +45,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   // Restore user from session cookie on mount
   React.useEffect(() => {
     if (!user) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session", {
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
         credentials: "include",
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -57,29 +57,34 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   }, []);
 
   useEffect(() => {
-    if (eventSlug) {
-              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+    // Wait for router to be ready and ensure we have a valid eventSlug
+    if (router.isReady && eventSlug && typeof eventSlug === 'string' && eventSlug !== '[eventSlug]') {
+      console.log('Fetching event data for slug:', eventSlug);
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.event) setEventName(data.event.name);
+        })
+        .catch((error) => {
+          console.warn('Failed to fetch event details:', error);
         });
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users`, { credentials: "include" })
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users`, { credentials: "include" })
         .then(() => {
           // No-op for now; events are fetched from /api/users/me/events
         })
         .catch((error) => {
-          console.warn('Failed to fetch event data:', error);
+          console.warn('Failed to fetch event users:', error);
           // Don't clear events here - they should persist across pages
         });
     } else {
       setEventName("");
       // Don't clear events when not in event context - events should persist
     }
-  }, [eventSlug, user]);
+  }, [router.isReady, eventSlug, user]);
 
   useEffect(() => {
-    if (modalOpen && eventSlugForModal) {
-              fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlugForModal}`)
+    if (modalOpen && eventSlugForModal && typeof eventSlugForModal === 'string' && eventSlugForModal !== '[eventSlug]') {
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlugForModal}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => setEventName(data && data.event ? data.event.name : eventSlugForModal))
         .catch(() => setEventName(eventSlugForModal));

@@ -132,7 +132,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   // Fetch user info
   useEffect(() => {
     fetch(
-      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session",
+              (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session",
       { credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : null))
@@ -146,7 +146,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     if (eventSlug && user) {
       fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/my-roles`,
+          `/api/events/slug/${eventSlug}/my-roles`,
         { credentials: "include" },
       )
         .then((res) => (res.ok ? res.json() : null))
@@ -162,7 +162,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     setCommentsLoading(true);
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+        `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
       { credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : { comments: [] }))
@@ -198,11 +198,11 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
     console.log('[DEBUG] Fetching responders for assignment dropdown');
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
         console.log('[DEBUG] Fetched responders:', data.users);
-        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
+        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
             console.log('[DEBUG] Fetched admins:', data2.users);
@@ -225,7 +225,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -385,7 +385,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     }
     const res = await fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/reports/${report!.id}/evidence`,
+        `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
       {
         method: "POST",
         body: formData,
@@ -398,7 +398,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       // Refetch evidence files
       const filesRes = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
         { credentials: "include" },
       );
       if (filesRes.ok) {
@@ -426,7 +426,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence/${file.id}`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence/${file.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -439,7 +439,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       // Refetch evidence files
       const filesRes = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
         { credentials: "include" },
       );
       if (filesRes.ok) {

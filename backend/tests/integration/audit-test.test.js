@@ -12,7 +12,7 @@ beforeEach(() => {
   inMemoryStore.auditLogs.length = 0;
 });
 
-jest.mock('../../utils/audit', () => ({
+jest.mock('../../src/utils/audit', () => ({
   logAudit: jest.fn().mockResolvedValue({}),
 }));
 

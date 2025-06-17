@@ -32,6 +32,7 @@ export default function EventAdminPage() {
   const { eventSlug } = router.query as { eventSlug?: string };
   const [event, setEvent] = useState<Event | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [userEventRoles, setUserEventRoles] = useState<string[]>([]);
   const [rolesList] = useState<string[]>(["Admin", "Responder", "Reporter"]);
   const [page, setPage] = useState(1);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
@@ -39,7 +40,7 @@ export default function EventAdminPage() {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const codeModalRef = useRef<HTMLDivElement>(null);
   const closeCodeModalBtnRef = useRef<HTMLButtonElement>(null);
-  const [roleFilter, setRoleFilter] = useState("All");
+  const [roleFilter] = useState("All");
   const [metaEditError, setMetaEditError] = useState("");
   const [metaEditSuccess, setMetaEditSuccess] = useState("");
   const [sort] = useState("name");
@@ -48,11 +49,11 @@ export default function EventAdminPage() {
 
   const fetchEventUsers = () => {
     if (!eventSlug) return;
-    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
+    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
     if (roleFilter && roleFilter !== "All") url += `&role=${encodeURIComponent(roleFilter)}`;
     fetch(url, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { users: [], total: 0 }))
-      .then((data) => {
+      .then(() => {
         // setEventUsers(data.users || []);
       })
       .catch(() => {
@@ -74,7 +75,9 @@ export default function EventAdminPage() {
 
   useEffect(() => {
     if (!eventSlug) return;
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/event/slug/${eventSlug}`)
+    
+    // Fetch event details
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
       .then((res) => {
         if (!res.ok) throw new Error("Event not found");
         return res.json();
@@ -82,12 +85,25 @@ export default function EventAdminPage() {
       .then((data) => {
         setEvent(data.event);
       });
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/session", { credentials: "include" })
+    
+    // Fetch user session
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setUser(data ? data.user : null));
+    
+    // Fetch user's event-specific roles
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/my-roles`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.roles) {
+          setUserEventRoles(data.roles);
+        }
+      })
+      .catch(() => setUserEventRoles([]));
+    
     fetchEventUsers();
     fetchInvites();
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/logo`, { method: "HEAD" })
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/logo`, { method: "HEAD" })
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
   }, [eventSlug]);
@@ -97,7 +113,7 @@ export default function EventAdminPage() {
   useEffect(() => { setPage(1); }, [sort, order, limit, roleFilter]);
   useEffect(() => {
     if (!eventSlug) return;
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/logo`, { method: "HEAD" })
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/logo`, { method: "HEAD" })
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
   }, [eventSlug]);
@@ -121,14 +137,19 @@ export default function EventAdminPage() {
     }
   }, [showCodeModal]);
 
-  function hasRole(role: string): boolean {
+  function hasGlobalRole(role: string): boolean {
     if (!user || !user.roles) return false;
     return user.roles.includes(role);
   }
 
-  const isSuperAdmin = hasRole("SuperAdmin");
-  const isEventAdmin = hasRole("Admin");
+  function hasEventRole(role: string): boolean {
+    return userEventRoles.includes(role);
+  }
 
+  const isSuperAdmin = hasGlobalRole("SuperAdmin");
+  const isEventAdmin = hasEventRole("Admin");
+
+  // Only allow SuperAdmins or Event Admins to access settings
   if (!isSuperAdmin && !isEventAdmin) {
     return (
       <div style={{ padding: 40 }}>
@@ -160,7 +181,7 @@ export default function EventAdminPage() {
                   setLogoUploadLoading(true);
                   const formData = new FormData();
                   formData.append("logo", value);
-                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${event.slug}/logo`, {
+                  const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${event.slug}/logo`, {
                     method: "POST",
                     credentials: "include",
                     body: formData,

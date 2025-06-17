@@ -65,7 +65,7 @@ describe("Profile Management API", () => {
       inMemoryStore.users.push({ id: "other-user", email: "existing@example.com", name: "Other User" });
 
       const res = await request(app)
-        .patch("/users/me/profile")
+        .patch("/api/users/me/profile")
         .send({ email: "existing@example.com" });
 
       expect(res.statusCode).toBe(409);
@@ -74,7 +74,7 @@ describe("Profile Management API", () => {
 
     it("should allow user to keep their own email", async () => {
       const res = await request(app)
-        .patch("/users/me/profile")
+        .patch("/api/users/me/profile")
         .send({ 
           name: "New Name",
           email: mockUser.email 
@@ -108,7 +108,7 @@ describe("Profile Management API", () => {
 
     it("should change password successfully", async () => {
       const res = await request(app)
-        .patch("/users/me/password")
+        .patch("/api/users/me/password")
         .send({
           currentPassword: "currentpass",
           newPassword: "NewPassword123!"
@@ -128,7 +128,7 @@ describe("Profile Management API", () => {
       bcrypt.compare.mockResolvedValueOnce(false); // Wrong current password
 
       const res = await request(app)
-        .patch("/users/me/password")
+        .patch("/api/users/me/password")
         .send({
           currentPassword: "wrongpass",
           newPassword: "NewPassword123!"
@@ -142,7 +142,7 @@ describe("Profile Management API", () => {
       bcrypt.compare.mockResolvedValueOnce(true); // Current password is correct
 
       const res = await request(app)
-        .patch("/users/me/password")
+        .patch("/api/users/me/password")
         .send({
           currentPassword: "currentpass",
           newPassword: "weak"
@@ -154,7 +154,7 @@ describe("Profile Management API", () => {
 
     it("should require both passwords", async () => {
       const res = await request(app)
-        .patch("/users/me/password")
+        .patch("/api/users/me/password")
         .send({ currentPassword: "test" });
 
       expect(res.statusCode).toBe(400);
@@ -163,7 +163,7 @@ describe("Profile Management API", () => {
 
     it("should require authentication", async () => {
       const res = await request(app)
-        .patch("/users/me/password")
+        .patch("/api/users/me/password")
         .set("x-test-disable-auth", "true")
         .send({
           currentPassword: "current",
@@ -346,7 +346,7 @@ describe("Profile Management API", () => {
       inMemoryStore.userEventRoles = []; // User not already member
 
       const res = await request(app)
-        .post("/invites/ABC123/redeem");
+        .post("/api/invites/ABC123/redeem");
 
       expect(res.statusCode).toBe(200);
       expect(res.body.message).toContain("Joined event successfully");
@@ -365,7 +365,7 @@ describe("Profile Management API", () => {
       inMemoryStore.eventInvites = [];
 
       const res = await request(app)
-        .post("/invites/INVALID/redeem");
+        .post("/api/invites/INVALID/redeem");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toContain("Invalid or disabled invite link");
@@ -376,7 +376,7 @@ describe("Profile Management API", () => {
       inMemoryStore.eventInvites = [disabledInvite];
 
       const res = await request(app)
-        .post("/invites/ABC123/redeem");
+        .post("/api/invites/ABC123/redeem");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toContain("Invalid or disabled invite link");
@@ -390,7 +390,7 @@ describe("Profile Management API", () => {
       inMemoryStore.eventInvites = [expiredInvite];
 
       const res = await request(app)
-        .post("/invites/ABC123/redeem");
+        .post("/api/invites/ABC123/redeem");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toContain("expired");
@@ -401,7 +401,7 @@ describe("Profile Management API", () => {
       inMemoryStore.eventInvites = [maxUsedInvite];
 
       const res = await request(app)
-        .post("/invites/ABC123/redeem");
+        .post("/api/invites/ABC123/redeem");
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toContain("maximum uses");
@@ -419,7 +419,7 @@ describe("Profile Management API", () => {
       ];
 
       const res = await request(app)
-        .post("/invites/ABC123/redeem");
+        .post("/api/invites/ABC123/redeem");
 
       expect(res.statusCode).toBe(409);
       expect(res.body.error).toContain("already a member");
@@ -427,7 +427,7 @@ describe("Profile Management API", () => {
 
     it("should require authentication", async () => {
       const res = await request(app)
-        .post("/invites/ABC123/redeem")
+        .post("/api/invites/ABC123/redeem")
         .set("x-test-disable-auth", "true");
 
       expect(res.statusCode).toBe(401);

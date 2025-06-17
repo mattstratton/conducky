@@ -57,7 +57,7 @@ export default function GlobalAdmin() {
 
   useEffect(() => {
     // Fetch user info
-    fetch(API_URL + '/session', { credentials: 'include' })
+    fetch(API_URL + '/api/session', { credentials: 'include' })
       .then(res => {
         if (res.ok) return res.json();
         throw new Error('Not authenticated');
@@ -77,7 +77,7 @@ export default function GlobalAdmin() {
 
   useEffect(() => {
     if (!user || !user.roles || !user.roles.includes('SuperAdmin')) return;
-    fetch(API_URL + '/events', { credentials: 'include' })
+    fetch(API_URL + '/api/events', { credentials: 'include' })
       .then(res => res.json())
       .then((data: EventsResponse) => setEvents(data.events || []))
       .catch(() => setEvents([]));
@@ -87,7 +87,7 @@ export default function GlobalAdmin() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    const res = await fetch(API_URL + '/events', {
+    const res = await fetch(API_URL + '/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, slug }),
@@ -102,7 +102,7 @@ export default function GlobalAdmin() {
     setName('');
     setSlug('');
     // Refresh events list
-    fetch(API_URL + '/events', { credentials: 'include' })
+    fetch(API_URL + '/api/events', { credentials: 'include' })
       .then(res => res.json())
       .then((data: EventsResponse) => setEvents(data.events || []))
       .catch(() => setEvents([]));
@@ -123,7 +123,7 @@ export default function GlobalAdmin() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    const res = await fetch(API_URL + '/events/slug/' + editSlug, {
+    const res = await fetch(API_URL + '/api/events/slug/' + editSlug, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: editName }),
@@ -137,7 +137,7 @@ export default function GlobalAdmin() {
     setSuccess('Event updated!');
     setEditEventId(null);
     // Refresh events list
-    fetch(API_URL + '/events', { credentials: 'include' })
+    fetch(API_URL + '/api/events', { credentials: 'include' })
       .then(res => res.json())
       .then((data: EventsResponse) => setEvents(data.events || []))
       .catch(() => setEvents([]));
@@ -147,7 +147,7 @@ export default function GlobalAdmin() {
     setDeleteLoading(true);
     setError('');
     setSuccess('');
-    const res = await fetch(API_URL + '/events/' + id, {
+    const res = await fetch(API_URL + '/api/events/' + id, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -159,7 +159,7 @@ export default function GlobalAdmin() {
     }
     setSuccess('Event deleted!');
     // Refresh events list
-    fetch(API_URL + '/events', { credentials: 'include' })
+    fetch(API_URL + '/api/events', { credentials: 'include' })
       .then(res => res.json())
       .then((data: EventsResponse) => setEvents(data.events || []))
       .catch(() => setEvents([]));
@@ -353,7 +353,7 @@ function LoginForm() {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/login', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

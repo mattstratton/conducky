@@ -46,7 +46,7 @@ export function EventMetaEditor({
   const [showCodeSheet, setShowCodeSheet] = useState(false);
 
   const backendBaseUrl = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || "http://localhost:4000";
-  const logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
+  const logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/api/events/slug/${eventSlug}/logo` : null);
 
   const startEdit = (field: keyof EventMeta, value: string) => {
     setEditingField(field);

@@ -52,7 +52,7 @@ export default function ProfilePage() {
     const formData = new FormData();
     formData.append("avatar", file);
     try {
-      const res = await fetch(`${apiUrl}/users/${user.id}/avatar`, {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -64,7 +64,7 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar updated!");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, {
+        const sessionRes = await fetch(`${apiUrl}/api/session`, {
           credentials: "include",
         });
         const sessionData = await sessionRes.json();
@@ -86,7 +86,7 @@ export default function ProfilePage() {
     setSuccess("");
     setUploading(true);
     try {
-      const res = await fetch(`${apiUrl}/users/${user.id}/avatar`, {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -97,7 +97,7 @@ export default function ProfilePage() {
       } else {
         setSuccess("Avatar removed.");
         // Refetch user session to update avatarUrl
-        const sessionRes = await fetch(`${apiUrl}/session`, {
+        const sessionRes = await fetch(`${apiUrl}/api/session`, {
           credentials: "include",
         });
         const sessionData = await sessionRes.json();

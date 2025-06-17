@@ -65,7 +65,7 @@ export default function EventMetaCard({
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const logoSrc =
     logoPreview ||
-    (logoExists ? `${backendBaseUrl}/events/slug/${eventSlug}/logo` : null);
+    (logoExists ? `${backendBaseUrl}/api/events/slug/${eventSlug}/logo` : null);
 
   const copyCodeOfConductLink = async () => {
     const url = `${window.location.origin}/event/${eventSlug}/code-of-conduct`;

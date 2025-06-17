@@ -26,14 +26,14 @@ export const CoCTeamList: React.FC<CoCTeamListProps> = ({ eventSlug, showTitle =
     setError("");
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/events/slug/${eventSlug}/users?role=Responder`,
+        `/api/events/slug/${eventSlug}/users?role=Responder`,
       { credentials: "include" },
     )
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
       .then((data) => {
         fetch(
           (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-            `/events/slug/${eventSlug}/users?role=Admin`,
+            `/api/events/slug/${eventSlug}/users?role=Admin`,
           { credentials: "include" },
         )
           .then((res2) => (res2.ok ? res2.json() : Promise.reject(res2)))

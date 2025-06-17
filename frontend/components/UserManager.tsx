@@ -46,7 +46,7 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
 
   const fetchEventUsers = () => {
     if (!eventSlug) return;
-    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
+    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
     if (debouncedSearch.trim() !== "") url += `&search=${encodeURIComponent(debouncedSearch)}`;
     if (roleFilter && roleFilter !== "All") url += `&role=${encodeURIComponent(roleFilter)}`;
     fetch(url, { credentials: "include" })
@@ -91,7 +91,7 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
     setEditError("");
     setEditSuccess("");
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users/${editUserId}`, {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users/${editUserId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -113,7 +113,7 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
   const handleRemove = async (eu: User) => {
     if (!window.confirm(`Are you sure you want to remove all roles for ${eu.name || eu.email} from this event?`)) return;
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users/${eu.id}`, {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users/${eu.id}`, {
         method: "DELETE",
         credentials: "include",
       });
