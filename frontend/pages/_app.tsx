@@ -57,7 +57,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   }, []);
 
   useEffect(() => {
-    if (eventSlug) {
+    if (eventSlug && typeof eventSlug === 'string') {
               fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -78,7 +78,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   }, [eventSlug, user]);
 
   useEffect(() => {
-    if (modalOpen && eventSlugForModal) {
+    if (modalOpen && eventSlugForModal && typeof eventSlugForModal === 'string') {
               fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlugForModal}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => setEventName(data && data.event ? data.event.name : eventSlugForModal))

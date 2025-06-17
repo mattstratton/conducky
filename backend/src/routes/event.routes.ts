@@ -3,9 +3,10 @@ import { EventService } from '../services/event.service';
 import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
 import { InviteService } from '../services/invite.service';
+import { CommentService } from '../services/comment.service';
 import { requireRole } from '../middleware/rbac';
 import { UserResponse } from '../types';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, CommentVisibility } from '@prisma/client';
 import multer from 'multer';
 
 const router = Router();
@@ -14,6 +15,7 @@ const eventService = new EventService(prisma);
 const reportService = new ReportService(prisma);
 const userService = new UserService(prisma);
 const inviteService = new InviteService(prisma);
+const commentService = new CommentService(prisma);
 
 // Multer setup for logo uploads (memory storage, 5MB limit)
 const uploadLogo = multer({
@@ -567,7 +569,7 @@ router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Re
 });
 
 // Get event users (by slug)
-router.get('/slug/:slug/users', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/slug/:slug/users', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const query = {
@@ -656,15 +658,9 @@ router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']),
 });
 
 // Get all reports for an event by slug
-router.get('/slug/:slug/reports', async (req: Request, res: Response): Promise<void> => {
+router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    
-    // Check authentication
-    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
-      res.status(401).json({ error: 'Not authenticated' });
-      return;
-    }
 
     // Get event ID by slug
     const eventId = await eventService.getEventIdBySlug(slug);
@@ -685,6 +681,78 @@ router.get('/slug/:slug/reports', async (req: Request, res: Response): Promise<v
   } catch (error: any) {
     console.error('Get event reports error:', error);
     res.status(500).json({ error: 'Failed to fetch event reports.' });
+  }
+});
+
+// Create report for event by slug
+router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const { type, description, title } = req.body;
+    
+    if (!type || !description || !title) {
+      res.status(400).json({ error: 'Type, description, and title are required.' });
+      return;
+    }
+    
+    // Basic title validation
+    if (title.length < 10) {
+      res.status(400).json({ error: 'Title must be at least 10 characters long.' });
+      return;
+    }
+    
+    if (title.length > 70) {
+      res.status(400).json({ error: 'Title must be no more than 70 characters long.' });
+      return;
+    }
+
+    // Get event ID by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+
+    // Get authenticated user
+    const user = req.user as any;
+    if (!user || !user.id) {
+      res.status(401).json({ error: 'User not authenticated.' });
+      return;
+    }
+    
+    const reportData = {
+      eventId,
+      type,
+      description,
+      title,
+      reporterId: user.id
+    };
+    
+    // Handle file uploads if any
+    const multerFiles = req.files as Express.Multer.File[] | undefined;
+    const evidenceFiles = multerFiles?.map(file => ({
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      data: file.buffer,
+      uploaderId: user.id
+    }));
+    
+    const result = await reportService.createReport(reportData, evidenceFiles);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.status(201).json(result.data);
+  } catch (error: any) {
+    console.error('Create report by slug error:', error);
+    res.status(500).json({ error: 'Failed to create report.' });
   }
 });
 
@@ -821,6 +889,83 @@ router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo
   }
 });
 
+// Get invites for event by slug (open to unauthenticated users for invite redemption)
+router.get('/slug/:slug/invites', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    const result = await inviteService.getEventInvites(eventId);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get invites by slug error:', error);
+    res.status(500).json({ error: 'Failed to fetch invites.' });
+  }
+});
+
+// Create invite for event by slug
+router.post('/slug/:slug/invites', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const { maxUses, expiresAt, note, role } = req.body;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Get role ID from role name
+    const roleResult = await eventService.getRoleByName(role || 'Reporter');
+    if (!roleResult.success) {
+      res.status(400).json({ error: 'Invalid role specified.' });
+      return;
+    }
+    
+    const inviteData = {
+      eventId,
+      createdByUserId: user.id,
+      roleId: roleResult.data!.role.id,
+      maxUses: maxUses ? parseInt(maxUses) : null,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      note
+    };
+    
+    const result = await inviteService.createInvite(inviteData);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.status(201).json(result.data);
+  } catch (error: any) {
+    console.error('Create invite by slug error:', error);
+    res.status(500).json({ error: 'Failed to create invite.' });
+  }
+});
+
 // Update invite by slug
 router.patch('/slug/:slug/invites/:inviteId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
@@ -849,6 +994,469 @@ router.patch('/slug/:slug/invites/:inviteId', requireRole(['Admin', 'SuperAdmin'
   } catch (error: any) {
     console.error('Update invite error:', error);
     res.status(500).json({ error: 'Failed to update invite.' });
+  }
+});
+
+// Create comment on report by slug
+router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    const { body, visibility = 'public' } = req.body;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Validate input
+    if (!body || body.trim().length === 0) {
+      res.status(400).json({ error: 'Comment body is required.' });
+      return;
+    }
+    
+    if (body.length > 5000) {
+      res.status(400).json({ error: 'Comment body must be no more than 5000 characters.' });
+      return;
+    }
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+    
+    // Create the comment
+    const commentData = {
+      reportId,
+      authorId: user.id,
+      body: body.trim(),
+      visibility: visibility as CommentVisibility
+    };
+    
+    const result = await commentService.createComment(commentData);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json(result.data);
+  } catch (error: any) {
+    console.error('Create comment error:', error);
+    res.status(500).json({ error: 'Failed to create comment.' });
+  }
+});
+
+// Get comments for report by slug
+router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const visibility = req.query.visibility as string;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+    
+    // Get comments
+    const result = await commentService.getReportComments(reportId, {
+      page,
+      limit,
+      visibility: visibility as CommentVisibility
+    });
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get comments error:', error);
+    res.status(500).json({ error: 'Failed to fetch comments.' });
+  }
+});
+
+// Update report by slug (handles state, assignment, etc.)
+router.patch('/slug/:slug/reports/:reportId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    const updateData = req.body;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+    
+    // Use the report service's update method
+    const result = await reportService.updateReport(slug, reportId, updateData);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Update report error:', error);
+    res.status(500).json({ error: 'Failed to update report.' });
+  }
+});
+
+// Update report title by slug (Reporters can edit their own report titles)
+router.patch('/slug/:slug/reports/:reportId/title', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    const { title } = req.body;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    if (!title) {
+      res.status(400).json({ error: 'Title is required.' });
+      return;
+    }
+    
+    // Basic title validation
+    if (title.length < 10) {
+      res.status(400).json({ error: 'Title must be at least 10 characters long.' });
+      return;
+    }
+    
+    if (title.length > 70) {
+      res.status(400).json({ error: 'Title must be no more than 70 characters long.' });
+      return;
+    }
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    const result = await reportService.updateReportTitle(eventId, reportId, title, user.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Update report title error:', error);
+    res.status(500).json({ error: 'Failed to update report title.' });
+  }
+});
+
+// Upload evidence for report by slug
+router.post('/slug/:slug/reports/:reportId/evidence', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    const evidenceFiles = req.files as Express.Multer.File[];
+    
+    if (!evidenceFiles || evidenceFiles.length === 0) {
+      res.status(400).json({ error: 'No evidence files uploaded.' });
+      return;
+    }
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+
+    // Additional check for Reporters: they can only upload evidence to their own reports
+    const report = reportResult.data!.report;
+    const roles = accessResult.data!.roles;
+    const isReporter = roles.includes('Reporter') && !roles.some((role: string) => ['Responder', 'Admin', 'SuperAdmin'].includes(role));
+    
+    if (isReporter && report.reporterId !== user.id) {
+      res.status(403).json({ error: 'Reporters can only upload evidence to their own reports.' });
+      return;
+    }
+    
+    const evidenceData = evidenceFiles.map(file => ({
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      data: file.buffer,
+      uploaderId: user.id
+    }));
+    
+    const result = await reportService.uploadEvidenceFiles(reportId, evidenceData);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Upload evidence error:', error);
+    res.status(500).json({ error: 'Failed to upload evidence.' });
+  }
+});
+
+// Get evidence files for report by slug
+router.get('/slug/:slug/reports/:reportId/evidence', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId } = req.params;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+    
+    const result = await reportService.getEvidenceFiles(reportId);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get evidence files error:', error);
+    res.status(500).json({ error: 'Failed to fetch evidence files.' });
+  }
+});
+
+// Delete evidence file by slug
+router.delete('/slug/:slug/reports/:reportId/evidence/:evidenceId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, reportId, evidenceId } = req.params;
+    
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+    
+    // Check if event exists by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Verify report exists and belongs to this event
+    const reportResult = await reportService.getReportById(reportId);
+    if (!reportResult.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    if (reportResult.data?.report.eventId !== eventId) {
+      res.status(404).json({ error: 'Report not found in this event.' });
+      return;
+    }
+    
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(user.id, reportId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+    
+    const result = await reportService.deleteEvidenceFile(evidenceId);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ message: 'Evidence deleted successfully.' });
+  } catch (error: any) {
+    console.error('Delete evidence error:', error);
+    res.status(500).json({ error: 'Failed to delete evidence.' });
   }
 });
 

@@ -83,7 +83,7 @@ export default function EventDashboard() {
 
   // Fetch event details and user session
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || typeof eventSlug !== 'string') return;
     setLoading(true);
     // Fetch event details
     fetch(
@@ -110,10 +110,11 @@ export default function EventDashboard() {
 
   // Fetch reports for this event
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || typeof eventSlug !== 'string') return;
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
         `/api/events/slug/${eventSlug}/reports`,
+      { credentials: "include" }
     )
       .then((res) => res.json())
       .then((data) => setReports(data.reports || []))
@@ -123,7 +124,7 @@ export default function EventDashboard() {
 
   // Fetch user roles for this event
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || typeof eventSlug !== 'string') return;
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
         `/api/events/slug/${eventSlug}/my-roles`,
@@ -134,7 +135,7 @@ export default function EventDashboard() {
   }, [eventSlug]);
 
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || typeof eventSlug !== 'string') return;
     // Check if logo exists
     fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +

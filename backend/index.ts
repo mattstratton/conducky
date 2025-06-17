@@ -58,7 +58,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session middleware
-app.use(getSessionConfig());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'changeme',
+    resave: false,
+    saveUninitialized: false,
+  }),
+);
 
 // Passport.js setup
 app.use(passport.initialize());

@@ -385,7 +385,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     }
     const res = await fetch(
       (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-        `/reports/${report!.id}/evidence`,
+        `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
       {
         method: "POST",
         body: formData,
@@ -398,7 +398,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       // Refetch evidence files
       const filesRes = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
         { credentials: "include" },
       );
       if (filesRes.ok) {
@@ -426,7 +426,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence/${file.id}`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence/${file.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -439,7 +439,7 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
       // Refetch evidence files
       const filesRes = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/reports/${report!.id}/evidence`,
+          `/api/events/slug/${eventSlug}/reports/${report!.id}/evidence`,
         { credentials: "include" },
       );
       if (filesRes.ok) {
