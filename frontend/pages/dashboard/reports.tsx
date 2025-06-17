@@ -87,7 +87,7 @@ export default function CrossEventReports() {
   // Filters and pagination
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [urgencyFilter, setUrgencyFilter] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
   const [sortField, setSortField] = useState('createdAt');
@@ -134,7 +134,7 @@ export default function CrossEventReports() {
 
       if (search.trim()) params.append('search', search.trim());
       if (statusFilter) params.append('status', statusFilter);
-      if (urgencyFilter) params.append('urgency', urgencyFilter);
+      if (severityFilter) params.append('severity', severityFilter);
       if (eventFilter) params.append('event', eventFilter);
       if (assignedFilter) params.append('assigned', assignedFilter);
 
@@ -177,14 +177,14 @@ export default function CrossEventReports() {
   // Fetch reports when filters change
   useEffect(() => {
     fetchReports();
-  }, [currentPage, search, statusFilter, urgencyFilter, eventFilter, assignedFilter, sortField, sortOrder]);
+  }, [currentPage, search, statusFilter, severityFilter, eventFilter, assignedFilter, sortField, sortOrder]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [search, statusFilter, urgencyFilter, eventFilter, assignedFilter]);
+  }, [search, statusFilter, severityFilter, eventFilter, assignedFilter]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -450,13 +450,13 @@ export default function CrossEventReports() {
                 </SelectContent>
               </Select>
 
-              {/* Urgency Filter */}
-              <Select value={urgencyFilter || "all"} onValueChange={(value) => setUrgencyFilter(value === "all" ? "" : value)}>
+              {/* Severity Filter */}
+              <Select value={severityFilter || "all"} onValueChange={(value) => setSeverityFilter(value === "all" ? "" : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All urgency" />
+                  <SelectValue placeholder="All severity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All urgency</SelectItem>
+                  <SelectItem value="all">All severity</SelectItem>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -518,7 +518,7 @@ export default function CrossEventReports() {
                   <TableHead className="cursor-pointer" onClick={() => handleSort('state')}>
                     Status {sortField === 'state' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
-                  <TableHead>Urgency</TableHead>
+                  <TableHead>Severity</TableHead>
                   <TableHead>Reporter</TableHead>
                   <TableHead>Assigned</TableHead>
                   <TableHead className="cursor-pointer" onClick={() => handleSort('createdAt')}>
