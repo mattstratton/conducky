@@ -52,7 +52,7 @@ export default function ProfilePage() {
     const formData = new FormData();
     formData.append("avatar", file);
     try {
-      const res = await fetch(`${apiUrl}/users/${user.id}/avatar`, {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -86,7 +86,7 @@ export default function ProfilePage() {
     setSuccess("");
     setUploading(true);
     try {
-      const res = await fetch(`${apiUrl}/users/${user.id}/avatar`, {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
         method: "DELETE",
         credentials: "include",
       });

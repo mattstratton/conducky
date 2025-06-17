@@ -94,7 +94,7 @@ export default function ProfileSettings() {
     setProfileLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/users/me/profile`, {
+      const response = await fetch(`${apiUrl}/api/users/me/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -113,6 +113,7 @@ export default function ProfileSettings() {
       setUser(data.user);
       setProfileSuccess('Profile updated successfully!');
     } catch (error) {
+      console.error('Profile update error:', error);
       setProfileError('Network error. Please try again.');
     } finally {
       setProfileLoading(false);
@@ -144,7 +145,7 @@ export default function ProfileSettings() {
     setPasswordLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/users/me/password`, {
+      const response = await fetch(`${apiUrl}/api/users/me/password`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -170,6 +171,7 @@ export default function ProfileSettings() {
         confirmPassword: ''
       });
     } catch (error) {
+      console.error('Password update error:', error);
       setPasswordError('Network error. Please try again.');
     } finally {
       setPasswordLoading(false);

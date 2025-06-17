@@ -105,7 +105,7 @@ export default function ProfileEvents() {
     setJoinLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/invites/${trimmedCode}/redeem`, {
+      const response = await fetch(`${apiUrl}/api/invites/${trimmedCode}/redeem`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -138,7 +138,7 @@ export default function ProfileEvents() {
     setLeavingEventId(event.id);
 
     try {
-      const response = await fetch(`${apiUrl}/users/me/events/${event.id}`, {
+      const response = await fetch(`${apiUrl}/api/users/me/events/${event.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

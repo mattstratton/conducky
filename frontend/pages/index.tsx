@@ -62,7 +62,7 @@ export default function Home() {
         if (data.settings && data.settings.showPublicEventList === 'true') {
           setShowEventList(true);
           setEventsLoading(true);
-          const eventsRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/events');
+          const eventsRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/events');
           if (!eventsRes.ok) throw new Error('Failed to fetch events');
           const eventsData = await eventsRes.json();
           setEvents(eventsData.events || []);
@@ -102,7 +102,7 @@ export default function Home() {
             onSubmit={async ({ name, email, password }) => {
               setFirstUserError('');
               setFirstUserSuccess('');
-              const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/register', {
+              const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password }),

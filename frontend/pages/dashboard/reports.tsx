@@ -157,7 +157,7 @@ export default function CrossEventReports() {
 
   // Fetch current user
   useEffect(() => {
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/session', { 
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/session', { 
       credentials: 'include' 
     })
       .then(res => res.ok ? res.json() : null)
