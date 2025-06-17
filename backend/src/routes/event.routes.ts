@@ -4,6 +4,7 @@ import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
 import { InviteService } from '../services/invite.service';
 import { CommentService } from '../services/comment.service';
+import { NotificationService } from '../services/notification.service';
 import { requireRole } from '../middleware/rbac';
 import { UserResponse } from '../types';
 import { PrismaClient, CommentVisibility } from '@prisma/client';
@@ -16,6 +17,7 @@ const reportService = new ReportService(prisma);
 const userService = new UserService(prisma);
 const inviteService = new InviteService(prisma);
 const commentService = new CommentService(prisma);
+const notificationService = new NotificationService(prisma);
 
 // Multer setup for logo uploads (memory storage, 5MB limit)
 const uploadLogo = multer({
@@ -937,8 +939,8 @@ router.post('/slug/:slug/invites', requireRole(['Admin', 'SuperAdmin']), async (
     }
     
     // Get role ID from role name
-    const roleResult = await eventService.getRoleByName(role || 'Reporter');
-    if (!roleResult.success) {
+    const roleRecord = await prisma.role.findUnique({ where: { name: role || 'Reporter' } });
+    if (!roleRecord) {
       res.status(400).json({ error: 'Invalid role specified.' });
       return;
     }
@@ -946,7 +948,7 @@ router.post('/slug/:slug/invites', requireRole(['Admin', 'SuperAdmin']), async (
     const inviteData = {
       eventId,
       createdByUserId: user.id,
-      roleId: roleResult.data!.role.id,
+      roleId: roleRecord.id,
       maxUses: maxUses ? parseInt(maxUses) : null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
       note
@@ -1053,6 +1055,15 @@ router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', '
       return;
     }
     
+    // Check if user can create internal comments
+    const roles = accessResult.data!.roles;
+    const hasResponderRole = roles.some((role: string) => ['Admin', 'Responder', 'SuperAdmin'].includes(role));
+    
+    if (visibility === 'internal' && !hasResponderRole) {
+      res.status(403).json({ error: 'Only Responders, Admins, and SuperAdmins can create internal comments.' });
+      return;
+    }
+    
     // Create the comment
     const commentData = {
       reportId,
@@ -1066,6 +1077,14 @@ router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', '
     if (!result.success) {
       res.status(400).json({ error: result.error });
       return;
+    }
+
+    // Create notifications for comment added (exclude the comment author)
+    try {
+      await notificationService.notifyReportEvent(reportId, 'comment_added', user.id);
+    } catch (error) {
+      console.error('Failed to create comment notification:', error);
+      // Don't fail the request if notification creation fails
     }
 
     res.status(201).json(result.data);
@@ -1122,19 +1141,50 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
       return;
     }
     
-    // Get comments
+    // Determine what comment visibility levels this user can see
+    const roles = accessResult.data!.roles;
+    const report = reportResult.data!.report;
+    const isReporter = report.reporterId === user.id;
+    const isAssigned = report.assignedResponderId === user.id;
+    const hasResponderRole = roles.some((role: string) => ['Admin', 'Responder', 'SuperAdmin'].includes(role));
+    
+    // Users can see public comments, and internal comments if they have appropriate permissions
+    let allowedVisibilities: CommentVisibility[] = ['public'];
+    if (isReporter || isAssigned || hasResponderRole) {
+      allowedVisibilities.push('internal');
+    }
+    
+    // If a specific visibility is requested, check if user has permission
+    let requestedVisibility = visibility as CommentVisibility;
+    if (requestedVisibility && !allowedVisibilities.includes(requestedVisibility)) {
+      res.status(403).json({ error: 'Not authorized to view comments with that visibility level.' });
+      return;
+    }
+    
+    // Get comments (if no specific visibility requested, get all visible ones)
     const result = await commentService.getReportComments(reportId, {
       page,
       limit,
-      visibility: visibility as CommentVisibility
+      visibility: requestedVisibility
     });
     
     if (!result.success) {
       res.status(500).json({ error: result.error });
       return;
     }
+    
+    // Filter comments by allowed visibility levels if no specific visibility was requested
+    let filteredComments = result.data?.comments || [];
+    if (!requestedVisibility) {
+      filteredComments = (result.data?.comments || []).filter((comment: any) => 
+        allowedVisibilities.includes(comment.visibility)
+      );
+    }
 
-    res.json(result.data);
+    res.json({
+      ...result.data,
+      comments: filteredComments
+    });
   } catch (error: any) {
     console.error('Get comments error:', error);
     res.status(500).json({ error: 'Failed to fetch comments.' });
