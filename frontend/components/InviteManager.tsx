@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Table } from "./Table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClipboardIcon } from "@heroicons/react/24/outline";
 
 interface Invite {
@@ -145,26 +145,26 @@ export function InviteManager({ eventSlug, rolesList }: InviteManagerProps) {
         <div>Loading...</div>
       ) : (
         <Table>
-          <thead>
-            <tr>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Invite Link</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Role</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Status</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Uses</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Expires</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Note</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invite Link</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Uses</TableHead>
+              <TableHead>Expires</TableHead>
+              <TableHead>Note</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {inviteLinks.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center p-4">No invite links found.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={7} className="text-center p-4">No invite links found.</TableCell>
+              </TableRow>
             ) : (
               inviteLinks.map(invite => (
-                <tr key={invite.id}>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                <TableRow key={invite.id}>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <Input
                         type="text"
@@ -177,21 +177,21 @@ export function InviteManager({ eventSlug, rolesList }: InviteManagerProps) {
                         <ClipboardIcon className="w-5 h-5" />
                       </Button>
                     </div>
-                  </td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{typeof invite.role === "string" ? invite.role : invite.role.name}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.disabled ? "Disabled" : "Active"}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.uses}/{invite.maxUses || "∞"}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "—"}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">{invite.note || "—"}</td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                  </TableCell>
+                  <TableCell>{typeof invite.role === "string" ? invite.role : invite.role.name}</TableCell>
+                  <TableCell>{invite.disabled ? "Disabled" : "Active"}</TableCell>
+                  <TableCell>{invite.uses}/{invite.maxUses || "∞"}</TableCell>
+                  <TableCell>{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "—"}</TableCell>
+                  <TableCell>{invite.note || "—"}</TableCell>
+                  <TableCell>
                     {!invite.disabled && (
                       <Button onClick={() => handleDisableInvite(invite.id)} className="bg-red-600 text-white sm:px-2 sm:py-1 sm:text-sm">Disable</Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
+          </TableBody>
         </Table>
       )}
     </div>

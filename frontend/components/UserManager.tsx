@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "./ui/card";
-import { Table } from "./Table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -148,30 +148,30 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
       {/* Table view for sm and up */}
       <div className="hidden sm:block">
         <Table>
-          <thead>
-            <tr>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Name</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Role</th>
-              <th className="border border-gray-200 dark:border-gray-700 p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {eventUsers.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="text-center p-4">No users found for this event.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={3} className="text-center p-4">No users found for this event.</TableCell>
+              </TableRow>
             ) : (
               eventUsers.map((eu, idx) => (
-                <tr key={idx}>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                <TableRow key={idx}>
+                  <TableCell>
                     {editUserId === eu.id ? (
                       <Input type="text" value={editUserForm.name} onChange={e => handleEditChange("name", e.target.value)} />
                     ) : (
                       eu.name || eu.email || "Unknown"
                     )}
                     <div className="text-xs text-gray-500 dark:text-gray-400">{eu.email}</div>
-                  </td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                  </TableCell>
+                  <TableCell>
                     {editUserId === eu.id ? (
                       <select value={editUserForm.role} onChange={e => handleEditChange("role", e.target.value)} className="border rounded px-2 py-1 w-full">
                         {rolesList.map(role => <option key={role} value={role}>{role}</option>)}
@@ -181,8 +181,8 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
                     ) : (
                       eu.role || "Unknown"
                     )}
-                  </td>
-                  <td className="border border-gray-200 dark:border-gray-700 p-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-2">
                       {editUserId === eu.id ? (
                         <>
@@ -201,11 +201,11 @@ export function UserManager({ eventSlug, rolesList }: UserManagerProps) {
                         </>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
+          </TableBody>
         </Table>
       </div>
       {/* Card view for mobile only */}

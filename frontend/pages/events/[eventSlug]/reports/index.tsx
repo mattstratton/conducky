@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import { Card } from "../../../../components/ui/card";
-import { Table } from "../../../../components/Table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table";
 import { UserContext } from "../../../_app";
 import Link from "next/link";
 
@@ -65,28 +65,28 @@ export default function MyReportsPage() {
       ) : (
         <div className="overflow-x-auto">
           <Table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>State</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Created At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {reports.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <td>
+                <TableRow key={report.id} className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <TableCell>
                     <Link href={`/events/${eventSlug}/reports/${report.id}`} className="text-blue-500 dark:text-blue-400 underline">
                       {report.title || <span className="italic text-gray-400">(untitled)</span>}
                     </Link>
-                  </td>
-                  <td>{report.type}</td>
-                  <td>{report.state}</td>
-                  <td>{new Date(report.createdAt).toLocaleString()}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{report.type}</TableCell>
+                  <TableCell>{report.state}</TableCell>
+                  <TableCell>{new Date(report.createdAt).toLocaleString()}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
+            </TableBody>
           </Table>
         </div>
       )}
