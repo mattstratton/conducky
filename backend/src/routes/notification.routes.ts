@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const notificationService = new NotificationService(prisma);
 
 // Get user's notifications with pagination and filtering
-router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const {
       page = 1,
@@ -85,6 +85,7 @@ router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequ
       },
       unreadCount
     });
+    return;
 
   } catch (err: any) {
     console.error('Error fetching notifications:', err);
@@ -93,7 +94,7 @@ router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequ
 });
 
 // Mark notification as read
-router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { notificationId } = req.params;
 
   try {

@@ -412,9 +412,14 @@ router.get('/:eventId/reports/:reportId/evidence/:evidenceId/download', async (r
     
     const evidence = result.data;
     
-    res.setHeader('Content-Type', evidence.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${evidence.originalName}"`);
-    res.send(evidence.buffer);
+    if (!evidence) {
+      res.status(404).json({ error: 'Evidence not found.' });
+      return;
+    }
+    
+    res.setHeader('Content-Type', evidence.mimetype);
+    res.setHeader('Content-Disposition', `attachment; filename="${evidence.filename}"`);
+    res.send(evidence.data);
   } catch (error: any) {
     console.error('Download evidence error:', error);
     res.status(500).json({ error: 'Failed to download evidence.' });
@@ -479,9 +484,14 @@ router.get('/:eventId/logo', async (req: Request, res: Response): Promise<void> 
     
     const logo = result.data;
     
-    res.setHeader('Content-Type', logo.mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${logo.fileName}"`);
-    res.send(logo.buffer);
+    if (!logo) {
+      res.status(404).json({ error: 'Logo not found.' });
+      return;
+    }
+    
+    res.setHeader('Content-Type', logo.mimetype);
+    res.setHeader('Content-Disposition', `inline; filename="${logo.filename}"`);
+    res.send(logo.data);
   } catch (error: any) {
     console.error('Get logo error:', error);
     res.status(500).json({ error: 'Failed to get logo.' });

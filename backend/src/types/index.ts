@@ -32,7 +32,7 @@ export interface PaginationResponse {
 
 // Request/Response types for controllers - using UserResponse for API contexts
 export interface AuthenticatedRequest extends Request {
-  user?: UserResponse;
+  user?: UserResponse | undefined;
 }
 
 // Service response types
