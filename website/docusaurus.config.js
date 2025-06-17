@@ -81,6 +81,12 @@ const config = {
           },
           {
             type: 'docSidebar',
+            sidebarId: 'adminGuideSidebar',
+            position: 'left',
+            label: 'Admin Guide',
+          },
+          {
+            type: 'docSidebar',
             sidebarId: 'developerDocsSidebar',
             position: 'left',
             label: 'Developer Docs',
@@ -99,8 +105,16 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'User Guide ',
+                label: 'User Guide',
                 to: '/user-guide/intro',
+              },
+              {
+                label: 'Admin Guide',
+                to: '/admin-guide/intro',
+              },
+              {
+                label: 'Developer Docs',
+                to: '/developer-docs/intro',
               },
             ],
           },

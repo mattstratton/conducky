@@ -1,9 +1,9 @@
 ---
-sidebar_position: 4
+sidebar_position: 7
 ---
 # Event Management
 
-This document explains how events are managed in the system, both via the API and the UI.
+This document explains how event administrators manage events in Conducky.
 
 ---
 
