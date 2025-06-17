@@ -891,8 +891,8 @@ router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo
   }
 });
 
-// Get invites for event by slug (open to unauthenticated users for invite redemption)
-router.get('/slug/:slug/invites', async (req: Request, res: Response): Promise<void> => {
+// Get invites for event by slug (requires Admin/SuperAdmin permissions)
+router.get('/slug/:slug/invites', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     
@@ -1148,9 +1148,9 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
     const isAssigned = report.assignedResponderId === user.id;
     const hasResponderRole = roles.some((role: string) => ['Admin', 'Responder', 'SuperAdmin'].includes(role));
     
-    // Users can see public comments, and internal comments if they have appropriate permissions
+    // Users can see public comments, and internal comments if they have responder/admin permissions
     let allowedVisibilities: CommentVisibility[] = ['public'];
-    if (isReporter || isAssigned || hasResponderRole) {
+    if (isAssigned || hasResponderRole) {
       allowedVisibilities.push('internal');
     }
     

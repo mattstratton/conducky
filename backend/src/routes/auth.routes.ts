@@ -12,6 +12,40 @@ const authController = new AuthController(authService);
 // Registration route
 router.post('/register', authController.register.bind(authController));
 
+// Register with invite code
+router.post('/register/invite/:inviteCode', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { inviteCode } = req.params;
+    const { email, password, name } = req.body;
+    
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required.' });
+      return;
+    }
+    
+    // Import invite service
+    const { InviteService } = await import('../services/invite.service');
+    const inviteService = new InviteService(prisma);
+    
+    const result = await inviteService.registerWithInvite({
+      inviteCode,
+      email,
+      password,
+      name
+    });
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json(result.data);
+  } catch (error: any) {
+    console.error('Register with invite error:', error);
+    res.status(500).json({ error: 'Registration with invite failed.' });
+  }
+});
+
 // Login route
 router.post('/login', loginMiddleware);
 

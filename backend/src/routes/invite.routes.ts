@@ -6,6 +6,25 @@ const router = Router();
 const prisma = new PrismaClient();
 const inviteService = new InviteService(prisma);
 
+// Get invite details by code
+router.get('/:code', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { code } = req.params;
+    
+    const result = await inviteService.getInviteByCode(code);
+    
+    if (!result.success) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get invite details error:', error);
+    res.status(500).json({ error: 'Failed to get invite details.' });
+  }
+});
+
 // Redeem invite code
 router.post('/:code/redeem', async (req: any, res: Response): Promise<void> => {
   try {
