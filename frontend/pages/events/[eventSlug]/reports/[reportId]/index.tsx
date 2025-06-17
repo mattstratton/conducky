@@ -1,10 +1,7 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Card } from "../../../../../components/ui/card";
-import { Table } from "../../../../../components/Table";
 import { ReportDetailView } from "../../../../../components/ReportDetailView";
-import { GetServerSideProps } from "next";
 
 // Define interfaces
 interface User {
@@ -72,12 +69,7 @@ const visibilityOptions = [
   { value: "internal", label: "Internal (responders/admins only)" },
 ];
 
-interface ReportDetailProps {
-  initialReport: Report | null;
-  error: string | null;
-}
-
-export default function ReportDetail({ initialReport, error }: ReportDetailProps) {
+export default function ReportDetail() {
   const router = useRouter();
   const eventSlug = Array.isArray(router.query.eventSlug) 
     ? router.query.eventSlug[0] 
@@ -85,9 +77,9 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   const reportId = Array.isArray(router.query.reportId) 
     ? router.query.reportId[0] 
     : router.query.reportId;
-  const [report, setReport] = useState<Report | null>(initialReport);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [fetchError, setFetchError] = useState<string | null>(error);
+  const [report, setReport] = useState<Report | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [stateChangeError, setStateChangeError] = useState<string>("");
@@ -111,23 +103,65 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   
   // Add state for evidence upload
-  const [evidenceFiles, setEvidenceFiles] = useState<EvidenceFile[]>(
-    report && report.evidenceFiles ? report.evidenceFiles : [],
-  );
+  const [evidenceFiles, setEvidenceFiles] = useState<EvidenceFile[]>([]);
   const [newEvidence, setNewEvidence] = useState<File[]>([]);
   const [uploadingEvidence, setUploadingEvidence] = useState<boolean>(false);
   const [evidenceUploadMsg, setEvidenceUploadMsg] = useState<string>("");
   
   const [assignmentFields, setAssignmentFields] = useState<AssignmentFields>({
-    assignedResponderId: initialReport?.assignedResponderId || '',
-    severity: initialReport?.severity || '',
-    resolution: initialReport?.resolution || '',
+    assignedResponderId: '',
+    severity: '',
+    resolution: '',
   });
   
   const [eventUsers, setEventUsers] = useState<User[]>([]);
   const [assignmentLoading, setAssignmentLoading] = useState<boolean>(false);
   const [assignmentError, setAssignmentError] = useState<string>('');
   const [assignmentSuccess, setAssignmentSuccess] = useState<string>('');
+
+  // Fetch report data
+  useEffect(() => {
+    if (!eventSlug || !reportId) return;
+    
+    setLoading(true);
+    fetch(
+      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + 
+      `/events/slug/${eventSlug}/reports/${reportId}`,
+      { credentials: "include" }
+    )
+      .then((res) => {
+        if (!res.ok) {
+          if (res.status === 403) {
+            throw new Error("You are not authorized to view this report.");
+          } else if (res.status === 404) {
+            throw new Error("Report not found.");
+          } else if (res.status === 401) {
+            throw new Error("You must be logged in to view this report.");
+          } else {
+            throw new Error(`Failed to fetch report: ${res.status}`);
+          }
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setReport(data.report);
+        if (data.report.evidenceFiles) {
+          setEvidenceFiles(data.report.evidenceFiles);
+        }
+        setAssignmentFields({
+          assignedResponderId: data.report.assignedResponderId || '',
+          severity: data.report.severity || '',
+          resolution: data.report.resolution || '',
+        });
+        setFetchError(undefined);
+      })
+      .catch((err) => {
+        setFetchError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [eventSlug, reportId]);
 
   // Fetch user info
   useEffect(() => {
@@ -567,51 +601,4 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const reportId = Array.isArray(context.params?.reportId) 
-    ? context.params.reportId[0] 
-    : context.params?.reportId;
-  const eventSlug = Array.isArray(context.params?.eventSlug) 
-    ? context.params.eventSlug[0] 
-    : context.params?.eventSlug;
-  let initialReport: Report | null = null;
-  let error: string | null = null;
-  
-  if (!reportId || !eventSlug) {
-    return {
-      props: { initialReport: null, error: "Missing report ID or event slug." },
-    };
-  }
-  
-  try {
-    const apiUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-    const fetchUrl = `${apiUrl}/events/slug/${eventSlug}/reports/${reportId}`;
-    const headers: HeadersInit = {};
-    
-    if (context.req && context.req.headers && context.req.headers.cookie) {
-      headers["Cookie"] = context.req.headers.cookie;
-    }
-    
-    const res = await fetch(fetchUrl, { headers, credentials: "include" });
-    
-    if (!res.ok) {
-      if (res.status === 403) {
-        error = "You are not authorized to view this report.";
-      } else if (res.status === 404) {
-        error = "Report not found.";
-      } else if (res.status === 401) {
-        error = "You must be logged in to view this report.";
-      } else {
-        error = `Failed to fetch report: ${res.status}`;
-      }
-      return { props: { initialReport: null, error } };
-    }
-    
-    const data = await res.json();
-    initialReport = data.report;
-  } catch (err: any) {
-    error = err.message;
-  }
-  
-  return { props: { initialReport, error } };
-}; 
+// Remove getServerSideProps - we'll fetch data client-side to avoid session issues 
