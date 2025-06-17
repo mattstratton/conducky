@@ -198,11 +198,11 @@ export default function ReportDetail({ initialReport, error }: ReportDetailProps
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
     console.log('[DEBUG] Fetching responders for assignment dropdown');
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
         console.log('[DEBUG] Fetched responders:', data.users);
-        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
+        fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
             console.log('[DEBUG] Fetched admins:', data2.users);

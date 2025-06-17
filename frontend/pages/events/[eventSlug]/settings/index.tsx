@@ -48,7 +48,7 @@ export default function EventAdminPage() {
 
   const fetchEventUsers = () => {
     if (!eventSlug) return;
-    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
+    let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users?sort=${sort}&order=${order}&page=${page}&limit=${limit}`;
     if (roleFilter && roleFilter !== "All") url += `&role=${encodeURIComponent(roleFilter)}`;
     fetch(url, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { users: [], total: 0 }))
