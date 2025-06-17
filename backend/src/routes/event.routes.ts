@@ -800,15 +800,20 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
   
   // Check authentication
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    console.log(`[DEBUG] Report access denied - not authenticated. Slug: ${slug}, ReportId: ${reportId}`);
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
   try {
+    const user = req.user as any;
+    console.log(`[DEBUG] Report access check - User: ${user.id}, Slug: ${slug}, ReportId: ${reportId}`);
+    
     // First get the report to check access
     const result = await reportService.getReportBySlugAndId(slug, reportId);
     
     if (!result.success) {
+      console.log(`[DEBUG] Report fetch failed: ${result.error}`);
       if (result.error?.includes('not found')) {
         res.status(404).json({ error: result.error });
       } else {
@@ -817,20 +822,26 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
       return;
     }
 
+    console.log(`[DEBUG] Report found - EventId: ${result.data?.report?.eventId}, ReporterId: ${result.data?.report?.reporterId}`);
+
     // Check access control using the service
-    const user = req.user as any; // Type assertion to bypass strict typing
     const accessResult = await reportService.checkReportAccess(user.id, reportId);
     
     if (!accessResult.success) {
+      console.log(`[DEBUG] Access check failed: ${accessResult.error}`);
       res.status(500).json({ error: accessResult.error });
       return;
     }
 
+    console.log(`[DEBUG] Access check result - HasAccess: ${accessResult.data!.hasAccess}, IsReporter: ${accessResult.data!.isReporter}, Roles: ${JSON.stringify(accessResult.data!.roles)}`);
+
     if (!accessResult.data!.hasAccess) {
+      console.log(`[DEBUG] Access denied - insufficient permissions`);
       res.status(403).json({ error: 'Forbidden: insufficient role' });
       return;
     }
 
+    console.log(`[DEBUG] Access granted - returning report data`);
     res.json(result.data);
   } catch (error: any) {
     console.error('Get report by slug error:', error);
