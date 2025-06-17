@@ -74,7 +74,7 @@ export function AppSidebar({ user, events, ...props }: {
     const fetchUnreadCount = async () => {
       try {
         const response = await fetch(
-          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/notifications/stats",
+          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/notifications/stats",
           { credentials: "include" }
         );
         if (response.ok) {
@@ -127,17 +127,6 @@ export function AppSidebar({ user, events, ...props }: {
     ? (router.query.eventSlug as string) || router.asPath.split('/')[2] 
     : null;
   
-  // Debug logging for development troubleshooting
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Sidebar Debug:', {
-      asPath: router.asPath,
-      query: router.query,
-      isEventContext,
-      currentEventSlug,
-      eventsLength: events.length
-    });
-  }
-
   // Memoize navigation building logic to improve performance
   const { globalNav, eventNav, showEventNav } = useMemo(() => {
     // Global navigation (always visible except in system admin)
