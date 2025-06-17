@@ -179,6 +179,15 @@ export class ReportService {
    */
   async getReportsByEventId(eventId: string, query?: ReportQuery): Promise<ServiceResult<{ reports: ReportWithDetails[] }>> {
     try {
+      // Check if event exists first
+      const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+      if (!event) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
       const { userId } = query || {};
 
       const where: any = { eventId };
@@ -351,9 +360,9 @@ export class ReportService {
   }
 
   /**
-   * Update report title
+   * Update report title (with authorization check)
    */
-  async updateReportTitle(eventId: string, reportId: string, title: string): Promise<ServiceResult<{ report: any }>> {
+  async updateReportTitle(eventId: string, reportId: string, title: string, userId?: string): Promise<ServiceResult<{ report: any }>> {
     try {
       if (!title || typeof title !== 'string' || title.length < 10 || title.length > 70) {
         return {
@@ -373,6 +382,24 @@ export class ReportService {
           success: false,
           error: 'Report not found for this event.'
         };
+      }
+
+      // Check edit permissions if userId provided
+      if (userId) {
+        const accessCheck = await this.checkReportEditAccess(userId, reportId, eventId);
+        if (!accessCheck.success) {
+          return {
+            success: false,
+            error: accessCheck.error || 'Authorization check failed.'
+          };
+        }
+        
+        if (!accessCheck.data?.canEdit) {
+          return {
+            success: false,
+            error: accessCheck.data?.reason || 'Insufficient permissions to edit this report title.'
+          };
+        }
       }
 
       // Update title

@@ -311,14 +311,32 @@ With the TypeScript migration complete (100% success), Phase 2 focuses on refact
 - **Step 2.2: Extract Configuration Layer** ✅ **COMPLETE** (156/156 tests passing)
 - **Step 2.3: Extract Utility Layer** ✅ **COMPLETE** (156/156 tests passing)
 - **Step 2.4: Extract Middleware Layer** ✅ **COMPLETE** (156/156 tests passing)
-- **Step 2.5: Extract Service Layer** ⏳ **PENDING**
-- **Step 2.6: Extract Controller Layer** ⏳ **PENDING**
-- **Step 2.7: Extract Route Layer** ⏳ **PENDING**
+- **Step 2.5: Extract Service Layer** ✅ **COMPLETE** (156/156 tests passing)
+- **Step 2.6: Extract Controller Layer** 🔄 **IN PROGRESS** (128/156 tests passing - 82.1% success)
+- **Step 2.7: Extract Route Layer** 🔄 **IN PROGRESS** (integrated with controller work)
 - **Step 2.8: Add Validation Layer** ⏳ **PENDING**
 - **Step 2.9: Enhance Error Handling** ⏳ **PENDING**
 - **Step 2.10: Update Main Application File** ⏳ **PENDING**
 
-**Current Status**: 4/10 steps complete, maintaining 100% test success rate
+**Current Status**: 5/10 steps complete, 82.1% test success rate (128/156 tests passing)
+
+## 🎯 **Current Session Progress**
+**Starting Point**: 37 failed tests (76.9% success) → **Current**: 28 failed tests (82.1% success)
+**Improvement**: **+9 tests fixed**, **+1 test suite completed** (events.rbac)
+
+### **✅ Test Suites PASSING (7/10)**:
+- auth.test.js (6 tests) ✅ 
+- password-reset.test.js (22 tests) ✅ 
+- notifications.test.js ✅ 
+- audit.test.js (3 tests) ✅ 
+- rbac.test.js (7 tests) ✅ 
+- audit-test.test.js (1 test) ✅ 
+- events.rbac.test.js (1 test) ✅ **NEWLY COMPLETED**
+
+### **❌ Test Suites FAILING (3/10)**:
+- events.test.js - Event management routes
+- profile.test.js - User profile operations (5 remaining failures)
+- cross-event-reports.test.js - Cross-event functionality
 
 ## 🎯 **Refactoring Strategy**
 
@@ -445,18 +463,18 @@ backend/src/
 
 **Test Results**: 156/156 tests passing (100% success rate maintained)
 
-### **Step 2.5: Extract Service Layer** 🏢 🔄 **IN PROGRESS**
+### **Step 2.5: Extract Service Layer** 🏢 ✅ **COMPLETE**
 **Goal**: Extract business logic into services
-**Estimated Lines**: ~1,200 lines
+**Estimated Lines**: ~1,200 lines → **Actual**: 4,510+ lines
 
 **Implementation Plan**:
-1. **AuthService** (~200 lines) - Extract authentication and password reset logic
-2. **UserService** (~150 lines) - Extract user management and profile operations  
-3. **EventService** (~200 lines) - Extract event CRUD and management operations
-4. **ReportService** (~300 lines) - Extract report workflow and state management
-5. **NotificationService** (~150 lines) - Extract notification creation and management
-6. **CommentService** (~100 lines) - Extract comment CRUD operations
-7. **InviteService** (~100 lines) - Extract invite link management
+1. **AuthService** (~200 lines) ✅ **COMPLETE** - Authentication and password reset logic
+2. **UserService** (~150 lines) ✅ **COMPLETE** - User management and profile operations  
+3. **EventService** (~200 lines) ✅ **COMPLETE** - Event CRUD and management operations
+4. **ReportService** (~300 lines) ✅ **COMPLETE** - Report workflow and state management
+5. **NotificationService** (~150 lines) ✅ **COMPLETE** - Notification creation and management
+6. **CommentService** (~100 lines) ✅ **COMPLETE** - Comment CRUD operations
+7. **InviteService** (~100 lines) ✅ **COMPLETE** - Invite link management
 
 **Detailed Tasks**:
 
@@ -610,34 +628,43 @@ export class ServiceName {
 - `src/services/user.service.ts` (796 lines) - User management & profiles  
 - `src/services/event.service.ts` (744 lines) - Event CRUD & metadata
 - `src/services/report.service.ts` (956 lines) - Report workflow & evidence
-- `src/services/notification.service.ts` (486 lines) - Notification management
-- `src/services/comment.service.ts` (463 lines) - Report comments
-- `src/services/invite.service.ts` (548 lines) - Event invitations
+- `src/services/notification.service.ts` (518 lines) - Notification management
+- `src/services/comment.service.ts` (476 lines) - Report comments
+- `src/services/invite.service.ts` (619 lines) - Event invitations
 - `src/services/index.ts` - Service exports & types
 
-**Total Service Code**: 4,510 lines of TypeScript service layer code extracted from monolithic index.ts
+**Total Service Code**: 4,635+ lines of TypeScript service layer code extracted from monolithic index.ts
 
-### **Step 2.6: Extract Controller Layer** 🎮
+**Test Results**: 156/156 tests passing (100% success rate maintained through service extraction)
+
+### **Step 2.6: Extract Controller Layer** 🎮 🔄 **IN PROGRESS**
 **Goal**: Create clean request handlers
 **Estimated Lines**: ~1,000 lines
 
 **Tasks**:
-- [ ] **AuthController** (~150 lines) - Register, login, logout, password reset
-- [ ] **UserController** (~120 lines) - Profile, avatars, user management
+- [x] ✅ **AuthController** (~150 lines) - Register, login, logout, password reset - **COMPLETE**
+- [x] ✅ **UserController** (~120 lines) - Profile, avatars, user management - **STARTED**
 - [ ] **EventController** (~200 lines) - Event CRUD, logos, metadata
 - [ ] **ReportController** (~300 lines) - Report submission, updates, evidence
 - [ ] **CommentController** (~80 lines) - Comment CRUD operations
 - [ ] **NotificationController** (~100 lines) - Notification management
 - [ ] **AdminController** (~50 lines) - Admin-only operations
 
-**Files to Create**:
-- `src/controllers/auth.controller.ts` - Authentication endpoints
-- `src/controllers/user.controller.ts` - User management endpoints
-- `src/controllers/event.controller.ts` - Event management endpoints
-- `src/controllers/report.controller.ts` - Report management endpoints
-- `src/controllers/comment.controller.ts` - Comment endpoints
-- `src/controllers/notification.controller.ts` - Notification endpoints
-- `src/controllers/admin.controller.ts` - Admin endpoints
+**Files Created**:
+- ✅ `src/controllers/auth.controller.ts` - Authentication endpoints (integrated with routes)
+- ✅ `src/controllers/user.controller.ts` - User management endpoints (created)
+- ✅ `src/controllers/index.ts` - Controller exports and interfaces
+- [ ] `src/controllers/event.controller.ts` - Event management endpoints
+- [ ] `src/controllers/report.controller.ts` - Report management endpoints
+- [ ] `src/controllers/comment.controller.ts` - Comment endpoints
+- [ ] `src/controllers/notification.controller.ts` - Notification endpoints
+- [ ] `src/controllers/admin.controller.ts` - Admin endpoints
+
+**Integration Progress**:
+- ✅ AuthController fully integrated with auth routes
+- ✅ Route mounting with backward compatibility added
+- ✅ Status code consistency fixes (409 for conflicts)
+- ✅ RBAC middleware integration restored
 
 ### **Step 2.7: Extract Route Layer** 🛣️
 **Goal**: Organize routes by domain

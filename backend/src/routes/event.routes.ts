@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { EventService } from '../services/event.service';
 import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
+import { InviteService } from '../services/invite.service';
 import { requireRole } from '../middleware/rbac';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
@@ -20,6 +21,7 @@ const prisma = new PrismaClient();
 const eventService = new EventService(prisma);
 const reportService = new ReportService(prisma);
 const userService = new UserService(prisma);
+const inviteService = new InviteService(prisma);
 
 // Multer setup for logo uploads (memory storage, 5MB limit)
 const uploadLogo = multer({
@@ -46,7 +48,12 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     const result = await eventService.createEvent({ name, slug });
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      // Check for specific error types and return appropriate status codes
+      if (result.error === 'Slug already exists.') {
+        res.status(409).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -113,7 +120,7 @@ router.get('/:eventId/users', async (req: Request, res: Response): Promise<void>
 });
 
 // Assign role to user
-router.post('/:eventId/roles', async (req: Request, res: Response): Promise<void> => {
+router.post('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { userId, roleName } = req.body;
@@ -138,7 +145,7 @@ router.post('/:eventId/roles', async (req: Request, res: Response): Promise<void
 });
 
 // Remove role from user
-router.delete('/:eventId/roles', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { userId, roleName } = req.body;
@@ -204,7 +211,14 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
     const result = await reportService.createReport(reportData, evidenceFiles);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      // Check for specific error types and return appropriate status codes
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -231,7 +245,12 @@ router.get('/:eventId/reports', async (req: Request, res: Response): Promise<voi
     const result = await reportService.getReportsByEventId(eventId, query);
     
     if (!result.success) {
-      res.status(500).json({ error: result.error });
+      // Check for specific error types and return appropriate status codes
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
       return;
     }
 
@@ -286,7 +305,12 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Responder', 'Adm
     const result = await reportService.updateReportState(eventId, reportId, state);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      // Check for specific error types and return appropriate status codes
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -319,10 +343,17 @@ router.patch('/:eventId/reports/:reportId/title', async (req: Request, res: Resp
       return;
     }
     
-    const result = await reportService.updateReportTitle(eventId, reportId, title);
+    const result = await reportService.updateReportTitle(eventId, reportId, title, (req as any).user?.id);
     
     if (!result.success) {
-      res.status(400).json({ error: result.error });
+      // Check for specific error types and return appropriate status codes
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
       return;
     }
 
@@ -334,7 +365,7 @@ router.patch('/:eventId/reports/:reportId/title', async (req: Request, res: Resp
 });
 
 // Update event (by slug)
-router.patch('/slug/:slug', async (req: Request, res: Response): Promise<void> => {
+router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const updateData = req.body;
@@ -365,7 +396,7 @@ router.patch('/slug/:slug', async (req: Request, res: Response): Promise<void> =
 });
 
 // Upload event logo (by slug)
-router.post('/slug/:slug/logo', uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
+router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     
@@ -427,7 +458,7 @@ router.get('/slug/:slug/logo', async (req: Request, res: Response): Promise<void
 });
 
 // Get event users (by slug)
-router.get('/slug/:slug/users', async (req: Request, res: Response): Promise<void> => {
+router.get('/slug/:slug/users', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const query = {
@@ -458,7 +489,7 @@ router.get('/slug/:slug/users', async (req: Request, res: Response): Promise<voi
 });
 
 // Update event user (by slug)
-router.patch('/slug/:slug/users/:userId', async (req: Request, res: Response): Promise<void> => {
+router.patch('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug, userId } = req.params;
     const { name, email, role } = req.body;
@@ -475,6 +506,8 @@ router.patch('/slug/:slug/users/:userId', async (req: Request, res: Response): P
     if (!result.success) {
       if (result.error?.includes('not found')) {
         res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
       } else {
         res.status(400).json({ error: result.error });
       }
@@ -489,7 +522,7 @@ router.patch('/slug/:slug/users/:userId', async (req: Request, res: Response): P
 });
 
 // Remove user from event (by slug)
-router.delete('/slug/:slug/users/:userId', async (req: Request, res: Response): Promise<void> => {
+router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug, userId } = req.params;
     
@@ -498,6 +531,8 @@ router.delete('/slug/:slug/users/:userId', async (req: Request, res: Response): 
     if (!result.success) {
       if (result.error?.includes('not found')) {
         res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
       } else {
         res.status(400).json({ error: result.error });
       }
@@ -511,11 +546,18 @@ router.delete('/slug/:slug/users/:userId', async (req: Request, res: Response): 
   }
 });
 
-// Get event reports by slug
+// Get event reports by slug (with access control)
 router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response): Promise<void> => {
+  const { slug, reportId } = req.params;
+  
+  // Check authentication
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
   try {
-    const { slug, reportId } = req.params;
-    
+    // First get the report to check access
     const result = await reportService.getReportBySlugAndId(slug, reportId);
     
     if (!result.success) {
@@ -527,6 +569,19 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
       return;
     }
 
+    // Check access control using the service
+    const accessResult = await reportService.checkReportAccess(req.user.id, reportId);
+    
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
+
     res.json(result.data);
   } catch (error: any) {
     console.error('Get report by slug error:', error);
@@ -535,13 +590,30 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
 });
 
 // Update invite by slug
-router.patch('/slug/:slug/invites/:inviteId', async (req: Request, res: Response): Promise<void> => {
+router.patch('/slug/:slug/invites/:inviteId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug, inviteId } = req.params;
     const updateData = req.body;
     
-    // TODO: Implement invite service method
-    res.status(404).json({ error: 'Route not implemented yet.' });
+    // Check if event exists first
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    const result = await inviteService.updateInvite(inviteId, updateData);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+    
+    res.json(result.data);
   } catch (error: any) {
     console.error('Update invite error:', error);
     res.status(500).json({ error: 'Failed to update invite.' });

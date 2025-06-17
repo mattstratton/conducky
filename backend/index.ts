@@ -137,17 +137,61 @@ app.use('/invites', inviteRoutes); // Backward compatibility for tests
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Session route for backward compatibility (keep this one for now since frontend uses it)
-app.get('/session', (req: any, res: any) => {
-  if (req.user) {
-    res.json({ 
-      authenticated: true, 
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name
-      }
+// Evidence download route (standalone for public access)
+app.get('/api/evidence/:evidenceId/download', async (req: any, res: any) => {
+  try {
+    const { evidenceId } = req.params;
+    
+    const evidence = await prisma.evidenceFile.findUnique({
+      where: { id: evidenceId },
     });
+    
+    if (!evidence) {
+      return res.status(404).json({ error: 'Evidence file not found.' });
+    }
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${evidence.filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Length', evidence.size);
+    res.send(evidence.data);
+  } catch (err: any) {
+    res.status(500).json({
+      error: 'Failed to download evidence file.',
+      details: err.message,
+    });
+  }
+});
+
+// Session route for backward compatibility (keep this one for now since frontend uses it)
+app.get('/session', async (req: any, res: any) => {
+  if (req.user) {
+    try {
+      // Get avatar if exists
+      const avatar = await prisma.userAvatar.findUnique({
+        where: { userId: req.user.id }
+      });
+
+      res.json({ 
+        authenticated: true, 
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
+        }
+      });
+    } catch (err: any) {
+      console.error('Error fetching user avatar for session:', err);
+      res.json({ 
+        authenticated: true, 
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name,
+          avatarUrl: null
+        }
+      });
+    }
   } else {
     res.json({ authenticated: false });
   }

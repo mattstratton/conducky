@@ -57,7 +57,7 @@ router.post('/:reportId/evidence', uploadEvidence.array('evidence'), async (req:
       return;
     }
 
-    res.json(result.data);
+    res.status(201).json(result.data);
   } catch (error: any) {
     console.error('Upload evidence files error:', error);
     res.status(500).json({ error: 'Failed to upload evidence files.' });

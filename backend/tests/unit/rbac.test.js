@@ -1,4 +1,4 @@
-const { requireRole, requireSuperAdmin } = require('../../utils/rbac');
+const { requireRole, requireSuperAdmin } = require('../../src/utils/rbac');
 const { PrismaClient } = require('@prisma/client');
 
 let mPrisma;

@@ -2,7 +2,7 @@ const { inMemoryStore } = require("../../__mocks__/@prisma/client");
 const request = require("supertest");
 const app = require("../../index");
 
-jest.mock("../../utils/rbac", () => ({
+jest.mock("../../src/utils/rbac", () => ({
   requireSuperAdmin: () => (req, res, next) => {
     req.isAuthenticated = () => true;
     req.user = { id: "1", email: "admin@example.com", name: "Admin" };

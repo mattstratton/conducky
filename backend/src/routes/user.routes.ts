@@ -22,7 +22,7 @@ router.patch('/me/profile', async (req: any, res: Response): Promise<void> => {
     const { name, email } = req.body;
     
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -52,7 +52,7 @@ router.patch('/me/password', async (req: any, res: Response): Promise<void> => {
     
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -80,7 +80,7 @@ router.get('/me/events', async (req: any, res: Response): Promise<void> => {
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -103,13 +103,29 @@ router.get('/me/reports', async (req: any, res: Response): Promise<void> => {
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+    
+    // Parse and validate pagination parameters
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    
+    // Validate pagination parameters
+    if (page < 1 || limit < 1) {
+      res.status(400).json({ error: 'Invalid pagination parameters' });
+      return;
+    }
+    
+    // Limit maximum page size
+    if (limit > 100) {
+      res.status(400).json({ error: 'Limit cannot exceed 100' });
       return;
     }
     
     const query = {
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page,
+      limit,
       search: req.query.search as string,
       status: req.query.status as string,
       event: req.query.event as string,
@@ -137,7 +153,7 @@ router.delete('/me/events/:eventId', async (req: any, res: Response): Promise<vo
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -146,6 +162,11 @@ router.delete('/me/events/:eventId', async (req: any, res: Response): Promise<vo
     const result = await userService.leaveEvent(req.user.id, eventId);
     
     if (!result.success) {
+      // Check for user not in event to return correct status code
+      if (result.error === 'You are not a member of this event.') {
+        res.status(404).json({ error: result.error });
+        return;
+      }
       res.status(400).json({ error: result.error });
       return;
     }
@@ -162,7 +183,7 @@ router.get('/me/quickstats', async (req: any, res: Response): Promise<void> => {
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -185,7 +206,7 @@ router.get('/me/activity', async (req: any, res: Response): Promise<void> => {
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
     
@@ -230,13 +251,19 @@ router.get('/:userId/avatar', async (req: Request, res: Response): Promise<void>
   }
 });
 
-// Upload user avatar
-router.post('/:userId/avatar', uploadAvatar.single('avatar'), async (req: Request, res: Response): Promise<void> => {
+// Upload user avatar  
+router.post('/:userId/avatar', uploadAvatar.single('avatar'), async (req: any, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
     
+    // Check authentication and authorization
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || req.user.id !== userId) {
+      res.status(401).json({ error: 'Not authorized' });
+      return;
+    }
+    
     if (!req.file) {
-      res.status(400).json({ error: 'No file uploaded.' });
+      res.status(400).json({ error: 'No file uploaded' });
       return;
     }
 
@@ -254,10 +281,35 @@ router.post('/:userId/avatar', uploadAvatar.single('avatar'), async (req: Reques
       return;
     }
 
-    res.json(result.data);
+    res.status(200).json({ success: true, avatarId: result.data!.avatarId });
   } catch (error: any) {
     console.error('Upload user avatar error:', error);
-    res.status(500).json({ error: 'Failed to upload user avatar.' });
+    res.status(500).json({ error: 'Failed to upload avatar.', details: error.message });
+  }
+});
+
+// Delete user avatar
+router.delete('/:userId/avatar', async (req: any, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    
+    // Check authentication and authorization
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || req.user.id !== userId) {
+      res.status(401).json({ error: 'Not authorized' });
+      return;
+    }
+    
+    const result = await userService.deleteAvatar(userId);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (error: any) {
+    console.error('Delete user avatar error:', error);
+    res.status(500).json({ error: 'Failed to delete avatar.', details: error.message });
   }
 });
 
@@ -266,7 +318,7 @@ router.get('/me/notifications', async (req: any, res: Response): Promise<void> =
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
 
@@ -350,7 +402,7 @@ router.get('/me/notifications/stats', async (req: any, res: Response): Promise<v
   try {
     // TODO: Add authentication check
     if (!req.user?.id) {
-      res.status(401).json({ error: 'Authentication required.' });
+      res.status(401).json({ error: 'Not authenticated' });
       return;
     }
 
