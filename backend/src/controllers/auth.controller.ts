@@ -1,20 +1,17 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services';
 
-// User interface for Express session
-interface User {
+// Simple user interface that matches what Passport provides
+interface AuthUser {
   id: string;
   email: string;
   name: string;
+  [key: string]: any; // For other Prisma fields
 }
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
+// Extend Request to include authenticated user
+interface AuthenticatedRequest extends Request {
+  user?: AuthUser;
 }
 
 export class AuthController {
@@ -128,7 +125,7 @@ export class AuthController {
     }
   }
 
-  async getSession(req: Request, res: Response): Promise<void> {
+  async getSession(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       

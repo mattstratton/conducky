@@ -4,17 +4,9 @@ import { ReportService } from '../services/report.service';
 import { UserService } from '../services/user.service';
 import { InviteService } from '../services/invite.service';
 import { requireRole } from '../middleware/rbac';
+import { AuthenticatedRequest } from '../types';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
-
-// Authenticated request type
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -145,7 +137,7 @@ router.post('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req:
 });
 
 // Remove role from user
-router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { userId, roleName } = req.body;
@@ -200,25 +192,13 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
       reporterId: 'temp-reporter-id'
     };
     
-    // Convert multer files to EvidenceFile format
-    const evidenceFiles = (req.files as Express.Multer.File[] || []).map(file => ({
-      filename: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      data: file.buffer
-    }));
+    // Handle file uploads if any
+    const evidenceFiles = req.files as Express.Multer.File[] | undefined;
     
     const result = await reportService.createReport(reportData, evidenceFiles);
     
     if (!result.success) {
-      // Check for specific error types and return appropriate status codes
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
+      res.status(400).json({ error: result.error });
       return;
     }
 
@@ -233,45 +213,37 @@ router.post('/:eventId/reports', uploadEvidence.array('evidence'), async (req: R
 router.get('/:eventId/reports', async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
-    const query = {
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
-      search: req.query.search as string,
-      status: req.query.status as string,
-      sort: req.query.sort as string,
-      order: req.query.order as string
-    };
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const status = req.query.status as string;
+    const priority = req.query.priority as string;
+    const search = req.query.search as string;
     
-    const result = await reportService.getReportsByEventId(eventId, query);
+    const result = await reportService.getReportsByEventId(eventId, {
+      page,
+      limit,
+      status,
+      search
+    });
     
     if (!result.success) {
-      // Check for specific error types and return appropriate status codes
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else {
-        res.status(500).json({ error: result.error });
-      }
+      res.status(500).json({ error: result.error });
       return;
     }
 
     res.json(result.data);
   } catch (error: any) {
-    console.error('Get event reports error:', error);
-    res.status(500).json({ error: 'Failed to fetch event reports.' });
+    console.error('Get reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch reports.' });
   }
 });
 
-// Get specific report for event
+// Get specific report
 router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { eventId, reportId } = req.params;
+    const { reportId } = req.params;
     
-    if (!eventId || eventId === '') {
-      res.status(400).json({ error: 'Event ID is required.' });
-      return;
-    }
-    
-    const result = await reportService.getReportById(reportId, eventId);
+    const result = await reportService.getReportById(reportId);
     
     if (!result.success) {
       res.status(404).json({ error: result.error });
@@ -285,32 +257,23 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
   }
 });
 
-// Update report state (Responder/Admin/SuperAdmin only)
-router.patch('/:eventId/reports/:reportId/state', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+// Update report state
+router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
-    const { state } = req.body;
+    const { status, priority, assignedToUserId, resolution } = req.body;
     
-    if (!state) {
-      res.status(400).json({ error: 'State is required.' });
-      return;
-    }
+    const updateData = {
+      status,
+      priority,
+      assignedToUserId,
+      resolution
+    };
     
-    const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
-    if (!validStates.includes(state)) {
-      res.status(400).json({ error: 'Invalid state.' });
-      return;
-    }
-    
-    const result = await reportService.updateReportState(eventId, reportId, state);
+    const result = await reportService.updateReportState(eventId, reportId, status);
     
     if (!result.success) {
-      // Check for specific error types and return appropriate status codes
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
+      res.status(400).json({ error: result.error });
       return;
     }
 
@@ -322,9 +285,9 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Responder', 'Adm
 });
 
 // Update report title
-router.patch('/:eventId/reports/:reportId/title', async (req: Request, res: Response): Promise<void> => {
+router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { eventId, reportId } = req.params;
+    const { reportId } = req.params;
     const { title } = req.body;
     
     if (!title) {
@@ -343,17 +306,10 @@ router.patch('/:eventId/reports/:reportId/title', async (req: Request, res: Resp
       return;
     }
     
-    const result = await reportService.updateReportTitle(eventId, reportId, title, (req as any).user?.id);
+    const result = await reportService.updateReport(reportId, { title });
     
     if (!result.success) {
-      // Check for specific error types and return appropriate status codes
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
+      res.status(400).json({ error: result.error });
       return;
     }
 
@@ -361,6 +317,147 @@ router.patch('/:eventId/reports/:reportId/title', async (req: Request, res: Resp
   } catch (error: any) {
     console.error('Update report title error:', error);
     res.status(500).json({ error: 'Failed to update report title.' });
+  }
+});
+
+// Upload evidence for report
+router.post('/:eventId/reports/:reportId/evidence', requireRole(['Admin', 'SuperAdmin', 'Responder']), uploadEvidence.array('evidence'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { reportId } = req.params;
+    const evidenceFiles = req.files as Express.Multer.File[];
+    
+    if (!evidenceFiles || evidenceFiles.length === 0) {
+      res.status(400).json({ error: 'No evidence files uploaded.' });
+      return;
+    }
+    
+    const uploaderId = req.user?.id;
+    
+    if (!uploaderId) {
+      res.status(401).json({ error: 'User not authenticated.' });
+      return;
+    }
+    
+    const result = await reportService.uploadEvidence(reportId, evidenceFiles, uploaderId);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Upload evidence error:', error);
+    res.status(500).json({ error: 'Failed to upload evidence.' });
+  }
+});
+
+// Get evidence for report
+router.get('/:eventId/reports/:reportId/evidence', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { reportId } = req.params;
+    
+    const result = await reportService.getReportEvidence(reportId);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get evidence error:', error);
+    res.status(500).json({ error: 'Failed to fetch evidence.' });
+  }
+});
+
+// Download evidence file
+router.get('/:eventId/reports/:reportId/evidence/:evidenceId/download', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { evidenceId } = req.params;
+    
+    const result = await reportService.downloadEvidence(evidenceId);
+    
+    if (!result.success) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+    
+    const evidence = result.data;
+    
+    res.setHeader('Content-Type', evidence.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${evidence.originalName}"`);
+    res.send(evidence.buffer);
+  } catch (error: any) {
+    console.error('Download evidence error:', error);
+    res.status(500).json({ error: 'Failed to download evidence.' });
+  }
+});
+
+// Delete evidence file
+router.delete('/:eventId/reports/:reportId/evidence/:evidenceId', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { evidenceId } = req.params;
+    
+    const result = await reportService.deleteEvidence(evidenceId);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ message: 'Evidence deleted successfully.' });
+  } catch (error: any) {
+    console.error('Delete evidence error:', error);
+    res.status(500).json({ error: 'Failed to delete evidence.' });
+  }
+});
+
+// Upload event logo
+router.post('/:eventId/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const logoFile = req.file;
+    
+    if (!logoFile) {
+      res.status(400).json({ error: 'No logo file uploaded.' });
+      return;
+    }
+    
+    const result = await eventService.uploadEventLogo(eventId, logoFile);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Upload logo error:', error);
+    res.status(500).json({ error: 'Failed to upload logo.' });
+  }
+});
+
+// Get event logo
+router.get('/:eventId/logo', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    
+    const result = await eventService.getEventLogo(eventId);
+    
+    if (!result.success) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+    
+    const logo = result.data;
+    
+    res.setHeader('Content-Type', logo.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${logo.fileName}"`);
+    res.send(logo.buffer);
+  } catch (error: any) {
+    console.error('Get logo error:', error);
+    res.status(500).json({ error: 'Failed to get logo.' });
   }
 });
 
@@ -392,68 +489,6 @@ router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Re
   } catch (error: any) {
     console.error('Event update error:', error);
     res.status(500).json({ error: 'Failed to update event.' });
-  }
-});
-
-// Upload event logo (by slug)
-router.post('/slug/:slug/logo', requireRole(['Admin', 'SuperAdmin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug } = req.params;
-    
-    if (!req.file) {
-      res.status(400).json({ error: 'No file uploaded.' });
-      return;
-    }
-
-    const logoData = {
-      filename: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      data: req.file.buffer
-    };
-    
-    const result = await eventService.uploadEventLogo(slug, logoData);
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json(result.data);
-  } catch (error: any) {
-    console.error('Logo upload error:', error);
-    res.status(500).json({ error: 'Failed to upload logo.' });
-  }
-});
-
-// Get event logo (by slug)
-router.get('/slug/:slug/logo', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug } = req.params;
-    
-    const result = await eventService.getEventLogo(slug);
-    
-    if (!result.success) {
-      res.status(404).json({ error: result.error });
-      return;
-    }
-
-    const { filename, mimetype, data } = result.data!;
-    
-    res.set({
-      'Content-Type': mimetype,
-      'Content-Disposition': `inline; filename="${filename}"`,
-      'Content-Length': data.length.toString()
-    });
-    
-    res.send(data);
-  } catch (error: any) {
-    console.error('Logo get error:', error);
-    res.status(500).json({ error: 'Failed to get logo.' });
   }
 });
 

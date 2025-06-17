@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { NotificationService } from '../services/notification.service';
 import { requireAuth } from '../middleware/auth';
+import { AuthenticatedRequest } from '../types';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
 const notificationService = new NotificationService(prisma);
 
 // Get user's notifications with pagination and filtering
-router.get('/users/me/notifications', requireAuth, async (req: any, res: Response): Promise<void> => {
+router.get('/users/me/notifications', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const {
       page = 1,
@@ -28,6 +29,12 @@ router.get('/users/me/notifications', requireAuth, async (req: any, res: Respons
     }
 
     const skip = (pageNum - 1) * limitNum;
+
+    // Validate user authentication
+    if (!req.user) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
 
     // Build where clause
     const whereClause: any = { userId: req.user.id };
@@ -86,7 +93,7 @@ router.get('/users/me/notifications', requireAuth, async (req: any, res: Respons
 });
 
 // Mark notification as read
-router.patch('/:notificationId/read', requireAuth, async (req: any, res: Response): Promise<void> => {
+router.patch('/:notificationId/read', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { notificationId } = req.params;
 
   try {
@@ -100,7 +107,7 @@ router.patch('/:notificationId/read', requireAuth, async (req: any, res: Respons
       return;
     }
 
-    if (notification.userId !== req.user.id) {
+    if (notification.userId !== req.user?.id) {
       res.status(403).json({ error: 'Not authorized to access this notification' });
       return;
     }
@@ -125,7 +132,7 @@ router.patch('/:notificationId/read', requireAuth, async (req: any, res: Respons
 });
 
 // Get notification statistics for user
-router.get('/users/me/notifications/stats', requireAuth, async (req: any, res: Response): Promise<void> => {
+router.get('/users/me/notifications/stats', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
 

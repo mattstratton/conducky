@@ -4,6 +4,8 @@
  * This file aggregates all TypeScript type definitions for clean imports
  */
 
+import { Request } from 'express';
+
 // Re-export existing types from the current types directory
 export * from '../../types';
 
@@ -27,10 +29,17 @@ export interface PaginationResponse {
   totalPages: number;
 }
 
+// User interface for authentication context
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
 // Request/Response types for controllers
 export interface AuthenticatedRequest extends Request {
-  user?: any;
-  isAuthenticated?: () => boolean;
+  user?: AuthUser;
 }
 
 // Service response types
