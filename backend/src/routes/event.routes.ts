@@ -218,6 +218,30 @@ router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']),
   }
 });
 
+// Get event statistics (by slug)
+router.get('/slug/:slug/stats', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const user = req.user as any;
+    
+    const result = await eventService.getEventStats(slug, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch event statistics.' });
+  }
+});
+
 // ========================================
 // EVENT ID-BASED ROUTES
 // ========================================
@@ -861,6 +885,8 @@ router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Re
 router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const recent = req.query.recent === '1';
 
     // Get event ID by slug
     const eventId = await eventService.getEventIdBySlug(slug);
@@ -869,8 +895,14 @@ router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin',
       return;
     }
     
-    // Get reports for this event
-    const result = await reportService.getReportsByEventId(eventId);
+    // Get reports for this event with pagination and recent filter
+    const options = {
+      limit,
+      sort: recent ? 'createdAt' : undefined,
+      order: recent ? 'desc' : undefined
+    };
+    
+    const result = await reportService.getReportsByEventId(eventId, options);
     
     if (!result.success) {
       res.status(500).json({ error: result.error });

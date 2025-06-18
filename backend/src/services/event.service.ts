@@ -1035,4 +1035,97 @@ export class EventService {
       };
     }
   }
+
+  /**
+   * Get event statistics by slug
+   */
+  async getEventStats(slug: string, userId?: string): Promise<ServiceResult<{
+    totalReports: number;
+    totalUsers: number;
+    needsResponseCount: number;
+    pendingInvites: number;
+    assignedReports: number;
+    resolvedReports: number;
+  }>> {
+    try {
+      // Get event ID by slug
+      const event = await this.prisma.event.findUnique({
+        where: { slug },
+        select: { id: true }
+      });
+
+      if (!event) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      const eventId = event.id;
+
+      // Get total reports for this event
+      const totalReports = await this.prisma.report.count({
+        where: { eventId }
+      });
+
+      // Get total users for this event
+      const totalUsers = await this.prisma.userEventRole.count({
+        where: { eventId }
+      });
+
+      // Get reports that need response (submitted, acknowledged, investigating)
+      const needsResponseCount = await this.prisma.report.count({
+        where: {
+          eventId,
+          state: {
+            in: ['submitted', 'acknowledged', 'investigating']
+          }
+        }
+      });
+
+      // Get reports assigned to the specific user (if userId provided) or all assigned reports
+      const assignedReports = await this.prisma.report.count({
+        where: {
+          eventId,
+          assignedResponderId: userId ? userId : { not: null }
+        }
+      });
+
+      // Get resolved reports (resolved or closed state)
+      const resolvedReports = await this.prisma.report.count({
+        where: {
+          eventId,
+          state: {
+            in: ['resolved', 'closed']
+          }
+        }
+      });
+
+      // Get pending invites for this event
+      const pendingInvites = await this.prisma.eventInviteLink.count({
+        where: {
+          eventId,
+          disabled: false
+        }
+      });
+
+      return {
+        success: true,
+        data: {
+          totalReports,
+          totalUsers,
+          needsResponseCount,
+          pendingInvites,
+          assignedReports,
+          resolvedReports
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting event stats:', error);
+      return {
+        success: false,
+        error: 'Failed to get event statistics.'
+      };
+    }
+  }
 } 

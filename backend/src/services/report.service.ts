@@ -232,12 +232,27 @@ export class ReportService {
         };
       }
 
-      const { userId } = query || {};
+      const { userId, limit, page, sort, order } = query || {};
 
       const where: any = { eventId };
       if (userId) {
         where.reporterId = userId;
       }
+
+      // Set up ordering
+      let orderBy: any = { createdAt: 'desc' }; // default ordering
+      if (sort && order) {
+        const validSortFields = ['createdAt', 'updatedAt', 'title', 'state', 'severity'];
+        const validOrders = ['asc', 'desc'];
+        
+        if (validSortFields.includes(sort) && validOrders.includes(order)) {
+          orderBy = { [sort]: order };
+        }
+      }
+
+      // Set up pagination
+      const take = limit ? Math.min(Math.max(1, limit), 100) : undefined; // limit between 1-100
+      const skip = (page && limit) ? (page - 1) * limit : undefined;
 
       const reports = await this.prisma.report.findMany({
         where,
@@ -250,7 +265,9 @@ export class ReportService {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
+        take,
+        skip,
       });
 
       return {
