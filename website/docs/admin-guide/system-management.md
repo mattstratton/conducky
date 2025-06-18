@@ -12,34 +12,78 @@ SuperAdmins have system-wide access and can:
 
 - Create new events
 - View all events in the system
-- Access any event's data (with proper authorization)
+- Generate admin invite links for events
 - Manage global system settings
 - Monitor system health and usage
 
+**Important**: SuperAdmins have separate permissions from event-level roles. To access event data (reports, users, etc.), SuperAdmins must be explicitly assigned an event role by an event admin.
+
+## SuperAdmin Navigation
+
+SuperAdmins have access to a dedicated system administration interface through the sidebar navigation:
+
+### Accessing System Admin Features
+
+1. **Login as SuperAdmin**: The sidebar will automatically show system admin navigation
+2. **System Admin Section**: Look for the "System Admin" section in the sidebar with:
+   - 🏠 **System Dashboard** - Overview of all events and system health
+   - 🎯 **Events Management** - Create and manage events
+   - ⚙️ **System Settings** - Global configuration (future feature)
+
+### Context Switching
+
+SuperAdmins can switch between two contexts:
+- **System Administration**: Managing the Conducky installation (pages starting with `/admin/`)
+- **Personal Dashboard**: Participating in events as a regular user (`/dashboard` and pages starting with `/events/`)
+
 ## Creating Events
 
-Only SuperAdmins can create new events in the system.
+The event creation workflow has been streamlined for better user experience:
+
+### New Simplified Workflow
+
+1. **SuperAdmin creates basic event** (name, slug, description only)
+2. **Event is created as inactive** (`isActive: false`) until fully configured
+3. **SuperAdmin generates admin invite link** for the event organizer
+4. **Event organizer accepts invite** and becomes event admin
+5. **Event admin completes detailed setup** (contact info, dates, CoC, etc.)
+6. **Event becomes active** once fully configured
 
 ### Via the UI
 
 1. Log in as a SuperAdmin
-2. Go to the Admin page (available in the main navigation)
-3. Click "Create New Event"
-4. Fill in the event details:
+2. Navigate to **System Admin → Events Management** in the sidebar
+3. Click **"Create Event"** or go to `/admin/events/new`
+4. Fill in the basic event details:
    - **Name**: Display name for the event
    - **Slug**: URL-safe identifier (lowercase, letters, numbers, hyphens only)
-5. Click "Create Event"
+   - **Description**: Brief description of the event
+5. Click **"Create Event"**
 
-The event will be created and you'll be automatically assigned as an Admin for that event.
+The event will be created in an inactive state, ready for admin assignment.
+
+### Generating Admin Invites
+
+After creating an event:
+
+1. Go to **System Admin → Events Management** (`/admin/events`)
+2. Click on the event you want to manage
+3. Navigate to the **Settings** tab
+4. In the **Invite Management** section:
+   - Click **"Create Admin Invite"**
+   - Optionally add a note (email address recommended)
+   - Copy the generated invite link
+5. Send the invite link to your designated event organizer
 
 ### Via the API
 
-Use the `POST /events` endpoint with:
+Use the `POST /api/admin/events` endpoint with:
 
 ```json
 {
   "name": "My Conference 2024",
-  "slug": "my-conference-2024"
+  "slug": "my-conference-2024",
+  "description": "Annual technology conference"
 }
 ```
 
@@ -54,16 +98,41 @@ Requirements:
 
 SuperAdmins can view all events in the system:
 
-- **UI**: The Admin page shows a list of all events
-- **API**: `GET /events` returns all events (SuperAdmin only)
+- **UI**: Navigate to **System Admin → Events Management** (`/admin/events`)
+- **API**: `GET /api/admin/events` returns all events (SuperAdmin only)
 
-### Event Access
+### Event Details and Settings
 
-SuperAdmins can access any event, but they must be explicitly assigned a role within that event to manage it. This ensures proper audit trails and role-based access control.
+From the events list, SuperAdmins can:
+- **View event details**: Click on any event to see full information
+- **Manage invites**: Create and manage admin invite links
+- **View basic stats**: See user counts and activity summaries
 
-To manage a specific event:
-1. Assign yourself an Admin role for that event
-2. Use the standard event management interface
+### Event Access Restrictions
+
+SuperAdmins can access event management interfaces, but they **cannot** access event data (reports, detailed user information, etc.) unless they are explicitly assigned an event role.
+
+To access event data:
+1. Have an event admin assign you a role in the event
+2. Use the standard event interface (`/events/[slug]/`)
+
+## Admin API Endpoints
+
+### New SuperAdmin Endpoints
+
+The following endpoints are available for SuperAdmin system management:
+
+#### Event Management
+- `POST /api/admin/events` - Create new event
+- `GET /api/admin/events` - List all events
+- `GET /api/admin/events/:eventId` - Get specific event details
+
+#### Invite Management
+- `GET /api/admin/events/:eventId/invites` - List invites for an event
+- `POST /api/admin/events/:eventId/invites` - Create new admin invite
+- `PATCH /api/admin/events/:eventId/invites/:inviteId` - Update invite (disable/enable)
+
+All admin endpoints require SuperAdmin authentication and return appropriate error responses for unauthorized access.
 
 ## User Management
 
@@ -120,10 +189,16 @@ Monitor the PostgreSQL database for:
 
 ### Common SuperAdmin Issues
 
-- **Cannot create events**: Verify SuperAdmin role assignment
+- **Cannot see system admin navigation**: Verify SuperAdmin role assignment
+- **Cannot create events**: Check SuperAdmin permissions and database connectivity
 - **Cannot access event data**: Assign yourself an event role first
-- **Database connection errors**: Check `DATABASE_URL` and database status
-- **Performance issues**: Monitor database queries and system resources
+- **Invite links not working**: Verify invite generation and expiration settings
+
+### Navigation Issues
+
+- **Sidebar not showing admin options**: Check user session and role assignment
+- **Cannot switch contexts**: Verify authentication and role permissions
+- **Performance issues**: Monitor API call frequency and database queries
 
 ### Getting Help
 
@@ -134,10 +209,28 @@ For system-level issues:
 4. Review the [troubleshooting guide](../user-guide/troubleshooting)
 5. Consult the [Developer Docs](../developer-docs/intro) for technical details
 
+## Recent Updates
+
+### Navigation Improvements
+- **New sidebar navigation**: Context-aware navigation that adapts to user roles
+- **Improved event switching**: Easier switching between system admin and personal contexts
+- **Mobile optimization**: Responsive navigation that works well on all devices
+
+### Event Creation Workflow
+- **Simplified initial creation**: Only requires name, slug, and description
+- **Admin invite system**: Generate secure invite links for event organizers
+- **Inactive event state**: Events remain inactive until fully configured by admins
+
+### Performance Optimizations
+- **Reduced API calls**: Optimized sidebar navigation to minimize server requests
+- **Better caching**: Improved session and role data management
+- **Faster loading**: Streamlined data fetching for better user experience
+
 ## Future Features
 
 Planned SuperAdmin features include:
 - Web-based user management interface
 - System analytics and reporting
 - Automated backup management
-- Advanced security monitoring 
+- Advanced security monitoring
+- Bulk event management tools 

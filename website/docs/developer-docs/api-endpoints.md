@@ -91,22 +91,62 @@ All authentication routes are mounted at `/api/auth`:
 
 ---
 
+## SuperAdmin Management
+
+System administration endpoints for SuperAdmin users only.
+
+### Event Management
+
+#### Create Event
+
+- **POST** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Body:** `{ name, slug, description }`
+- **Response:** `{ message, event: { id, name, slug, description, setupRequired } }`
+- **Description:** Creates a new event with basic information. Event is created with `isActive: false` and requires admin setup to complete configuration.
+
+#### List All Events
+
+- **GET** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Response:** `{ events: [...], statistics: { totalEvents, activeEvents, totalUsers, totalReports } }`
+- **Description:** Get all events in the system with statistics and metadata.
+
+#### Get Event Details
+
+- **GET** `/api/admin/events/:eventId`
+- **Role:** SuperAdmin only
+- **Response:** `{ event }`
+- **Description:** Get detailed information about a specific event.
+
+#### Create Admin Invite
+
+- **POST** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Body:** `{ email, role }` (role defaults to "Admin")
+- **Response:** `{ message, invite: { id, code, email, role, expiresAt } }`
+- **Description:** Create an admin invite for an event. Returns invite code that can be shared with the event organizer.
+
+#### List Event Invites
+
+- **GET** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Response:** `{ invites: [...] }`
+- **Description:** Get all pending invites for an event.
+
+#### Update Invite Status
+
+- **PATCH** `/api/admin/events/:eventId/invites/:inviteId`
+- **Role:** SuperAdmin only
+- **Body:** `{ status }` ("pending", "accepted", "expired", "revoked")
+- **Response:** `{ message, invite }`
+- **Description:** Update the status of an invite (e.g., revoke an unused invite).
+
+---
+
 ## Events
 
 Event routes are mounted at `/api/events` and `/events`:
-
-### Create Event
-
-- **POST** `/api/events`
-- **Role:** SuperAdmin only
-- **Body:** `{ name, slug }`
-- **Response:** `{ event }`
-
-### List Events
-
-- **GET** `/api/events`
-- **Role:** SuperAdmin only
-- **Response:** `{ events }`
 
 ### Get Event by ID
 
@@ -606,6 +646,69 @@ Notification routes are mounted at `/api/notifications`:
 - **GET** `/api/system/settings`
 - **Description:** Get system configuration settings.
 - **Response:** `{ settings: {...} }`
+
+### SuperAdmin Event Management
+
+#### Create Event (SuperAdmin)
+
+- **POST** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Description:** Create a new event with basic information. Event is created as inactive until admin setup is complete.
+- **Body:** `{ name, slug, description }`
+  - `name` (string, required): Display name for the event
+  - `slug` (string, required): URL-safe identifier (lowercase, letters, numbers, hyphens only)
+  - `description` (string, required): Brief description of the event
+- **Response:** `{ event: { id, name, slug, description, isActive, createdAt, updatedAt } }`
+- **Notes:** 
+  - Slug must be unique across the system
+  - Event is created with `isActive: false`
+  - SuperAdmin is not automatically assigned event roles
+
+#### List All Events (SuperAdmin)
+
+- **GET** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Description:** Get a list of all events in the system with basic statistics.
+- **Response:** `{ events: [{ id, name, slug, description, isActive, createdAt, updatedAt, userCount, reportCount }] }`
+
+#### Get Event Details (SuperAdmin)
+
+- **GET** `/api/admin/events/:eventId`
+- **Role:** SuperAdmin only
+- **Description:** Get detailed information about a specific event.
+- **Response:** `{ event: { id, name, slug, description, isActive, createdAt, updatedAt, userCount, reportCount, recentActivity } }`
+
+### SuperAdmin Invite Management
+
+#### List Event Invites (SuperAdmin)
+
+- **GET** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Description:** Get all invite links for a specific event.
+- **Response:** `{ invites: [{ id, code, role, maxUses, usedCount, expiresAt, isDisabled, note, createdAt }] }`
+
+#### Create Admin Invite (SuperAdmin)
+
+- **POST** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Description:** Create a new admin invite link for an event. Used to assign event administrators.
+- **Body:** `{ note?, maxUses?, expiresAt? }`
+  - `note` (string, optional): Note about the invite (recommended to include email)
+  - `maxUses` (integer, optional): Maximum number of uses (default: 1)
+  - `expiresAt` (string, optional): ISO 8601 expiration date (default: 30 days)
+- **Response:** `{ invite: { id, code, role: 'Admin', maxUses, usedCount, expiresAt, isDisabled, note, createdAt }, inviteUrl }`
+- **Notes:**
+  - Always creates invites with 'Admin' role
+  - Returns full invite URL for easy sharing
+  - Invite code is automatically generated
+
+#### Update Invite (SuperAdmin)
+
+- **PATCH** `/api/admin/events/:eventId/invites/:inviteId`
+- **Role:** SuperAdmin only
+- **Description:** Update an existing invite (typically to disable/enable).
+- **Body:** `{ isDisabled?, note?, maxUses?, expiresAt? }`
+- **Response:** `{ invite: { id, code, role, maxUses, usedCount, expiresAt, isDisabled, note, updatedAt } }`
 
 ---
 
