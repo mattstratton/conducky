@@ -8,6 +8,7 @@ This document describes the main data models used in the system, based on the Pr
 ---
 
 ## User
+
 - **id**: UUID, primary key
 - **email**: Unique email address
 - **name**: Optional display name
@@ -16,6 +17,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: userEventRoles, reports, auditLogs, reportComments, evidenceFilesUploaded, assignedReports, avatar, passwordResetTokens, notifications
 
 ## Event
+
 - **id**: UUID, primary key
 - **name**: Event name
 - **slug**: Unique, URL-safe identifier
@@ -29,11 +31,13 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: userEventRoles, reports, auditLogs, inviteLinks, eventLogo, notifications
 
 ## Role
+
 - **id**: UUID, primary key
 - **name**: Unique role name (Reporter, Responder, Admin, SuperAdmin)
 - **Relations**: userEventRoles, eventInviteLinks
 
 ## UserEventRole
+
 - **id**: UUID, primary key
 - **userId**: User reference
 - **eventId**: Event reference (nullable for global roles)
@@ -41,6 +45,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Unique:** Combination of userId, eventId, roleId
 
 ## Report
+
 - **id**: UUID, primary key
 - **eventId**: Event reference
 - **reporterId**: User reference (nullable for anonymous)
@@ -60,6 +65,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: comments, evidenceFiles, notifications
 
 ## ReportComment
+
 - **id**: UUID, primary key
 - **reportId**: Report reference
 - **authorId**: User reference (nullable for system comments)
@@ -69,6 +75,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: report, author
 
 ## EvidenceFile
+
 - **id**: UUID, primary key
 - **reportId**: Report reference
 - **filename**: Original file name
@@ -80,6 +87,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: report, uploader
 
 ## EventLogo
+
 - **id**: UUID, primary key
 - **eventId**: Event reference (unique)
 - **filename**: Original file name
@@ -90,6 +98,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: event
 
 ## UserAvatar
+
 - **id**: UUID, primary key
 - **userId**: User reference (unique)
 - **filename**: Original file name
@@ -100,6 +109,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: user
 
 ## AuditLog
+
 - **id**: UUID, primary key
 - **eventId**: Event reference
 - **userId**: User reference (nullable)
@@ -110,6 +120,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: event, user
 
 ## EventInviteLink
+
 - **id**: UUID, primary key
 - **eventId**: Event reference
 - **code**: Unique invite code
@@ -124,14 +135,17 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: event, role
 
 ## SystemSetting
+
 - **id**: UUID, primary key
 - **key**: Unique setting key
 - **value**: Setting value (string)
 
 ### Current System Settings
+
 - **showPublicEventList**: Boolean (stored as string) - Controls whether public event listing is shown on home page
 
 ## PasswordResetToken
+
 - **id**: UUID, primary key
 - **userId**: User reference
 - **token**: Unique reset token
@@ -141,6 +155,7 @@ This document describes the main data models used in the system, based on the Pr
 - **Relations**: user
 
 ## Notification
+
 - **id**: UUID, primary key
 - **userId**: User reference
 - **type**: Notification type enum (report_submitted, report_assigned, report_status_changed, report_comment_added, event_invitation, event_role_changed, system_announcement)
@@ -159,6 +174,7 @@ This document describes the main data models used in the system, based on the Pr
 ## Enums
 
 ### ReportState
+
 - `submitted`
 - `acknowledged`
 - `investigating`
@@ -166,27 +182,32 @@ This document describes the main data models used in the system, based on the Pr
 - `closed`
 
 ### ReportType
+
 - `harassment`
 - `safety`
 - `other`
 
 ### CommentVisibility
+
 - `public` - visible to all involved (reporter, responders, admins)
 - `internal` - visible only to responders/admins
 
 ### ReportSeverity
+
 - `low`
 - `medium`
 - `high`
 - `critical`
 
 ### ContactPreference
+
 - `email` - Preferred contact via email (default)
 - `phone` - Preferred contact via phone
 - `in_person` - Preferred contact in person
 - `no_contact` - No contact preferred
 
 ### NotificationType
+
 - `report_submitted` - New report submitted
 - `report_assigned` - Report assigned to user
 - `report_status_changed` - Report status changed
@@ -196,6 +217,7 @@ This document describes the main data models used in the system, based on the Pr
 - `system_announcement` - System-wide announcement
 
 ### NotificationPriority
+
 - `low`
 - `normal`
 - `high`
@@ -203,4 +225,4 @@ This document describes the main data models used in the system, based on the Pr
 
 ---
 
-For the full schema, see `backend/prisma/schema.prisma`. 
+For the full schema, see `backend/prisma/schema.prisma`.

@@ -33,6 +33,7 @@ SuperAdmins have access to a dedicated system administration interface through t
 ### Context Switching
 
 SuperAdmins can switch between two contexts:
+
 - **System Administration**: Managing the Conducky installation (pages starting with `/admin/`)
 - **Personal Dashboard**: Participating in events as a regular user (`/dashboard` and pages starting with `/events/`)
 
@@ -88,6 +89,7 @@ Use the `POST /api/admin/events` endpoint with:
 ```
 
 Requirements:
+
 - Must be authenticated as a SuperAdmin
 - Slug must be unique across the system
 - Slug must be URL-safe (lowercase, alphanumeric, hyphens only)
@@ -99,6 +101,7 @@ Conducky supports social login with Google and GitHub OAuth, allowing users to s
 ### Overview
 
 Social login provides several benefits:
+
 - **Faster registration**: Users can sign up instantly with existing accounts
 - **Improved security**: No need to manage additional passwords
 - **Better user experience**: One-click login for returning users
@@ -107,6 +110,7 @@ Social login provides several benefits:
 ### Prerequisites
 
 Before configuring social login, you'll need:
+
 - Google Cloud Console access (for Google OAuth)
 - GitHub account with Developer Settings access (for GitHub OAuth)
 - SSL certificate (HTTPS) for production deployments
@@ -123,7 +127,7 @@ Before configuring social login, you'll need:
 #### Step 2: Enable Google Identity Services API
 
 1. Navigate to **APIs & Services → Library**
-2. Search for "Google Identity Services API" 
+2. Search for "Google Identity Services API"
 3. Click on "Google Identity Services API" and click **"Enable"**
 4. Alternatively, you can also enable "Google+ API" if available, but Google Identity Services is the modern approach
 
@@ -156,6 +160,7 @@ Before configuring social login, you'll need:
 #### Step 4: Configure OAuth Consent Screen (Production)
 
 For production use:
+
 1. Go to **APIs & Services → OAuth consent screen**
 2. Fill in all required fields
 3. Add your domain to **Authorized domains**
@@ -169,7 +174,7 @@ For production use:
 2. Click **"New OAuth App"**
 3. Fill in the application details:
    - **Application name**: "Conducky" (or your installation name)
-   - **Homepage URL**: 
+   - **Homepage URL**:
      - Local: `http://localhost:3001`
      - Production: `https://yourdomain.com`
    - **Application description**: "Code of conduct incident management system"
@@ -234,9 +239,11 @@ backend:
 1. **Configure OAuth apps** with local callback URLs (as shown above)
 2. **Set environment variables** in your `.env` file
 3. **Restart your backend** to load new environment variables:
+
    ```bash
    docker-compose restart backend
    ```
+
 4. **Test the setup** by following the testing scenarios below
 
 #### Testing Scenarios
@@ -289,15 +296,19 @@ backend:
 After testing, verify the database state:
 
 **Check Users Table:**
+
 ```sql
 SELECT id, email, name, "passwordHash" FROM "User" WHERE email = 'test@example.com';
 ```
+
 - `passwordHash` should be null for OAuth-only users
 
 **Check SocialAccounts Table:**
+
 ```sql
 SELECT * FROM "SocialAccount" WHERE "userId" = 'user-id-here';
 ```
+
 - Should have records for each linked social account
 - `provider` should be 'google' or 'github'
 - `providerId` should be the OAuth provider's user ID
@@ -310,11 +321,13 @@ SELECT * FROM "SocialAccount" WHERE "userId" = 'user-id-here';
 **Error Message**: `redirect_uri_mismatch`
 
 **Causes**:
+
 - Callback URL in OAuth provider doesn't match exactly
 - Missing `http://` or `https://` in URL
 - Localhost vs 127.0.0.1 mismatch
 
 **Solutions**:
+
 1. Check that callback URLs match exactly between OAuth provider and your environment
 2. Ensure protocol (http/https) matches your deployment
 3. For local development, use `localhost`, not `127.0.0.1`
@@ -324,11 +337,13 @@ SELECT * FROM "SocialAccount" WHERE "userId" = 'user-id-here';
 **Error**: User account creation fails
 
 **Causes**:
+
 - OAuth app doesn't have email permission
 - User denied email access during OAuth flow
 - OAuth scopes not configured correctly
 
 **Solutions**:
+
 1. Verify OAuth scopes include email access:
    - Google: `profile` and `email` scopes
    - GitHub: `user:email` scope
@@ -340,11 +355,13 @@ SELECT * FROM "SocialAccount" WHERE "userId" = 'user-id-here';
 **Error**: User not staying logged in after OAuth
 
 **Causes**:
+
 - Session configuration issues
 - Cookie domain/path problems
 - CSRF token mismatch
 
 **Solutions**:
+
 1. Check session configuration in backend
 2. Verify cookie settings allow OAuth domain
 3. Ensure `FRONTEND_BASE_URL` is set correctly
@@ -354,11 +371,13 @@ SELECT * FROM "SocialAccount" WHERE "userId" = 'user-id-here';
 **Error**: OAuth buttons redirect to error page
 
 **Causes**:
+
 - Environment variables not set
 - Backend not restarted after setting variables
 - Docker container not seeing environment variables
 
 **Solutions**:
+
 1. Verify environment variables are set: `docker-compose exec backend env | grep GOOGLE`
 2. Restart backend container: `docker-compose restart backend`
 3. Check docker-compose.yml environment configuration
@@ -378,16 +397,19 @@ Before deploying social login to production:
 ### Security Considerations
 
 #### Account Security
+
 - **Email Verification**: OAuth accounts are linked by email address
 - **Account Takeover Protection**: Users must have access to the email address
 - **Multiple Providers**: Users can link multiple social accounts safely
 
 #### OAuth Security
+
 - **State Parameter**: OAuth requests include CSRF protection
 - **Secure Tokens**: OAuth tokens are not stored in local storage
 - **Session Security**: OAuth sessions follow same security as password logins
 
 #### Data Privacy
+
 - **Minimal Scopes**: Only request necessary permissions (profile, email)
 - **No Data Storage**: OAuth tokens are not permanently stored
 - **User Control**: Users can unlink social accounts (future feature)
@@ -411,7 +433,7 @@ Control whether public event listings are shown on the home page:
 - **Setting**: Show Public Event List
 - **Description**: When enabled, the home page displays a list of all active events for unauthenticated users
 - **Default**: Disabled (false)
-- **Impact**: 
+- **Impact**:
   - **Enabled**: Unauthenticated users see all events on the home page with links to public event pages
   - **Disabled**: Home page shows only login/registration options for unauthenticated users
 
@@ -429,6 +451,7 @@ System settings can also be managed via API:
 - **PATCH** `/api/admin/system/settings` - Update settings (SuperAdmin only)
 
 Example API usage:
+
 ```json
 PATCH /api/admin/system/settings
 {
@@ -448,6 +471,7 @@ SuperAdmins can view all events in the system:
 ### Event Details and Settings
 
 From the events list, SuperAdmins can:
+
 - **View event details**: Click on any event to see full information
 - **Manage invites**: Create and manage admin invite links
 - **View basic stats**: See user counts and activity summaries
@@ -457,6 +481,7 @@ From the events list, SuperAdmins can:
 SuperAdmins can access event management interfaces, but they **cannot** access event data (reports, detailed user information, etc.) unless they are explicitly assigned an event role.
 
 To access event data:
+
 1. Have an event admin assign you a role in the event
 2. Use the standard event interface (`/events/[slug]/`)
 
@@ -467,11 +492,13 @@ To access event data:
 The following endpoints are available for SuperAdmin system management:
 
 #### Event Management
+
 - `POST /api/admin/events` - Create new event
 - `GET /api/admin/events` - List all events
 - `GET /api/admin/events/:eventId` - Get specific event details
 
 #### Invite Management
+
 - `GET /api/admin/events/:eventId/invites` - List invites for an event
 - `POST /api/admin/events/:eventId/invites` - Create new admin invite
 - `PATCH /api/admin/events/:eventId/invites/:inviteId` - Update invite (disable/enable)
@@ -493,6 +520,7 @@ SuperAdmins can assign global roles (like creating additional SuperAdmins) throu
 ### Audit Logs
 
 SuperAdmins should regularly review audit logs for:
+
 - Event creation and deletion
 - Role assignments and changes
 - System access patterns
@@ -501,6 +529,7 @@ SuperAdmins should regularly review audit logs for:
 ### Database Health
 
 Monitor the PostgreSQL database for:
+
 - Storage usage and growth
 - Query performance
 - Connection limits
@@ -547,6 +576,7 @@ Monitor the PostgreSQL database for:
 ### Getting Help
 
 For system-level issues:
+
 1. Check the application logs
 2. Verify environment variables
 3. Test database connectivity
@@ -556,16 +586,19 @@ For system-level issues:
 ## Recent Updates
 
 ### Navigation Improvements
+
 - **New sidebar navigation**: Context-aware navigation that adapts to user roles
 - **Improved event switching**: Easier switching between system admin and personal contexts
 - **Mobile optimization**: Responsive navigation that works well on all devices
 
 ### Event Creation Workflow
+
 - **Simplified initial creation**: Only requires name, slug, and description
 - **Admin invite system**: Generate secure invite links for event organizers
 - **Inactive event state**: Events remain inactive until fully configured by admins
 
 ### Performance Optimizations
+
 - **Reduced API calls**: Optimized sidebar navigation to minimize server requests
 - **Better caching**: Improved session and role data management
 - **Faster loading**: Streamlined data fetching for better user experience
@@ -573,8 +606,9 @@ For system-level issues:
 ## Future Features
 
 Planned SuperAdmin features include:
+
 - Web-based user management interface
 - System analytics and reporting
 - Automated backup management
 - Advanced security monitoring
-- Bulk event management tools 
+- Bulk event management tools

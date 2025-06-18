@@ -22,21 +22,27 @@ Conducky uses a modern sidebar navigation that adapts to your role and current c
 Conducky organizes functionality into three distinct navigation contexts:
 
 #### 1. **Global Dashboard Context** (`/dashboard`)
+
 Your personal multi-event overview where you can:
+
 - View all events you belong to with role-based previews
 - Access cross-event reports and notifications
 - Manage your profile and settings
 - Switch between events
 
 #### 2. **Event Context** (`/events/[eventSlug]/`)
+
 Event-specific functionality when working within a particular event:
+
 - Event dashboard and reports
 - Team management (role-dependent)
 - Event settings (admin only)
 - Event-specific navigation adapts to your role
 
 #### 3. **System Admin Context** (`/admin/`)
+
 System-level management for SuperAdmins only:
+
 - Manage all events in the installation
 - System settings and configuration
 - User management across events
@@ -58,6 +64,7 @@ The sidebar navigation automatically adapts based on your current context and ro
 SuperAdmins have access to both system management and personal event participation:
 
 **System Admin Section** (always visible to SuperAdmins):
+
 - 🏠 **System Dashboard** (`/admin/dashboard`)
 - 🎯 **Events Management** (`/admin/events`)
   - All Events
@@ -66,6 +73,7 @@ SuperAdmins have access to both system management and personal event participati
 - ⚙️ **System Settings** (`/admin/system/settings`) - Configure global system settings
 
 **Personal Navigation** (same as regular users):
+
 - 🏠 **Home** (`/dashboard`)
 - 📋 **All Reports** (`/dashboard/reports`)
 - 🔔 **Notifications** (`/dashboard/notifications`)
@@ -76,11 +84,13 @@ SuperAdmins have access to both system management and personal event participati
 Event Admins see full event management capabilities:
 
 **Global Navigation**:
+
 - 🏠 **Home** (Dashboard)
 - 📋 **All Reports** (Cross-Event Reports Dashboard)
 - 🔔 **Notifications** (Notification Center)
 
 **Event Navigation** (when in `/events/[eventSlug]/`):
+
 - 🏠 **Event Dashboard**
 - 📋 **Reports**
   - All Reports
@@ -95,6 +105,7 @@ Event Admins see full event management capabilities:
   - Notifications
 
 **My Events Section**:
+
 - Event switcher dropdown
 - Quick access to all events you belong to
 - Role indication for each event
@@ -104,11 +115,13 @@ Event Admins see full event management capabilities:
 Responders see report management and team information:
 
 **Global Navigation**:
+
 - 🏠 **Home** (Dashboard)
 - 📋 **All Reports** (Cross-Event Reports Dashboard)
 - 🔔 **Notifications** (Notification Center)
 
 **Event Navigation**:
+
 - 🏠 **Event Dashboard**
 - 📋 **Reports**
   - All Reports
@@ -116,6 +129,7 @@ Responders see report management and team information:
 - 👥 **Team** (view only)
 
 **My Events Section**:
+
 - Event switcher with role indicators
 - Quick navigation between events
 
@@ -124,17 +138,20 @@ Responders see report management and team information:
 Reporters see basic event information and their own reports:
 
 **Global Navigation**:
+
 - 🏠 **Home** (Dashboard)
 - 📋 **All Reports** (Cross-Event Reports Dashboard)
 - 🔔 **Notifications** (Notification Center)
 
 **Event Navigation**:
+
 - 🏠 **Event Dashboard**
 - 📋 **Reports**
   - My Reports
   - Submit Report
 
 **My Events Section**:
+
 - Event switcher
 - Access to events where you're a reporter
 
@@ -161,6 +178,7 @@ The global dashboard (`/dashboard`) provides:
 ## URL Structure
 
 ### Global URLs
+
 - `/dashboard` - Multi-event overview
 - `/dashboard/reports` - All reports across events
 - `/dashboard/notifications` - Cross-event notifications
@@ -168,6 +186,7 @@ The global dashboard (`/dashboard`) provides:
 - `/profile/events` - Event membership management
 
 ### Event URLs
+
 - `/events/[eventSlug]/` - Public event page (no authentication required)
 - `/events/[eventSlug]/dashboard` - Event-specific dashboard
 - `/events/[eventSlug]/reports` - Event reports (role-scoped)
@@ -178,6 +197,7 @@ The global dashboard (`/dashboard`) provides:
 - `/events/[eventSlug]/code-of-conduct` - Public code of conduct page
 
 ### System Admin URLs
+
 - `/admin/dashboard` - System overview
 - `/admin/events` - Event management
 - `/admin/events/new` - Create new event
@@ -277,6 +297,7 @@ The navigation system has been optimized for performance:
 ### Getting Help
 
 For navigation issues:
+
 1. Check browser console for errors
 2. Verify your user roles and permissions
 3. Try refreshing the page or clearing cache
@@ -286,8 +307,9 @@ For navigation issues:
 ## Future Enhancements
 
 Planned navigation improvements include:
+
 - **Advanced search**: Global search across all accessible content
 - **Keyboard shortcuts**: Quick navigation using keyboard commands
 - **Customizable sidebar**: User-configurable navigation preferences
 - **Breadcrumb improvements**: Enhanced location awareness
-- **Accessibility enhancements**: Better screen reader support and keyboard navigation 
+- **Accessibility enhancements**: Better screen reader support and keyboard navigation

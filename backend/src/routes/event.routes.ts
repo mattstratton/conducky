@@ -1217,7 +1217,7 @@ router.patch('/slug/:slug/invites/:inviteId', requireRole(['Admin', 'SuperAdmin'
 router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug, reportId } = req.params;
-    const { body, visibility = 'public' } = req.body;
+    const { body, visibility = 'public', isMarkdown = false } = req.body;
     
     // Check authentication
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
@@ -1283,7 +1283,8 @@ router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', '
       reportId,
       authorId: user.id,
       body: body.trim(),
-      visibility: visibility as CommentVisibility
+      visibility: visibility as CommentVisibility,
+      isMarkdown: Boolean(isMarkdown)
     };
     
     const result = await commentService.createComment(commentData);
@@ -1315,6 +1316,9 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const visibility = req.query.visibility as string;
+    const search = req.query.search as string;
+    const sortBy = req.query.sortBy as 'createdAt' | 'updatedAt' | undefined;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
     
     // Check authentication
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
@@ -1379,7 +1383,10 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
     const result = await commentService.getReportComments(reportId, {
       page,
       limit,
-      visibility: requestedVisibility
+      visibility: requestedVisibility,
+      search,
+      sortBy,
+      sortOrder
     });
     
     if (!result.success) {

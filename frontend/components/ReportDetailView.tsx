@@ -13,15 +13,16 @@ export interface ReportDetailViewProps {
   report: any;
   user: any;
   userRoles?: string[];
-  comments?: any[];
+  comments?: any[]; // Deprecated - now fetched internally in CommentsSection
   evidenceFiles?: any[];
   adminMode?: boolean;
   loading?: boolean;
   error?: string;
+  eventSlug?: string; // Required for new CommentsSection
   onStateChange?: (e: ChangeEvent<HTMLSelectElement>) => void;
   onAssignmentChange?: () => void;
-  onCommentSubmit?: (body: string, visibility: string) => void;
-  onCommentEdit?: (comment: any, body: string, visibility: string) => void;
+  onCommentSubmit?: (body: string, visibility: string, isMarkdown?: boolean) => void;
+  onCommentEdit?: (comment: any, body: string, visibility: string, isMarkdown?: boolean) => void;
   onCommentDelete?: (comment: any) => void;
   onEvidenceUpload?: (files: File[]) => void;
   onEvidenceDelete?: (file: any) => void;
@@ -48,11 +49,12 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   report,
   user,
   userRoles = [],
-  comments = [],
+  comments = [], // Deprecated but kept for backward compatibility
   evidenceFiles = [],
   adminMode = false,
   loading = false,
   error = "",
+  eventSlug,
   onStateChange = () => {},
   onAssignmentChange = () => {},
   onCommentSubmit,
@@ -298,24 +300,27 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
         newEvidence={newEvidence}
         setNewEvidence={setNewEvidence}
       />
-      <CommentsSection
-        comments={comments}
-        user={user}
-        isResponderOrAbove={isResponderOrAbove}
-        editingCommentId={editingCommentId}
-        setEditingCommentId={setEditingCommentId}
-        editCommentBody={editCommentBody}
-        setEditCommentBody={setEditCommentBody}
-        editCommentVisibility={editCommentVisibility}
-        setEditCommentVisibility={setEditCommentVisibility}
-        onCommentEdit={onCommentEdit}
-        onCommentDelete={onCommentDelete}
-        onCommentSubmit={onCommentSubmit}
-        commentBody={commentBody}
-        setCommentBody={setCommentBody}
-        commentVisibility={commentVisibility}
-        setCommentVisibility={setCommentVisibility}
-      />
+      {eventSlug && (
+        <CommentsSection
+          reportId={report.id}
+          eventSlug={eventSlug}
+          user={user}
+          isResponderOrAbove={isResponderOrAbove}
+          editingCommentId={editingCommentId}
+          setEditingCommentId={setEditingCommentId}
+          editCommentBody={editCommentBody}
+          setEditCommentBody={setEditCommentBody}
+          editCommentVisibility={editCommentVisibility}
+          setEditCommentVisibility={setEditCommentVisibility}
+          onCommentEdit={onCommentEdit}
+          onCommentDelete={onCommentDelete}
+          onCommentSubmit={onCommentSubmit}
+          commentBody={commentBody}
+          setCommentBody={setCommentBody}
+          commentVisibility={commentVisibility}
+          setCommentVisibility={setCommentVisibility}
+        />
+      )}
     </Card>
   );
 };

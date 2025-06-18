@@ -119,9 +119,16 @@ _Checklist items with a GitHub issue are now linked for traceability._
 
 ## Phase 4.5: Planned/Requested Enhancements
 
-- [ ] Consider having direct links to a specific comment on an incident ([#39](https://github.com/mattstratton/conducky/issues/39))
-- [ ] Comments should support markdown and basic formatting ([#37](https://github.com/mattstratton/conducky/issues/37))
-- [ ] add filtering, pagination, and possibly search for comments on an incident ([#36](https://github.com/mattstratton/conducky/issues/36))
+### Comment System Improvements ([#75](https://github.com/mattstratton/conducky/issues/75))
+- [X] **Phase 1**: Add filtering, pagination, and possibly search for comments on an incident ([#36](https://github.com/mattstratton/conducky/issues/36)) ✅ **COMPLETE**
+- [X] **Phase 2**: Comments should support markdown and basic formatting ([#37](https://github.com/mattstratton/conducky/issues/37)) ✅ **COMPLETE**
+- [X] **Phase 3**: Consider having direct links to a specific comment on an incident ([#39](https://github.com/mattstratton/conducky/issues/39)) ✅ **SUBSTANTIALLY COMPLETE**
+  - [X] Comment permalinks with `#comment-{id}` URLs
+  - [X] Copy link functionality with visual feedback
+  - [X] Direct navigation to specific comments
+  - [X] Cross-page comment finding and navigation
+  - [X] Browser history and hash change support
+  - [X] Permission-scoped access (only users with event access can view)
 - [X] Add ability to add avatars ([#32](https://github.com/mattstratton/conducky/issues/32))
   - [X] Users can upload/remove avatars (PNG/JPG, max 2MB, stored as BLOBs in DB)
   - [X] Avatar displays in navbar, CoC team list, and report comments
