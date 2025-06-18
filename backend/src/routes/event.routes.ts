@@ -755,6 +755,86 @@ router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']),
   }
 });
 
+// Get individual user profile by event slug and user ID
+router.get('/slug/:slug/users/:userId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    
+    const result = await eventService.getEventUserProfile(slug, userId);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch user profile.' });
+  }
+});
+
+// Get user activity timeline by event slug and user ID
+router.get('/slug/:slug/users/:userId/activity', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const result = await eventService.getUserActivity(slug, userId, { page, limit });
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user activity error:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity.' });
+  }
+});
+
+// Get user's reports by event slug and user ID
+router.get('/slug/:slug/users/:userId/reports', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const type = req.query.type as string; // 'submitted' or 'assigned'
+    
+    const result = await eventService.getUserReports(slug, userId, { page, limit, type });
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch user reports.' });
+  }
+});
+
 // Get all reports for an event by slug
 router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {

@@ -26,6 +26,7 @@ const inMemoryStore = {
   userAvatars: [],
   passwordResetTokens: [],
   notifications: [],
+  reportComments: [],
 };
 
 class PrismaClient {
@@ -477,12 +478,154 @@ class PrismaClient {
         
         return results.length;
       }),
+      findFirst: jest.fn(({ where, orderBy }) => {
+        let results = [...inMemoryStore.reports];
+        
+        const applyWhereCondition = (results, condition) => {
+          if (condition.eventId) {
+            results = results.filter((r) => r.eventId === condition.eventId);
+          }
+          if (condition.id) {
+            results = results.filter((r) => r.id === condition.id);
+          }
+          if (condition.reporterId) {
+            results = results.filter((r) => r.reporterId === condition.reporterId);
+          }
+          if (condition.responderId) {
+            results = results.filter((r) => r.responderId === condition.responderId);
+          }
+          if (condition.state) {
+            results = results.filter((r) => r.state === condition.state);
+          }
+          if (condition.type) {
+            results = results.filter((r) => r.type === condition.type);
+          }
+          if (condition.urgency) {
+            results = results.filter((r) => r.urgency === condition.urgency);
+          }
+          if (condition.createdAt) {
+            if (condition.createdAt.gte) {
+              results = results.filter((r) => new Date(r.createdAt) >= new Date(condition.createdAt.gte));
+            }
+            if (condition.createdAt.lte) {
+              results = results.filter((r) => new Date(r.createdAt) <= new Date(condition.createdAt.lte));
+            }
+          }
+          if (condition.OR) {
+            results = results.filter(r => {
+              return condition.OR.some(orCondition => {
+                if (orCondition.title && orCondition.title.contains) {
+                  return r.title.toLowerCase().includes(orCondition.title.contains.toLowerCase());
+                }
+                if (orCondition.description && orCondition.description.contains) {
+                  return r.description.toLowerCase().includes(orCondition.description.contains.toLowerCase());
+                }
+                return false;
+              });
+            });
+          }
+          
+          return results;
+        };
+        
+        // Apply same where filters as findMany
+        if (where) {
+          if (where.AND) {
+            // Handle AND clauses - apply each condition sequentially
+            for (const condition of where.AND) {
+              results = applyWhereCondition(results, condition);
+            }
+          } else {
+            // Handle direct where conditions
+            results = applyWhereCondition(results, where);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        return results[0] || null;
+      }),
     };
     this.auditLog = {
       create: jest.fn(({ data }) => {
         const log = { id: String(inMemoryStore.auditLogs.length + 1), ...data };
         inMemoryStore.auditLogs.push(log);
         return log;
+      }),
+      findMany: jest.fn(({ where, orderBy, skip, take }) => {
+        let results = [...inMemoryStore.auditLogs];
+        
+        if (where) {
+          if (where.userId) {
+            results = results.filter((log) => log.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter((log) => log.eventId === where.eventId);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        // Apply pagination
+        if (skip) {
+          results = results.slice(skip);
+        }
+        if (take) {
+          results = results.slice(0, take);
+        }
+        
+        return results;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.auditLogs];
+        
+        if (where) {
+          if (where.userId) {
+            results = results.filter((log) => log.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter((log) => log.eventId === where.eventId);
+          }
+        }
+        
+        return results.length;
+      }),
+      findFirst: jest.fn(({ where, orderBy }) => {
+        let results = [...inMemoryStore.auditLogs];
+        
+        if (where) {
+          if (where.userId) {
+            results = results.filter((log) => log.userId === where.userId);
+          }
+          if (where.eventId) {
+            results = results.filter((log) => log.eventId === where.eventId);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        return results[0] || null;
       }),
     };
     this.eventLogo = {
@@ -825,6 +968,97 @@ class PrismaClient {
           }
           return result;
         });
+      }),
+    };
+    this.reportComment = {
+      findMany: jest.fn(({ where, orderBy, skip, take, include }) => {
+        let results = [...inMemoryStore.reportComments];
+        
+        if (where) {
+          if (where.reportId) {
+            results = results.filter((comment) => comment.reportId === where.reportId);
+          }
+          if (where.userId) {
+            results = results.filter((comment) => comment.userId === where.userId);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        // Apply pagination
+        if (skip) {
+          results = results.slice(skip);
+        }
+        if (take) {
+          results = results.slice(0, take);
+        }
+        
+        // Apply includes
+        if (include) {
+          results = results.map(comment => {
+            const result = { ...comment };
+            if (include.user) {
+              result.user = inMemoryStore.users.find(u => u.id === comment.userId) || null;
+            }
+            return result;
+          });
+        }
+        
+        return results;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.reportComments];
+        
+        if (where) {
+          if (where.reportId) {
+            results = results.filter((comment) => comment.reportId === where.reportId);
+          }
+          if (where.userId) {
+            results = results.filter((comment) => comment.userId === where.userId);
+          }
+        }
+        
+        return results.length;
+      }),
+      create: jest.fn(({ data }) => {
+        const comment = {
+          id: `c${inMemoryStore.reportComments.length + 1}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...data,
+        };
+        inMemoryStore.reportComments.push(comment);
+        return comment;
+      }),
+      findFirst: jest.fn(({ where, orderBy }) => {
+        let results = [...inMemoryStore.reportComments];
+        
+        if (where) {
+          if (where.reportId) {
+            results = results.filter((comment) => comment.reportId === where.reportId);
+          }
+          if (where.userId) {
+            results = results.filter((comment) => comment.userId === where.userId);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        return results[0] || null;
       }),
     };
     

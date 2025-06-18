@@ -741,4 +741,293 @@ export class EventService {
       };
     }
   }
+
+  /**
+   * Get individual user profile for an event
+   */
+  async getEventUserProfile(slug: string, userId: string): Promise<ServiceResult<{ user: any; roles: string[]; joinDate: Date; lastActivity: Date | null }>> {
+    try {
+      const eventId = await this.getEventIdBySlug(slug);
+      if (!eventId) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      // Get user details with their roles in this event
+      const userEventRoles = await this.prisma.userEventRole.findMany({
+        where: { userId, eventId },
+        select: {
+          id: true,
+          role: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              createdAt: true,
+              avatar: true
+            }
+          }
+        }
+      });
+
+      if (userEventRoles.length === 0) {
+        return {
+          success: false,
+          error: 'User not found in this event.'
+        };
+      }
+
+      const user = userEventRoles[0].user;
+      const roles = userEventRoles.map(uer => uer.role.name);
+      // Use user's createdAt as join date since UserEventRole doesn't have createdAt
+      const joinDate = user.createdAt;
+
+      // Get last activity (most recent report, comment, or audit log)
+      const [lastReport, lastComment, lastAuditLog] = await Promise.all([
+        this.prisma.report.findFirst({
+          where: { reporterId: userId, eventId },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true }
+        }),
+        this.prisma.reportComment.findFirst({
+          where: { 
+            authorId: userId,
+            report: { eventId }
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true }
+        }),
+        this.prisma.auditLog.findFirst({
+          where: { userId, eventId },
+          orderBy: { timestamp: 'desc' },
+          select: { timestamp: true }
+        })
+      ]);
+
+      const activities = [
+        lastReport?.createdAt,
+        lastComment?.createdAt,
+        lastAuditLog?.timestamp
+      ].filter(Boolean);
+
+      const lastActivity = activities.length > 0 ? new Date(Math.max(...activities.map(d => d!.getTime()))) : null;
+
+      return {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar
+          },
+          roles,
+          joinDate,
+          lastActivity
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting user profile:', error);
+      return {
+        success: false,
+        error: 'Failed to get user profile.'
+      };
+    }
+  }
+
+  /**
+   * Get user activity timeline for an event
+   */
+  async getUserActivity(slug: string, userId: string, options: { page: number; limit: number }): Promise<ServiceResult<{ activities: any[]; total: number }>> {
+    try {
+      const eventId = await this.getEventIdBySlug(slug);
+      if (!eventId) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      const { page, limit } = options;
+      const offset = (page - 1) * limit;
+
+      // Get various activity types
+      const [reports, comments, auditLogs] = await Promise.all([
+        this.prisma.report.findMany({
+          where: { reporterId: userId, eventId },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            state: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+        this.prisma.reportComment.findMany({
+          where: { 
+            authorId: userId,
+            report: { eventId }
+          },
+          select: {
+            id: true,
+            body: true,
+            createdAt: true,
+            report: {
+              select: {
+                id: true,
+                title: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+        this.prisma.auditLog.findMany({
+          where: { userId, eventId },
+          select: {
+            id: true,
+            action: true,
+            targetType: true,
+            targetId: true,
+            timestamp: true
+          },
+          orderBy: { timestamp: 'desc' }
+        })
+      ]);
+
+      // Combine and sort all activities
+      const activities = [
+        ...reports.map(r => ({
+          id: r.id,
+          type: 'report',
+          action: 'submitted',
+          title: r.title,
+          details: { type: r.type, state: r.state },
+          timestamp: r.createdAt
+        })),
+        ...comments.map(c => ({
+          id: c.id,
+          type: 'comment',
+          action: 'commented',
+          title: `Comment on "${c.report.title}"`,
+          details: { body: c.body.substring(0, 100) + (c.body.length > 100 ? '...' : '') },
+          timestamp: c.createdAt
+        })),
+        ...auditLogs.map(a => ({
+          id: a.id,
+          type: 'audit',
+          action: a.action,
+          title: `${a.action} ${a.targetType}`,
+          details: { targetType: a.targetType, targetId: a.targetId },
+          timestamp: a.timestamp
+        }))
+      ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      const total = activities.length;
+      const paginatedActivities = activities.slice(offset, offset + limit);
+
+      return {
+        success: true,
+        data: {
+          activities: paginatedActivities,
+          total
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting user activity:', error);
+      return {
+        success: false,
+        error: 'Failed to get user activity.'
+      };
+    }
+  }
+
+  /**
+   * Get user's reports for an event
+   */
+  async getUserReports(slug: string, userId: string, options: { page: number; limit: number; type?: string }): Promise<ServiceResult<{ reports: any[]; total: number }>> {
+    try {
+      const eventId = await this.getEventIdBySlug(slug);
+      if (!eventId) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      const { page, limit, type } = options;
+      const offset = (page - 1) * limit;
+
+      let whereClause: any = { eventId };
+
+      if (type === 'submitted') {
+        whereClause.reporterId = userId;
+      } else if (type === 'assigned') {
+        whereClause.assignedResponderId = userId;
+      } else {
+        // Default: both submitted and assigned
+        whereClause.OR = [
+          { reporterId: userId },
+          { assignedResponderId: userId }
+        ];
+      }
+
+      const [reports, total] = await Promise.all([
+        this.prisma.report.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            state: true,
+            severity: true,
+            createdAt: true,
+            updatedAt: true,
+            reporter: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            assignedResponder: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limit
+        }),
+        this.prisma.report.count({
+          where: whereClause
+        })
+      ]);
+
+      return {
+        success: true,
+        data: {
+          reports,
+          total
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting user reports:', error);
+      return {
+        success: false,
+        error: 'Failed to get user reports.'
+      };
+    }
+  }
 } 
