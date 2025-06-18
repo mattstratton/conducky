@@ -92,23 +92,42 @@ function Login() {
           const data: SessionResponse = await sessionRes.json();
           setUser(data.user);
         }
-        // If nextUrl is an invite redeem page, redirect to the event page instead
+        // If nextUrl is an invite redeem page, redeem the invite first
         if (nextUrl && nextUrl.startsWith('/invite/')) {
           // Extract invite code from nextUrl
           const code = nextUrl.split('/invite/')[1]?.split('/')[0];
           if (code) {
-            // Fetch invite details to get event slug
             try {
-              const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/invites/${code}`);
-              if (inviteRes.ok) {
-                const inviteData: InviteResponse = await inviteRes.json();
-                const eventSlug = inviteData?.event?.slug;
+              // First redeem the invite
+              const redeemRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/invites/${code}/redeem`, {
+                method: 'POST',
+                credentials: 'include',
+              });
+              
+              if (redeemRes.ok) {
+                const redeemData = await redeemRes.json();
+                const eventSlug = redeemData?.eventSlug;
                 if (eventSlug) {
                   router.push(`/events/${eventSlug}/dashboard`);
                   return;
                 }
+              } else {
+                // If redemption fails, still try to get event slug for redirect
+                // This handles cases where user is already a member (409 conflict)
+                const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/invites/${code}`);
+                if (inviteRes.ok) {
+                  const inviteData: InviteResponse = await inviteRes.json();
+                  const eventSlug = inviteData?.event?.slug;
+                  if (eventSlug) {
+                    router.push(`/events/${eventSlug}/dashboard`);
+                    return;
+                  }
+                }
               }
-            } catch { /* Ignore errors and fallback to normal redirect */ }
+            } catch (error) {
+              console.error('Error redeeming invite:', error);
+              // Fallback to normal redirect
+            }
           }
         }
         router.push(nextUrl);

@@ -88,7 +88,7 @@ export default function Register() {
       setCheckingEmail(true);
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/check-email?email=${encodeURIComponent(email)}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/check-email?email=${encodeURIComponent(email)}`,
           { credentials: 'include' }
         );
         if (response.ok) {
@@ -162,7 +162,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/register`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/register`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
