@@ -31,6 +31,183 @@ const uploadEvidence = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 });
 
+// ========================================
+// SLUG-BASED ROUTES (must come first to avoid conflicts with :eventId routes)
+// ========================================
+
+// Get event users (by slug)
+router.get('/slug/:slug/users', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const query = {
+      search: req.query.search as string,
+      sort: req.query.sort as string,
+      order: req.query.order as string,
+      page: req.query.page ? parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      role: req.query.role as string
+    };
+    
+    const result = await eventService.getEventUsersBySlug(slug, query);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event users error:', error);
+    res.status(500).json({ error: 'Failed to fetch event users.' });
+  }
+});
+
+// Get individual user profile by event slug and user ID
+router.get('/slug/:slug/users/:userId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    
+    const result = await eventService.getEventUserProfile(slug, userId);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch user profile.' });
+  }
+});
+
+// Get user activity timeline by event slug and user ID
+router.get('/slug/:slug/users/:userId/activity', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const result = await eventService.getUserActivity(slug, userId, { page, limit });
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user activity error:', error);
+    res.status(500).json({ error: 'Failed to fetch user activity.' });
+  }
+});
+
+// Get user's reports by event slug and user ID
+router.get('/slug/:slug/users/:userId/reports', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const type = req.query.type as string; // 'submitted' or 'assigned'
+    
+    const result = await eventService.getUserReports(slug, userId, { page, limit, type });
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get user reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch user reports.' });
+  }
+});
+
+// Update event user (by slug)
+router.patch('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    const { name, email, role } = req.body;
+    
+    if (!name || !email || !role) {
+      res.status(400).json({ error: 'Name, email, and role are required.' });
+      return;
+    }
+    
+    const updateData = { name, email, role };
+    
+    const result = await eventService.updateEventUser(slug, userId, updateData);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json({ message: 'User updated.' });
+  } catch (error: any) {
+    console.error('Update event user error:', error);
+    res.status(500).json({ error: 'Failed to update event user.' });
+  }
+});
+
+// Remove user from event (by slug)
+router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug, userId } = req.params;
+    
+    const result = await eventService.removeEventUser(slug, userId);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
+        res.status(403).json({ error: result.error });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json({ message: 'User removed from event.' });
+  } catch (error: any) {
+    console.error('Remove user from event error:', error);
+    res.status(500).json({ error: 'Failed to remove user from event.' });
+  }
+});
+
+// ========================================
+// EVENT ID-BASED ROUTES
+// ========================================
+
 // Create event
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -663,175 +840,6 @@ router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Re
   } catch (error: any) {
     console.error('Event update error:', error);
     res.status(500).json({ error: 'Failed to update event.' });
-  }
-});
-
-// Get event users (by slug)
-router.get('/slug/:slug/users', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug } = req.params;
-    const query = {
-      search: req.query.search as string,
-      sort: req.query.sort as string,
-      order: req.query.order as string,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
-      role: req.query.role as string
-    };
-    
-    const result = await eventService.getEventUsersBySlug(slug, query);
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else {
-        res.status(500).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json(result.data);
-  } catch (error: any) {
-    console.error('Get event users error:', error);
-    res.status(500).json({ error: 'Failed to fetch event users.' });
-  }
-});
-
-// Update event user (by slug)
-router.patch('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug, userId } = req.params;
-    const { name, email, role } = req.body;
-    
-    if (!name || !email || !role) {
-      res.status(400).json({ error: 'Name, email, and role are required.' });
-      return;
-    }
-    
-    const updateData = { name, email, role };
-    
-    const result = await eventService.updateEventUser(slug, userId, updateData);
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json({ message: 'User updated.' });
-  } catch (error: any) {
-    console.error('Update event user error:', error);
-    res.status(500).json({ error: 'Failed to update event user.' });
-  }
-});
-
-// Remove user from event (by slug)
-router.delete('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug, userId } = req.params;
-    
-    const result = await eventService.removeEventUser(slug, userId);
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(400).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json({ message: 'User removed from event.' });
-  } catch (error: any) {
-    console.error('Remove user from event error:', error);
-    res.status(500).json({ error: 'Failed to remove user from event.' });
-  }
-});
-
-// Get individual user profile by event slug and user ID
-router.get('/slug/:slug/users/:userId', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug, userId } = req.params;
-    
-    const result = await eventService.getEventUserProfile(slug, userId);
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(500).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json(result.data);
-  } catch (error: any) {
-    console.error('Get user profile error:', error);
-    res.status(500).json({ error: 'Failed to fetch user profile.' });
-  }
-});
-
-// Get user activity timeline by event slug and user ID
-router.get('/slug/:slug/users/:userId/activity', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug, userId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    
-    const result = await eventService.getUserActivity(slug, userId, { page, limit });
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(500).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json(result.data);
-  } catch (error: any) {
-    console.error('Get user activity error:', error);
-    res.status(500).json({ error: 'Failed to fetch user activity.' });
-  }
-});
-
-// Get user's reports by event slug and user ID
-router.get('/slug/:slug/users/:userId/reports', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { slug, userId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const type = req.query.type as string; // 'submitted' or 'assigned'
-    
-    const result = await eventService.getUserReports(slug, userId, { page, limit, type });
-    
-    if (!result.success) {
-      if (result.error?.includes('not found')) {
-        res.status(404).json({ error: result.error });
-      } else if (result.error?.includes('Forbidden') || result.error?.toLowerCase().includes('insufficient')) {
-        res.status(403).json({ error: result.error });
-      } else {
-        res.status(500).json({ error: result.error });
-      }
-      return;
-    }
-
-    res.json(result.data);
-  } catch (error: any) {
-    console.error('Get user reports error:', error);
-    res.status(500).json({ error: 'Failed to fetch user reports.' });
   }
 });
 

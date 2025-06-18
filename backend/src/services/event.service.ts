@@ -24,6 +24,8 @@ export interface EventUser {
   name: string;
   roles: string[];
   avatarUrl: string | null;
+  joinDate: Date;
+  lastActivity: Date;
 }
 
 export interface EventUsersQuery {
@@ -394,6 +396,7 @@ export class EventService {
       const limitNum = Math.max(1, parseInt(limit.toString(), 10) || 10);
 
       const eventId = await this.getEventIdBySlug(slug);
+      
       if (!eventId) {
         return {
           success: false,
@@ -437,6 +440,8 @@ export class EventService {
             name: uer.user.name,
             roles: [],
             avatarUrl: avatar ? `/users/${uer.user.id}/avatar` : null,
+            joinDate: uer.user.createdAt,
+            lastActivity: uer.user.updatedAt,
           };
         }
         users[uer.userId].roles.push(uer.role.name);

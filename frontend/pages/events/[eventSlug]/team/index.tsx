@@ -35,9 +35,19 @@ export default function EventTeam() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Check if current user has admin permissions
   const isAdmin = user && ['Admin', 'SuperAdmin'].some(role => 
@@ -53,7 +63,7 @@ export default function EventTeam() {
         setError(null);
 
         const params = new URLSearchParams({
-          search: searchTerm,
+          search: debouncedSearchTerm,
           role: roleFilter === 'all' ? '' : roleFilter,
           sort: sortBy,
           order: sortOrder,
@@ -61,7 +71,8 @@ export default function EventTeam() {
           limit: '50'
         });
 
-        const response = await fetch(`/api/events/slug/${eventSlug}/users?${params}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const response = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users?${params}`, {
           credentials: 'include'
         });
 
@@ -85,11 +96,12 @@ export default function EventTeam() {
     };
 
     fetchTeamMembers();
-  }, [eventSlug, searchTerm, roleFilter, sortBy, sortOrder]);
+  }, [eventSlug, debouncedSearchTerm, roleFilter, sortBy, sortOrder]);
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
-      const response = await fetch(`/api/events/slug/${eventSlug}/users/${userId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +128,8 @@ export default function EventTeam() {
     }
 
     try {
-      const response = await fetch(`/api/events/slug/${eventSlug}/users/${userId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -225,13 +238,13 @@ export default function EventTeam() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
           <div>
-            <h1 className="text-2xl font-bold">Team Members</h1>
-            <p className="text-gray-600 mt-1">Manage team members and their roles</p>
+            <h1 className="text-2xl font-bold">Users</h1>
+            <p className="text-gray-600 mt-1">Manage event users and their roles</p>
           </div>
           {isAdmin && (
             <Button onClick={() => router.push(`/events/${eventSlug}/team/invite`)}>
               <UserPlusIcon className="h-4 w-4 mr-2" />
-              Invite Members
+              Invite Users
             </Button>
           )}
         </div>
@@ -244,7 +257,7 @@ export default function EventTeam() {
                 <div className="relative">
                   <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Search team members..."
+                    placeholder="Search users..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -285,16 +298,16 @@ export default function EventTeam() {
         {/* Team Members Table */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Team Members ({members.length})</CardTitle>
+            <CardTitle>Users ({members.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {members.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No team members found.</p>
+                <p className="text-gray-500 mb-4">No users found.</p>
                 {isAdmin && (
                   <Button onClick={() => router.push(`/events/${eventSlug}/team/invite`)}>
                     <UserPlusIcon className="h-4 w-4 mr-2" />
-                    Invite the first member
+                    Invite the first user
                   </Button>
                 )}
               </div>
@@ -317,7 +330,10 @@ export default function EventTeam() {
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-8 w-8">
                             {member.avatarUrl ? (
-                              <AvatarImage src={member.avatarUrl} alt={member.name} />
+                              <AvatarImage 
+                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api${member.avatarUrl}`} 
+                                alt={member.name} 
+                              />
                             ) : null}
                             <AvatarFallback>
                               {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}

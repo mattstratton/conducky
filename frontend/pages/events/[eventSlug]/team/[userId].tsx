@@ -13,10 +13,7 @@ interface UserProfile {
     id: string;
     name: string;
     email: string;
-    avatar?: {
-      filename: string;
-      data: string;
-    };
+    avatarUrl?: string;
   };
   roles: string[];
   joinDate: string;
@@ -65,8 +62,10 @@ export default function TeamMemberProfile() {
         setLoading(true);
         setError(null);
 
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
         // Fetch user profile
-        const profileRes = await fetch(`/api/events/slug/${eventSlug}/users/${userId}`, {
+        const profileRes = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}`, {
           credentials: 'include'
         });
 
@@ -86,7 +85,7 @@ export default function TeamMemberProfile() {
         setProfile(profileData);
 
         // Fetch user activity
-        const activityRes = await fetch(`/api/events/slug/${eventSlug}/users/${userId}/activity?page=1&limit=10`, {
+        const activityRes = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}/activity?page=1&limit=10`, {
           credentials: 'include'
         });
 
@@ -96,7 +95,7 @@ export default function TeamMemberProfile() {
         }
 
         // Fetch user reports
-        const reportsRes = await fetch(`/api/events/slug/${eventSlug}/users/${userId}/reports?page=1&limit=10`, {
+        const reportsRes = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}/reports?page=1&limit=10`, {
           credentials: 'include'
         });
 
@@ -136,11 +135,11 @@ export default function TeamMemberProfile() {
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'superadmin': return 'bg-red-100 text-red-800 border-red-200';
-      case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'responder': return 'bg-green-100 text-green-800 border-green-200';
-      case 'reporter': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'superadmin': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
+      case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800';
+      case 'responder': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+      case 'reporter': return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
@@ -155,11 +154,11 @@ export default function TeamMemberProfile() {
 
   const getStateColor = (state: string) => {
     switch (state.toLowerCase()) {
-      case 'submitted': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'submitted': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+      case 'closed': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
   };
 
@@ -196,8 +195,8 @@ export default function TeamMemberProfile() {
           <Card className="mt-6">
             <CardContent className="p-6">
               <div className="text-center">
-                <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
-                <p className="text-gray-600 mb-4">{error}</p>
+                <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Error</h2>
+                <p className="text-muted-foreground mb-4">{error}</p>
                 <Button onClick={() => router.back()}>Go Back</Button>
               </div>
             </CardContent>
@@ -221,12 +220,12 @@ export default function TeamMemberProfile() {
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
               <Avatar className="h-20 w-20">
-                {profile.user.avatar ? (
+                {profile.user.avatarUrl && (
                   <AvatarImage 
-                    src={`data:image/jpeg;base64,${profile.user.avatar.data}`} 
+                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api${profile.user.avatarUrl}`} 
                     alt={profile.user.name} 
                   />
-                ) : null}
+                )}
                 <AvatarFallback className="text-lg">
                   {profile.user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </AvatarFallback>
@@ -234,7 +233,7 @@ export default function TeamMemberProfile() {
               
               <div className="flex-1">
                 <h1 className="text-2xl font-bold mb-2">{profile.user.name}</h1>
-                <p className="text-gray-600 mb-3">{profile.user.email}</p>
+                <p className="text-muted-foreground mb-3">{profile.user.email}</p>
                 
                 <div className="flex flex-wrap gap-2 mb-4">
                   {profile.roles.map((role) => (
@@ -246,14 +245,14 @@ export default function TeamMemberProfile() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center space-x-2">
-                    <CalendarIcon className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Joined:</span>
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Joined:</span>
                     <span>{formatDate(profile.joinDate)}</span>
                   </div>
                   {profile.lastActivity && (
                     <div className="flex items-center space-x-2">
-                      <ClockIcon className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-600">Last active:</span>
+                      <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Last active:</span>
                       <span>{formatDateTime(profile.lastActivity)}</span>
                     </div>
                   )}
@@ -280,7 +279,7 @@ export default function TeamMemberProfile() {
                 <CardContent>
                   <div className="space-y-3">
                     {profile.roles.map((role) => (
-                      <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={role} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <span className="font-medium">{role}</span>
                         <Badge className={getRoleColor(role)}>{role}</Badge>
                       </div>
@@ -296,15 +295,15 @@ export default function TeamMemberProfile() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total Reports:</span>
+                      <span className="text-muted-foreground">Total Reports:</span>
                       <span className="font-medium">{reports.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Recent Activities:</span>
+                      <span className="text-muted-foreground">Recent Activities:</span>
                       <span className="font-medium">{activities.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Member Since:</span>
+                      <span className="text-muted-foreground">Member Since:</span>
                       <span className="font-medium">{formatDate(profile.joinDate)}</span>
                     </div>
                   </div>
@@ -320,21 +319,21 @@ export default function TeamMemberProfile() {
               </CardHeader>
               <CardContent>
                 {activities.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No recent activity found.</p>
+                  <p className="text-muted-foreground text-center py-8">No recent activity found.</p>
                 ) : (
                   <div className="space-y-4">
                     {activities.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
+                      <div key={activity.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50">
                         <div className="flex-shrink-0 mt-1">
                           {getActivityIcon(activity.type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium">{activity.title}</p>
-                          <p className="text-sm text-gray-600 mt-1">{activity.action}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{activity.action}</p>
                           {activity.details && activity.details.body && (
-                            <p className="text-sm text-gray-500 mt-1">{activity.details.body}</p>
+                            <p className="text-sm text-muted-foreground/80 mt-1">{activity.details.body}</p>
                           )}
-                          <p className="text-xs text-gray-400 mt-2">{formatDateTime(activity.timestamp)}</p>
+                          <p className="text-xs text-muted-foreground/60 mt-2">{formatDateTime(activity.timestamp)}</p>
                         </div>
                       </div>
                     ))}
@@ -351,11 +350,11 @@ export default function TeamMemberProfile() {
               </CardHeader>
               <CardContent>
                 {reports.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No reports found.</p>
+                  <p className="text-muted-foreground text-center py-8">No reports found.</p>
                 ) : (
                   <div className="space-y-4">
                     {reports.map((report) => (
-                      <div key={report.id} className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                      <div key={report.id} className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
                            onClick={() => router.push(`/events/${eventSlug}/reports/${report.id}`)}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -368,7 +367,7 @@ export default function TeamMemberProfile() {
                               )}
                             </div>
                           </div>
-                          <span className="text-sm text-gray-500">{formatDate(report.createdAt)}</span>
+                          <span className="text-sm text-muted-foreground">{formatDate(report.createdAt)}</span>
                         </div>
                       </div>
                     ))}

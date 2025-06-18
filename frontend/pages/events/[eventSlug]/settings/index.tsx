@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { Card } from "../../../../components/ui/card";
 import { EventMetaEditor } from "../../../../components/EventMetaEditor";
-import { InviteManager } from "../../../../components/InviteManager";
 import { UserManager } from "../../../../components/UserManager";
 
 interface User {
@@ -61,17 +60,7 @@ export default function EventAdminPage() {
       });
   };
 
-  const fetchInvites = () => {
-    if (!eventSlug) return;
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/events/slug/${eventSlug}/invites`, { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { invites: [] }))
-      .then(() => {
-        // InviteManager now handles invites
-      })
-      .catch(() => {
-        // InviteManager now handles invites
-      });
-  };
+
 
   useEffect(() => {
     if (!eventSlug) return;
@@ -102,7 +91,6 @@ export default function EventAdminPage() {
       .catch(() => setUserEventRoles([]));
     
     fetchEventUsers();
-    fetchInvites();
     fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/logo`, { method: "HEAD" })
       .then((res) => setLogoExists(res.ok))
       .catch(() => setLogoExists(false));
@@ -224,10 +212,6 @@ export default function EventAdminPage() {
         {/* User Management */}
         {event && (
           <UserManager eventSlug={event.slug} rolesList={rolesList} />
-        )}
-        {/* Invite Management */}
-        {event && (
-          <InviteManager eventSlug={event.slug} rolesList={rolesList} />
         )}
         <Link href={`/events/${eventSlug}/dashboard`} className="text-blue-600 hover:underline">← Back to Event</Link>
       </Card>

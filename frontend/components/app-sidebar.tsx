@@ -289,25 +289,24 @@ export function AppSidebar({ user, events, ...props }: {
           },
         ];
 
-        // Team section (Responders and Admins only)
+        // Users section (Responders and Admins only)
         if (isEventResponder) {
           const teamItems = [
             {
-              title: "Team Members",
+              title: "User List",
               url: `/events/${targetEventSlug}/team`,
             },
           ];
 
-          // Send Invites only for Admins
           if (isEventAdmin) {
             teamItems.push({
-              title: "Send Invites",
+              title: "Invite Users",
               url: `/events/${targetEventSlug}/team/invite`,
             });
           }
 
           eventNavItems.push({
-            title: "Team",
+            title: "Users",
             url: `/events/${targetEventSlug}/team`,
             icon: Users,
             items: teamItems,
