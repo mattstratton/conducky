@@ -47,6 +47,14 @@ export default function RedeemInvitePage() {
       .finally(() => setLoading(false));
   }, [code]);
 
+  // Auto-redeem invite for authenticated users (e.g., after OAuth login)
+  useEffect(() => {
+    if (user && invite && event && !success && !error && !redeeming) {
+      // Automatically redeem the invite for authenticated users
+      handleRedeem();
+    }
+  }, [user, invite, event, success, error, redeeming]);
+
   // Handle redeem
   const handleRedeem = async () => {
     setRedeeming(true);
@@ -121,7 +129,7 @@ export default function RedeemInvitePage() {
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              By joining, you'll be added as a <strong>Reporter</strong> to {event?.name}
+              By joining, you&apos;ll be added as a <strong>Reporter</strong> to {event?.name}
             </div>
           </CardContent>
         </Card>
