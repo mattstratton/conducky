@@ -7,7 +7,8 @@ Follow the [Social Login Configuration guide](website/docs/admin-guide/system-ma
 
 - [ ] **Google OAuth App**:
   - [ ] Created Google Cloud project
-  - [ ] Enabled Google+ API
+  - [ ] Enabled Google Identity Services API (or Google+ API if available)
+  - [ ] Configured OAuth consent screen
   - [ ] Created OAuth 2.0 credentials
   - [ ] Added redirect URI: `http://localhost:4000/api/auth/google/callback`
   - [ ] Copied Client ID and Client Secret

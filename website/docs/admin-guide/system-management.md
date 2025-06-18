@@ -120,11 +120,12 @@ Before configuring social login, you'll need:
 2. Create a new project or select an existing one
 3. In the project dashboard, ensure you're in the correct project
 
-#### Step 2: Enable Google+ API
+#### Step 2: Enable Google Identity Services API
 
 1. Navigate to **APIs & Services → Library**
-2. Search for "Google+ API" 
-3. Click on "Google+ API" and click **"Enable"**
+2. Search for "Google Identity Services API" 
+3. Click on "Google Identity Services API" and click **"Enable"**
+4. Alternatively, you can also enable "Google+ API" if available, but Google Identity Services is the modern approach
 
 #### Step 3: Create OAuth 2.0 Credentials
 
@@ -136,7 +137,9 @@ Before configuring social login, you'll need:
      - App name: "Conducky" (or your installation name)
      - User support email: Your admin email
      - Developer contact information: Your admin email
-   - **Scopes**: Add `../auth/userinfo.email` and `../auth/userinfo.profile`
+   - **Scopes**: Add the following scopes:
+     - `../auth/userinfo.email` (to access user's email address)
+     - `../auth/userinfo.profile` (to access user's basic profile info)
    - **Test users**: Add your test email addresses
 4. Return to create OAuth 2.0 Client ID:
    - **Application type**: Web application
