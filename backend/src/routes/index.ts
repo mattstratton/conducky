@@ -4,6 +4,7 @@ import eventRoutes from './event.routes';
 import inviteRoutes from './invite.routes';
 import reportRoutes from './report.routes';
 import notificationRoutes from './notification.routes';
+import adminRoutes from './admin.routes';
 
 export {
   authRoutes,
@@ -11,5 +12,6 @@ export {
   eventRoutes,
   inviteRoutes,
   reportRoutes,
-  notificationRoutes
+  notificationRoutes,
+  adminRoutes
 }; 

@@ -148,19 +148,41 @@ export function AppSidebar({ user, events, ...props }: {
     }> = [];
     let shouldShowEventNav = false;
 
-    if (isSystemAdmin && isSuperAdmin) {
-      // System Admin Navigation (replaces everything)
-      globalNavItems = [
+    // Global Navigation (always visible)
+    globalNavItems = [
+      {
+        title: "Home",
+        url: "/dashboard",
+        icon: Home,
+        isActive: router.asPath === "/dashboard",
+      },
+      {
+        title: "All Reports",
+        url: "/dashboard/reports",
+        icon: ClipboardList,
+      },
+      {
+        title: "Notifications",
+        url: "/dashboard/notifications",
+        icon: BookOpen,
+        badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
+      },
+    ];
+
+    // Add System Admin Navigation for SuperAdmins (always visible)
+    if (isSuperAdmin) {
+      globalNavItems.push(
         {
           title: "System Dashboard",
           url: "/admin/dashboard",
-          icon: Home,
+          icon: Shield,
           isActive: router.asPath === "/admin/dashboard",
         },
         {
           title: "Events Management",
           url: "/admin/events",
-          icon: Users,
+          icon: UserCog,
+          isActive: router.asPath.startsWith("/admin/events"),
           items: [
             {
               title: "All Events",
@@ -194,43 +216,9 @@ export function AppSidebar({ user, events, ...props }: {
               url: "/admin/system/logs",
             },
           ],
-        },
-        {
-          title: "User Management",
-          url: "/admin/users",
-          icon: UserCog,
-        },
-      ];
-    } else {
-      // Global Navigation (always visible)
-      globalNavItems = [
-        {
-          title: "Home",
-          url: "/dashboard",
-          icon: Home,
-          isActive: router.asPath === "/dashboard",
-        },
-        {
-          title: "All Reports",
-          url: "/dashboard/reports",
-          icon: ClipboardList,
-        },
-        {
-          title: "Notifications",
-          url: "/dashboard/notifications",
-          icon: BookOpen,
-          badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
-        },
-      ];
-
-      // Add System Admin link if user is SuperAdmin
-      if (isSuperAdmin) {
-        globalNavItems.push({
-          title: "System Admin",
-          url: "/admin/dashboard",
-          icon: Shield,
-        });
-      }
+        }
+      );
+    }
 
       // Event-specific navigation
       let targetEventSlug = currentEventSlug;
@@ -336,7 +324,6 @@ export function AppSidebar({ user, events, ...props }: {
           });
         }
       }
-    }
 
     return {
       globalNav: globalNavItems,
@@ -369,25 +356,23 @@ export function AppSidebar({ user, events, ...props }: {
         {/* Sidebar header is now empty since the app name is in the top bar */}
       </SidebarHeader>
       <SidebarContent>
-        {/* Global Navigation */}
-        <NavMain items={globalNav} label={isSystemAdmin ? "System" : "Platform"} />
+        {/* Global Navigation (includes system admin navigation for SuperAdmins) */}
+        <NavMain items={globalNav} label="Platform" />
         
-        {/* Event Navigation Section (only show if not in system admin) */}
-        {!isSystemAdmin && (
-          <>
-            {/* Event Switcher */}
-            {state === "expanded" && <NavEvents events={events} selectedEventSlug={selectedEventSlug} />}
-            
-            {/* Event-specific Navigation - tighter integration with event picker */}
-            {(showEventNav || eventNav.length > 0) && (
-              <div className="mt-0">
-                <NavMain items={eventNav} label="" />
-              </div>
-            )}
-          </>
-        )}
+        {/* Event Navigation Section */}
+        <>
+          {/* Event Switcher */}
+          {state === "expanded" && <NavEvents events={events} selectedEventSlug={selectedEventSlug} />}
+          
+          {/* Event-specific Navigation */}
+          {(showEventNav || eventNav.length > 0) && (
+            <div className="mt-0">
+              <NavMain items={eventNav} label="" />
+            </div>
+          )}
+        </>
       </SidebarContent>
-      {state === "collapsed" && !isSystemAdmin && <CollapsedEventSwitcher />}
+      {state === "collapsed" && <CollapsedEventSwitcher />}
       <SidebarFooter>
         <NavUser user={{ ...user, avatar: user.avatar || "", roles: user.roles || [] }} />
       </SidebarFooter>

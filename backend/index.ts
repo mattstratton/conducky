@@ -22,7 +22,8 @@ import {
   eventRoutes, 
   inviteRoutes, 
   reportRoutes,
-  notificationRoutes
+  notificationRoutes,
+  adminRoutes
 } from './src/routes';
 
 // Import middleware
@@ -139,6 +140,7 @@ app.use('/api/invites', inviteRoutes);
 app.use('/invites', inviteRoutes); // Backward compatibility for tests
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Missing API routes that frontend expects
 // Session route (frontend expects /api/session)

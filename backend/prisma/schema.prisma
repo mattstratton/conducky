@@ -92,6 +92,7 @@ model Event {
   website        String?
   codeOfConduct  String?
   contactEmail   String?
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   userEventRoles UserEventRole[]

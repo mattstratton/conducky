@@ -1,397 +1,323 @@
 import React from 'react';
-import { Card } from "../../components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Button } from "@/components/ui/button";
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Plus, Users, FileText, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 
-// Define event interface based on how it's used in the component
-interface Event {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt?: string;
-  updatedAt?: string;
+
+
+interface SystemStats {
+  totalEvents: number;
+  activeEvents: number;
+  totalUsers: number;
+  totalReports: number;
+  reportsByState: Record<string, number>;
+  recentActivity: Array<{
+    id: string;
+    title: string;
+    state: string;
+    eventName: string;
+    eventSlug: string;
+    createdAt: string;
+  }>;
 }
 
-// Define user interface based on how it's used in the component
-interface User {
-  id: string;
-  roles?: string[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
-
-// Define API response interfaces
-interface ApiResponse {
-  error?: string;
-  message?: string;
-}
-
-interface SessionResponse extends ApiResponse {
-  user: User;
-}
-
-interface EventsResponse extends ApiResponse {
-  events: Event[];
-}
-
-export default function GlobalAdmin() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [viewEvent, setViewEvent] = useState<Event | null>(null);
-  const [editEventId, setEditEventId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editSlug, setEditSlug] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
+export default function AdminDashboard() {
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const [stats, setStats] = useState<SystemStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch user info
-    fetch(API_URL + '/api/session', { credentials: 'include' })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Not authenticated');
-      })
-      .then((data: SessionResponse) => {
-        setUser(data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-        // Redirect to login with ?next=... if not authenticated
-        const next = encodeURIComponent(router.asPath);
-        router.replace(`/login?next=${next}`);
-      });
-  }, [router, API_URL]);
+    fetchSystemStats();
+  }, []);
 
-  useEffect(() => {
-    if (!user || !user.roles || !user.roles.includes('SuperAdmin')) return;
-    fetch(API_URL + '/api/events', { credentials: 'include' })
-      .then(res => res.json())
-      .then((data: EventsResponse) => setEvents(data.events || []))
-      .catch(() => setEvents([]));
-  }, [user, API_URL]);
+  const fetchSystemStats = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/admin/events/stats',
+        {
+          credentials: 'include',
+        }
+      );
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    const res = await fetch(API_URL + '/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug }),
-      credentials: 'include',
-    });
-    if (!res.ok) {
-      const data: ApiResponse = await res.json().catch(() => ({}));
-      setError(data.error || 'Failed to create event.');
-      return;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch system stats: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setStats(data);
+    } catch (error: unknown) {
+      console.error('Error fetching system stats:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load system statistics');
+    } finally {
+      setLoading(false);
     }
-    setSuccess('Event created!');
-    setName('');
-    setSlug('');
-    // Refresh events list
-    fetch(API_URL + '/api/events', { credentials: 'include' })
-      .then(res => res.json())
-      .then((data: EventsResponse) => setEvents(data.events || []))
-      .catch(() => setEvents([]));
   };
 
-  const handleView = (id: string) => {
-    const ev = events.find(e => e.id === id);
-    if (ev) setViewEvent(ev);
-  };
-
-  const handleEdit = (ev: Event) => {
-    setEditEventId(ev.id);
-    setEditName(ev.name);
-    setEditSlug(ev.slug);
-  };
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    const res = await fetch(API_URL + '/api/events/slug/' + editSlug, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName }),
-      credentials: 'include',
-    });
-    if (!res.ok) {
-      const data: ApiResponse = await res.json().catch(() => ({}));
-      setError(data.error || 'Failed to update event.');
-      return;
+  const getStateColor = (state: string) => {
+    switch (state.toLowerCase()) {
+      case 'new':
+        return 'bg-blue-100 text-blue-800';
+      case 'in_progress':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
-    setSuccess('Event updated!');
-    setEditEventId(null);
-    // Refresh events list
-    fetch(API_URL + '/api/events', { credentials: 'include' })
-      .then(res => res.json())
-      .then((data: EventsResponse) => setEvents(data.events || []))
-      .catch(() => setEvents([]));
   };
 
-  const handleDelete = async (id: string) => {
-    setDeleteLoading(true);
-    setError('');
-    setSuccess('');
-    const res = await fetch(API_URL + '/api/events/' + id, {
-      method: 'DELETE',
-      credentials: 'include',
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
-    setDeleteLoading(false);
-    if (!res.ok) {
-      const data: ApiResponse = await res.json().catch(() => ({}));
-      setError(data.error || 'Failed to delete event.');
-      return;
-    }
-    setSuccess('Event deleted!');
-    // Refresh events list
-    fetch(API_URL + '/api/events', { credentials: 'include' })
-      .then(res => res.json())
-      .then((data: EventsResponse) => setEvents(data.events || []))
-      .catch(() => setEvents([]));
   };
 
-  if (loading) return <div className="p-4"><p>Loading...</p></div>;
-  if (!user) return <LoginForm />;
-  if (!user.roles || !user.roles.includes('SuperAdmin')) {
+  if (loading) {
     return (
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-2">Global Admin</h1>
-        <p className="text-red-500 mb-2">You do not have rights to this page.</p>
-        <p><Link href="/dashboard" className="text-blue-700 hover:underline">Go to Dashboard</Link></p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">System Admin Dashboard</h1>
+            <p className="text-gray-600">Loading system statistics...</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="pb-2">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-32"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">System Admin Dashboard</h1>
+          </div>
+          <div className="border border-red-200 bg-red-50 p-4 rounded-lg">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+              <span className="text-red-800">{error}</span>
+            </div>
+          </div>
+          <Button 
+            onClick={fetchSystemStats} 
+            className="mt-4"
+            variant="outline"
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4 transition-colors duration-200">
-      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mb-8 p-4 sm:p-8">
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-xl font-semibold text-foreground">System Settings</h2>
-          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full">
-            Not Currently Implemented
-          </span>
-        </div>
-        <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <h3 className="text-lg font-medium mb-2">Public Homepage Settings</h3>
-          <p className="text-sm text-muted-foreground mb-3">Configure what appears on the public homepage for unauthenticated users.</p>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">Show public event list on homepage</span>
-            </label>
-            <p className="text-xs text-muted-foreground ml-6">When enabled, displays a list of public events on the homepage for unauthenticated users.</p>
+    <>
+      <Head>
+        <title>System Admin Dashboard - Conducky</title>
+        <meta name="description" content="System administration dashboard for Conducky" />
+      </Head>
+
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">System Admin Dashboard</h1>
+              <p className="text-gray-600">Overview of all events and system activity</p>
+            </div>
+            <Button onClick={() => router.push('/admin/events/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Event
+            </Button>
           </div>
-          <Button className="mt-3 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save Settings</Button>
-        </div>
-      </Card>
-      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto mb-8 p-4 sm:p-8">
-        <h2 className="text-xl font-semibold mb-4 text-foreground">Create New Event</h2>
-        <form onSubmit={handleCreateEvent} className="space-y-4 max-w-md">
-          <div>
-            <label className="block text-foreground text-sm font-bold mb-2">Name</label>
-            <Input type="text" value={name} onChange={e => setName(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.activeEvents || 0} active events
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Across all events
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.totalReports || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  All-time reports
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">System Health</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">Healthy</div>
+                <p className="text-xs text-muted-foreground">
+                  All systems operational
+                </p>
+              </CardContent>
+            </Card>
           </div>
-          <div>
-            <label className="block text-foreground text-sm font-bold mb-2">Slug</label>
-            <Input type="text" value={slug} onChange={e => setSlug(e.target.value)} required className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-          </div>
-          {error && <div className="text-destructive text-sm font-semibold">{error}</div>}
-          {success && <div className="text-green-600 text-sm font-semibold">{success}</div>}
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Create Event</Button>
-        </form>
-      </Card>
-      <Card className="w-full max-w-full sm:max-w-4xl lg:max-w-5xl mx-auto p-4 sm:p-8">
-        <h2 className="text-xl font-semibold mb-4">All Events</h2>
-        {events.length === 0 ? <p className="text-gray-500 dark:text-gray-400">No events found.</p> : (
-          <>
-            {/* Card view for mobile */}
-            <div className="block sm:hidden">
-              <div className="grid grid-cols-1 gap-4">
-                {events.map(ev => (
-                  <Card key={ev.id} className="flex flex-col gap-2 p-4">
-                    <div className="font-semibold text-lg">{editEventId === ev.id ? (
-                      <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-                    ) : (
-                      <Link href={`/events/${ev.slug}/dashboard`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
-                    )}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Slug: {editEventId === ev.id ? (
-                      <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
-                    ) : ev.slug}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Created: {ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Updated: {ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {editEventId === ev.id ? (
-                        <>
-                          <Button onClick={handleEditSubmit} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
-                          <Button onClick={() => setEditEventId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
-                                <p className="text-sm text-gray-500">This action cannot be undone.</p>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white" disabled={deleteLoading}>Confirm Delete</Button>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
-                          <Link href={`/events/${ev.slug}/settings`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm w-full inline-block text-center">Admin</Link>
-                        </>
-                      )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Reports by State */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Reports by State</CardTitle>
+                <CardDescription>
+                  Current status of all reports across events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {stats?.reportsByState && Object.entries(stats.reportsByState).map(([state, count]) => (
+                    <div key={state} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStateColor(state)}>
+                          {state.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+                      <span className="font-semibold">{count}</span>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-            {/* Table view for desktop */}
-            <div className="hidden sm:block overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Updated At</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {events.map(ev => (
-                    <TableRow key={ev.id}>
-                      <TableCell>{editEventId === ev.id ? (
-                        <Input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" />
-                      ) : (
-                        <Link href={`/events/${ev.slug}/dashboard`} className="text-blue-700 dark:text-blue-400 hover:underline font-medium">{ev.name}</Link>
-                      )}</TableCell>
-                      <TableCell>{editEventId === ev.id ? (
-                        <Input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className="px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled />
-                      ) : ev.slug}</TableCell>
-                      <TableCell>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ''}</TableCell>
-                      <TableCell>{ev.updatedAt ? new Date(ev.updatedAt).toLocaleString() : ''}</TableCell>
-                      <TableCell>
-                        {editEventId === ev.id ? (
-                          <div className="flex gap-2">
-                            <Button onClick={handleEditSubmit} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Save</Button>
-                            <Button onClick={() => setEditEventId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Cancel</Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Button onClick={() => handleEdit(ev)} className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Edit</Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm" disabled={deleteLoading}>Delete</Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure you want to delete this event?</AlertDialogTitle>
-                                  <p className="text-sm text-gray-500">This action cannot be undone.</p>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <Button onClick={() => handleDelete(ev.id)} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white" disabled={deleteLoading}>Confirm Delete</Button>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <Button onClick={() => handleView(ev.id)} className="bg-blue-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">View</Button>
-                            <Link href={`/events/${ev.slug}/settings`} className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm inline-block text-center">Admin</Link>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-      </Card>
-      {viewEvent && (
-        <Card className="mt-6 border border-gray-200 dark:border-gray-700 max-w-md bg-gray-50 dark:bg-gray-800 p-4 sm:p-8">
-          <h3 className="text-lg font-semibold mb-2">Event Details</h3>
-          <p><b>Name:</b> {viewEvent.name}</p>
-          <p><b>Slug:</b> {viewEvent.slug}</p>
-          <p><b>Created At:</b> {viewEvent.createdAt ? new Date(viewEvent.createdAt).toLocaleString() : ''}</p>
-          <p><b>Updated At:</b> {viewEvent.updatedAt ? new Date(viewEvent.updatedAt).toLocaleString() : ''}</p>
-          <Button onClick={() => setViewEvent(null)} className="mt-2 bg-blue-600 text-white hover:bg-blue-700 font-semibold px-4 py-2 sm:px-3 sm:py-1.5 sm:text-sm">Close</Button>
-        </Card>
-      )}
-    </div>
+                  {(!stats?.reportsByState || Object.keys(stats.reportsByState).length === 0) && (
+                    <p className="text-sm text-gray-500">No reports yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>
+                  Latest reports across all events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {stats?.recentActivity && stats.recentActivity.length > 0 ? (
+                    stats.recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {activity.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500">{activity.eventName}</span>
+                            <Badge className={getStateColor(activity.state)}>
+                              {activity.state.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 ml-4">
+                          {formatDate(activity.createdAt)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No recent activity</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common administrative tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push('/admin/events')}
+                    className="h-20 flex-col gap-2"
+                  >
+                    <Calendar className="h-6 w-6" />
+                    Manage Events
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push('/admin/events/new')}
+                    className="h-20 flex-col gap-2"
+                  >
+                    <Plus className="h-6 w-6" />
+                    Create Event
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => router.push('/admin/system/settings')}
+                    className="h-20 flex-col gap-2"
+                  >
+                    <TrendingUp className="h-6 w-6" />
+                    System Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
-// Helper: LoginForm component
-function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) {
-        router.reload();
-      } else {
-        let errMsg = 'Login failed';
-        try {
-          const data = await res.json();
-          errMsg = data.error || data.message || errMsg;
-        } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
-          // Ignore JSON parse errors
-        }
-        setError(errMsg);
-      }
-    } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
-      setError('Network error');
-    }
-  };
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200">
-      <Card className="w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-foreground">Login</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-foreground text-sm font-bold mb-2">Email</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
-          </div>
-          <div>
-            <label className="block text-foreground text-sm font-bold mb-2">Password</label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          {error && <div className="text-destructive text-sm font-semibold">{error}</div>}
-          <Button type="submit" className="w-full">Login</Button>
-        </form>
-      </Card>
-    </div>
-  );
-} 
