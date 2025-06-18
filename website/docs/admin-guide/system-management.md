@@ -13,7 +13,7 @@ SuperAdmins have system-wide access and can:
 - Create new events
 - View all events in the system
 - Generate admin invite links for events
-- Manage global system settings
+- Manage global system settings (including public event listing)
 - Monitor system health and usage
 
 **Important**: SuperAdmins have separate permissions from event-level roles. To access event data (reports, users, etc.), SuperAdmins must be explicitly assigned an event role by an event admin.
@@ -28,7 +28,7 @@ SuperAdmins have access to a dedicated system administration interface through t
 2. **System Admin Section**: Look for the "System Admin" section in the sidebar with:
    - 🏠 **System Dashboard** - Overview of all events and system health
    - 🎯 **Events Management** - Create and manage events
-   - ⚙️ **System Settings** - Global configuration (future feature)
+   - ⚙️ **System Settings** - Global configuration
 
 ### Context Switching
 
@@ -91,6 +91,50 @@ Requirements:
 - Must be authenticated as a SuperAdmin
 - Slug must be unique across the system
 - Slug must be URL-safe (lowercase, alphanumeric, hyphens only)
+
+## System Settings
+
+SuperAdmins can manage global system settings that affect the entire Conducky installation.
+
+### Accessing System Settings
+
+1. Log in as a SuperAdmin
+2. Navigate to **System Admin → System Settings** in the sidebar
+3. Go to `/admin/system/settings`
+
+### Available Settings
+
+#### Public Event Listing
+
+Control whether public event listings are shown on the home page:
+
+- **Setting**: Show Public Event List
+- **Description**: When enabled, the home page displays a list of all active events for unauthenticated users
+- **Default**: Disabled (false)
+- **Impact**: 
+  - **Enabled**: Unauthenticated users see all events on the home page with links to public event pages
+  - **Disabled**: Home page shows only login/registration options for unauthenticated users
+
+#### Managing the Setting
+
+1. Go to **System Admin → System Settings** (`/admin/system/settings`)
+2. Use the toggle switch to enable/disable "Show Public Event List"
+3. Changes take effect immediately on the home page
+
+### API Access
+
+System settings can also be managed via API:
+
+- **GET** `/api/system/settings` - View current settings (public access)
+- **PATCH** `/api/admin/system/settings` - Update settings (SuperAdmin only)
+
+Example API usage:
+```json
+PATCH /api/admin/system/settings
+{
+  "showPublicEventList": true
+}
+```
 
 ## Managing Events
 

@@ -27,6 +27,9 @@ const inMemoryStore = {
   passwordResetTokens: [],
   notifications: [],
   reportComments: [],
+  systemSettings: [
+    { id: "1", key: "showPublicEventList", value: "false" }
+  ],
 };
 
 class PrismaClient {
@@ -1059,6 +1062,37 @@ class PrismaClient {
         }
         
         return results[0] || null;
+      }),
+    };
+    this.systemSetting = {
+      findMany: jest.fn(() => [...inMemoryStore.systemSettings]),
+      findUnique: jest.fn(({ where }) => {
+        return inMemoryStore.systemSettings.find(s => s.key === where.key) || null;
+      }),
+      upsert: jest.fn(({ where, update, create }) => {
+        const existing = inMemoryStore.systemSettings.find(s => s.key === where.key);
+        if (existing) {
+          Object.assign(existing, update);
+          return existing;
+        } else {
+          const newSetting = {
+            id: String(inMemoryStore.systemSettings.length + 1),
+            ...create
+          };
+          inMemoryStore.systemSettings.push(newSetting);
+          return newSetting;
+        }
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const originalLength = inMemoryStore.systemSettings.length;
+        if (where && where.key && where.key.startsWith) {
+          // where.key.startsWith contains the prefix string to match against
+          const prefix = where.key.startsWith;
+          inMemoryStore.systemSettings = inMemoryStore.systemSettings.filter(
+            s => !s.key.startsWith(prefix)
+          );
+        }
+        return { count: originalLength - inMemoryStore.systemSettings.length };
       }),
     };
     

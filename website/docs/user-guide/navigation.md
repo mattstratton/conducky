@@ -63,7 +63,7 @@ SuperAdmins have access to both system management and personal event participati
   - All Events
   - Create Event (`/admin/events/new`)
   - Event Settings and Invite Management
-- ⚙️ **System Settings** (future feature)
+- ⚙️ **System Settings** (`/admin/system/settings`) - Configure global system settings
 
 **Personal Navigation** (same as regular users):
 - 🏠 **Home** (`/dashboard`)
@@ -168,19 +168,21 @@ The global dashboard (`/dashboard`) provides:
 - `/profile/events` - Event membership management
 
 ### Event URLs
+- `/events/[eventSlug]/` - Public event page (no authentication required)
 - `/events/[eventSlug]/dashboard` - Event-specific dashboard
 - `/events/[eventSlug]/reports` - Event reports (role-scoped)
 - `/events/[eventSlug]/reports/new` - Submit new report
 - `/events/[eventSlug]/reports/[reportId]` - Report details
 - `/events/[eventSlug]/team` - Team management (admin/responder)
 - `/events/[eventSlug]/settings` - Event settings (admin only)
+- `/events/[eventSlug]/code-of-conduct` - Public code of conduct page
 
 ### System Admin URLs
 - `/admin/dashboard` - System overview
 - `/admin/events` - Event management
 - `/admin/events/new` - Create new event
 - `/admin/events/[eventId]/settings` - Event settings and invite management
-- `/admin/system/settings` - System configuration (future)
+- `/admin/system/settings` - System configuration and settings
 
 ## Mobile Navigation
 

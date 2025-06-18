@@ -156,12 +156,14 @@ if (isSuperAdmin && isSystemAdmin) {
 - `/profile/settings` - User settings
 
 #### Event URLs
+- `/events/[eventSlug]/` - Public event page (no authentication required)
 - `/events/[eventSlug]/dashboard` - Event dashboard
 - `/events/[eventSlug]/reports` - Event reports (role-scoped)
 - `/events/[eventSlug]/reports/new` - Submit report
 - `/events/[eventSlug]/reports/[reportId]` - Report details
 - `/events/[eventSlug]/team` - Team management
 - `/events/[eventSlug]/settings` - Event settings
+- `/events/[eventSlug]/code-of-conduct` - Public code of conduct page
 
 #### System Admin URLs
 - `/admin/dashboard` - System overview
