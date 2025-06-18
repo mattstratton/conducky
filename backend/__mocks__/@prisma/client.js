@@ -1086,8 +1086,10 @@ class PrismaClient {
       deleteMany: jest.fn(({ where }) => {
         const originalLength = inMemoryStore.systemSettings.length;
         if (where && where.key && where.key.startsWith) {
+          // where.key.startsWith contains the prefix string to match against
+          const prefix = where.key.startsWith;
           inMemoryStore.systemSettings = inMemoryStore.systemSettings.filter(
-            s => !s.key.startsWith(where.key.startsWith)
+            s => !s.key.startsWith(prefix)
           );
         }
         return { count: originalLength - inMemoryStore.systemSettings.length };
