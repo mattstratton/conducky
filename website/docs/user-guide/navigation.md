@@ -4,9 +4,18 @@ sidebar_position: 3
 
 # Navigation Guide
 
-Conducky features a sophisticated three-level navigation architecture designed to provide clear context and role-based access to functionality. This guide explains how navigation works across different user roles and contexts.
+Conducky features a sophisticated sidebar-based navigation architecture designed to provide clear context and role-based access to functionality. This guide explains how navigation works across different user roles and contexts.
 
 ## Navigation Architecture
+
+### Sidebar Navigation System
+
+Conducky uses a modern sidebar navigation that adapts to your role and current context:
+
+- **Always visible**: Core navigation items you have access to
+- **Context-aware**: Changes based on whether you're in system admin, global, or event context
+- **Role-based**: Only shows items you have permission to access
+- **Responsive**: Collapses on mobile devices for optimal mobile experience
 
 ### Three Navigation Contexts
 
@@ -37,10 +46,10 @@ System-level management for SuperAdmins only:
 
 The sidebar navigation automatically adapts based on your current context and role:
 
-- **Always visible**: Global navigation items (Home, All Reports, Notification Center)
-- **Event section**: Shows when in event context with event-specific navigation
-- **Role-based filtering**: Only shows navigation items you have permission to access
-- **Event switcher**: Dropdown to switch between events (when applicable)
+- **Global Navigation**: Home, All Reports, Notifications always visible
+- **Event Section**: Shows when you belong to events, with event-specific navigation
+- **System Admin Section**: Only visible to SuperAdmins, provides system management access
+- **User Menu**: Profile, settings, and logout options
 
 ## Navigation by User Role
 
@@ -48,102 +57,114 @@ The sidebar navigation automatically adapts based on your current context and ro
 
 SuperAdmins have access to both system management and personal event participation:
 
-**System Admin Context** (`/admin/`):
-- 🏠 System Dashboard
-- 🎯 Events Management
+**System Admin Section** (always visible to SuperAdmins):
+- 🏠 **System Dashboard** (`/admin/dashboard`)
+- 🎯 **Events Management** (`/admin/events`)
   - All Events
-  - Create Event
-  - Event Settings
-- ⚙️ System Settings
-- 👤 User Management
+  - Create Event (`/admin/events/new`)
+  - Event Settings and Invite Management
+- ⚙️ **System Settings** (future feature)
 
-**Personal Context** (`/dashboard`):
-- Same navigation as regular users for events they belong to
-- Can switch between system admin and personal contexts
+**Personal Navigation** (same as regular users):
+- 🏠 **Home** (`/dashboard`)
+- 📋 **All Reports** (`/dashboard/reports`)
+- 🔔 **Notifications** (`/dashboard/notifications`)
+- **My Events** section with event switcher
 
 ### Event Admin Navigation
 
 Event Admins see full event management capabilities:
 
-**Global Context**:
-- 🏠 Home (Dashboard)
-- 📋 All Reports (Cross-Event Reports Dashboard)
-- 🔔 Notifications (Notification Center)
-- 👤 Profile (Settings and Event Management)
+**Global Navigation**:
+- 🏠 **Home** (Dashboard)
+- 📋 **All Reports** (Cross-Event Reports Dashboard)
+- 🔔 **Notifications** (Notification Center)
 
-**Event Context** (when in `/events/[eventSlug]/`):
-- 🏠 Event Dashboard
-- 📋 Reports
+**Event Navigation** (when in `/events/[eventSlug]/`):
+- 🏠 **Event Dashboard**
+- 📋 **Reports**
   - All Reports
   - Submit Report
-- 👥 Team
+- 👥 **Team**
   - Team Members
   - Send Invites
   - User Management
-- ⚙️ Event Settings
+- ⚙️ **Event Settings**
   - Event Details
   - Code of Conduct
   - Notifications
+
+**My Events Section**:
+- Event switcher dropdown
+- Quick access to all events you belong to
+- Role indication for each event
 
 ### Event Responder Navigation
 
 Responders see report management and team information:
 
-**Global Context**:
-- 🏠 Home (Dashboard)
-- 📋 All Reports (Cross-Event Reports Dashboard)
-- 🔔 Notifications (Notification Center)
-- 👤 Profile (Settings and Event Management)
+**Global Navigation**:
+- 🏠 **Home** (Dashboard)
+- 📋 **All Reports** (Cross-Event Reports Dashboard)
+- 🔔 **Notifications** (Notification Center)
 
-**Event Context**:
-- 🏠 Event Dashboard
-- 📋 Reports
+**Event Navigation**:
+- 🏠 **Event Dashboard**
+- 📋 **Reports**
   - All Reports
   - Submit Report
-- 👥 Team (view only)
+- 👥 **Team** (view only)
+
+**My Events Section**:
+- Event switcher with role indicators
+- Quick navigation between events
 
 ### Event Reporter Navigation
 
 Reporters see basic event information and their own reports:
 
-**Global Context**:
-- 🏠 Home (Dashboard)
-- 📋 All Reports (Cross-Event Reports Dashboard)
-- 🔔 Notifications (Notification Center)
-- 👤 Profile (Settings and Event Management)
+**Global Navigation**:
+- 🏠 **Home** (Dashboard)
+- 📋 **All Reports** (Cross-Event Reports Dashboard)
+- 🔔 **Notifications** (Notification Center)
 
-**Event Context**:
-- 🏠 Event Dashboard
-- 📋 Reports
+**Event Navigation**:
+- 🏠 **Event Dashboard**
+- 📋 **Reports**
   - My Reports
   - Submit Report
 
+**My Events Section**:
+- Event switcher
+- Access to events where you're a reporter
+
 ## Event Switching
 
-### Event Switcher Dropdown
+### Event Switcher in Sidebar
 
-When you belong to multiple events, the event switcher appears in the sidebar:
+The "My Events" section in the sidebar provides:
 
-- **Location**: Below the global navigation section
-- **Functionality**: Quick switching between events
-- **Context preservation**: Maintains your current page type when switching (e.g., dashboard to dashboard)
+- **Event List**: All events you belong to with role indicators
+- **Quick Switching**: Click any event to switch context
+- **Role Visibility**: Shows your role in each event (Admin, Responder, Reporter)
+- **Context Preservation**: Maintains your current page type when switching
 
 ### Multi-Event Dashboard
 
 The global dashboard (`/dashboard`) provides:
 
-- **Event cards**: Role-based previews of each event you belong to
-- **Quick actions**: Role-specific actions for each event
-- **Recent activity**: Cross-event activity summary
-- **Event switching**: Click any event card to enter that event's context
+- **Event Cards**: Role-based previews of each event you belong to
+- **Quick Actions**: Role-specific actions for each event
+- **Recent Activity**: Cross-event activity summary
+- **Event Navigation**: Click any event card to enter that event's context
 
 ## URL Structure
 
 ### Global URLs
 - `/dashboard` - Multi-event overview
-- `/dashboard/reports` - All reports across events (Cross-Event Reports Dashboard)
-- `/dashboard/notifications` - Cross-event notifications (Notification Center)
-- `/profile/settings` - User profile and account settings
+- `/dashboard/reports` - All reports across events
+- `/dashboard/notifications` - Cross-event notifications
+- `/profile` - User profile and settings
 - `/profile/events` - Event membership management
 
 ### Event URLs
@@ -158,24 +179,26 @@ The global dashboard (`/dashboard`) provides:
 - `/admin/dashboard` - System overview
 - `/admin/events` - Event management
 - `/admin/events/new` - Create new event
-- `/admin/system/settings` - System configuration
+- `/admin/events/[eventId]/settings` - Event settings and invite management
+- `/admin/system/settings` - System configuration (future)
 
 ## Mobile Navigation
 
 ### Responsive Design
 
-The navigation system is fully responsive and mobile-optimized:
+The sidebar navigation is fully responsive and mobile-optimized:
 
-- **Collapsible sidebar**: Automatically collapses on mobile devices
+- **Collapsible sidebar**: Automatically collapses on mobile devices with hamburger menu
 - **Touch-friendly**: All navigation elements are optimized for touch interaction
 - **Context awareness**: Mobile navigation maintains the same context-aware behavior
-- **Event switcher**: Optimized dropdown for mobile event switching
+- **Event switcher**: Optimized for mobile event switching
 
 ### Mobile-Specific Features
 
+- **Overlay mode**: Sidebar overlays content on mobile instead of pushing it
 - **Swipe gestures**: Swipe to open/close sidebar on mobile
-- **Bottom-safe areas**: Navigation respects mobile browser UI
 - **Touch targets**: All navigation items meet minimum touch target sizes (44px)
+- **Smooth animations**: Optimized transitions for mobile devices
 
 ## Authentication and Navigation
 
@@ -184,7 +207,7 @@ The navigation system is fully responsive and mobile-optimized:
 1. **First-time users**: Directed to global dashboard with "No events" message
 2. **Single event users**: Directed to that event's dashboard
 3. **Multi-event users**: Directed to global dashboard showing all events
-4. **SuperAdmins**: Directed to system admin dashboard
+4. **SuperAdmins**: Directed to system admin dashboard with full system navigation
 
 ### Authentication State
 
@@ -193,73 +216,76 @@ The navigation system is fully responsive and mobile-optimized:
 - **Session persistence**: Navigation state maintained across browser sessions
 - **Auto-redirect**: Unauthenticated users redirected to login when accessing protected pages
 
+## Performance Optimizations
+
+### Recent Improvements
+
+The navigation system has been optimized for performance:
+
+- **Reduced API calls**: Sidebar now fetches data efficiently to minimize server requests
+- **Optimized polling**: Notification polling reduced from 30 seconds to 2 minutes
+- **Better caching**: User roles and events are cached to prevent redundant fetches
+- **Parallel data loading**: Multiple API calls are made in parallel where possible
+
+### Navigation Loading
+
+- **Fast initial load**: Core navigation appears immediately
+- **Progressive enhancement**: Additional features load as data becomes available
+- **Error handling**: Graceful fallbacks when navigation data fails to load
+- **Offline support**: Basic navigation works even with poor connectivity
+
 ## Navigation Best Practices
 
 ### For Users
 
 1. **Use the global dashboard** to get an overview of all your events
-2. **Use event context** for focused work within a specific event
-3. **Use the event switcher** to quickly move between events
-4. **Check your role** in each event to understand available functionality
+2. **Leverage the event switcher** for quick navigation between events
+3. **Check your role** in each event to understand what actions are available
+4. **Use breadcrumbs** to understand your current location in the application
 
 ### For Admins
 
-1. **Start with global dashboard** to see all events you manage
-2. **Use event context** for detailed event management
-3. **Use system admin context** (if SuperAdmin) for installation management
-4. **Remember role separation**: SuperAdmin ≠ automatic event access
+1. **SuperAdmins**: Use the system admin section for installation management
+2. **Event Admins**: Use event settings for detailed event configuration
+3. **Invite Management**: Generate admin invites through the system admin interface
+4. **Context Switching**: Switch between system admin and personal contexts as needed
+
+### Mobile Users
+
+1. **Use the hamburger menu** to access the full navigation on mobile
+2. **Swipe gestures** can quickly open/close the sidebar
+3. **Touch-friendly design** ensures easy navigation on small screens
+4. **Responsive layout** adapts to your device size automatically
 
 ## Troubleshooting Navigation
 
 ### Common Issues
 
-**"I can't see the sidebar"**
-- Ensure you're logged in
-- Check that you have roles in at least one event
-- Try refreshing the page
+- **Sidebar not showing**: Check authentication status and refresh the page
+- **Missing navigation items**: Verify your role permissions for the current context
+- **Event switcher empty**: Ensure you belong to at least one event
+- **Performance issues**: Clear browser cache and check network connectivity
 
-**"I can't access an event"**
-- Verify you have a role in that event
-- Check with an event admin if you should have access
-- SuperAdmins need explicit event roles to access event data
+### SuperAdmin Issues
 
-**"Navigation items are missing"**
-- Navigation is role-based - you only see what you have permission to access
-- Contact an event admin to request additional permissions
-
-**"Event switcher not showing"**
-- Event switcher only appears when you belong to multiple events
-- Single-event users don't see the switcher
+- **System admin section missing**: Verify SuperAdmin role assignment
+- **Cannot access events**: Remember that SuperAdmins need event roles to access event data
+- **Navigation slow**: Check for excessive API calls in browser developer tools
 
 ### Getting Help
 
-If you encounter navigation issues:
+For navigation issues:
+1. Check browser console for errors
+2. Verify your user roles and permissions
+3. Try refreshing the page or clearing cache
+4. Contact system administrators for role-related issues
+5. Consult the [troubleshooting guide](troubleshooting) for detailed solutions
 
-1. Check your user roles in the profile section
-2. Verify you're in the correct context (global vs event vs system)
-3. Contact your event administrator for role-related issues
-4. Contact your system administrator for technical issues
+## Future Enhancements
 
-## Technical Implementation
-
-### Context Detection
-
-The navigation system automatically detects context based on the current URL:
-
-- URLs starting with `/admin/` → System Admin context
-- URLs starting with `/events/[slug]/` → Event context
-- All other authenticated URLs → Global context
-
-### Role-Based Rendering
-
-Navigation items are filtered based on:
-
-- **System roles**: SuperAdmin access to system features
-- **Event roles**: Admin/Responder/Reporter access to event features
-- **Authentication state**: Logged in vs logged out users
-
-### Performance Optimization
-
-- **Lazy loading**: Event data loaded only when needed
-- **Caching**: Navigation state cached for performance
-- **Responsive**: Navigation adapts to screen size and device capabilities 
+Planned navigation improvements include:
+- **Advanced search**: Global search across all accessible content
+- **Keyboard shortcuts**: Quick navigation using keyboard commands
+- **Customizable sidebar**: User-configurable navigation preferences
+- **Breadcrumb improvements**: Enhanced location awareness
+- **Accessibility enhancements**: Better screen reader support and keyboard navigation 
