@@ -51,28 +51,28 @@ Follow the [Social Login Configuration guide](website/docs/admin-guide/system-ma
   - [ ] GitHub button with GitHub logo
   - [ ] Both buttons have proper styling and hover effects
 
-### Test 2: Google OAuth - New User
-- [ ] Click **"Google"** button
-- [ ] **OAuth flow works**:
-  - [ ] Redirects to Google login
-  - [ ] Can complete Google authentication
-  - [ ] Redirects back to Conducky
-- [ ] **Results**:
-  - [ ] Lands on `/dashboard` page
-  - [ ] User is logged in (check top-right user menu)
-  - [ ] Name and email from Google profile are shown
+### Test 2: Google OAuth - New User ✅ VERIFIED WORKING
+- [x] Click **"Google"** button
+- [x] **OAuth flow works**:
+  - [x] Redirects to Google login
+  - [x] Can complete Google authentication
+  - [x] Redirects back to Conducky
+- [x] **Results**:
+  - [x] Lands on `/dashboard` page
+  - [x] User is logged in (check top-right user menu)
+  - [x] Name and email from Google profile are shown
 
-### Test 3: GitHub OAuth - New User  
-- [ ] **Log out first** (if logged in from previous test)
-- [ ] Click **"GitHub"** button
-- [ ] **OAuth flow works**:
-  - [ ] Redirects to GitHub login
-  - [ ] Can complete GitHub authentication
-  - [ ] Redirects back to Conducky
-- [ ] **Results**:
-  - [ ] Lands on `/dashboard` page
-  - [ ] User is logged in (check top-right user menu)
-  - [ ] Name and email from GitHub profile are shown
+### Test 3: GitHub OAuth - New User ✅ VERIFIED WORKING
+- [x] **Log out first** (if logged in from previous test)
+- [x] Click **"GitHub"** button
+- [x] **OAuth flow works**:
+  - [x] Redirects to GitHub login
+  - [x] Can complete GitHub authentication
+  - [x] Redirects back to Conducky
+- [x] **Results**:
+  - [x] Lands on `/dashboard` page
+  - [x] User is logged in (check top-right user menu)
+  - [x] Name and email from GitHub profile are shown
 
 ### Test 4: Account Linking (Existing User)
 - [ ] **Create regular account first**:
@@ -157,13 +157,15 @@ If something doesn't work:
 ## Success Criteria
 
 ✅ **Implementation is working correctly if**:
-- [ ] Both Google and GitHub OAuth buttons appear on login page
-- [ ] OAuth flows complete successfully without errors
-- [ ] New users can register via social login
-- [ ] Existing users can link social accounts
-- [ ] Proper error handling for OAuth failures
-- [ ] Database records are created correctly
-- [ ] Users remain logged in after OAuth
+- [x] Both Google and GitHub OAuth buttons appear on login page ✅
+- [x] OAuth flows complete successfully without errors ✅  
+- [x] New users can register via social login ✅
+- [ ] Existing users can link social accounts (not yet tested)
+- [ ] Proper error handling for OAuth failures (not yet tested)
+- [ ] Database records are created correctly (not yet verified)
+- [x] Users remain logged in after OAuth ✅
+
+🎉 **CORE FUNCTIONALITY VERIFIED WORKING** - Google and GitHub OAuth both functional!
 
 ## Next Steps
 
