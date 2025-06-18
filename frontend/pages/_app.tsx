@@ -46,17 +46,43 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   // Restore user from session cookie on mount
   React.useEffect(() => {
-    if (!user) {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
-        credentials: "include",
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
+      credentials: "include",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
       })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && data.user) setUser(data.user);
+      .catch(() => setUser(null));
+  }, []); // Only run on mount
+  
+  // Re-check session after potential OAuth redirects
+  React.useEffect(() => {
+    // Check if this looks like an OAuth redirect (coming from login with no current user)
+    if (!user && router.asPath.startsWith('/dashboard') && router.isReady) {
+      // Small delay to allow session to propagate after OAuth callback
+      const timer = setTimeout(() => {
+        fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
+          credentials: "include",
         })
-        .catch(() => setUser(null));
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data && data.user) {
+              setUser(data.user);
+            }
+          })
+          .catch(() => {
+            // If session check fails, user stays null and will be redirected to login
+          });
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user, router.asPath, router.isReady]);
 
   useEffect(() => {
     // Wait for router to be ready and ensure we have a valid eventSlug
