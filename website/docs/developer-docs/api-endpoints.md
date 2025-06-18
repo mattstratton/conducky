@@ -221,7 +221,7 @@ Event routes are mounted at `/api/events` and `/events`:
 #### Create Report
 
 - **POST** `/api/events/:eventId/reports`
-- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `evidence[]` (multipart/form-data, zero or more files)
+- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `location` (string, optional), `contactPreference` (enum, optional: email|phone|in_person|no_contact, default: email), `evidence[]` (multipart/form-data, zero or more files)
 - **Response:** `{ report }`
 
 #### List Reports
@@ -260,7 +260,7 @@ Event routes are mounted at `/api/events` and `/events`:
 
 - **POST** `/api/events/slug/:slug/reports` or `/events/slug/:slug/reports`
 - **Role:** Reporter, Responder, Admin, or SuperAdmin for the event
-- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `evidence[]` (multipart/form-data, zero or more files)
+- **Body:** `title` (string, required, 10–70 chars), `type`, `description`, `location` (string, optional), `contactPreference` (enum, optional: email|phone|in_person|no_contact, default: email), `evidence[]` (multipart/form-data, zero or more files)
 - **Response:** `{ report }`
 
 #### List Reports

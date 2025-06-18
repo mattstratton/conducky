@@ -169,7 +169,7 @@ router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (re
 router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
-    const { type, description, title } = req.body;
+    const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;
     
     if (!type || !description || !title) {
       res.status(400).json({ error: 'Type, description, and title are required.' });
@@ -199,7 +199,12 @@ router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 
       type,
       description,
       title,
-      reporterId: user.id
+      reporterId: user.id,
+      incidentAt: incidentAt ? new Date(incidentAt) : null,
+      parties,
+      location,
+      contactPreference,
+      urgency
     };
     
     // Handle file uploads if any
@@ -347,6 +352,91 @@ router.patch('/:eventId/reports/:reportId/title', requireRole(['Admin', 'SuperAd
   } catch (error: any) {
     console.error('Update report title error:', error);
     res.status(500).json({ error: 'Failed to update report title.' });
+  }
+});
+
+// Update report location
+router.patch('/:eventId/reports/:reportId/location', requireRole(['Admin', 'SuperAdmin', 'Reporter', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { location } = req.body;
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportLocation(eventId, reportId, location, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report location:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// Update report contact preference
+router.patch('/:eventId/reports/:reportId/contact-preference', requireRole(['Admin', 'SuperAdmin', 'Reporter']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { contactPreference } = req.body;
+    
+    if (!contactPreference) {
+      res.status(400).json({ error: 'Contact preference is required.' });
+      return;
+    }
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportContactPreference(eventId, reportId, contactPreference, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions') || result.error?.includes('Only the reporter')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report contact preference:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// Update report type
+router.patch('/:eventId/reports/:reportId/type', requireRole(['Admin', 'SuperAdmin', 'Reporter', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { type } = req.body;
+    
+    if (!type) {
+      res.status(400).json({ error: 'Type is required.' });
+      return;
+    }
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportType(eventId, reportId, type, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report type:', error);
+    res.status(500).json({ error: 'Internal server error.' });
   }
 });
 
@@ -696,7 +786,7 @@ router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin',
 router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const { type, description, title } = req.body;
+    const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;
     
     if (!type || !description || !title) {
       res.status(400).json({ error: 'Type, description, and title are required.' });
@@ -733,7 +823,12 @@ router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin'
       type,
       description,
       title,
-      reporterId: user.id
+      reporterId: user.id,
+      incidentAt: incidentAt ? new Date(incidentAt) : null,
+      parties,
+      location,
+      contactPreference,
+      urgency
     };
     
     // Handle file uploads if any

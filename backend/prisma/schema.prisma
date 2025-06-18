@@ -40,6 +40,13 @@ enum ReportSeverity {
   critical
 }
 
+enum ContactPreference {
+  email
+  phone
+  in_person
+  no_contact
+}
+
 enum NotificationType {
   report_submitted      // New report submitted
   report_assigned       // Report assigned to user
@@ -125,6 +132,8 @@ model Report {
   state       ReportState   // submitted, acknowledged, investigating, resolved, closed
   incidentAt  DateTime? // date and time of the incident (optional)
   parties     String?   // comma-separated or freeform list of parties involved (optional)
+  location    String?   // location where the incident occurred (optional)
+  contactPreference ContactPreference @default(email) // preferred contact method
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   comments    ReportComment[]
@@ -134,7 +143,6 @@ model Report {
   severity            ReportSeverity?
   resolution          String?
   notifications Notification[]
-  // Add more fields as needed (e.g., involved parties)
 }
 
 model AuditLog {

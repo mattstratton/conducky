@@ -50,6 +50,8 @@ This document describes the main data models used in the system, based on the Pr
 - **state**: Report state enum (submitted, acknowledged, investigating, resolved, closed)
 - **incidentAt**: Optional date/time of the incident
 - **parties**: Optional string listing parties involved (comma-separated or freeform)
+- **location**: Optional string describing where the incident occurred
+- **contactPreference**: Contact preference enum (email, phone, in_person, no_contact) with default 'email'
 - **assignedResponderId**: string (nullable, UUID) — the user ID of the assigned responder (if any)
 - **assignedResponder**: User (nullable) — the assigned responder user object (if any)
 - **severity**: enum (`low`, `medium`, `high`, `critical`, nullable) — severity/priority of the report
@@ -174,6 +176,12 @@ This document describes the main data models used in the system, based on the Pr
 - `medium`
 - `high`
 - `critical`
+
+### ContactPreference
+- `email` - Preferred contact via email (default)
+- `phone` - Preferred contact via phone
+- `in_person` - Preferred contact in person
+- `no_contact` - No contact preferred
 
 ### NotificationType
 - `report_submitted` - New report submitted

@@ -87,6 +87,7 @@ export default function CrossEventReports() {
   // Filters and pagination
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
   const [sortField, setSortField] = useState('createdAt');
@@ -133,6 +134,7 @@ export default function CrossEventReports() {
 
       if (search.trim()) params.append('search', search.trim());
       if (statusFilter) params.append('status', statusFilter);
+      if (severityFilter) params.append('severity', severityFilter);
       if (eventFilter) params.append('event', eventFilter);
       if (assignedFilter) params.append('assigned', assignedFilter);
 
@@ -175,14 +177,14 @@ export default function CrossEventReports() {
   // Fetch reports when filters change
   useEffect(() => {
     fetchReports();
-  }, [currentPage, search, statusFilter, eventFilter, assignedFilter, sortField, sortOrder]);
+  }, [currentPage, search, statusFilter, severityFilter, eventFilter, assignedFilter, sortField, sortOrder]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [search, statusFilter, eventFilter, assignedFilter]);
+  }, [search, statusFilter, severityFilter, eventFilter, assignedFilter]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -421,7 +423,7 @@ export default function CrossEventReports() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               {/* Search */}
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -445,6 +447,20 @@ export default function CrossEventReports() {
                   <SelectItem value="investigating">Investigating</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Severity Filter */}
+              <Select value={severityFilter || "all"} onValueChange={(value) => setSeverityFilter(value === "all" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All severity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All severity</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -502,6 +518,7 @@ export default function CrossEventReports() {
                   <TableHead className="cursor-pointer" onClick={() => handleSort('state')}>
                     Status {sortField === 'state' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
+                  <TableHead>Severity</TableHead>
                   <TableHead>Reporter</TableHead>
                   <TableHead>Assigned</TableHead>
                   <TableHead className="cursor-pointer" onClick={() => handleSort('createdAt')}>
@@ -514,7 +531,7 @@ export default function CrossEventReports() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -523,7 +540,7 @@ export default function CrossEventReports() {
                   ))
                 ) : reports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No reports found. Try adjusting your filters.
                     </TableCell>
                   </TableRow>
@@ -555,16 +572,18 @@ export default function CrossEventReports() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge className={`text-xs w-fit ${STATUS_COLORS[report.state as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-800'}`}>
-                            {report.state}
+                        <Badge className={`text-xs w-fit ${STATUS_COLORS[report.state as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-800'}`}>
+                          {report.state}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {report.severity ? (
+                          <Badge className={`text-xs w-fit ${SEVERITY_COLORS[report.severity as keyof typeof SEVERITY_COLORS] || 'bg-gray-100 text-gray-800'}`}>
+                            {report.severity}
                           </Badge>
-                          {report.severity && (
-                            <Badge className={`text-xs w-fit ${SEVERITY_COLORS[report.severity as keyof typeof SEVERITY_COLORS] || 'bg-gray-100 text-gray-800'}`}>
-                              {report.severity}
-                            </Badge>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
