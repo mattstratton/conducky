@@ -522,11 +522,7 @@ export function CommentsSection({
                             Internal
                           </Badge>
                         )}
-                        {comment.isMarkdown && (
-                          <Badge variant="outline" className="text-xs">
-                            Markdown
-                          </Badge>
-                        )}
+
                         <div className="ml-auto flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -606,18 +602,9 @@ export function CommentsSection({
                         </div>
                       ) : (
                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                          {comment.isMarkdown ? (
-                            <ReactMarkdown>
-                              {highlightSearchTerm(comment.body, searchTerm)}
-                            </ReactMarkdown>
-                          ) : (
-                            <div 
-                              className="whitespace-pre-wrap"
-                              dangerouslySetInnerHTML={{
-                                __html: highlightSearchTerm(comment.body, searchTerm)
-                              }}
-                            />
-                          )}
+                          <ReactMarkdown>
+                            {highlightSearchTerm(comment.body, searchTerm)}
+                          </ReactMarkdown>
                         </div>
                       )}
 
@@ -716,7 +703,7 @@ export function CommentsSection({
                         onChange={(e) => setUseMarkdown(e.target.checked)}
                         className="mr-1"
                       />
-                      Use markdown
+                      Use markdown editor
                     </label>
                   </div>
                 </div>
