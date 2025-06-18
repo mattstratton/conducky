@@ -29,6 +29,10 @@ export default function CreateEvent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  console.log('CreateEvent component loaded');
+  console.log('Current submitError:', submitError);
+  console.log('Current errors:', errors);
+
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
     const slug = name

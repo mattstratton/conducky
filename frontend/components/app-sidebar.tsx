@@ -23,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ user, events, ...props }: {
+export function AppSidebar({ user, events, globalRoles, ...props }: {
   user: {
     name: string
     email: string
@@ -36,6 +36,7 @@ export function AppSidebar({ user, events, ...props }: {
     icon: React.ElementType
     role?: string
   }[]
+  globalRoles?: string[]
 } & React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const router = useRouter();
@@ -46,8 +47,8 @@ export function AppSidebar({ user, events, ...props }: {
   // Track unread notification count
   const [unreadCount, setUnreadCount] = useState<number>(0);
   
-  // Track global user roles (like SuperAdmin)
-  const [globalRoles, setGlobalRoles] = useState<string[]>([]);
+  // Use globalRoles from props, fallback to empty array
+  const currentGlobalRoles = globalRoles || [];
   
   // Update selected event when in event context
   useEffect(() => {
@@ -86,15 +87,9 @@ export function AppSidebar({ user, events, ...props }: {
           setUnreadCount(notificationData.unread || 0);
         }
 
-        // Fetch user events and global roles
-        const eventsResponse = await fetch(
-          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/events",
-          { credentials: "include" }
-        );
-        if (eventsResponse.ok) {
-          const eventsData = await eventsResponse.json();
-          setGlobalRoles(eventsData.globalRoles || []);
-        }
+        // NOTE: Removed the events fetch here since events are passed as props
+        // This was causing infinite re-renders and excessive API calls
+        
       } catch (error) {
         console.warn("Failed to fetch user data:", error);
       }
@@ -104,12 +99,11 @@ export function AppSidebar({ user, events, ...props }: {
     if (user) {
       fetchUserData();
       
-      // Set up interval to refresh every 30 seconds
-      const interval = setInterval(fetchUserData, 30000);
+      // Set up interval to refresh every 2 minutes (reduced from 30 seconds to reduce API load)
+      const interval = setInterval(fetchUserData, 120000);
       return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
-      setGlobalRoles([]);
     }
   }, [user]);
   
@@ -134,7 +128,7 @@ export function AppSidebar({ user, events, ...props }: {
   const isEventContext = router.asPath.startsWith('/events/');
   
   // Check if user is SuperAdmin using global roles
-  const isSuperAdmin = globalRoles.includes('SuperAdmin');
+  const isSuperAdmin = currentGlobalRoles.includes('SuperAdmin');
 
   // Get current event slug if in event context
   // Try router.query first (more reliable for dynamic routes), then fall back to asPath parsing
@@ -355,7 +349,7 @@ export function AppSidebar({ user, events, ...props }: {
     events,
     user,
     unreadCount,
-    globalRoles,
+    currentGlobalRoles,
   ]);
 
   // Collapsed event switcher: just the icon, opens the dropdown

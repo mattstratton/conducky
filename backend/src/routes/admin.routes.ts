@@ -97,6 +97,10 @@ router.get('/events', requireSuperAdmin(), async (req: Request, res: Response): 
 router.post('/events', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, slug, description } = req.body;
+    
+    console.log('DEBUG: Event creation request received');
+    console.log('DEBUG: Request body:', JSON.stringify(req.body, null, 2));
+    console.log('DEBUG: Extracted fields:', { name, slug, description });
 
     // Validation
     if (!name || name.length < 3 || name.length > 100) {
