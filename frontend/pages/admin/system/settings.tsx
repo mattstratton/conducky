@@ -38,8 +38,9 @@ export default function SystemSettings() {
       } else {
         setError('Failed to load system settings');
       }
-    } catch {
+    } catch (error) {
       setError('Network error loading settings');
+      console.error('Failed to fetch settings:', error);
     } finally {
       setLoading(false);
     }
