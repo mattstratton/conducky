@@ -250,7 +250,13 @@ router.get('/google/callback',
     // Clear the state from session
     delete req.session.oauthState;
     
-    res.redirect(`${frontendUrl}${nextUrl}`);
+    // Save session before redirect to ensure persistence
+    req.session.save((err) => {
+      if (err) {
+        console.error('Google OAuth session save error:', err);
+      }
+      res.redirect(`${frontendUrl}${nextUrl}`);
+    });
   }
 );
 
@@ -273,7 +279,13 @@ router.get('/github/callback',
     // Clear the state from session
     delete req.session.oauthState;
     
-    res.redirect(`${frontendUrl}${nextUrl}`);
+    // Save session before redirect to ensure persistence
+    req.session.save((err) => {
+      if (err) {
+        console.error('GitHub OAuth session save error:', err);
+      }
+      res.redirect(`${frontendUrl}${nextUrl}`);
+    });
   }
 );
 

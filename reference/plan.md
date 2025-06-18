@@ -14,7 +14,7 @@ _Checklist items with a GitHub issue are now linked for traceability._
 ## Phase 2: Authentication & User Management
 
 - [X] Implement email/password authentication (including magic link)
-- [X] Integrate social login (Google, GitHub) ([#3](https://github.com/mattstratton/conducky/issues/3)) ✅ **COMPLETED** - PR submitted and under review
+- [X] Integrate social login (Google, GitHub) ([#3](https://github.com/mattstratton/conducky/issues/3)) ✅ **MERGED** - Deployed to production
 - [X] Implement user roles: Reporter, Responder, Admin, Super Admin
 - [X] Role-based access control (RBAC) middleware
 - [X] Implement registration, login, logout, and session check endpoints
