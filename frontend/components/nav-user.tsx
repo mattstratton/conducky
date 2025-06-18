@@ -66,7 +66,7 @@ export function NavUser({
   async function handleLogout() {
     setLoggingOut(true)
     try {
-      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/logout", {
+      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })

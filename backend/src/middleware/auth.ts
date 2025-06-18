@@ -136,6 +136,17 @@ export function logoutMiddleware(req: Request, res: Response): void {
     if (err) {
       return res.status(500).json({ error: 'Logout failed.' });
     }
-    return res.json({ message: 'Logged out!' });
+    
+    // Destroy the session to fully clear it
+    req.session.destroy((sessionErr: any) => {
+      if (sessionErr) {
+        console.error('Session destruction failed:', sessionErr);
+        return res.status(500).json({ error: 'Logout failed.' });
+      }
+      
+      // Clear the session cookie
+      res.clearCookie('connect.sid'); // Default session cookie name
+      return res.json({ message: 'Logged out!' });
+    });
   });
 } 
