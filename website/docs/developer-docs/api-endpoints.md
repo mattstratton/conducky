@@ -168,6 +168,38 @@ Event routes are mounted at `/api/events` and `/events`:
 - **Role:** Admin or SuperAdmin for the event
 - **Response:** `{ message }`
 
+#### Get Individual User Profile
+
+- **GET** `/api/events/slug/:slug/users/:userId` or `/events/slug/:slug/users/:userId`
+- **Role:** Responder, Admin, or SuperAdmin for the event
+- **Description:** Get detailed profile information for a specific user in the event
+- **Response:** `{ user: { id, name, email, avatarUrl }, roles: [...], joinDate: string, lastActivity: string|null }`
+
+#### Get User Activity Timeline
+
+- **GET** `/api/events/slug/:slug/users/:userId/activity` or `/events/slug/:slug/users/:userId/activity`
+- **Role:** Responder, Admin, or SuperAdmin for the event
+- **Description:** Get chronological activity timeline for a specific user in the event
+- **Query Parameters:**
+  - `page` (integer, optional): Page number for pagination (default: 1)
+  - `limit` (integer, optional): Number of activities per page (default: 20)
+- **Response:** `{ activities: [...], total: number }`
+- **Activity Types:**
+  - `report`: Report submissions and updates
+  - `comment`: Comment additions to reports
+  - `audit`: System actions and role changes
+
+#### Get User Reports
+
+- **GET** `/api/events/slug/:slug/users/:userId/reports` or `/events/slug/:slug/users/:userId/reports`
+- **Role:** Responder, Admin, or SuperAdmin for the event
+- **Description:** Get all reports submitted by or assigned to a specific user in the event
+- **Query Parameters:**
+  - `type` (string, optional): Filter by report type (`submitted`, `assigned`, `all`) (default: `all`)
+  - `page` (integer, optional): Page number for pagination (default: 1)
+  - `limit` (integer, optional): Number of reports per page (default: 20)
+- **Response:** `{ reports: [...], total: number }`
+
 ### Role Management
 
 #### Assign Role to User
