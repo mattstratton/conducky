@@ -1,0 +1,15 @@
+{
+  // markdownlint-cli2 configuration
+  "config": {
+    "MD013": false
+  },
+  "globs": [
+    "**/*.{md,mkd,mdwn,mdown,markdown,markdn,mdtxt,mdtext,workbook}",
+    "!**/*.code-search",
+    "!**/bower_components",
+    "!**/node_modules", 
+    "!**/.git",
+    "!**/vendor",
+    "!**/reference/**"
+  ]
+} 
