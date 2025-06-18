@@ -212,9 +212,13 @@ export default function Register() {
   const handleSocialLogin = (provider: 'google' | 'github') => {
     // Redirect to OAuth provider
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    const redirectUrl = `${baseUrl}/api/auth/${provider}`;
+    const { next } = router.query;
     
-    // No need for state parameter since this is direct registration
+    let redirectUrl = `${baseUrl}/api/auth/${provider}`;
+    if (next && typeof next === 'string') {
+      redirectUrl += `?state=${encodeURIComponent(next)}`;
+    }
+    
     window.location.href = redirectUrl;
   };
 

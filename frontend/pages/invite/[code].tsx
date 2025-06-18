@@ -22,7 +22,7 @@ interface Event {
 
 export default function RedeemInvitePage() {
   const router = useRouter();
-  const { code } = router.query;
+  const code = Array.isArray(router.query.code) ? router.query.code[0] : router.query.code;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user, refreshUser } = useContext(UserContext) as any;
   const [invite, setInvite] = useState<Invite | null>(null);
