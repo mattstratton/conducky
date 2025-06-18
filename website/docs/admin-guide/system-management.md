@@ -33,8 +33,8 @@ SuperAdmins have access to a dedicated system administration interface through t
 ### Context Switching
 
 SuperAdmins can switch between two contexts:
-- **System Administration**: Managing the Conducky installation (`/admin/*` pages)
-- **Personal Dashboard**: Participating in events as a regular user (`/dashboard` and `/events/*` pages)
+- **System Administration**: Managing the Conducky installation (pages starting with `/admin/`)
+- **Personal Dashboard**: Participating in events as a regular user (`/dashboard` and pages starting with `/events/`)
 
 ## Creating Events
 
