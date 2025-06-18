@@ -643,9 +643,19 @@ Notification routes are mounted at `/api/notifications`:
 
 ### System Settings
 
+#### Get System Settings
+
 - **GET** `/api/system/settings`
-- **Description:** Get system configuration settings.
-- **Response:** `{ settings: {...} }`
+- **Description:** Get system configuration settings (public access).
+- **Response:** `{ showPublicEventList: boolean }`
+
+#### Update System Settings
+
+- **PATCH** `/api/admin/system/settings`
+- **Role:** SuperAdmin only
+- **Description:** Update system configuration settings.
+- **Body:** `{ showPublicEventList?: boolean }`
+- **Response:** `{ message: "Settings updated successfully", settings: { showPublicEventList: boolean } }`
 
 ### SuperAdmin Event Management
 

@@ -128,6 +128,9 @@ This document describes the main data models used in the system, based on the Pr
 - **key**: Unique setting key
 - **value**: Setting value (string)
 
+### Current System Settings
+- **showPublicEventList**: Boolean (stored as string) - Controls whether public event listing is shown on home page
+
 ## PasswordResetToken
 - **id**: UUID, primary key
 - **userId**: User reference

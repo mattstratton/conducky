@@ -33,9 +33,18 @@ New users can create an account in several ways:
 After logging into Conducky, you'll be directed to your appropriate starting point:
 
 - **First-time users**: Global dashboard with information about joining events
-- **Single event users**: Directly to that event's dashboard
+- **Single event users**: Global dashboard showing that event
 - **Multi-event users**: Global dashboard showing all your events
-- **SuperAdmins**: System admin dashboard for installation management
+- **SuperAdmins**: Global dashboard with access to system admin features
+
+## Home Page for Visitors
+
+Before logging in, the Conducky home page provides different content based on system configuration:
+
+- **Public Event Listing Enabled**: Shows a list of all active events with links to public event pages
+- **Public Event Listing Disabled**: Shows login and registration options only
+
+The public event listing can be controlled by SuperAdmins through the System Settings.
 
 ## Understanding Navigation
 
