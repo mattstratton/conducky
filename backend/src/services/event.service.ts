@@ -821,9 +821,9 @@ export class EventService {
         lastReport?.createdAt,
         lastComment?.createdAt,
         lastAuditLog?.timestamp
-      ].filter(Boolean);
+      ].filter((date): date is Date => date !== null && date !== undefined);
 
-      const lastActivity = activities.length > 0 ? new Date(Math.max(...activities.map(d => d!.getTime()))) : null;
+      const lastActivity = activities.length > 0 ? new Date(Math.max(...activities.map(d => d.getTime()))) : null;
 
       return {
         success: true,

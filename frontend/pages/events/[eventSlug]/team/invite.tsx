@@ -35,6 +35,15 @@ export default function InviteUsersPage() {
         if (eventRes.ok) {
           const eventData = await eventRes.json();
           setEvent(eventData.event);
+        } else if (eventRes.status === 404) {
+          setError('Event not found');
+          return;
+        } else if (eventRes.status === 403) {
+          setError('Access denied to this event');
+          return;
+        } else {
+          setError('Failed to load event details');
+          return;
         }
 
         // Fetch user session
@@ -45,6 +54,12 @@ export default function InviteUsersPage() {
         if (userRes.ok) {
           const userData = await userRes.json();
           setUser(userData?.user || null);
+        } else if (userRes.status === 401) {
+          setError('Please log in to access this page');
+          return;
+        } else {
+          setError('Failed to load user session');
+          return;
         }
 
         // Fetch user's event-specific roles
@@ -55,6 +70,12 @@ export default function InviteUsersPage() {
         if (rolesRes.ok) {
           const rolesData = await rolesRes.json();
           setUserEventRoles(rolesData?.roles || []);
+        } else if (rolesRes.status === 403) {
+          setError('Access denied to this event');
+          return;
+        } else {
+          setError('Failed to load user roles');
+          return;
         }
       } catch (err) {
         console.error('Error fetching data:', err);

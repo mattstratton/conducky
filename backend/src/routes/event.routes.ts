@@ -157,6 +157,20 @@ router.patch('/slug/:slug/users/:userId', requireRole(['Admin', 'SuperAdmin']), 
       return;
     }
     
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: 'Invalid email format.' });
+      return;
+    }
+    
+    // Validate role enum
+    const validRoles = ['SuperAdmin', 'Admin', 'Responder', 'Reporter'];
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ error: 'Invalid role. Must be one of: SuperAdmin, Admin, Responder, Reporter.' });
+      return;
+    }
+    
     const updateData = { name, email, role };
     
     const result = await eventService.updateEventUser(slug, userId, updateData);

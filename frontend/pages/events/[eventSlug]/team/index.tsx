@@ -100,6 +100,12 @@ export default function EventTeam() {
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
+      const member = members.find(m => m.id === userId);
+      if (!member) {
+        alert('User not found');
+        return;
+      }
+      
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
       const response = await fetch(`${apiUrl}/api/events/slug/${eventSlug}/users/${userId}`, {
         method: 'PATCH',
@@ -107,15 +113,25 @@ export default function EventTeam() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ role: newRole })
+        body: JSON.stringify({ 
+          name: member.name,
+          email: member.email,
+          role: newRole 
+        })
       });
 
       if (!response.ok) {
         throw new Error('Failed to update user role');
       }
 
-      // Refresh the team list
-      window.location.reload();
+      // Update local state instead of reloading
+      setMembers(prevMembers => 
+        prevMembers.map(m => 
+          m.id === userId 
+            ? { ...m, roles: [newRole] }
+            : m
+        )
+      );
     } catch (err) {
       console.error('Error updating user role:', err);
       alert('Failed to update user role. Please try again.');
@@ -138,8 +154,8 @@ export default function EventTeam() {
         throw new Error('Failed to remove user');
       }
 
-      // Refresh the team list
-      window.location.reload();
+      // Remove user from local state instead of reloading
+      setMembers(prevMembers => prevMembers.filter(m => m.id !== userId));
     } catch (err) {
       console.error('Error removing user:', err);
       alert('Failed to remove user. Please try again.');
