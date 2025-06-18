@@ -26,6 +26,7 @@ Follow the [Social Login Configuration guide](website/docs/admin-guide/system-ma
   GOOGLE_CLIENT_SECRET=your_actual_google_client_secret
   GITHUB_CLIENT_ID=your_actual_github_client_id
   GITHUB_CLIENT_SECRET=your_actual_github_client_secret
+  BACKEND_BASE_URL=http://localhost:4000
   FRONTEND_BASE_URL=http://localhost:3001
   ```
 

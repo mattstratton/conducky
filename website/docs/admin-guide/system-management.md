@@ -144,6 +144,9 @@ Before configuring social login, you'll need:
 4. Return to create OAuth 2.0 Client ID:
    - **Application type**: Web application
    - **Name**: "Conducky OAuth Client"
+   - **Authorized JavaScript origins**:
+     - Local development: `http://localhost:3001`
+     - Production: `https://yourdomain.com`
    - **Authorized redirect URIs**:
      - Local development: `http://localhost:4000/api/auth/google/callback`
      - Production: `https://yourdomain.com/api/auth/google/callback`
@@ -189,8 +192,9 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GITHUB_CLIENT_ID=your_github_client_id_here
 GITHUB_CLIENT_SECRET=your_github_client_secret_here
 
-# Frontend URL for OAuth redirects
-FRONTEND_BASE_URL=http://localhost:3001
+# Base URLs for OAuth (important: these must match your OAuth app configuration)
+BACKEND_BASE_URL=http://localhost:4000   # Where OAuth callbacks are handled
+FRONTEND_BASE_URL=http://localhost:3001  # Where users are redirected after login
 ```
 
 #### Production Configuration
@@ -204,7 +208,8 @@ GOOGLE_CLIENT_SECRET=your_production_google_client_secret
 GITHUB_CLIENT_ID=your_production_github_client_id
 GITHUB_CLIENT_SECRET=your_production_github_client_secret
 
-# Production frontend URL
+# Production URLs
+BACKEND_BASE_URL=https://yourdomain.com   # Same domain, different services
 FRONTEND_BASE_URL=https://yourdomain.com
 ```
 
