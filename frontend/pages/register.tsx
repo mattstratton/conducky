@@ -178,8 +178,16 @@ export default function Register() {
       const data: ApiResponse = await response.json();
 
       if (response.ok) {
-        // Registration successful - redirect to login with success message
-        router.push('/login?message=Registration successful! Please log in to continue.');
+        // Registration successful
+        const { next } = router.query;
+        
+        if (next && typeof next === 'string' && next.startsWith('/invite/')) {
+          // User came from an invite link - redirect back to complete invite redemption
+          router.push(`/login?message=${encodeURIComponent('Registration successful! Please log in to join the event.')}&next=${encodeURIComponent(next)}`);
+        } else {
+          // Regular registration - redirect to login with success message
+          router.push('/login?message=Registration successful! Please log in to continue.');
+        }
       } else {
         // Handle server errors
         if (data.error) {
@@ -226,9 +234,17 @@ export default function Register() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Create your account</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {router.query.next && typeof router.query.next === 'string' && router.query.next.startsWith('/invite/') 
+              ? 'Create account to join event' 
+              : 'Create your account'
+            }
+          </CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Join Conducky to manage code of conduct incidents
+            {router.query.next && typeof router.query.next === 'string' && router.query.next.startsWith('/invite/') 
+              ? 'Create your account and you will be able to join the event' 
+              : 'Join Conducky to manage code of conduct incidents'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
