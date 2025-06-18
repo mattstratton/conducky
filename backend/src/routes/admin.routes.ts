@@ -92,21 +92,11 @@ router.get('/events', requireSuperAdmin(), async (req: Request, res: Response): 
 
 /**
  * POST /api/admin/events
- * Create a new event (SuperAdmin only)
+ * Create a new event (SuperAdmin only) - simplified version for basic event creation
  */
 router.post('/events', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
   try {
-    const {
-      name,
-      slug,
-      description,
-      website,
-      contactEmail,
-      startDate,
-      endDate,
-      codeOfConduct,
-      initialAdminEmail,
-    } = req.body;
+    const { name, slug, description } = req.body;
 
     // Validation
     if (!name || name.length < 3 || name.length > 100) {
@@ -123,16 +113,9 @@ router.post('/events', requireSuperAdmin(), async (req: Request, res: Response):
       return;
     }
 
-    if (!contactEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+    if (!description || description.length < 10) {
       res.status(400).json({
-        error: 'Valid contact email is required',
-      });
-      return;
-    }
-
-    if (!initialAdminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(initialAdminEmail)) {
-      res.status(400).json({
-        error: 'Valid initial admin email is required',
+        error: 'Description is required and must be at least 10 characters',
       });
       return;
     }
@@ -157,67 +140,22 @@ router.post('/events', requireSuperAdmin(), async (req: Request, res: Response):
       return;
     }
 
-    // Validate dates if provided
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (end <= start) {
-        res.status(400).json({
-          error: 'End date must be after start date',
-        });
-        return;
-      }
-    }
-
-    // Create the event
+    // Create the event with minimal information
+    // Event will be marked as "setup pending" until an admin completes configuration
     const event = await prisma.event.create({
       data: {
         name,
         slug,
-        description: description || null,
-        website: website || null,
-        contactEmail,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        codeOfConduct: codeOfConduct || null,
+        description,
+        // All other fields remain null until event admin configures them
+        website: null,
+        contactEmail: null,
+        startDate: null,
+        endDate: null,
+        codeOfConduct: null,
+        isActive: false, // Event is inactive until setup is complete
       },
     });
-
-    // Find or create the initial admin user
-    let adminUser = await prisma.user.findUnique({
-      where: { email: initialAdminEmail },
-    });
-
-    if (!adminUser) {
-      // Create a user without password - they'll need to use magic link to log in
-      adminUser = await prisma.user.create({
-        data: {
-          email: initialAdminEmail,
-          name: initialAdminEmail.split('@')[0], // Use email prefix as default name
-        },
-      });
-    }
-
-    // Find the Admin role
-    const adminRole = await prisma.role.findUnique({
-      where: { name: 'Admin' },
-    });
-
-    if (!adminRole) {
-      throw new Error('Admin role not found in database');
-    }
-
-    // Assign admin role to the user for this event
-    await prisma.userEventRole.create({
-      data: {
-        userId: adminUser.id,
-        eventId: event.id,
-        roleId: adminRole.id,
-      },
-    });
-
-    // TODO: Send welcome email to initial admin
-    // This would be implemented when we add email functionality
 
     res.status(201).json({
       message: 'Event created successfully',
@@ -226,8 +164,7 @@ router.post('/events', requireSuperAdmin(), async (req: Request, res: Response):
         name: event.name,
         slug: event.slug,
         description: event.description,
-        contactEmail: event.contactEmail,
-        initialAdmin: adminUser.email,
+        setupRequired: true, // Indicates that event admin setup is needed
       },
     });
   } catch (error: any) {
@@ -448,6 +385,215 @@ router.patch('/events/:eventId/toggle', requireSuperAdmin(), async (req: Request
       return;
     }
     res.status(500).json({ error: 'Failed to toggle event status' });
+  }
+});
+
+/**
+ * GET /api/admin/events/:eventId
+ * Get individual event details (SuperAdmin only)
+ */
+router.get('/events/:eventId', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        _count: {
+          select: {
+            userEventRoles: true,
+            reports: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      res.status(404).json({
+        error: 'Event not found',
+      });
+      return;
+    }
+
+    res.json({
+      event: {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        description: event.description,
+        isActive: event.isActive,
+        website: event.website,
+        contactEmail: event.contactEmail,
+        startDate: event.startDate?.toISOString(),
+        endDate: event.endDate?.toISOString(),
+        codeOfConduct: event.codeOfConduct,
+        setupComplete: event.isActive, // For now, isActive indicates setup completion
+        userCount: event._count.userEventRoles,
+        reportCount: event._count.reports,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt.toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching event:', error);
+    res.status(500).json({
+      error: 'Failed to fetch event',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/admin/events/:eventId/invites
+ * Get event invite links (SuperAdmin only)
+ */
+router.get('/events/:eventId/invites', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+
+    // Verify event exists
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      res.status(404).json({
+        error: 'Event not found',
+      });
+      return;
+    }
+
+    const invites = await prisma.eventInviteLink.findMany({
+      where: { eventId },
+      include: {
+        role: {
+          select: { name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      invites: invites.map(invite => ({
+        id: invite.id,
+        code: invite.code,
+        email: invite.note || 'Not specified', // Use note field for email or description
+        role: invite.role.name,
+        status: invite.useCount > 0 ? 'Used' : invite.disabled ? 'Disabled' : 'Pending',
+        createdAt: invite.createdAt.toISOString(),
+        expiresAt: invite.expiresAt?.toISOString() || null,
+        useCount: invite.useCount,
+        maxUses: invite.maxUses,
+      })),
+    });
+  } catch (error: any) {
+    console.error('Error fetching event invites:', error);
+    res.status(500).json({
+      error: 'Failed to fetch event invites',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/admin/events/:eventId/invites
+ * Create event invite link (SuperAdmin only)
+ */
+router.post('/events/:eventId/invites', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const { email, role } = req.body;
+
+    // Get current user ID for createdByUserId
+    const currentUser = (req as any).user;
+    if (!currentUser) {
+      res.status(401).json({
+        error: 'User not authenticated',
+      });
+      return;
+    }
+
+    // Validation
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({
+        error: 'Valid email is required',
+      });
+      return;
+    }
+
+    if (!role || !['Admin', 'Responder'].includes(role)) {
+      res.status(400).json({
+        error: 'Role must be Admin or Responder',
+      });
+      return;
+    }
+
+    // Verify event exists
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      res.status(404).json({
+        error: 'Event not found',
+      });
+      return;
+    }
+
+    // Find the role
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: role },
+    });
+
+    if (!roleRecord) {
+      res.status(400).json({
+        error: 'Invalid role',
+      });
+      return;
+    }
+
+    // Generate unique invite code
+    const code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    // Create invite link (expires in 7 days)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const invite = await prisma.eventInviteLink.create({
+      data: {
+        code,
+        eventId,
+        roleId: roleRecord.id,
+        createdByUserId: currentUser.id,
+        expiresAt,
+        note: `Invite for ${email} as ${role}`, // Store email in note field
+        maxUses: 1, // Single use invite
+      },
+      include: {
+        role: {
+          select: { name: true },
+        },
+      },
+    });
+
+    res.status(201).json({
+      message: 'Invite created successfully',
+      invite: {
+        id: invite.id,
+        code: invite.code,
+        email: email,
+        role: invite.role.name,
+        status: 'Pending',
+        createdAt: invite.createdAt.toISOString(),
+        expiresAt: invite.expiresAt?.toISOString() || null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error creating event invite:', error);
+    res.status(500).json({
+      error: 'Failed to create event invite',
+      details: error.message,
+    });
   }
 });
 
