@@ -334,9 +334,9 @@ export function CommentsSection({
     setUseMarkdown(true);
     // Scroll to comment form
     setTimeout(() => {
-      const form = document.querySelector('form');
-      if (form) {
-        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const commentForm = document.querySelector('[data-testid="comment-form"]');
+      if (commentForm) {
+        commentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
   };
@@ -677,7 +677,7 @@ export function CommentsSection({
 
       {/* Add Comment Form */}
       {user && onCommentSubmit && (
-        <Card className="mt-6">
+        <Card className="mt-6" data-testid="comment-form">
           <CardContent className="p-4">
             <form
               onSubmit={e => {
