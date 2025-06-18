@@ -95,6 +95,21 @@ Follow the [Social Login Configuration guide](website/docs/admin-guide/system-ma
   - [ ] Shows error message: "Social login failed. Please try again or use email/password."
 - [ ] **Restore correct credentials** and restart backend
 
+## Security Verification
+
+### Test 6: Security Checks
+- [ ] **No Token Storage**: Verify OAuth tokens are NOT stored in database:
+  ```sql
+  -- Should NOT have accessToken or refreshToken columns
+  \d "SocialAccount"
+  ```
+- [ ] **Session Security**: Check OAuth redirect preserves intended destination
+  - [ ] Go to `/login?next=/dashboard`  
+  - [ ] Complete OAuth login
+  - [ ] Should land on `/dashboard` (not hardcoded redirect)
+- [ ] **Account Security**: Social accounts are properly linked by email
+- [ ] **Minimal Permissions**: Only basic profile and email are requested during OAuth
+
 ## Database Verification
 
 ### Check User Records
