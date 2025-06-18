@@ -150,10 +150,21 @@ export default function SystemEventSettings() {
     }
   };
 
-  const copyInviteLink = (code: string) => {
+  const copyInviteLink = async (code: string) => {
     const inviteUrl = `${window.location.origin}/invite/${code}`;
-    navigator.clipboard.writeText(inviteUrl);
-    // TODO: Show toast notification
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      // TODO: Show toast notification
+    } catch (error) {
+      console.warn('Failed to copy to clipboard:', error);
+      // Fallback: select text for manual copy
+      const textArea = document.createElement('textarea');
+      textArea.value = inviteUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
   };
 
   if (loading) {
