@@ -471,24 +471,53 @@ Evidence routes are available both through the main reports module and as standa
 
 - **POST** `/api/events/slug/:slug/reports/:reportId/comments` or `/events/slug/:slug/reports/:reportId/comments`
 - **Role:** Reporter, Responder, Admin, or SuperAdmin for the event
-- **Body:** `{ body, visibility? }` (visibility: 'public' or 'internal', default: 'public')
+- **Body:** `{ body, visibility?, isMarkdown? }` 
+  - `visibility`: 'public' or 'internal', default: 'public'
+  - `isMarkdown`: boolean, default: false (enables markdown rendering)
 - **Response:** `{ comment }`
 - **Notes:**
   - Only Responders, Admins, and SuperAdmins can create internal comments
+  - Markdown support includes formatting, links, lists, and code blocks
   - Creates notifications for other users with access to the report
 
-### Get Comments
+### Get Comments (Enhanced with Pagination, Filtering & Search)
 
 - **GET** `/api/events/slug/:slug/reports/:reportId/comments` or `/events/slug/:slug/reports/:reportId/comments`
 - **Role:** Reporter (own reports), Responder, Admin, or SuperAdmin for the event
 - **Query Parameters:**
   - `page` (integer, optional): Page number (default: 1)
-  - `limit` (integer, optional): Items per page (default: 20)
-  - `visibility` (string, optional): Filter by visibility level
-- **Response:** `{ comments: [...], pagination: {...} }`
+  - `limit` (integer, optional): Items per page (default: 10, max: 100)
+  - `visibility` (string, optional): Filter by visibility level ('public', 'internal', or 'all')
+  - `search` (string, optional): Search in comment body text
+  - `sortBy` (string, optional): Sort field ('createdAt' or 'updatedAt', default: 'createdAt')
+  - `sortOrder` (string, optional): Sort order ('asc' or 'desc', default: 'asc')
+- **Response:** `{ comments: [...], pagination: { page, limit, total, totalPages } }`
 - **Notes:**
   - Reporters can only see public comments unless they're assigned to the report
   - Responders/Admins can see both public and internal comments
+  - Search is case-insensitive and searches comment body text
+  - Comments include markdown rendering support
+  - Supports direct linking to specific comments via URL anchors
+
+### Update Comment
+
+- **PATCH** `/api/events/slug/:slug/reports/:reportId/comments/:commentId` or `/events/slug/:slug/reports/:reportId/comments/:commentId`
+- **Role:** Comment author, or Admin/SuperAdmin for the event
+- **Body:** `{ body?, visibility?, isMarkdown? }` (at least one required)
+- **Response:** `{ comment }`
+- **Notes:**
+  - Only the comment author can edit their own comments
+  - Only Responders/Admins can change visibility to 'internal'
+  - Markdown toggle affects rendering but preserves original content
+
+### Delete Comment
+
+- **DELETE** `/api/events/slug/:slug/reports/:reportId/comments/:commentId` or `/events/slug/:slug/reports/:reportId/comments/:commentId`
+- **Role:** Comment author, or Admin/SuperAdmin for the event
+- **Response:** `{ message }`
+- **Notes:**
+  - Only the comment author or Admin/SuperAdmin can delete comments
+  - Deletion is permanent and cannot be undone
 
 ---
 

@@ -195,9 +195,87 @@ See `backend/tests/integration/audit-test.test.js` for a sample integration test
 
 ---
 
+## Testing Comment System Features
+
+### Frontend Comment Testing
+
+The comment system has comprehensive test coverage for all major features:
+
+#### Core Component Tests
+- **CommentsSection.tsx**: Tests pagination, search, filtering, and markdown rendering
+- **MarkdownEditor.tsx**: Tests markdown toolbar, preview mode, and content handling
+- **Comment rendering**: Tests public/internal visibility and role-based access
+
+#### Key Test Scenarios
+```bash
+# Run comment-specific tests
+npm test -- --testNamePattern="Comment"
+
+# Test markdown editor specifically
+npm test -- components/MarkdownEditor.test.tsx
+
+# Test comment integration with reports
+npm test -- components/ReportDetailView.test.tsx
+```
+
+#### Manual Testing Checklist
+- **Markdown Rendering**: Test bold, italic, headers, lists, links, code blocks
+- **Search Functionality**: Test real-time search with debouncing
+- **Pagination**: Test comment navigation across multiple pages
+- **Quote Reply**: Test quoting comments and auto-scroll behavior
+- **Role Permissions**: Test internal/public comment visibility
+- **Mobile Responsiveness**: Test on mobile devices and small screens
+- **Accessibility**: Test keyboard navigation and screen reader compatibility
+
+### Backend Comment API Testing
+
+Comprehensive API testing is located in `backend/tests/integration/`:
+
+#### Test Coverage
+- **Authentication**: All endpoints require proper authentication
+- **Role-based Access**: Comments respect event roles and permissions
+- **CRUD Operations**: Create, read, update, delete with proper validation
+- **Pagination & Search**: Advanced filtering and search capabilities
+- **Data Integrity**: Proper relationship handling and cascading
+
+#### Running Comment API Tests
+```bash
+# Run all comment-related backend tests
+cd backend && npm test -- --testPathPattern=comment
+
+# Run specific comment integration tests
+cd backend && npm test -- tests/integration/comments.test.js
+
+# Run with verbose output for debugging
+cd backend && npm test -- --testPathPattern=comment --verbose
+```
+
+#### Security Testing
+- **XSS Prevention**: Tests that user input is properly sanitized
+- **Permission Validation**: Tests that users can only access authorized comments
+- **Internal Comment Isolation**: Tests that internal comments are properly hidden
+
+### Performance Testing
+- **Search Performance**: Test search with large comment datasets
+- **Pagination Efficiency**: Test pagination with thousands of comments  
+- **Markdown Rendering**: Test rendering performance with complex markdown
+
+### Regression Testing
+When modifying comment features, always run:
+```bash
+# Full comment test suite
+npm run test:all
+
+# Specific comment functionality
+npm test -- --testNamePattern="comment|Comment|markdown|Markdown"
+```
+
 ## Troubleshooting
 
 - If you see errors about missing Prisma binaries, ensure your `schema.prisma` includes the correct `binaryTargets` and run `npx prisma generate`.
+- **React Markdown Issues**: If you see Jest ES module errors with react-markdown, check that the mock in `__mocks__/react-markdown.js` is properly configured.
+- **Comment Pagination**: If pagination tests fail, ensure test data includes enough comments to test multiple pages.
+- **Search Functionality**: If search tests are flaky, check that search debouncing is properly handled in test environments.
 - If tests fail due to missing database records, check if the test mocks DB dependencies or if a test database is needed.
 
 ---

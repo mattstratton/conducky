@@ -6,6 +6,35 @@ sidebar_position: 2
 
 ## December 2024
 
+### 💬 Enhanced Comment System (New Features)
+
+The comment system has been significantly upgraded with advanced collaboration features:
+
+**Markdown Support:**
+- **Rich Text Formatting**: Bold, italic, headers, lists, links, and code blocks
+- **GitHub-style Markdown**: Familiar syntax with toolbar assistance
+- **Universal Rendering**: All comments render as markdown (like GitHub Issues)
+- **Preview Mode**: Toggle between edit and preview while writing
+
+**Advanced Search & Navigation:**
+- **Real-time Search**: Find comments instantly with debounced search
+- **Smart Pagination**: Navigate large comment threads efficiently (10-100 per page)
+- **Direct Linking**: Permalink to specific comments with #comment-123 anchors
+- **Cross-page Navigation**: Search results span multiple comment pages
+
+**Enhanced User Experience:**
+- **Quote Reply**: Click any comment to quote it in your response
+- **Inline Editing**: Edit comments in place with markdown toolbar
+- **Role-based Filtering**: Filter by public/internal visibility
+- **Mobile Optimized**: Full functionality on mobile devices for field response
+
+**Security & Performance:**
+- **XSS Prevention**: Secure handling of user-generated content
+- **Efficient Pagination**: Database-optimized queries with proper indexing
+- **Role Enforcement**: Strict visibility controls for internal comments
+
+The enhanced comment system significantly improves incident response coordination while maintaining security and performance standards.
+
 ### 🔔 Notification Center (New Feature)
 
 A comprehensive notification system has been added to keep you informed about important incident-related activities:
