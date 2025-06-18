@@ -51,12 +51,14 @@ export default function RedeemInvitePage() {
   useEffect(() => {
     if (user && invite && event && !success && !error && !redeeming) {
       // Automatically redeem the invite for authenticated users
+      console.log('[AUTO-REDEEM] Triggering automatic invite redemption for user:', user.email);
       handleRedeem();
     }
   }, [user, invite, event, success, error, redeeming]);
 
   // Handle redeem
   const handleRedeem = async () => {
+    console.log('[REDEEM] Starting invite redemption for code:', code);
     setRedeeming(true);
     setError('');
     setSuccess('');
@@ -65,13 +67,18 @@ export default function RedeemInvitePage() {
         method: 'POST',
         credentials: 'include',
       });
+      console.log('[REDEEM] Response status:', res.status);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        console.log('[REDEEM] Error response:', data);
         throw new Error(data.error || 'Failed to redeem invite');
       }
+      const data = await res.json();
+      console.log('[REDEEM] Success response:', data);
       setSuccess('You have joined the event!');
       if (refreshUser) refreshUser();
     } catch (err) {
+      console.error('[REDEEM] Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to redeem invite');
     }
     setRedeeming(false);
@@ -160,7 +167,7 @@ export default function RedeemInvitePage() {
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center">Join {event?.name}</CardTitle>
               <CardDescription className="text-center text-muted-foreground">
-                You're about to join as a Reporter
+                You&apos;re about to join as a Reporter
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
