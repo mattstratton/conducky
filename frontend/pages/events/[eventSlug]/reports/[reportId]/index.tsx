@@ -33,6 +33,7 @@ interface Comment {
   userId: string;
   reportId: string;
   visibility: string;
+  isMarkdown: boolean;
   createdAt: string;
   updatedAt: string;
   user?: User;
