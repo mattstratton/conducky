@@ -5,6 +5,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Check, ChevronDown } from "lucide-react";
 import { useRouter } from "next/router";
 
@@ -23,10 +24,19 @@ export function NavEvents({
   selectedEventSlug?: string | null
 }) {
   const router = useRouter();
+  const { setOpenMobile, isMobile } = useSidebar()
+  
   // Determine current event by matching current path to event url, or use selectedEventSlug
   const currentEvent = events.find(e => router.asPath.startsWith(e.url)) 
     || (selectedEventSlug ? events.find(e => e.url.endsWith(`/${selectedEventSlug}/dashboard`)) : null)
     || events[0];
+
+  const handleEventClick = (eventUrl: string) => {
+    router.push(eventUrl);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   if (collapsed) {
     // Only show the icon, but still open the dropdown
@@ -43,7 +53,7 @@ export function NavEvents({
             <DropdownMenuItem
               key={event.url}
               className={`flex items-center gap-2 px-3 py-2 text-sm ${currentEvent?.url === event.url ? "bg-accent font-semibold" : ""}`}
-              onClick={() => router.push(event.url)}
+              onClick={() => handleEventClick(event.url)}
             >
               <event.icon className="w-4 h-4" />
               <span className="flex-1 truncate text-left">{event.name}</span>
@@ -75,7 +85,7 @@ export function NavEvents({
             <DropdownMenuItem
               key={event.url}
               className={`flex items-center gap-2 px-3 py-2 text-sm ${currentEvent?.url === event.url ? "bg-accent font-semibold" : ""}`}
-              onClick={() => router.push(event.url)}
+              onClick={() => handleEventClick(event.url)}
             >
               <event.icon className="w-4 h-4" />
               <span className="flex-1 truncate text-left">{event.name}</span>

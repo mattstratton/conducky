@@ -50,7 +50,7 @@ export function NavUser({
     roles?: string[]
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const isSuperAdmin = user.roles?.includes("SuperAdmin")
@@ -62,6 +62,12 @@ export function NavUser({
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   async function handleLogout() {
     setLoggingOut(true)
@@ -76,6 +82,9 @@ export function NavUser({
     setUser(null)
     setLoggingOut(false)
     router.push("/login")
+    if (isMobile) {
+      setOpenMobile(false)
+    }
   }
 
   return (
@@ -135,26 +144,26 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/profile">
+                <Link href="/profile" onClick={handleLinkClick}>
                   <BadgeCheck />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile/settings">
+                <Link href="/profile/settings" onClick={handleLinkClick}>
                   <Settings2 />
                   Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile/events">
+                <Link href="/profile/events" onClick={handleLinkClick}>
                   <Users />
                   My Events
                 </Link>
               </DropdownMenuItem>
               {isSuperAdmin && (
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard">
+                  <Link href="/admin/dashboard" onClick={handleLinkClick}>
                     <Sparkles />
                     System Admin Dashboard
                   </Link>
