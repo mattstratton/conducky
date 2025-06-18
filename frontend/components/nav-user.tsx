@@ -51,7 +51,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const isSuperAdmin = user.roles?.includes("SuperAdmin")
   const router = useRouter()
@@ -167,10 +167,10 @@ export function NavUser({
                 <button 
                   type="button"
                   className="flex items-center w-full"
-                  onClick={() => setTheme(mounted && theme === "dark" ? "light" : "dark")}
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                   disabled={!mounted}
                 >
-                  {mounted && theme === "dark" ? (
+                  {mounted && resolvedTheme === "dark" ? (
                     <>
                       <Moon className="mr-2" />
                       Dark Mode
