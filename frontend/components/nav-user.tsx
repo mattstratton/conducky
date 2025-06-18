@@ -50,7 +50,7 @@ export function NavUser({
     roles?: string[]
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const isSuperAdmin = user.roles?.includes("SuperAdmin")
@@ -63,8 +63,17 @@ export function NavUser({
     setMounted(true)
   }, [])
 
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   async function handleLogout() {
     setLoggingOut(true)
+    if (isMobile) {
+      setOpenMobile(false)
+    }
     try {
       await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/auth/logout", {
         method: "POST",
@@ -135,26 +144,26 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/profile">
+                <Link href="/profile" onClick={handleLinkClick}>
                   <BadgeCheck />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile/settings">
+                <Link href="/profile/settings" onClick={handleLinkClick}>
                   <Settings2 />
                   Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile/events">
+                <Link href="/profile/events" onClick={handleLinkClick}>
                   <Users />
                   My Events
                 </Link>
               </DropdownMenuItem>
               {isSuperAdmin && (
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard">
+                  <Link href="/admin/dashboard" onClick={handleLinkClick}>
                     <Sparkles />
                     System Admin Dashboard
                   </Link>
