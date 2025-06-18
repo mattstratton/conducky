@@ -12,6 +12,19 @@ declare module 'express-session' {
   }
 }
 
+// Temporary store for OAuth state (in production, use Redis or database)
+const oauthStateStore = new Map<string, { nextUrl: string; timestamp: number }>();
+
+// Clean up expired state entries (older than 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of oauthStateStore.entries()) {
+    if (now - value.timestamp > 10 * 60 * 1000) { // 10 minutes
+      oauthStateStore.delete(key);
+    }
+  }
+}, 60 * 1000); // Clean up every minute
+
 const router = Router();
 const prisma = new PrismaClient();
 const authService = new AuthService(prisma);
@@ -233,19 +246,80 @@ router.get('/validate-reset-token', async (req: Request, res: Response): Promise
 
 // Google OAuth routes
 router.get('/google', (req: Request, res: Response, next: Function) => {
-  // Store state parameter in session for OAuth callback
+  console.log('[OAUTH DEBUG] Google OAuth route hit with state:', req.query.state);
+  console.log('[OAUTH DEBUG] Session ID at start:', req.sessionID);
+  
+  // Generate a unique state ID for this OAuth flow
+  const stateId = `oauth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Store the next URL in our temporary store
+  if (req.query.state && typeof req.query.state === 'string') {
+    oauthStateStore.set(stateId, {
+      nextUrl: req.query.state,
+      timestamp: Date.now()
+    });
+    console.log('[OAUTH DEBUG] Stored state in temporary store:', stateId, '→', req.query.state);
+  }
+  
+  // Also store in session as backup (though this may not survive)
   if (req.query.state && typeof req.query.state === 'string') {
     req.session.oauthState = req.query.state;
+    console.log('[OAUTH DEBUG] Stored state in session as backup:', req.session.oauthState);
   }
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  
+  // Pass the state ID to Google OAuth
+  const authOptions: any = { 
+    scope: ['profile', 'email'],
+    state: stateId
+  };
+  
+  console.log('[OAUTH DEBUG] Starting OAuth with state ID:', stateId);
+  passport.authenticate('google', authOptions)(req, res, next);
 });
 
 router.get('/google/callback', 
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
   (req: Request, res: Response) => {
-    // Successful authentication, redirect based on stored state or default
+    console.log('[OAUTH DEBUG] *** GOOGLE CALLBACK ROUTE HIT ***');
+    console.log('[OAUTH DEBUG] Google callback started');
+    console.log('[OAUTH DEBUG] Session ID:', req.sessionID);
+    console.log('[OAUTH DEBUG] Full session:', JSON.stringify(req.session, null, 2));
+    console.log('[OAUTH DEBUG] Session oauthState:', req.session.oauthState);
+    console.log('[OAUTH DEBUG] Query state parameter:', req.query.state);
+    
+    // Successful authentication, redirect based on stored state
     const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
-    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    let nextUrl = '/dashboard'; // default
+    
+    // Try to get the next URL from our temporary store using the state ID
+    if (req.query.state && typeof req.query.state === 'string') {
+      const stateData = oauthStateStore.get(req.query.state);
+      if (stateData) {
+        nextUrl = stateData.nextUrl;
+        // Clean up the state from our store
+        oauthStateStore.delete(req.query.state);
+        console.log('[OAUTH DEBUG] Retrieved nextUrl from temporary store:', nextUrl);
+      } else {
+        console.log('[OAUTH DEBUG] State ID not found in temporary store:', req.query.state);
+      }
+    }
+    
+    // Fallback to session state (if it survived)
+    if (nextUrl === '/dashboard' && req.session.oauthState) {
+      nextUrl = decodeURIComponent(req.session.oauthState as string);
+      console.log('[OAUTH DEBUG] Using session state as fallback:', nextUrl);
+    }
+    
+    console.log('[OAUTH DEBUG] Final nextUrl:', nextUrl);
+    
+    // Validate nextUrl to prevent open redirect attacks
+    if (nextUrl && !nextUrl.startsWith('/')) {
+      // Only allow relative URLs starting with /
+      console.log('[OAUTH DEBUG] Invalid nextUrl, defaulting to /dashboard');
+      nextUrl = '/dashboard';
+    }
+   
+    console.log('[OAUTH DEBUG] Final redirect URL:', `${frontendUrl}${nextUrl}`);
     
     // Clear the state from session
     delete req.session.oauthState;
@@ -255,6 +329,7 @@ router.get('/google/callback',
       if (err) {
         console.error('Google OAuth session save error:', err);
       }
+      console.log('[OAUTH DEBUG] Redirecting to:', `${frontendUrl}${nextUrl}`);
       res.redirect(`${frontendUrl}${nextUrl}`);
     });
   }
@@ -262,19 +337,80 @@ router.get('/google/callback',
 
 // GitHub OAuth routes
 router.get('/github', (req: Request, res: Response, next: Function) => {
-  // Store state parameter in session for OAuth callback
+  console.log('[OAUTH DEBUG] GitHub OAuth route hit with state:', req.query.state);
+  console.log('[OAUTH DEBUG] Session ID at start:', req.sessionID);
+  
+  // Generate a unique state ID for this OAuth flow
+  const stateId = `oauth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Store the next URL in our temporary store
+  if (req.query.state && typeof req.query.state === 'string') {
+    oauthStateStore.set(stateId, {
+      nextUrl: req.query.state,
+      timestamp: Date.now()
+    });
+    console.log('[OAUTH DEBUG] Stored state in temporary store:', stateId, '→', req.query.state);
+  }
+  
+  // Also store in session as backup (though this may not survive)
   if (req.query.state && typeof req.query.state === 'string') {
     req.session.oauthState = req.query.state;
+    console.log('[OAUTH DEBUG] Stored state in session as backup:', req.session.oauthState);
   }
-  passport.authenticate('github', { scope: ['user:email'] })(req, res, next);
+  
+  // Pass the state ID to GitHub OAuth
+  const authOptions: any = { 
+    scope: ['user:email'],
+    state: stateId
+  };
+  
+  console.log('[OAUTH DEBUG] Starting OAuth with state ID:', stateId);
+  passport.authenticate('github', authOptions)(req, res, next);
 });
 
 router.get('/github/callback',
   passport.authenticate('github', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
   (req: Request, res: Response) => {
-    // Successful authentication, redirect based on stored state or default
+    console.log('[OAUTH DEBUG] *** GITHUB CALLBACK ROUTE HIT ***');
+    console.log('[OAUTH DEBUG] GitHub callback started');
+    console.log('[OAUTH DEBUG] Session ID:', req.sessionID);
+    console.log('[OAUTH DEBUG] Full session:', JSON.stringify(req.session, null, 2));
+    console.log('[OAUTH DEBUG] Session oauthState:', req.session.oauthState);
+    console.log('[OAUTH DEBUG] Query state parameter:', req.query.state);
+    
+    // Successful authentication, redirect based on stored state
     const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
-    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    let nextUrl = '/dashboard'; // default
+    
+    // Try to get the next URL from our temporary store using the state ID
+    if (req.query.state && typeof req.query.state === 'string') {
+      const stateData = oauthStateStore.get(req.query.state);
+      if (stateData) {
+        nextUrl = stateData.nextUrl;
+        // Clean up the state from our store
+        oauthStateStore.delete(req.query.state);
+        console.log('[OAUTH DEBUG] Retrieved nextUrl from temporary store:', nextUrl);
+      } else {
+        console.log('[OAUTH DEBUG] State ID not found in temporary store:', req.query.state);
+      }
+    }
+    
+    // Fallback to session state (if it survived)
+    if (nextUrl === '/dashboard' && req.session.oauthState) {
+      nextUrl = decodeURIComponent(req.session.oauthState as string);
+      console.log('[OAUTH DEBUG] Using session state as fallback:', nextUrl);
+    }
+    
+    console.log('[OAUTH DEBUG] Final nextUrl:', nextUrl);
+    
+    // Validate nextUrl to prevent open redirect attacks
+    if (nextUrl && !nextUrl.startsWith('/')) {
+      // Only allow relative URLs starting with /
+      console.log('[OAUTH DEBUG] Invalid nextUrl, defaulting to /dashboard');
+      nextUrl = '/dashboard';
+    }
+    
+    console.log('[OAUTH DEBUG] Final redirect URL:', `${frontendUrl}${nextUrl}`);
     
     // Clear the state from session
     delete req.session.oauthState;
@@ -284,6 +420,7 @@ router.get('/github/callback',
       if (err) {
         console.error('GitHub OAuth session save error:', err);
       }
+      console.log('[OAUTH DEBUG] Redirecting to:', `${frontendUrl}${nextUrl}`);
       res.redirect(`${frontendUrl}${nextUrl}`);
     });
   }

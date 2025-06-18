@@ -5,6 +5,89 @@ sidebar_position: 5
 
 This guide explains how to set up, run, and write automated tests for the backend and frontend of this project.
 
+## Overview
+This document provides comprehensive testing guidance for Conducky, including unit tests, integration tests, and manual testing procedures.
+
+## Social Login Testing
+
+### OAuth Testing with Existing Accounts
+
+When testing social login (Google/GitHub) flows, you may encounter issues where your browser/account remembers previous OAuth consent. Here's how to test as a "new user":
+
+#### Option 1: Revoke App Access (Recommended)
+
+**For Google:**
+1. Go to [Google Account Permissions](https://myaccount.google.com/permissions)
+2. Find "Conducky" (or your app name) in the list
+3. Click **"Remove Access"**
+4. This forces Google to re-prompt for permissions on next login
+
+**For GitHub:**
+1. Go to [GitHub Settings > Applications](https://github.com/settings/applications)
+2. Click the "Authorized OAuth Apps" tab
+3. Find your Conducky app and click **"Revoke"**
+4. This forces GitHub to re-prompt for permissions on next login
+
+#### Option 2: Database Cleanup Script
+
+Use the provided cleanup script to remove users from the database:
+
+```bash
+docker-compose exec backend node scripts/cleanup-user.js <email>
+```
+
+**Note:** This only removes the user from the database but does NOT revoke OAuth consent. The social provider will still remember the app authorization.
+
+#### Option 3: Use Different Social Accounts
+
+If you have multiple Google/GitHub accounts, you can test with different accounts. However, this requires managing multiple 2FA setups and can be cumbersome.
+
+**Note:** Gmail aliases (like `your.email+test@gmail.com`) do NOT work for OAuth login. Google OAuth uses the actual account email, not aliases.
+
+#### Option 4: Incognito + Account Switching
+
+Open an incognito window and sign into a different Google/GitHub account. This can work if you have multiple accounts without complex 2FA requirements.
+
+### Social Login + Invite Flow Testing
+
+To test the complete social login + invite redemption flow:
+
+1. **Create an invite link** from an existing event admin account
+2. **Revoke OAuth access** using Option 1 above (recommended)
+3. **Open invite link** in browser: `http://localhost:3001/invite/[code]`
+4. **Click "Create Account"** or "Sign In"
+5. **Click "Login with Google"** (or GitHub)
+6. **Complete OAuth flow** - should prompt for permissions since access was revoked
+7. **Verify auto-redemption** - user should be automatically added to event
+
+### Expected Behavior
+
+**Successful Flow:**
+- User completes OAuth and is redirected back to invite page
+- User is automatically added to the event (auto-redemption)
+- User is redirected to the event dashboard
+- Backend logs show: `POST /api/invites/[code]/redeem`
+
+**Failed Flow:**
+- User completes OAuth but lands on global dashboard with "No Events Yet"
+- Auto-redemption didn't trigger
+- No redemption API call in backend logs
+
+### Common Issues
+
+**Issue: User lands on "No Events Yet" dashboard**
+- **Cause**: Auto-redemption logic didn't trigger
+- **Debug**: Check browser console for `[AUTO-REDEEM DEBUG]` logs
+- **Debug**: Check backend logs for redemption API calls
+
+**Issue: OAuth doesn't prompt for permissions**
+- **Cause**: Previous OAuth consent still active
+- **Solution**: Revoke app access (Option 1 above)
+
+**Issue: "User already exists" errors**
+- **Cause**: Previous test left user in database
+- **Solution**: Use cleanup script (Option 2 above)
+
 ---
 
 ## Running Tests with Docker Compose

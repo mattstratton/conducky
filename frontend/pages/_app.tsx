@@ -70,7 +70,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   // Re-check session after potential OAuth redirects
   React.useEffect(() => {
     // Check if this looks like an OAuth redirect (coming from login with no current user)
-    if (!user && router.asPath.startsWith('/dashboard') && router.isReady) {
+    if (!user && (router.asPath.startsWith('/dashboard') || router.asPath.startsWith('/invite/')) && router.isReady) {
       // Small delay to allow session to propagate after OAuth callback
       const timer = setTimeout(() => {
         fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
