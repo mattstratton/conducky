@@ -276,9 +276,7 @@ model SocialAccount {
   providerId   String        // The user's ID from the OAuth provider
   providerEmail String?      // Email from the OAuth provider
   providerName String?       // Name from the OAuth provider
-  accessToken  String?       // Store access token if needed for API calls
-  refreshToken String?       // Store refresh token if needed
-  profileData  String?       // JSON string for any additional profile data
+  profileData  String?       // JSON string for basic profile data (no sensitive tokens)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   

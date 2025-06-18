@@ -93,9 +93,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                 providerId: profile.id,
                 providerEmail: email,
                 providerName: profile.displayName,
-                accessToken,
-                refreshToken,
-                profileData: JSON.stringify(profile._json)
+                // Note: Not storing access/refresh tokens for security
+                profileData: JSON.stringify({
+                  id: profile.id,
+                  displayName: profile.displayName,
+                  email: email
+                })
               }
             });
           } else {
@@ -103,10 +106,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             await prisma.socialAccount.update({
               where: { id: existingSocialAccount.id },
               data: {
-                accessToken,
-                refreshToken,
                 providerName: profile.displayName,
-                profileData: JSON.stringify(profile._json)
+                profileData: JSON.stringify({
+                  id: profile.id,
+                  displayName: profile.displayName,
+                  email: email
+                })
               }
             });
           }
@@ -123,9 +128,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                   providerId: profile.id,
                   providerEmail: email,
                   providerName: profile.displayName,
-                  accessToken,
-                  refreshToken,
-                  profileData: JSON.stringify(profile._json)
+                  // Note: Not storing access/refresh tokens for security
+                  profileData: JSON.stringify({
+                    id: profile.id,
+                    displayName: profile.displayName,
+                    email: email
+                  })
                 }
               }
             },
@@ -155,7 +163,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
         if (!email) {
-          return done(new Error('No email provided by GitHub'), null);
+          return done(new Error('No email provided by GitHub'), false);
         }
 
         // Check if user already exists with this email
@@ -179,9 +187,13 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                 providerId: profile.id,
                 providerEmail: email,
                 providerName: profile.displayName || profile.username,
-                accessToken,
-                refreshToken,
-                profileData: JSON.stringify(profile._json)
+                // Note: Not storing access/refresh tokens for security
+                profileData: JSON.stringify({
+                  id: profile.id,
+                  username: profile.username,
+                  displayName: profile.displayName,
+                  email: email
+                })
               }
             });
           } else {
@@ -189,10 +201,13 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
             await prisma.socialAccount.update({
               where: { id: existingSocialAccount.id },
               data: {
-                accessToken,
-                refreshToken,
                 providerName: profile.displayName || profile.username,
-                profileData: JSON.stringify(profile._json)
+                profileData: JSON.stringify({
+                  id: profile.id,
+                  username: profile.username,
+                  displayName: profile.displayName,
+                  email: email
+                })
               }
             });
           }
@@ -209,9 +224,13 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
                   providerId: profile.id,
                   providerEmail: email,
                   providerName: profile.displayName || profile.username,
-                  accessToken,
-                  refreshToken,
-                  profileData: JSON.stringify(profile._json)
+                  // Note: Not storing access/refresh tokens for security
+                  profileData: JSON.stringify({
+                    id: profile.id,
+                    username: profile.username,
+                    displayName: profile.displayName,
+                    email: email
+                  })
                 }
               }
             },
@@ -222,7 +241,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
         return done(null, user);
       } catch (error) {
         console.error('GitHub OAuth error:', error);
-        return done(error, null);
+        return done(error, false);
       }
     }
   ));

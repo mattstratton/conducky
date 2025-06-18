@@ -128,14 +128,18 @@ function Login() {
   };
 
   const handleSocialLogin = (provider: 'google' | 'github') => {
-    // Store next URL in session storage for OAuth callback
-    if (nextUrl && nextUrl !== '/') {
-      sessionStorage.setItem('oauth_next_url', nextUrl);
-    }
-    
-    // Redirect to OAuth provider
+    // Redirect to OAuth provider with next URL as query parameter
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    window.location.href = `${baseUrl}/api/auth/${provider}`;
+    const redirectUrl = `${baseUrl}/api/auth/${provider}`;
+    
+    // Add next URL as state parameter that will be preserved through OAuth flow
+    if (nextUrl && nextUrl !== '/') {
+      // URL encode the next URL to be safe
+      const encodedNextUrl = encodeURIComponent(nextUrl);
+      window.location.href = `${redirectUrl}?state=${encodedNextUrl}`;
+    } else {
+      window.location.href = redirectUrl;
+    }
   };
 
   return (
