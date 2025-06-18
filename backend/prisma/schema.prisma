@@ -64,11 +64,16 @@ enum NotificationPriority {
   urgent
 }
 
+enum SocialProvider {
+  google
+  github
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
   name           String?
-  passwordHash   String?
+  passwordHash   String? // Optional for social login users
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   userEventRoles UserEventRole[]
@@ -80,6 +85,7 @@ model User {
   avatar         UserAvatar?
   passwordResetTokens PasswordResetToken[]
   notifications  Notification[]
+  socialAccounts SocialAccount[]
 }
 
 model Event {
@@ -260,4 +266,22 @@ model Notification {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SocialAccount {
+  id           String        @id @default(uuid())
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String
+  provider     SocialProvider
+  providerId   String        // The user's ID from the OAuth provider
+  providerEmail String?      // Email from the OAuth provider
+  providerName String?       // Name from the OAuth provider
+  accessToken  String?       // Store access token if needed for API calls
+  refreshToken String?       // Store refresh token if needed
+  profileData  String?       // JSON string for any additional profile data
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@unique([provider, providerId])
+  @@unique([userId, provider])
 }

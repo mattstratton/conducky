@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import passport from 'passport';
 import { AuthService } from '../services/auth.service';
 import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
@@ -222,5 +223,27 @@ router.get('/validate-reset-token', async (req: Request, res: Response): Promise
     res.status(500).json({ error: 'Token validation failed.' });
   }
 });
+
+// Google OAuth routes
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
+  (req: Request, res: Response) => {
+    // Successful authentication, redirect to frontend dashboard
+    res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/dashboard`);
+  }
+);
+
+// GitHub OAuth routes
+router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+
+router.get('/github/callback',
+  passport.authenticate('github', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
+  (req: Request, res: Response) => {
+    // Successful authentication, redirect to frontend dashboard
+    res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/dashboard`);
+  }
+);
 
 export default router; 
