@@ -31,8 +31,8 @@ export function NavEvents({
     || (selectedEventSlug ? events.find(e => e.url.endsWith(`/${selectedEventSlug}/dashboard`)) : null)
     || events[0];
 
-  const handleEventClick = (eventUrl: string) => {
-    router.push(eventUrl);
+  const handleEventClick = async (eventUrl: string) => {
+    await router.push(eventUrl);
     if (isMobile) {
       setOpenMobile(false);
     }
