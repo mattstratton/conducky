@@ -23,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ user, events, ...props }: {
+export function AppSidebar({ user, events, globalRoles, ...props }: {
   user: {
     name: string
     email: string
@@ -36,6 +36,7 @@ export function AppSidebar({ user, events, ...props }: {
     icon: React.ElementType
     role?: string
   }[]
+  globalRoles?: string[]
 } & React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const router = useRouter();
@@ -45,6 +46,9 @@ export function AppSidebar({ user, events, ...props }: {
   
   // Track unread notification count
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  
+  // Use globalRoles from props, fallback to empty array
+  const currentGlobalRoles = globalRoles || [];
   
   // Update selected event when in event context
   useEffect(() => {
@@ -69,29 +73,34 @@ export function AppSidebar({ user, events, ...props }: {
     }
   }, [events, selectedEventSlug]);
 
-  // Fetch unread notification count
+  // Fetch unread notification count and global roles
   useEffect(() => {
-    const fetchUnreadCount = async () => {
+    const fetchUserData = async () => {
       try {
-        const response = await fetch(
+        // Fetch notification stats
+        const notificationResponse = await fetch(
           (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/notifications/stats",
           { credentials: "include" }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setUnreadCount(data.unread || 0);
+        if (notificationResponse.ok) {
+          const notificationData = await notificationResponse.json();
+          setUnreadCount(notificationData.unread || 0);
         }
+
+        // NOTE: Removed the events fetch here since events are passed as props
+        // This was causing infinite re-renders and excessive API calls
+        
       } catch (error) {
-        console.warn("Failed to fetch notification stats:", error);
+        console.warn("Failed to fetch user data:", error);
       }
     };
 
     // Fetch on mount and when user changes
     if (user) {
-      fetchUnreadCount();
+      fetchUserData();
       
-      // Set up interval to refresh every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
+      // Set up interval to refresh every 2 minutes (reduced from 30 seconds to reduce API load)
+      const interval = setInterval(fetchUserData, 120000);
       return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
@@ -118,8 +127,8 @@ export function AppSidebar({ user, events, ...props }: {
   const isSystemAdmin = router.asPath.startsWith('/admin');
   const isEventContext = router.asPath.startsWith('/events/');
   
-  // Check if user is SuperAdmin
-  const isSuperAdmin = user.roles?.includes('SuperAdmin');
+  // Check if user is SuperAdmin using global roles
+  const isSuperAdmin = currentGlobalRoles.includes('SuperAdmin');
 
   // Get current event slug if in event context
   // Try router.query first (more reliable for dynamic routes), then fall back to asPath parsing
@@ -148,19 +157,41 @@ export function AppSidebar({ user, events, ...props }: {
     }> = [];
     let shouldShowEventNav = false;
 
-    if (isSystemAdmin && isSuperAdmin) {
-      // System Admin Navigation (replaces everything)
-      globalNavItems = [
+    // Global Navigation (always visible)
+    globalNavItems = [
+      {
+        title: "Home",
+        url: "/dashboard",
+        icon: Home,
+        isActive: router.asPath === "/dashboard",
+      },
+      {
+        title: "All Reports",
+        url: "/dashboard/reports",
+        icon: ClipboardList,
+      },
+      {
+        title: "Notifications",
+        url: "/dashboard/notifications",
+        icon: BookOpen,
+        badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
+      },
+    ];
+
+    // Add System Admin Navigation for SuperAdmins (always visible)
+    if (isSuperAdmin) {
+      globalNavItems.push(
         {
           title: "System Dashboard",
           url: "/admin/dashboard",
-          icon: Home,
+          icon: Shield,
           isActive: router.asPath === "/admin/dashboard",
         },
         {
           title: "Events Management",
           url: "/admin/events",
-          icon: Users,
+          icon: UserCog,
+          isActive: router.asPath.startsWith("/admin/events"),
           items: [
             {
               title: "All Events",
@@ -194,43 +225,9 @@ export function AppSidebar({ user, events, ...props }: {
               url: "/admin/system/logs",
             },
           ],
-        },
-        {
-          title: "User Management",
-          url: "/admin/users",
-          icon: UserCog,
-        },
-      ];
-    } else {
-      // Global Navigation (always visible)
-      globalNavItems = [
-        {
-          title: "Home",
-          url: "/dashboard",
-          icon: Home,
-          isActive: router.asPath === "/dashboard",
-        },
-        {
-          title: "All Reports",
-          url: "/dashboard/reports",
-          icon: ClipboardList,
-        },
-        {
-          title: "Notifications",
-          url: "/dashboard/notifications",
-          icon: BookOpen,
-          badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount.toString()) : undefined,
-        },
-      ];
-
-      // Add System Admin link if user is SuperAdmin
-      if (isSuperAdmin) {
-        globalNavItems.push({
-          title: "System Admin",
-          url: "/admin/dashboard",
-          icon: Shield,
-        });
-      }
+        }
+      );
+    }
 
       // Event-specific navigation
       let targetEventSlug = currentEventSlug;
@@ -336,7 +333,6 @@ export function AppSidebar({ user, events, ...props }: {
           });
         }
       }
-    }
 
     return {
       globalNav: globalNavItems,
@@ -351,6 +347,9 @@ export function AppSidebar({ user, events, ...props }: {
     currentEventSlug,
     selectedEventSlug,
     events,
+    user,
+    unreadCount,
+    currentGlobalRoles,
   ]);
 
   // Collapsed event switcher: just the icon, opens the dropdown
@@ -369,25 +368,23 @@ export function AppSidebar({ user, events, ...props }: {
         {/* Sidebar header is now empty since the app name is in the top bar */}
       </SidebarHeader>
       <SidebarContent>
-        {/* Global Navigation */}
-        <NavMain items={globalNav} label={isSystemAdmin ? "System" : "Platform"} />
+        {/* Global Navigation (includes system admin navigation for SuperAdmins) */}
+        <NavMain items={globalNav} label="Platform" />
         
-        {/* Event Navigation Section (only show if not in system admin) */}
-        {!isSystemAdmin && (
-          <>
-            {/* Event Switcher */}
-            {state === "expanded" && <NavEvents events={events} selectedEventSlug={selectedEventSlug} />}
-            
-            {/* Event-specific Navigation - tighter integration with event picker */}
-            {(showEventNav || eventNav.length > 0) && (
-              <div className="mt-0">
-                <NavMain items={eventNav} label="" />
-              </div>
-            )}
-          </>
-        )}
+        {/* Event Navigation Section */}
+        <>
+          {/* Event Switcher */}
+          {state === "expanded" && <NavEvents events={events} selectedEventSlug={selectedEventSlug} />}
+          
+          {/* Event-specific Navigation */}
+          {(showEventNav || eventNav.length > 0) && (
+            <div className="mt-0">
+              <NavMain items={eventNav} label="" />
+            </div>
+          )}
+        </>
       </SidebarContent>
-      {state === "collapsed" && !isSystemAdmin && <CollapsedEventSwitcher />}
+      {state === "collapsed" && <CollapsedEventSwitcher />}
       <SidebarFooter>
         <NavUser user={{ ...user, avatar: user.avatar || "", roles: user.roles || [] }} />
       </SidebarFooter>

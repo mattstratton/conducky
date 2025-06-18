@@ -56,12 +56,26 @@ router.post('/logout', logoutMiddleware);
 router.get('/session', async (req: any, res: Response): Promise<void> => {
   try {
     if (req.user) {
+      // Get user roles (same pattern as RBAC middleware)
+      const userEventRoles = await prisma.userEventRole.findMany({
+        where: { userId: req.user.id },
+        include: { role: true },
+      });
+      const roles = userEventRoles.map((uer: any) => uer.role.name);
+
+      // Get avatar if exists
+      const avatar = await prisma.userAvatar.findUnique({
+        where: { userId: req.user.id }
+      });
+
       res.json({ 
         authenticated: true, 
         user: {
           id: req.user.id,
           email: req.user.email,
-          name: req.user.name
+          name: req.user.name,
+          roles: roles,
+          avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
         }
       });
     } else {

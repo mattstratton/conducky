@@ -50,6 +50,28 @@ jest.mock("../../src/utils/rbac", () => ({
     
     next();
   },
+  requireSuperAdmin: () => (req, res, next) => {
+    req.isAuthenticated = () => true;
+    
+    const { inMemoryStore } = require("../../__mocks__/@prisma/client");
+    
+    // Use test user ID from header if provided, otherwise default to user 1
+    const testUserId = req.headers['x-test-user-id'] || "1";
+    const testUser = inMemoryStore.users.find(u => u.id === testUserId) || { id: testUserId, email: `user${testUserId}@example.com`, name: `User${testUserId}` };
+    req.user = testUser;
+    
+    // Check for SuperAdmin role globally
+    const isSuperAdmin = inMemoryStore.userEventRoles.some(
+      (uer) => uer.userId === req.user.id && uer.role.name === "SuperAdmin"
+    );
+    
+    if (!isSuperAdmin) {
+      res.status(403).json({ error: "Forbidden: Super Admins only" });
+      return;
+    }
+    
+    next();
+  },
 }));
 
 beforeEach(() => {

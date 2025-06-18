@@ -255,7 +255,7 @@ export class UserService {
   /**
    * Get user's events with roles
    */
-  async getUserEvents(userId: string): Promise<ServiceResult<{ events: UserEvent[] }>> {
+  async getUserEvents(userId: string): Promise<ServiceResult<{ events: UserEvent[]; globalRoles: string[] }>> {
     try {
       const userEventRoles = await this.prisma.userEventRole.findMany({
         where: { userId },
@@ -267,9 +267,15 @@ export class UserService {
 
       // Group by event and collect roles
       const eventsMap = new Map();
+      const globalRoles: string[] = [];
       
       userEventRoles.forEach(uer => {
-        if (!uer.event) return; // Skip if event is null
+        if (!uer.event) {
+          // This is a global role (eventId is null)
+          globalRoles.push(uer.role.name);
+          return;
+        }
+        
         const eventId = uer.event.id;
         if (!eventsMap.has(eventId)) {
           eventsMap.set(eventId, {
@@ -287,7 +293,7 @@ export class UserService {
 
       return {
         success: true,
-        data: { events }
+        data: { events, globalRoles }
       };
     } catch (error: any) {
       console.error('Error fetching user events:', error);

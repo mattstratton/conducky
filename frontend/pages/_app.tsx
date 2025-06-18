@@ -39,6 +39,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [eventSlugForModal, setEventSlugForModal] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<Array<{ name: string; url: string; icon: React.ElementType; role?: string }>>([]);
+  const [globalRoles, setGlobalRoles] = useState<string[]>([]);
   const router = useRouter();
   const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
   const eventSlug = eventSlugMatch ? eventSlugMatch[1] : null;
@@ -108,12 +109,18 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                 role: event.roles && event.roles.length > 0 ? event.roles[0] : undefined,
               }))
             );
+            // Also capture global roles from the same API response
+            setGlobalRoles(data.globalRoles || []);
           }
         })
-        .catch(() => setEvents([]));
+        .catch(() => {
+          setEvents([]);
+          setGlobalRoles([]);
+        });
     } else {
-      // Clear events when user is logged out or session is lost
+      // Clear events and global roles when user is logged out or session is lost
       setEvents([]);
+      setGlobalRoles([]);
     }
   }, [user]);
 
@@ -146,7 +153,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                     email: user.email || "",
                     avatar: user.avatarUrl || "",
                     roles: user.roles || [],
-                  }} events={events} />
+                  }} events={events} globalRoles={globalRoles} />
                   <main className="flex-1 bg-background text-foreground pb-10">
                     <Component {...pageProps} />
                   </main>
