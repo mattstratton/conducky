@@ -91,22 +91,62 @@ All authentication routes are mounted at `/api/auth`:
 
 ---
 
+## SuperAdmin Management
+
+System administration endpoints for SuperAdmin users only.
+
+### Event Management
+
+#### Create Event
+
+- **POST** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Body:** `{ name, slug, description }`
+- **Response:** `{ message, event: { id, name, slug, description, setupRequired } }`
+- **Description:** Creates a new event with basic information. Event is created with `isActive: false` and requires admin setup to complete configuration.
+
+#### List All Events
+
+- **GET** `/api/admin/events`
+- **Role:** SuperAdmin only
+- **Response:** `{ events: [...], statistics: { totalEvents, activeEvents, totalUsers, totalReports } }`
+- **Description:** Get all events in the system with statistics and metadata.
+
+#### Get Event Details
+
+- **GET** `/api/admin/events/:eventId`
+- **Role:** SuperAdmin only
+- **Response:** `{ event }`
+- **Description:** Get detailed information about a specific event.
+
+#### Create Admin Invite
+
+- **POST** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Body:** `{ email, role }` (role defaults to "Admin")
+- **Response:** `{ message, invite: { id, code, email, role, expiresAt } }`
+- **Description:** Create an admin invite for an event. Returns invite code that can be shared with the event organizer.
+
+#### List Event Invites
+
+- **GET** `/api/admin/events/:eventId/invites`
+- **Role:** SuperAdmin only
+- **Response:** `{ invites: [...] }`
+- **Description:** Get all pending invites for an event.
+
+#### Update Invite Status
+
+- **PATCH** `/api/admin/events/:eventId/invites/:inviteId`
+- **Role:** SuperAdmin only
+- **Body:** `{ status }` ("pending", "accepted", "expired", "revoked")
+- **Response:** `{ message, invite }`
+- **Description:** Update the status of an invite (e.g., revoke an unused invite).
+
+---
+
 ## Events
 
 Event routes are mounted at `/api/events` and `/events`:
-
-### Create Event
-
-- **POST** `/api/events`
-- **Role:** SuperAdmin only
-- **Body:** `{ name, slug }`
-- **Response:** `{ event }`
-
-### List Events
-
-- **GET** `/api/events`
-- **Role:** SuperAdmin only
-- **Response:** `{ events }`
 
 ### Get Event by ID
 
