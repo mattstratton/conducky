@@ -445,6 +445,120 @@ describe("Event endpoints", () => {
       expect(res.body.report).toHaveProperty("incidentAt", null);
       expect(res.body.report).toHaveProperty("parties", null);
     });
+
+    it("should reject invalid report type", async () => {
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "invalid_type", 
+          description: "Test report", 
+          title: "A valid report title",
+          urgency: "low"
+        });
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toHaveProperty("error");
+    });
+
+    // Test edit endpoints
+    it("should update report location", async () => {
+      // First create a report
+      const createRes = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(createRes.statusCode).toBe(201);
+      const reportId = createRes.body.report.id;
+
+      // Update location
+      const updateRes = await request(app)
+        .patch(`/api/events/1/reports/${reportId}/location`)
+        .send({ location: "Conference Room A" });
+      expect(updateRes.statusCode).toBe(200);
+      expect(updateRes.body.report).toHaveProperty("location", "Conference Room A");
+    });
+
+    it("should update report contact preference", async () => {
+      // First create a report
+      const createRes = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(createRes.statusCode).toBe(201);
+      const reportId = createRes.body.report.id;
+
+      // Update contact preference
+      const updateRes = await request(app)
+        .patch(`/api/events/1/reports/${reportId}/contact-preference`)
+        .send({ contactPreference: "phone" });
+      expect(updateRes.statusCode).toBe(200);
+      expect(updateRes.body.report).toHaveProperty("contactPreference", "phone");
+    });
+
+    it("should update report type", async () => {
+      // First create a report
+      const createRes = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(createRes.statusCode).toBe(201);
+      const reportId = createRes.body.report.id;
+
+      // Update type
+      const updateRes = await request(app)
+        .patch(`/api/events/1/reports/${reportId}/type`)
+        .send({ type: "discrimination" });
+      expect(updateRes.statusCode).toBe(200);
+      expect(updateRes.body.report).toHaveProperty("type", "discrimination");
+    });
+
+    it("should reject invalid contact preference", async () => {
+      // First create a report
+      const createRes = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(createRes.statusCode).toBe(201);
+      const reportId = createRes.body.report.id;
+
+      // Try to update with invalid contact preference
+      const updateRes = await request(app)
+        .patch(`/api/events/1/reports/${reportId}/contact-preference`)
+        .send({ contactPreference: "invalid" });
+      expect(updateRes.statusCode).toBe(400);
+      expect(updateRes.body).toHaveProperty("error");
+    });
+
+    it("should reject invalid type update", async () => {
+      // First create a report
+      const createRes = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(createRes.statusCode).toBe(201);
+      const reportId = createRes.body.report.id;
+
+      // Try to update with invalid type
+      const updateRes = await request(app)
+        .patch(`/api/events/1/reports/${reportId}/type`)
+        .send({ type: "invalid_type" });
+      expect(updateRes.statusCode).toBe(400);
+      expect(updateRes.body).toHaveProperty("error");
+    });
   });
 
   describe("GET /events/:eventId/reports", () => {

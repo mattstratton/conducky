@@ -152,12 +152,52 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
         canEditDescription={isAdminOrSuperAdmin || (user && user.id === report.reporterId)}
         canEditType={isResponderOrAbove || (user && user.id === report.reporterId)}
         onLocationEdit={async (location) => {
-          // TODO: Implement location edit API call
-          console.log('Edit location:', location);
+          try {
+            const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/location`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({ location }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error((errorData as { error?: string }).error || 'Failed to update location');
+            }
+
+            // Refresh the page to show updated data
+            window.location.reload();
+          } catch (error) {
+            console.error('Failed to update location:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to update location. Please try again.';
+            alert(errorMessage);
+          }
         }}
         onContactPreferenceEdit={async (contactPreference) => {
-          // TODO: Implement contact preference edit API call
-          console.log('Edit contact preference:', contactPreference);
+          try {
+            const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/contact-preference`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({ contactPreference }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error((errorData as { error?: string }).error || 'Failed to update contact preference');
+            }
+
+            // Refresh the page to show updated data
+            window.location.reload();
+          } catch (error) {
+            console.error('Failed to update contact preference:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to update contact preference. Please try again.';
+            alert(errorMessage);
+          }
         }}
         onIncidentAtEdit={async (incidentAt) => {
           // TODO: Implement incident date edit API call
@@ -172,8 +212,28 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
           console.log('Edit description:', description);
         }}
         onTypeEdit={async (type) => {
-          // TODO: Implement type edit API call
-          console.log('Edit type:', type);
+          try {
+            const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/type`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({ type }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error((errorData as { error?: string }).error || 'Failed to update type');
+            }
+
+            // Refresh the page to show updated data
+            window.location.reload();
+          } catch (error) {
+            console.error('Failed to update type:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to update type. Please try again.';
+            alert(errorMessage);
+          }
         }}
       />
       <Table>

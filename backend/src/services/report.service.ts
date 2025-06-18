@@ -108,14 +108,46 @@ export class ReportService {
    */
   async createReport(data: ReportCreateData, evidenceFiles?: EvidenceFile[]): Promise<ServiceResult<{ report: any }>> {
     try {
-      const { eventId, reporterId, type, title, description, incidentAt, parties, location, contactPreference, urgency } = data;
-
-      if (!type || !description || !title) {
+      // Validate required fields
+      if (!data.eventId || !data.type || !data.description || !data.title) {
         return {
           success: false,
-          error: 'type, title, and description are required.'
+          error: 'Missing required fields: eventId, type, description, title'
         };
       }
+
+      // Validate report type
+      const validTypes = ['harassment', 'discrimination', 'conduct_violation', 'safety_concern', 'other'];
+      if (!validTypes.includes(data.type)) {
+        return {
+          success: false,
+          error: 'Invalid report type. Must be: harassment, discrimination, conduct_violation, safety_concern, or other.'
+        };
+      }
+
+      // Validate contact preference if provided
+      if (data.contactPreference) {
+        const validPreferences = ['email', 'phone', 'in_person', 'no_contact'];
+        if (!validPreferences.includes(data.contactPreference)) {
+          return {
+            success: false,
+            error: 'Invalid contact preference. Must be: email, phone, in_person, or no_contact.'
+          };
+        }
+      }
+
+      // Validate urgency/severity if provided
+      if (data.urgency) {
+        const validUrgencies = ['low', 'medium', 'high', 'critical'];
+        if (!validUrgencies.includes(data.urgency)) {
+          return {
+            success: false,
+            error: 'Invalid urgency level. Must be: low, medium, high, or critical.'
+          };
+        }
+      }
+
+      const { eventId, reporterId, type, title, description, incidentAt, parties, location, contactPreference, urgency } = data;
 
       if (typeof title !== 'string' || title.length < 10 || title.length > 70) {
         return {
@@ -998,6 +1030,194 @@ export class ReportService {
       return {
         success: false,
         error: 'Failed to check report edit access.'
+      };
+    }
+  }
+
+  /**
+   * Update report location (with authorization check)
+   */
+  async updateReportLocation(eventId: string, reportId: string, location: string | null, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions if userId provided
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        const userEventRoles = await this.prisma.userEventRole.findMany({
+          where: { userId, eventId },
+          include: { role: true },
+        });
+
+        const userRoles = userEventRoles.map(uer => uer.role.name);
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+
+        const canEdit = isReporter || isResponderOrAbove;
+
+        if (!canEdit) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to edit this report location.'
+          };
+        }
+      }
+
+      // Update location
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { location: location || null } as any,
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report location:', error);
+      return {
+        success: false,
+        error: 'Failed to update report location.'
+      };
+    }
+  }
+
+  /**
+   * Update report contact preference (with authorization check)
+   */
+  async updateReportContactPreference(eventId: string, reportId: string, contactPreference: string, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      // Validate contact preference
+      const validPreferences = ['email', 'phone', 'in_person', 'no_contact'];
+      if (!validPreferences.includes(contactPreference)) {
+        return {
+          success: false,
+          error: 'Invalid contact preference. Must be: email, phone, in_person, or no_contact.'
+        };
+      }
+
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions - only reporter can edit contact preference
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        if (!isReporter) {
+          return {
+            success: false,
+            error: 'Only the reporter can edit contact preference.'
+          };
+        }
+      }
+
+      // Update contact preference
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { contactPreference } as any,
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report contact preference:', error);
+      return {
+        success: false,
+        error: 'Failed to update report contact preference.'
+      };
+    }
+  }
+
+  /**
+   * Update report type (with authorization check)
+   */
+  async updateReportType(eventId: string, reportId: string, type: string, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      // Validate report type
+      const validTypes = ['harassment', 'discrimination', 'conduct_violation', 'safety_concern', 'other'];
+      if (!validTypes.includes(type)) {
+        return {
+          success: false,
+          error: 'Invalid report type. Must be: harassment, discrimination, conduct_violation, safety_concern, or other.'
+        };
+      }
+
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions if userId provided
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        const userEventRoles = await this.prisma.userEventRole.findMany({
+          where: { userId, eventId },
+          include: { role: true },
+        });
+
+        const userRoles = userEventRoles.map(uer => uer.role.name);
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+
+        const canEdit = isReporter || isResponderOrAbove;
+
+        if (!canEdit) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to edit this report type.'
+          };
+        }
+      }
+
+      // Update type
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { type: type as any },
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report type:', error);
+      return {
+        success: false,
+        error: 'Failed to update report type.'
       };
     }
   }
