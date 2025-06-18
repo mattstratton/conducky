@@ -144,9 +144,9 @@ export class ReportService {
         contactPreference: contactPreference || 'email', // default to email
       };
 
-      if (incidentAt) reportData.incidentAt = incidentAt;
-      if (parties) reportData.parties = parties;
-      if (location) reportData.location = location;
+      if (incidentAt !== undefined) reportData.incidentAt = incidentAt;
+      if (parties !== undefined) reportData.parties = parties;
+      if (location !== undefined) reportData.location = location;
       
       // Map urgency to severity (frontend uses urgency, backend uses severity)
       if (urgency) {

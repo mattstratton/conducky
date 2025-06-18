@@ -335,6 +335,116 @@ describe("Event endpoints", () => {
       expect(res.body).toHaveProperty("report");
       expect(res.body.report).toHaveProperty("title", "A valid report title");
     });
+
+    it("should create a report with new optional fields", async () => {
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report with new fields", 
+          title: "A valid report title",
+          location: "Main conference room",
+          contactPreference: "email",
+          urgency: "high"
+        });
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty("report");
+      expect(res.body.report).toHaveProperty("location", "Main conference room");
+      expect(res.body.report).toHaveProperty("contactPreference", "email");
+      expect(res.body.report).toHaveProperty("severity", "high"); // urgency maps to severity
+    });
+
+    it("should accept valid contactPreference values", async () => {
+      const validPreferences = ["email", "phone", "in_person", "no_contact"];
+      
+      for (const preference of validPreferences) {
+        const res = await request(app)
+          .post("/api/events/1/reports")
+          .send({ 
+            type: "harassment", 
+            description: "Test report", 
+            title: "A valid report title",
+            contactPreference: preference
+          });
+        expect(res.statusCode).toBe(201);
+        expect(res.body.report).toHaveProperty("contactPreference", preference);
+      }
+    });
+
+    it("should accept valid urgency/severity values", async () => {
+      const validSeverities = ["low", "medium", "high", "critical"];
+      
+      for (const severity of validSeverities) {
+        const res = await request(app)
+          .post("/api/events/1/reports")
+          .send({ 
+            type: "harassment", 
+            description: "Test report", 
+            title: "A valid report title",
+            urgency: severity
+          });
+        expect(res.statusCode).toBe(201);
+        expect(res.body.report).toHaveProperty("severity", severity);
+      }
+    });
+
+    it("should handle empty location field", async () => {
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title",
+          location: ""
+        });
+      expect(res.statusCode).toBe(201);
+      expect(res.body.report).toHaveProperty("location", "");
+    });
+
+    it("should default contactPreference to email when not provided", async () => {
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title"
+        });
+      expect(res.statusCode).toBe(201);
+      expect(res.body.report).toHaveProperty("contactPreference", "email");
+    });
+
+    it("should handle incidentAt and parties fields", async () => {
+      const incidentDate = "2024-01-15T10:00:00Z";
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report with incident details", 
+          title: "A valid report title",
+          incidentAt: incidentDate,
+          parties: "John Doe, Jane Smith"
+        });
+      expect(res.statusCode).toBe(201);
+      expect(res.body.report).toHaveProperty("incidentAt");
+      expect(res.body.report).toHaveProperty("parties", "John Doe, Jane Smith");
+    });
+
+    it("should handle null values for optional fields", async () => {
+      const res = await request(app)
+        .post("/api/events/1/reports")
+        .send({ 
+          type: "harassment", 
+          description: "Test report", 
+          title: "A valid report title",
+          location: null,
+          incidentAt: null,
+          parties: null
+        });
+      expect(res.statusCode).toBe(201);
+      expect(res.body.report).toHaveProperty("location", null);
+      expect(res.body.report).toHaveProperty("incidentAt", null);
+      expect(res.body.report).toHaveProperty("parties", null);
+    });
   });
 
   describe("GET /events/:eventId/reports", () => {
