@@ -55,19 +55,12 @@ interface CommentsSectionProps {
   setCommentVisibility: (v: string) => void;
 }
 
-// Helper function to highlight search terms in text
-const highlightSearchTerm = (text: string, searchTerm: string) => {
-  if (!searchTerm.trim()) return text;
-  
-  const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  const parts = text.split(regex);
-  
-  return parts.map((part) => {
-    if (regex.test(part)) {
-      return `<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">${part}</mark>`;
-    }
-    return part;
-  }).join('');
+// Helper function to return plain text for ReactMarkdown (HTML injection removed for security)
+// TODO: Implement proper markdown-aware search highlighting in future iteration
+const highlightSearchTerm = (text: string, _searchTerm: string) => {
+  // Return original text to prevent XSS vulnerabilities from HTML injection
+  // ReactMarkdown expects plain text, not HTML strings
+  return text;
 };
 
 export function CommentsSection({

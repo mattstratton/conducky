@@ -9,6 +9,7 @@ This document describes the technical implementation of Conducky's three-level n
 ## Overview
 
 Conducky implements a sophisticated navigation system that adapts based on:
+
 - **User authentication state**
 - **Current URL context** (global, event, or system admin)
 - **User roles** (both system-level and event-specific)
@@ -19,15 +20,18 @@ Conducky implements a sophisticated navigation system that adapts based on:
 ### Core Navigation Components
 
 #### `AppSidebar` (`frontend/components/app-sidebar.tsx`)
+
 The main navigation component that orchestrates the entire navigation experience.
 
 **Key Features**:
+
 - **Context detection**: Automatically detects current context from URL
 - **Role-based filtering**: Shows only navigation items user has permission to access
 - **Event switching**: Provides event switcher when user belongs to multiple events
 - **Responsive design**: Adapts to mobile and desktop layouts
 
 **Context Detection Logic**:
+
 ```typescript
 // Determine current context based on URL
 const isSystemAdmin = router.asPath.startsWith('/admin');
@@ -40,21 +44,27 @@ const currentEventSlug = isEventContext
 ```
 
 #### `NavMain` (`frontend/components/nav-main.tsx`)
+
 Renders the main navigation items with support for:
+
 - **Hierarchical navigation**: Main items with sub-items
 - **Active state management**: Highlights current page
 - **Icon support**: Lucide icons for visual clarity
 - **Next.js Link integration**: Proper client-side routing
 
 #### `NavUser` (`frontend/components/nav-user.tsx`)
+
 User menu component providing:
+
 - **Profile access**: User profile and settings
 - **Theme switching**: Dark/light mode toggle
 - **System admin access**: For SuperAdmins
 - **Logout functionality**: Secure session termination
 
 #### `NavEvents` (`frontend/components/nav-projects.tsx`)
+
 Event switcher component that:
+
 - **Lists user events**: Shows all events user belongs to
 - **Role indication**: Displays user's role in each event
 - **Quick switching**: Allows rapid context switching
@@ -63,10 +73,12 @@ Event switcher component that:
 ### Navigation Contexts
 
 #### 1. Global Dashboard Context
+
 **URL Pattern**: `/dashboard*`, `/profile*`
 **Purpose**: Multi-event overview and user management
 
 **Navigation Structure**:
+
 ```typescript
 globalNav = [
   {
@@ -89,10 +101,12 @@ globalNav = [
 ```
 
 #### 2. Event Context
+
 **URL Pattern**: `/events/[eventSlug]/*`
 **Purpose**: Event-specific functionality with role-based access
 
 **Role-Based Navigation**:
+
 ```typescript
 // Get user's role for the current event
 const currentEvent = events.find(e => e.url.includes(currentEventSlug));
@@ -117,10 +131,12 @@ if (isEventResponder) {
 ```
 
 #### 3. System Admin Context
+
 **URL Pattern**: `/admin/*`
 **Purpose**: Installation management (SuperAdmins only)
 
 **Access Control**:
+
 ```typescript
 // Only show system admin navigation to SuperAdmins
 if (isSuperAdmin && isSystemAdmin) {
@@ -149,6 +165,7 @@ if (isSuperAdmin && isSystemAdmin) {
 ### URL Structure Patterns
 
 #### Global URLs
+
 - `/dashboard` - Multi-event dashboard
 - `/dashboard/reports` - Cross-event reports
 - `/dashboard/notifications` - Global notifications
@@ -156,6 +173,7 @@ if (isSuperAdmin && isSystemAdmin) {
 - `/profile/settings` - User settings
 
 #### Event URLs
+
 - `/events/[eventSlug]/` - Public event page (no authentication required)
 - `/events/[eventSlug]/dashboard` - Event dashboard
 - `/events/[eventSlug]/reports` - Event reports (role-scoped)
@@ -166,6 +184,7 @@ if (isSuperAdmin && isSystemAdmin) {
 - `/events/[eventSlug]/code-of-conduct` - Public code of conduct page
 
 #### System Admin URLs
+
 - `/admin/dashboard` - System overview
 - `/admin/events` - Event management
 - `/admin/events/new` - Create event
@@ -174,6 +193,7 @@ if (isSuperAdmin && isSystemAdmin) {
 ### Route Protection
 
 #### Authentication Middleware
+
 All protected routes check authentication status:
 
 ```typescript
@@ -195,6 +215,7 @@ useEffect(() => {
 ```
 
 #### Role-Based Access Control
+
 Event pages verify user has appropriate role:
 
 ```typescript
@@ -213,6 +234,7 @@ useEffect(() => {
 ## Mobile Responsiveness
 
 ### Responsive Sidebar
+
 The sidebar adapts to different screen sizes:
 
 ```typescript
@@ -226,6 +248,7 @@ The sidebar adapts to different screen sizes:
 ```
 
 ### Touch Optimization
+
 - **Minimum touch targets**: 44px for all interactive elements
 - **Swipe gestures**: Sidebar can be opened/closed with swipe
 - **Responsive spacing**: Padding and margins adjust for mobile
@@ -234,6 +257,7 @@ The sidebar adapts to different screen sizes:
 ## Performance Optimizations
 
 ### Lazy Loading
+
 Navigation data is loaded efficiently:
 
 ```typescript
@@ -248,6 +272,7 @@ useEffect(() => {
 ```
 
 ### Memoization
+
 Navigation components use React.memo for performance:
 
 ```typescript
@@ -257,6 +282,7 @@ export const NavMain = React.memo(({ items }) => {
 ```
 
 ### Router Optimization
+
 Next.js router is used efficiently:
 
 ```typescript
@@ -269,6 +295,7 @@ if (!router.isReady) {
 ## Event Switching Implementation
 
 ### Event Switcher Logic
+
 The event switcher provides seamless context switching:
 
 ```typescript
@@ -288,7 +315,9 @@ const getCurrentPageType = (path: string) => {
 ```
 
 ### Context Preservation
+
 When switching events, the system attempts to preserve the user's current context:
+
 - Dashboard → Dashboard
 - Reports → Reports
 - Settings → Settings (if user has admin access)
@@ -296,6 +325,7 @@ When switching events, the system attempts to preserve the user's current contex
 ## Error Handling
 
 ### Navigation Error States
+
 The navigation system handles various error conditions:
 
 ```typescript
@@ -313,7 +343,9 @@ if (isEventContext && currentEventSlug && !hasEventAccess) {
 ```
 
 ### Fallback Navigation
+
 If navigation data fails to load:
+
 - Show basic navigation structure
 - Provide manual navigation options
 - Display appropriate error messages
@@ -321,20 +353,25 @@ If navigation data fails to load:
 ## Testing Navigation
 
 ### Unit Tests
+
 Navigation components should be tested for:
+
 - **Role-based rendering**: Correct items shown for each role
 - **Context switching**: Proper navigation updates
 - **Event switching**: Correct URL generation
 - **Error handling**: Graceful degradation
 
 ### Integration Tests
+
 Full navigation flows should be tested:
+
 - **Login → Dashboard flow**
 - **Event switching flow**
 - **Role-based access control**
 - **Mobile navigation behavior**
 
 ### Example Test
+
 ```typescript
 describe('AppSidebar', () => {
   it('shows event navigation when in event context', () => {
@@ -361,6 +398,7 @@ describe('AppSidebar', () => {
 ## Future Enhancements
 
 ### Planned Improvements
+
 - **Breadcrumb navigation**: Show current location hierarchy
 - **Recent pages**: Quick access to recently visited pages
 - **Keyboard shortcuts**: Keyboard navigation support
@@ -368,10 +406,12 @@ describe('AppSidebar', () => {
 - **Notification badges**: Show unread counts in navigation
 
 ### Extensibility
+
 The navigation architecture is designed to be extensible:
+
 - **Plugin system**: Future plugins can add navigation items
 - **Custom contexts**: New contexts can be added easily
 - **Role extensions**: New roles can be integrated
 - **Theme customization**: Navigation appearance can be customized
 
-This architecture provides a solid foundation for Conducky's navigation needs while remaining flexible for future enhancements. 
+This architecture provides a solid foundation for Conducky's navigation needs while remaining flexible for future enhancements.

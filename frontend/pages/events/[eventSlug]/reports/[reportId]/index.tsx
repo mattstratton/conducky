@@ -78,6 +78,7 @@ export default function ReportDetail() {
   const reportId = Array.isArray(router.query.reportId) 
     ? router.query.reportId[0] 
     : router.query.reportId;
+
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | undefined>(undefined);
@@ -567,6 +568,17 @@ export default function ReportDetail() {
     const data = await res.json();
     setReport(data.report);
   };
+
+  // Early return for missing router params (better UX)
+  if (!router.isReady) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!eventSlug || !reportId) {
+    return <div className="max-w-2xl mx-auto mt-12 p-6 bg-red-100 text-red-800 rounded shadow text-center">
+      Invalid URL: Missing event or report ID
+    </div>;
+  }
 
   if (fetchError) {
     return <div className="max-w-2xl mx-auto mt-12 p-6 bg-red-100 text-red-800 rounded shadow text-center">{fetchError}</div>;

@@ -11,6 +11,7 @@ Conducky provides public-facing pages for each event that can be shared publicly
 Public event pages are available at `/events/[eventSlug]/` where `[eventSlug]` is the unique identifier for the event.
 
 **Examples:**
+
 - `https://conducky.example.com/events/devconf-2024/`
 - `https://conducky.example.com/events/pydata-chicago/`
 
@@ -19,6 +20,7 @@ Public event pages are available at `/events/[eventSlug]/` where `[eventSlug]` i
 ### Event Information
 
 Public event pages display:
+
 - **Event name and logo** (if configured)
 - **Event description**
 - **Event dates** (start and end dates if configured)
@@ -66,10 +68,12 @@ If the event has configured a code of conduct, it will be displayed on the publi
 For optimal public page experience, event administrators should configure:
 
 ### Required Information
+
 - **Event name** (always required)
 - **Event slug** (always required, auto-generated from name)
 
 ### Recommended Information
+
 - **Event description** - Helps visitors understand the event context
 - **Contact email** - Enables direct contact and access request functionality
 - **Code of conduct** - Provides transparency about event standards
@@ -80,6 +84,7 @@ For optimal public page experience, event administrators should configure:
 ### Configuration via Event Settings
 
 Event administrators can configure these details through:
+
 1. **Event Settings** (`/events/[eventSlug]/settings`)
 2. **Event Details** section
 3. Save changes to update the public page immediately
@@ -87,6 +92,7 @@ Event administrators can configure these details through:
 ## Integration with Home Page
 
 When the SuperAdmin enables "Show Public Event List" in system settings:
+
 - All active events appear on the home page for unauthenticated users
 - Each event links to its public event page
 - This provides a directory of events using Conducky
@@ -94,15 +100,18 @@ When the SuperAdmin enables "Show Public Event List" in system settings:
 ## Privacy and Security
 
 ### Public Information
+
 - Event name, description, dates, website, and code of conduct are publicly visible
 - No sensitive information (reports, user data, internal communications) is exposed
 
 ### Contact Information
+
 - Contact emails are only used for generating mailto links
 - No direct email addresses are displayed on the page
 - Contact functionality requires user interaction to send emails
 
 ### Authentication Integration
+
 - Public pages work seamlessly with the authentication system
 - Users can transition from public viewing to authenticated reporting
 - Access levels are properly enforced based on authentication and event membership
@@ -110,6 +119,7 @@ When the SuperAdmin enables "Show Public Event List" in system settings:
 ## Mobile Optimization
 
 Public event pages are fully mobile-optimized:
+
 - **Responsive design** adapts to all screen sizes
 - **Touch-friendly buttons** with appropriate sizing
 - **Fast loading** with optimized content
@@ -118,6 +128,7 @@ Public event pages are fully mobile-optimized:
 ## SEO and Sharing
 
 Public event pages are designed for sharing:
+
 - **Clean URLs** that are easy to share
 - **Semantic HTML** for accessibility and SEO
 - **Appropriate meta tags** for social media sharing
@@ -126,19 +137,23 @@ Public event pages are designed for sharing:
 ## Use Cases
 
 ### Event Organizers
+
 - Share public page link on event websites
 - Include in event registration materials
 - Post on social media for incident reporting awareness
 - Provide to attendees for easy access to reporting
 
 ### Attendees and Visitors
+
 - Learn about incident reporting before attending events
 - Understand the process and protections in place
 - Access reporting functionality easily during events
 - Contact organizers with questions or concerns
 
 ### Anonymous Reporting
+
 When implemented, anonymous reporting will allow:
+
 - Incident submission without account creation
 - Privacy protection for sensitive reports
 - Streamlined reporting for one-time users
@@ -151,4 +166,4 @@ When implemented, anonymous reporting will allow:
 - [Event Management](./event-management.md) - Configuring event details
 - [Navigation Guide](./navigation.md) - Understanding public vs authenticated navigation
 - [Getting Started](./getting-started.md) - Account creation and authentication
-- [System Management](../admin-guide/system-management.md) - SuperAdmin control of public event listing 
+- [System Management](../admin-guide/system-management.md) - SuperAdmin control of public event listing

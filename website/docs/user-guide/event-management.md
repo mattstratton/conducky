@@ -107,6 +107,7 @@ POST /api/admin/events/{eventId}/invites
 ```
 
 Requirements:
+
 - Must be authenticated as a SuperAdmin
 - Slug must be unique across the system
 - Slug must be URL-safe (lowercase, alphanumeric, hyphens only)
@@ -321,19 +322,23 @@ All event management actions are logged:
 ### Common Issues
 
 **SuperAdmin cannot access event data**
+
 - Solution: Have an event admin assign you an event role
 
 **Event creation fails**
+
 - Check: Slug uniqueness and format
 - Verify: SuperAdmin permissions
 - Review: Required fields completion
 
 **Invite links not working**
+
 - Check: Expiration date and usage limits
 - Verify: Link integrity and format
 - Review: User registration process
 
 **Event not appearing in lists**
+
 - Check: User role assignment
 - Verify: Event active status
 - Review: Permission settings
@@ -341,6 +346,7 @@ All event management actions are logged:
 ### Getting Help
 
 For event management issues:
+
 1. Check user roles and permissions
 2. Verify event configuration
 3. Review audit logs for errors

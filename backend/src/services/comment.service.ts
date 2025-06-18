@@ -1,5 +1,6 @@
 import { PrismaClient, CommentVisibility } from '@prisma/client';
 import { ServiceResult } from '../types';
+import { Prisma } from '@prisma/client';
 
 export interface CommentCreateData {
   reportId: string;
@@ -97,7 +98,7 @@ export class CommentService {
         success: true,
         data: { comment }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating comment:', error);
       return {
         success: false,
@@ -107,13 +108,13 @@ export class CommentService {
   }
 
   /**
-   * Get comments for a report with pagination and filtering
+   * Get paginated comments for a report with filtering and search
    */
   async getReportComments(reportId: string, query: CommentQuery): Promise<ServiceResult<CommentListResponse>> {
     try {
       const {
         page = 1,
-        limit = 20,
+        limit = 10,
         visibility,
         authorId,
         search,
@@ -123,7 +124,7 @@ export class CommentService {
 
       // Validate pagination
       const pageNum = parseInt(page.toString());
-      const limitNum = Math.min(parseInt(limit.toString()), 100); // Max 100 per page
+      const limitNum = Math.min(parseInt(limit.toString()), 100);
 
       if (pageNum < 1 || limitNum < 1) {
         return {
@@ -153,7 +154,7 @@ export class CommentService {
       const skip = (pageNum - 1) * limitNum;
 
       // Build where clause
-      const whereClause: any = { reportId };
+      const whereClause: Prisma.ReportCommentWhereInput = { reportId };
 
       if (visibility) {
         whereClause.visibility = visibility;
@@ -174,9 +175,13 @@ export class CommentService {
       // Get total count
       const total = await this.prisma.reportComment.count({ where: whereClause });
 
-      // Build order by clause
-      const orderBy: any = {};
-      orderBy[sortBy] = sortOrder;
+      // Build order by clause with proper typing
+      const orderBy: Prisma.ReportCommentOrderByWithRelationInput = {};
+      if (sortBy === 'createdAt') {
+        orderBy.createdAt = sortOrder;
+      } else if (sortBy === 'updatedAt') {
+        orderBy.updatedAt = sortOrder;
+      }
 
       // Get comments with author details
       const comments = await this.prisma.reportComment.findMany({
@@ -207,7 +212,7 @@ export class CommentService {
           }
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching report comments:', error);
       return {
         success: false,
@@ -245,7 +250,7 @@ export class CommentService {
         success: true,
         data: { comment }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching comment:', error);
       return {
         success: false,
@@ -298,7 +303,7 @@ export class CommentService {
         success: true,
         data: { comment }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating comment:', error);
       return {
         success: false,
@@ -341,7 +346,7 @@ export class CommentService {
         success: true,
         data: { message: 'Comment deleted successfully' }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting comment:', error);
       return {
         success: false,
@@ -355,7 +360,7 @@ export class CommentService {
    */
   async getCommentCount(reportId: string, visibility?: CommentVisibility): Promise<ServiceResult<{ count: number }>> {
     try {
-      const whereClause: any = { reportId };
+      const whereClause: Prisma.ReportCommentWhereInput = { reportId };
 
       if (visibility) {
         whereClause.visibility = visibility;
@@ -367,7 +372,7 @@ export class CommentService {
         success: true,
         data: { count }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error getting comment count:', error);
       return {
         success: false,
@@ -422,7 +427,7 @@ export class CommentService {
       const skip = (pageNum - 1) * limitNum;
 
       // Build where clause
-      const whereClause: any = { authorId };
+      const whereClause: Prisma.ReportCommentWhereInput = { authorId };
 
       if (visibility) {
         whereClause.visibility = visibility;
@@ -439,9 +444,13 @@ export class CommentService {
       // Get total count
       const total = await this.prisma.reportComment.count({ where: whereClause });
 
-      // Build order by clause
-      const orderBy: any = {};
-      orderBy[sortBy] = sortOrder;
+      // Build order by clause with proper typing
+      const orderBy: Prisma.ReportCommentOrderByWithRelationInput = {};
+      if (sortBy === 'createdAt') {
+        orderBy.createdAt = sortOrder;
+      } else if (sortBy === 'updatedAt') {
+        orderBy.updatedAt = sortOrder;
+      }
 
       // Get comments with report details
       const comments = await this.prisma.reportComment.findMany({
@@ -485,7 +494,7 @@ export class CommentService {
           }
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching comments by author:', error);
       return {
         success: false,
@@ -538,7 +547,7 @@ export class CommentService {
           visibleComments
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error checking comment visibility permissions:', error);
       return {
         success: false,
