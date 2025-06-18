@@ -177,7 +177,7 @@ Each event can have users with different roles:
 | System admin | ❌ | ❌ | ❌ | ✅ |
 
 *SuperAdmins need explicit event roles to access event data
-**Unless SuperAdmin has been assigned an event role
+**SuperAdmins can access event data only when assigned an event role
 
 ---
 
