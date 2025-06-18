@@ -471,7 +471,7 @@ Evidence routes are available both through the main reports module and as standa
 
 - **POST** `/api/events/slug/:slug/reports/:reportId/comments` or `/events/slug/:slug/reports/:reportId/comments`
 - **Role:** Reporter, Responder, Admin, or SuperAdmin for the event
-- **Body:** `{ body, visibility?, isMarkdown? }` 
+- **Body:** `{ body, visibility?, isMarkdown? }`
   - `visibility`: 'public' or 'internal', default: 'public'
   - `isMarkdown`: boolean, default: false (enables markdown rendering)
 - **Response:** `{ comment }`
@@ -698,7 +698,7 @@ Notification routes are mounted at `/api/notifications`:
   - `slug` (string, required): URL-safe identifier (lowercase, letters, numbers, hyphens only)
   - `description` (string, required): Brief description of the event
 - **Response:** `{ event: { id, name, slug, description, isActive, createdAt, updatedAt } }`
-- **Notes:** 
+- **Notes:**
   - Slug must be unique across the system
   - Event is created with `isActive: false`
   - SuperAdmin is not automatically assigned event roles
