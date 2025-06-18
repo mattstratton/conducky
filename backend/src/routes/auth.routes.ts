@@ -245,7 +245,13 @@ router.get('/google/callback',
   (req: Request, res: Response) => {
     // Successful authentication, redirect based on stored state or default
     const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
-    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    let nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    
+    // Validate nextUrl to prevent open redirect attacks
+    if (nextUrl && !nextUrl.startsWith('/')) {
+      // Only allow relative URLs starting with /
+      nextUrl = '/dashboard';
+    }
     
     // Clear the state from session
     delete req.session.oauthState;
@@ -274,7 +280,13 @@ router.get('/github/callback',
   (req: Request, res: Response) => {
     // Successful authentication, redirect based on stored state or default
     const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
-    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    let nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    
+    // Validate nextUrl to prevent open redirect attacks
+    if (nextUrl && !nextUrl.startsWith('/')) {
+      // Only allow relative URLs starting with /
+      nextUrl = '/dashboard';
+    }
     
     // Clear the state from session
     delete req.session.oauthState;
