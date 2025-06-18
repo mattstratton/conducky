@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface User {
   id: string;
@@ -18,8 +22,19 @@ interface Comment {
   visibility: string;
 }
 
-interface CommentsSectionProps {
+interface CommentListResponse {
   comments: Comment[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface CommentsSectionProps {
+  reportId: string;
+  eventSlug: string;
   user: User;
   isResponderOrAbove: boolean;
   editingCommentId: string | null;
@@ -38,7 +53,8 @@ interface CommentsSectionProps {
 }
 
 export function CommentsSection({
-  comments,
+  reportId,
+  eventSlug,
   user,
   isResponderOrAbove,
   editingCommentId,
@@ -55,112 +71,475 @@ export function CommentsSection({
   commentVisibility,
   setCommentVisibility,
 }: CommentsSectionProps) {
+  // State for comments data and pagination
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // State for filtering and search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Fetch comments function
+  const fetchComments = useCallback(async (page = 1) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString(),
+        sortBy,
+        sortOrder,
+      });
+
+      if (searchTerm.trim()) {
+        params.append("search", searchTerm.trim());
+      }
+
+      if (visibilityFilter !== "all") {
+        params.append("visibility", visibilityFilter);
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(
+        `${apiUrl}/api/events/slug/${eventSlug}/reports/${reportId}/comments?${params}`,
+        {
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch comments");
+      }
+
+      const data: CommentListResponse = await response.json();
+      setComments(data.comments);
+      setPagination(data.pagination);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load comments");
+      setComments([]);
+      setPagination({ page: 1, limit: 10, total: 0, totalPages: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, [reportId, eventSlug, searchTerm, visibilityFilter, sortBy, sortOrder, pagination.limit]);
+
+  // Initial load and refresh when filters change
+  useEffect(() => {
+    fetchComments(1);
+  }, [searchTerm, visibilityFilter, sortBy, sortOrder]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchComments(newPage);
+    }
+  };
+
+  // Handle search debouncing
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchTerm !== "" || visibilityFilter !== "all") {
+        fetchComments(1);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
+
+
+  // Enhanced comment submission that refreshes the list
+  const handleCommentSubmit = async (body: string, visibility: string) => {
+    if (onCommentSubmit) {
+      await onCommentSubmit(body, visibility);
+      // Refresh comments after successful submission
+      setTimeout(() => fetchComments(pagination.page), 500);
+    }
+  };
+
+  // Enhanced comment edit that refreshes the list
+  const handleCommentEdit = async (comment: Comment, body: string, visibility: string) => {
+    if (onCommentEdit) {
+      await onCommentEdit(comment, body, visibility);
+      // Refresh comments after successful edit
+      setTimeout(() => fetchComments(pagination.page), 500);
+    }
+  };
+
+  // Enhanced comment delete that refreshes the list
+  const handleCommentDelete = async (comment: Comment) => {
+    if (onCommentDelete) {
+      await onCommentDelete(comment);
+      // Refresh comments after successful deletion, handle page adjustment
+      const newTotal = pagination.total - 1;
+      const newTotalPages = Math.ceil(newTotal / pagination.limit);
+      const adjustedPage = pagination.page > newTotalPages ? Math.max(1, newTotalPages) : pagination.page;
+      setTimeout(() => fetchComments(adjustedPage), 500);
+    }
+  };
+
   return (
     <div className="mt-8">
-      <h3 className="text-lg font-semibold mb-2">Comments</h3>
-      {comments.length === 0 ? (
-        <div className="text-gray-500 dark:text-gray-400">No comments yet.</div>
-      ) : (
-        <ul className="space-y-4">
-          {comments.map((comment: Comment) => (
-            <li key={comment.id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
-              <div className="flex items-center gap-2 mb-1">
-                {(() => {
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-                  let avatarSrc: string | undefined = undefined;
-                  if (comment.author?.avatarUrl) {
-                    avatarSrc = comment.author.avatarUrl.startsWith("/")
-                      ? apiUrl + comment.author.avatarUrl
-                      : comment.author.avatarUrl;
-                  }
-                  return (
-                    <Avatar style={{ width: 28, height: 28 }}>
-                      <AvatarImage src={avatarSrc} alt={comment.author?.name || comment.author?.email || "User avatar"} />
-                      <AvatarFallback>
-                        {comment.author?.name
-                          ? comment.author.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
-                          : comment.author?.email
-                            ? comment.author.email[0].toUpperCase()
-                            : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  );
-                })()}
-                <span className="font-semibold">{comment.author?.name || comment.author?.email || 'Unknown'}</span>
-                <span className="text-xs text-gray-500 ml-2">{new Date(comment.createdAt).toLocaleString()}</span>
-                {comment.visibility === 'internal' && (
-                  <Badge variant="secondary" className="ml-2 text-xs">Internal</Badge>
-                )}
-              </div>
-              {editingCommentId === comment.id ? (
-                <div className="flex flex-col gap-2 mt-1">
-                  <textarea
-                    value={editCommentBody}
-                    onChange={e => setEditCommentBody(e.target.value)}
-                    className="border px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">
+          Comments {pagination.total > 0 && `(${pagination.total})`}
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2"
+        >
+          <Filter className="h-4 w-4" />
+          Filters
+        </Button>
+      </div>
+
+      {/* Filter Controls */}
+      {showFilters && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search comments..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
                   />
-                  {isResponderOrAbove && (
-                    <select
-                      value={editCommentVisibility}
-                      onChange={e => setEditCommentVisibility(e.target.value)}
-                      className="border px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="public">Public</option>
-                      <option value="internal">Internal</option>
-                    </select>
-                  )}
-                  <div className="flex gap-2 mt-2">
-                    <Button 
-                      onClick={() => { 
-                        if (editCommentBody.trim()) {
-                          onCommentEdit && onCommentEdit(comment, editCommentBody, editCommentVisibility); 
-                          setEditingCommentId(null); 
-                        }
-                      }} 
-                      disabled={!editCommentBody.trim()}
-                      className="bg-green-600 text-white px-3 py-1 text-sm disabled:opacity-50"
-                    >
-                      Save
-                    </Button>
-                    <Button onClick={() => setEditingCommentId(null)} className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 text-sm">Cancel</Button>
-                  </div>
                 </div>
-              ) : (
-                <div className="mt-1">{comment.body}</div>
-              )}
-              {/* Edit/Delete controls */}
-              {user && (user.id === comment.author?.id || isResponderOrAbove) && (
-                <div className="flex gap-2 mt-1">
-                  <Button onClick={() => { setEditingCommentId(comment.id); setEditCommentBody(comment.body); setEditCommentVisibility(comment.visibility); }} className="bg-blue-600 text-white px-2 py-1 text-xs">Edit</Button>
-                  <Button onClick={() => onCommentDelete && onCommentDelete(comment)} className="bg-red-600 text-white px-2 py-1 text-xs">Delete</Button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </div>
+
+              {/* Visibility Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Visibility</label>
+                <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All comments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All comments</SelectItem>
+                    <SelectItem value="public">Public only</SelectItem>
+                    {isResponderOrAbove && (
+                      <SelectItem value="internal">Internal only</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort By */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Sort by</label>
+                <Select value={sortBy} onValueChange={(value: "createdAt" | "updatedAt") => setSortBy(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdAt">Created date</SelectItem>
+                    <SelectItem value="updatedAt">Updated date</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Order */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Order</label>
+                <Select value={sortOrder} onValueChange={(value: "asc" | "desc") => setSortOrder(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Oldest first</SelectItem>
+                    <SelectItem value="desc">Newest first</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {(searchTerm || visibilityFilter !== "all" || sortBy !== "createdAt" || sortOrder !== "asc") && (
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setVisibilityFilter("all");
+                    setSortBy("createdAt");
+                    setSortOrder("asc");
+                  }}
+                >
+                  Clear all filters
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
-      {/* Add comment form */}
-      {user && onCommentSubmit && (
-        <form onSubmit={e => { e.preventDefault(); onCommentSubmit(commentBody, commentVisibility); setCommentBody(""); setCommentVisibility("public"); }} className="mt-4 flex flex-col gap-2">
-          <textarea
-            value={commentBody}
-            onChange={e => setCommentBody(e.target.value)}
-            className="border px-2 py-1 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
-            placeholder="Add a comment..."
-            required
-          />
-          {isResponderOrAbove && (
-            <select
-              value={commentVisibility}
-              onChange={e => setCommentVisibility(e.target.value)}
-              className="border px-2 py-1 rounded w-40 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            >
-              <option value="public">Public</option>
-              <option value="internal">Internal</option>
-            </select>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">Loading comments...</div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4 mb-4">
+          <p className="text-destructive text-sm">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchComments(pagination.page)}
+            className="mt-2"
+          >
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {/* Comments List */}
+      {!loading && !error && (
+        <>
+          {comments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm || visibilityFilter !== "all" 
+                ? "No comments match your filters." 
+                : "No comments yet."
+              }
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment: Comment) => (
+                <Card key={comment.id} id={`comment-${comment.id}`} className="p-4">
+                  <div className="flex items-start gap-3">
+                    {(() => {
+                      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+                      let avatarSrc: string | undefined = undefined;
+                      if (comment.author?.avatarUrl) {
+                        avatarSrc = comment.author.avatarUrl.startsWith("/")
+                          ? apiUrl + comment.author.avatarUrl
+                          : comment.author.avatarUrl;
+                      }
+                      return (
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={avatarSrc} alt={comment.author?.name || comment.author?.email || "User avatar"} />
+                          <AvatarFallback>
+                            {comment.author?.name
+                              ? comment.author.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+                              : comment.author?.email
+                                ? comment.author.email[0].toUpperCase()
+                                : "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      );
+                    })()}
+
+                    <div className="flex-1 space-y-2">
+                      {/* Comment Header */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">
+                          {comment.author?.name || comment.author?.email || 'Unknown'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </span>
+                        {comment.visibility === 'internal' && (
+                          <Badge variant="secondary" className="text-xs">
+                            Internal
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const url = new URL(window.location.href);
+                            url.hash = `comment-${comment.id}`;
+                            navigator.clipboard.writeText(url.toString());
+                            // Could add a toast notification here
+                          }}
+                          className="text-xs text-muted-foreground hover:text-foreground ml-auto"
+                        >
+                          #
+                        </Button>
+                      </div>
+
+                      {/* Comment Body */}
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={editCommentBody}
+                            onChange={e => setEditCommentBody(e.target.value)}
+                            className="w-full min-h-[80px] p-3 border rounded-md resize-y bg-background"
+                            placeholder="Edit your comment..."
+                          />
+                          {isResponderOrAbove && (
+                            <Select value={editCommentVisibility} onValueChange={setEditCommentVisibility}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="public">Public</SelectItem>
+                                <SelectItem value="internal">Internal</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                if (editCommentBody.trim()) {
+                                  handleCommentEdit(comment, editCommentBody, editCommentVisibility);
+                                  setEditingCommentId(null);
+                                }
+                              }}
+                              disabled={!editCommentBody.trim()}
+                              size="sm"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setEditingCommentId(null)}
+                              size="sm"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <p className="whitespace-pre-wrap">{comment.body}</p>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      {user && (user.id === comment.author?.id || isResponderOrAbove) && editingCommentId !== comment.id && (
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditCommentBody(comment.body);
+                              setEditCommentVisibility(comment.visibility);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCommentDelete(comment)}
+                            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
-          <Button type="submit" className="bg-blue-600 text-white px-3 py-1 text-sm">Add Comment</Button>
-        </form>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-muted-foreground">
+                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{" "}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} comments
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm font-medium">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Add Comment Form */}
+      {user && onCommentSubmit && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                if (commentBody.trim()) {
+                  handleCommentSubmit(commentBody, commentVisibility);
+                  setCommentBody("");
+                  setCommentVisibility("public");
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-sm font-medium mb-2 block">Add a comment</label>
+                <textarea
+                  value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
+                  className="w-full min-h-[100px] p-3 border rounded-md resize-y bg-background"
+                  placeholder="Write your comment..."
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                {isResponderOrAbove && (
+                  <Select value={commentVisibility} onValueChange={setCommentVisibility}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="internal">Internal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                
+                <Button type="submit" disabled={!commentBody.trim()}>
+                  Add Comment
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

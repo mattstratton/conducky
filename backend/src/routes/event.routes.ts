@@ -1315,6 +1315,9 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const visibility = req.query.visibility as string;
+    const search = req.query.search as string;
+    const sortBy = req.query.sortBy as 'createdAt' | 'updatedAt' | undefined;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
     
     // Check authentication
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
@@ -1379,7 +1382,10 @@ router.get('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'R
     const result = await commentService.getReportComments(reportId, {
       page,
       limit,
-      visibility: requestedVisibility
+      visibility: requestedVisibility,
+      search,
+      sortBy,
+      sortOrder
     });
     
     if (!result.success) {

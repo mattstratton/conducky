@@ -18,6 +18,9 @@ export interface CommentQuery {
   limit?: number;
   visibility?: CommentVisibility;
   authorId?: string;
+  search?: string; // Search in comment body
+  sortBy?: 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface CommentWithDetails {
@@ -108,7 +111,10 @@ export class CommentService {
         page = 1,
         limit = 20,
         visibility,
-        authorId
+        authorId,
+        search,
+        sortBy = 'createdAt',
+        sortOrder = 'asc'
       } = query;
 
       // Validate pagination
@@ -119,6 +125,24 @@ export class CommentService {
         return {
           success: false,
           error: 'Invalid pagination parameters'
+        };
+      }
+
+      // Validate sort parameters
+      const validSortFields = ['createdAt', 'updatedAt'];
+      const validSortOrders = ['asc', 'desc'];
+      
+      if (!validSortFields.includes(sortBy)) {
+        return {
+          success: false,
+          error: 'Invalid sort field'
+        };
+      }
+
+      if (!validSortOrders.includes(sortOrder)) {
+        return {
+          success: false,
+          error: 'Invalid sort order'
         };
       }
 
@@ -135,8 +159,20 @@ export class CommentService {
         whereClause.authorId = authorId;
       }
 
+      // Add search functionality
+      if (search && search.trim().length > 0) {
+        whereClause.body = {
+          contains: search.trim(),
+          mode: 'insensitive' // Case-insensitive search
+        };
+      }
+
       // Get total count
       const total = await this.prisma.reportComment.count({ where: whereClause });
+
+      // Build order by clause
+      const orderBy: any = {};
+      orderBy[sortBy] = sortOrder;
 
       // Get comments with author details
       const comments = await this.prisma.reportComment.findMany({
@@ -150,7 +186,7 @@ export class CommentService {
             }
           }
         },
-        orderBy: { createdAt: 'asc' }, // Chronological order for comments
+        orderBy,
         skip,
         take: limitNum
       });
@@ -344,7 +380,10 @@ export class CommentService {
       const {
         page = 1,
         limit = 20,
-        visibility
+        visibility,
+        search,
+        sortBy = 'createdAt',
+        sortOrder = 'desc' // Default to newest first for user activity
       } = query;
 
       // Validate pagination
@@ -358,6 +397,24 @@ export class CommentService {
         };
       }
 
+      // Validate sort parameters
+      const validSortFields = ['createdAt', 'updatedAt'];
+      const validSortOrders = ['asc', 'desc'];
+      
+      if (!validSortFields.includes(sortBy)) {
+        return {
+          success: false,
+          error: 'Invalid sort field'
+        };
+      }
+
+      if (!validSortOrders.includes(sortOrder)) {
+        return {
+          success: false,
+          error: 'Invalid sort order'
+        };
+      }
+
       const skip = (pageNum - 1) * limitNum;
 
       // Build where clause
@@ -367,8 +424,20 @@ export class CommentService {
         whereClause.visibility = visibility;
       }
 
+      // Add search functionality
+      if (search && search.trim().length > 0) {
+        whereClause.body = {
+          contains: search.trim(),
+          mode: 'insensitive' // Case-insensitive search
+        };
+      }
+
       // Get total count
       const total = await this.prisma.reportComment.count({ where: whereClause });
+
+      // Build order by clause
+      const orderBy: any = {};
+      orderBy[sortBy] = sortOrder;
 
       // Get comments with report details
       const comments = await this.prisma.reportComment.findMany({
@@ -395,7 +464,7 @@ export class CommentService {
             }
           }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limitNum
       });

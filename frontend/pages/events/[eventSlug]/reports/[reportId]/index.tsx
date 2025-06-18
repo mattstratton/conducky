@@ -578,6 +578,7 @@ export default function ReportDetail() {
       evidenceFiles={evidenceFiles}
       loading={loading}
       error={fetchError}
+      eventSlug={eventSlug}
       onStateChange={handleStateChange}
       onCommentSubmit={handleCommentSubmit}
       onCommentEdit={handleEditSave}
