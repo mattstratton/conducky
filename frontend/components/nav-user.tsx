@@ -167,7 +167,7 @@ export function NavUser({
                 <button 
                   type="button"
                   className="flex items-center w-full"
-                  onClick={() => setTheme(mounted && resolvedTheme === "dark" ? "light" : "dark")}
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                   disabled={!mounted}
                 >
                   {mounted && resolvedTheme === "dark" ? (
