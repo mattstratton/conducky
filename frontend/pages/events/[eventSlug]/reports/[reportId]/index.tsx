@@ -282,7 +282,7 @@ export default function ReportDetail() {
   };
 
   // Handle comment submit
-  const handleCommentSubmit = async (body: string, visibility: string) => {
+  const handleCommentSubmit = async (body: string, visibility: string, isMarkdown?: boolean) => {
     setCommentError("");
     setCommentSubmitting(true);
     if (!body.trim()) {
@@ -293,7 +293,7 @@ export default function ReportDetail() {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -301,6 +301,7 @@ export default function ReportDetail() {
           body: JSON.stringify({
             body: body,
             visibility: visibility,
+            isMarkdown: isMarkdown || false,
           }),
         },
       );
@@ -313,7 +314,7 @@ export default function ReportDetail() {
         // Refetch comments
         fetch(
           (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-            `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+            `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
           { credentials: "include" },
         )
           .then((res) => (res.ok ? res.json() : { comments: [] }))
@@ -326,23 +327,27 @@ export default function ReportDetail() {
   };
 
   // Edit comment handler
-  const handleEditSave = async (comment: Comment) => {
+  const handleEditSave = async (comment: Comment, body?: string, visibility?: string, isMarkdown?: boolean) => {
     setEditError("");
-    if (!editCommentBody.trim()) {
+    const bodyToSave = body || editCommentBody;
+    const visibilityToSave = visibility || editCommentVisibility;
+    
+    if (!bodyToSave.trim()) {
       setEditError("Comment cannot be empty.");
       return;
     }
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}/comments/${comment.id}`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}/comments/${comment.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            body: editCommentBody,
-            visibility: editCommentVisibility,
+            body: bodyToSave,
+            visibility: visibilityToSave,
+            isMarkdown: isMarkdown || false,
           }),
         },
       );
@@ -356,7 +361,7 @@ export default function ReportDetail() {
         // Refetch comments
         fetch(
           (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-            `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+            `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
           { credentials: "include" },
         )
           .then((res) => (res.ok ? res.json() : { comments: [] }))
@@ -372,7 +377,7 @@ export default function ReportDetail() {
     try {
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}/comments/${comment.id}`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}/comments/${comment.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -385,7 +390,7 @@ export default function ReportDetail() {
       // Refetch comments
       fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/events/slug/${eventSlug}/reports/${reportId}/comments`,
+          `/api/events/slug/${eventSlug}/reports/${reportId}/comments`,
         { credentials: "include" },
       )
         .then((res) => (res.ok ? res.json() : { comments: [] }))

@@ -21,8 +21,8 @@ export interface ReportDetailViewProps {
   eventSlug?: string; // Required for new CommentsSection
   onStateChange?: (e: ChangeEvent<HTMLSelectElement>) => void;
   onAssignmentChange?: () => void;
-  onCommentSubmit?: (body: string, visibility: string) => void;
-  onCommentEdit?: (comment: any, body: string, visibility: string) => void;
+  onCommentSubmit?: (body: string, visibility: string, isMarkdown?: boolean) => void;
+  onCommentEdit?: (comment: any, body: string, visibility: string, isMarkdown?: boolean) => void;
   onCommentDelete?: (comment: any) => void;
   onEvidenceUpload?: (files: File[]) => void;
   onEvidenceDelete?: (file: any) => void;

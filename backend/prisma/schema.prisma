@@ -187,6 +187,7 @@ model ReportComment {
   author     User?    @relation(fields: [authorId], references: [id])
   authorId   String?
   body       String
+  isMarkdown Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   visibility CommentVisibility @default(public)

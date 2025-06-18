@@ -6,11 +6,13 @@ export interface CommentCreateData {
   authorId?: string | null;
   body: string;
   visibility?: CommentVisibility;
+  isMarkdown?: boolean;
 }
 
 export interface CommentUpdateData {
   body?: string;
   visibility?: CommentVisibility;
+  isMarkdown?: boolean;
 }
 
 export interface CommentQuery {
@@ -28,6 +30,7 @@ export interface CommentWithDetails {
   reportId: string;
   authorId?: string | null;
   body: string;
+  isMarkdown: boolean;
   visibility: CommentVisibility;
   createdAt: Date;
   updatedAt: Date;
@@ -56,7 +59,7 @@ export class CommentService {
    */
   async createComment(data: CommentCreateData): Promise<ServiceResult<{ comment: CommentWithDetails }>> {
     try {
-      const { reportId, authorId, body, visibility = 'public' } = data;
+      const { reportId, authorId, body, visibility = 'public', isMarkdown = false } = data;
 
       // Verify report exists
       const report = await this.prisma.report.findUnique({
@@ -76,7 +79,8 @@ export class CommentService {
           reportId,
           authorId: authorId || null,
           body,
-          visibility
+          visibility,
+          isMarkdown
         },
         include: {
           author: {

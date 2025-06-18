@@ -1217,7 +1217,7 @@ router.patch('/slug/:slug/invites/:inviteId', requireRole(['Admin', 'SuperAdmin'
 router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug, reportId } = req.params;
-    const { body, visibility = 'public' } = req.body;
+    const { body, visibility = 'public', isMarkdown = false } = req.body;
     
     // Check authentication
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
@@ -1283,7 +1283,8 @@ router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', '
       reportId,
       authorId: user.id,
       body: body.trim(),
-      visibility: visibility as CommentVisibility
+      visibility: visibility as CommentVisibility,
+      isMarkdown: Boolean(isMarkdown)
     };
     
     const result = await commentService.createComment(commentData);

@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight, Link, Check, Quote } from "lucide-react";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import ReactMarkdown from "react-markdown";
 
 interface User {
   id: string;
@@ -18,6 +20,7 @@ interface Comment {
   id: string;
   author: User;
   body: string;
+  isMarkdown: boolean;
   createdAt: string;
   visibility: string;
 }
@@ -43,14 +46,29 @@ interface CommentsSectionProps {
   setEditCommentBody: (body: string) => void;
   editCommentVisibility: string;
   setEditCommentVisibility: (v: string) => void;
-  onCommentEdit?: (comment: Comment, body: string, visibility: string) => void;
+  onCommentEdit?: (comment: Comment, body: string, visibility: string, isMarkdown?: boolean) => void;
   onCommentDelete?: (comment: Comment) => void;
-  onCommentSubmit?: (body: string, visibility: string) => void;
+  onCommentSubmit?: (body: string, visibility: string, isMarkdown?: boolean) => void;
   commentBody: string;
   setCommentBody: (body: string) => void;
   commentVisibility: string;
   setCommentVisibility: (v: string) => void;
 }
+
+// Helper function to highlight search terms in text
+const highlightSearchTerm = (text: string, searchTerm: string) => {
+  if (!searchTerm.trim()) return text;
+  
+  const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  
+  return parts.map((part) => {
+    if (regex.test(part)) {
+      return `<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">${part}</mark>`;
+    }
+    return part;
+  }).join('');
+};
 
 export function CommentsSection({
   reportId,
@@ -88,6 +106,93 @@ export function CommentsSection({
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showFilters, setShowFilters] = useState(false);
+  const [copiedCommentId, setCopiedCommentId] = useState<string | null>(null);
+
+  // State for markdown editing
+  const [useMarkdown, setUseMarkdown] = useState(false);
+  const [editingIsMarkdown, setEditingIsMarkdown] = useState(false);
+  const [quotedComment, setQuotedComment] = useState<Comment | null>(null);
+
+  // Function to build API URL with current filters
+  const buildApiUrl = useCallback((page: number, customSearchTerm?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: pagination.limit.toString(),
+      sortBy,
+      sortOrder,
+    });
+
+    const currentSearchTerm = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+    if (currentSearchTerm.trim()) {
+      params.append("search", currentSearchTerm.trim());
+    }
+
+    if (visibilityFilter !== "all") {
+      params.append("visibility", visibilityFilter);
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    return `${apiUrl}/api/events/slug/${eventSlug}/reports/${reportId}/comments?${params}`;
+  }, [reportId, eventSlug, searchTerm, visibilityFilter, sortBy, sortOrder, pagination.limit]);
+
+  // Function to find which page a comment is on
+  const findCommentPage = useCallback(async (commentId: string): Promise<number | null> => {
+    try {
+      // First get the total pages by doing a request without search filters
+      const baseParams = new URLSearchParams({
+        page: "1",
+        limit: pagination.limit.toString(),
+        sortBy,
+        sortOrder,
+      });
+
+      if (visibilityFilter !== "all") {
+        baseParams.append("visibility", visibilityFilter);
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const baseResponse = await fetch(
+        `${apiUrl}/api/events/slug/${eventSlug}/reports/${reportId}/comments?${baseParams}`,
+        { credentials: "include" }
+      );
+
+      if (!baseResponse.ok) return null;
+
+      const baseData: CommentListResponse = await baseResponse.json();
+      const totalPages = baseData.pagination.totalPages;
+
+      // Search through all pages to find the comment
+      for (let page = 1; page <= totalPages; page++) {
+        const pageParams = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          sortBy,
+          sortOrder,
+        });
+
+        if (visibilityFilter !== "all") {
+          pageParams.append("visibility", visibilityFilter);
+        }
+
+        const response = await fetch(
+          `${apiUrl}/api/events/slug/${eventSlug}/reports/${reportId}/comments?${pageParams}`,
+          { credentials: "include" }
+        );
+
+        if (response.ok) {
+          const data: CommentListResponse = await response.json();
+          const commentFound = data.comments.find(c => c.id === commentId);
+          if (commentFound) {
+            return page;
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error finding comment page:", error);
+      return null;
+    }
+  }, [reportId, eventSlug, visibilityFilter, sortBy, sortOrder, pagination.limit]);
 
   // Fetch comments function
   const fetchComments = useCallback(async (page = 1) => {
@@ -95,28 +200,8 @@ export function CommentsSection({
     setError(null);
 
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-        sortBy,
-        sortOrder,
-      });
-
-      if (searchTerm.trim()) {
-        params.append("search", searchTerm.trim());
-      }
-
-      if (visibilityFilter !== "all") {
-        params.append("visibility", visibilityFilter);
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-      const response = await fetch(
-        `${apiUrl}/api/events/slug/${eventSlug}/reports/${reportId}/comments?${params}`,
-        {
-          credentials: "include",
-        }
-      );
+      const url = buildApiUrl(page);
+      const response = await fetch(url, { credentials: "include" });
 
       if (!response.ok) {
         throw new Error("Failed to fetch comments");
@@ -125,6 +210,27 @@ export function CommentsSection({
       const data: CommentListResponse = await response.json();
       setComments(data.comments);
       setPagination(data.pagination);
+
+      // Handle direct comment linking
+      if (window.location.hash) {
+        const commentId = window.location.hash.replace('#comment-', '');
+        const commentExists = data.comments.find(c => c.id === commentId);
+        if (commentExists) {
+          setTimeout(() => {
+            const element = document.getElementById(`comment-${commentId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        } else {
+          // Comment not found on current page, search for it
+          findCommentPage(commentId).then(foundPage => {
+            if (foundPage && foundPage !== page) {
+              fetchComments(foundPage);
+            }
+          });
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load comments");
       setComments([]);
@@ -132,12 +238,49 @@ export function CommentsSection({
     } finally {
       setLoading(false);
     }
-  }, [reportId, eventSlug, searchTerm, visibilityFilter, sortBy, sortOrder, pagination.limit]);
+  }, [buildApiUrl, findCommentPage]);
 
-  // Initial load and refresh when filters change
+  // Initial load
   useEffect(() => {
     fetchComments(1);
-  }, [searchTerm, visibilityFilter, sortBy, sortOrder]);
+  }, [visibilityFilter, sortBy, sortOrder]);
+
+  // Handle search with proper debouncing
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchComments(1);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
+  // Handle URL hash changes (for direct links)
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash) {
+        const commentId = window.location.hash.replace('#comment-', '');
+        const commentExists = comments.find(c => c.id === commentId);
+        if (commentExists) {
+          setTimeout(() => {
+            const element = document.getElementById(`comment-${commentId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        } else {
+          // Comment not on current page, search for it
+          findCommentPage(commentId).then(foundPage => {
+            if (foundPage && foundPage !== pagination.page) {
+              fetchComments(foundPage);
+            }
+          });
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [comments, pagination.page, findCommentPage, fetchComments]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -146,32 +289,19 @@ export function CommentsSection({
     }
   };
 
-  // Handle search debouncing
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm !== "" || visibilityFilter !== "all") {
-        fetchComments(1);
-      }
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
-
-
-
   // Enhanced comment submission that refreshes the list
-  const handleCommentSubmit = async (body: string, visibility: string) => {
+  const handleCommentSubmit = async (body: string, visibility: string, isMarkdown?: boolean) => {
     if (onCommentSubmit) {
-      await onCommentSubmit(body, visibility);
+      await onCommentSubmit(body, visibility, isMarkdown);
       // Refresh comments after successful submission
       setTimeout(() => fetchComments(pagination.page), 500);
     }
   };
 
   // Enhanced comment edit that refreshes the list
-  const handleCommentEdit = async (comment: Comment, body: string, visibility: string) => {
+  const handleCommentEdit = async (comment: Comment, body: string, visibility: string, isMarkdown?: boolean) => {
     if (onCommentEdit) {
-      await onCommentEdit(comment, body, visibility);
+      await onCommentEdit(comment, body, visibility, isMarkdown);
       // Refresh comments after successful edit
       setTimeout(() => fetchComments(pagination.page), 500);
     }
@@ -189,11 +319,38 @@ export function CommentsSection({
     }
   };
 
+  // Handle comment link copying with feedback
+  const handleCopyCommentLink = async (commentId: string) => {
+    const url = new URL(window.location.href);
+    url.hash = `comment-${commentId}`;
+    await navigator.clipboard.writeText(url.toString());
+    setCopiedCommentId(commentId);
+    setTimeout(() => setCopiedCommentId(null), 2000);
+  };
+
+  // Handle quote reply
+  const handleQuoteReply = (comment: Comment) => {
+    setQuotedComment(comment);
+    setUseMarkdown(true);
+    // Scroll to comment form
+    setTimeout(() => {
+      const form = document.querySelector('form');
+      if (form) {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
   return (
     <div className="mt-8">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">
           Comments {pagination.total > 0 && `(${pagination.total})`}
+          {searchTerm && (
+            <span className="text-sm text-muted-foreground ml-2">
+              - searching for &ldquo;{searchTerm}&rdquo;
+            </span>
+          )}
         </h3>
         <Button
           variant="outline"
@@ -225,22 +382,22 @@ export function CommentsSection({
                 </div>
               </div>
 
-              {/* Visibility Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Visibility</label>
-                <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All comments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All comments</SelectItem>
-                    <SelectItem value="public">Public only</SelectItem>
-                    {isResponderOrAbove && (
+              {/* Visibility Filter - Only show for Responders and Admins */}
+              {isResponderOrAbove && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Visibility</label>
+                  <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All comments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All comments</SelectItem>
+                      <SelectItem value="public">Public only</SelectItem>
                       <SelectItem value="internal">Internal only</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Sort By */}
               <div className="space-y-2">
@@ -365,66 +522,102 @@ export function CommentsSection({
                             Internal
                           </Badge>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const url = new URL(window.location.href);
-                            url.hash = `comment-${comment.id}`;
-                            navigator.clipboard.writeText(url.toString());
-                            // Could add a toast notification here
-                          }}
-                          className="text-xs text-muted-foreground hover:text-foreground ml-auto"
-                        >
-                          #
-                        </Button>
+                        {comment.isMarkdown && (
+                          <Badge variant="outline" className="text-xs">
+                            Markdown
+                          </Badge>
+                        )}
+                        <div className="ml-auto flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleQuoteReply(comment)}
+                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                            title="Quote this comment"
+                          >
+                            <Quote className="h-3 w-3" />
+                            Quote
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyCommentLink(comment.id)}
+                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                            title="Copy link to this comment"
+                          >
+                            {copiedCommentId === comment.id ? (
+                              <>
+                                <Check className="h-3 w-3" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Link className="h-3 w-3" />
+                                Link
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Comment Body */}
                       {editingCommentId === comment.id ? (
                         <div className="space-y-3">
-                          <textarea
+                          <MarkdownEditor
                             value={editCommentBody}
-                            onChange={e => setEditCommentBody(e.target.value)}
-                            className="w-full min-h-[80px] p-3 border rounded-md resize-y bg-background"
+                            onChange={setEditCommentBody}
                             placeholder="Edit your comment..."
+                            rows={4}
                           />
-                          {isResponderOrAbove && (
-                            <Select value={editCommentVisibility} onValueChange={setEditCommentVisibility}>
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="public">Public</SelectItem>
-                                <SelectItem value="internal">Internal</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => {
-                                if (editCommentBody.trim()) {
-                                  handleCommentEdit(comment, editCommentBody, editCommentVisibility);
-                                  setEditingCommentId(null);
-                                }
-                              }}
-                              disabled={!editCommentBody.trim()}
-                              size="sm"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setEditingCommentId(null)}
-                              size="sm"
-                            >
-                              Cancel
-                            </Button>
+                          <div className="flex gap-3 items-center">
+                            {isResponderOrAbove && (
+                              <Select value={editCommentVisibility} onValueChange={setEditCommentVisibility}>
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="public">Public</SelectItem>
+                                  <SelectItem value="internal">Internal</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => {
+                                  if (editCommentBody.trim()) {
+                                    handleCommentEdit(comment, editCommentBody, editCommentVisibility, editingIsMarkdown);
+                                    setEditingCommentId(null);
+                                  }
+                                }}
+                                disabled={!editCommentBody.trim()}
+                                size="sm"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setEditingCommentId(null)}
+                                size="sm"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ) : (
                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                          <p className="whitespace-pre-wrap">{comment.body}</p>
+                          {comment.isMarkdown ? (
+                            <ReactMarkdown>
+                              {highlightSearchTerm(comment.body, searchTerm)}
+                            </ReactMarkdown>
+                          ) : (
+                            <div 
+                              className="whitespace-pre-wrap"
+                              dangerouslySetInnerHTML={{
+                                __html: highlightSearchTerm(comment.body, searchTerm)
+                              }}
+                            />
+                          )}
                         </div>
                       )}
 
@@ -438,6 +631,7 @@ export function CommentsSection({
                               setEditingCommentId(comment.id);
                               setEditCommentBody(comment.body);
                               setEditCommentVisibility(comment.visibility);
+                              setEditingIsMarkdown(comment.isMarkdown);
                             }}
                           >
                             Edit
@@ -502,22 +696,48 @@ export function CommentsSection({
               onSubmit={e => {
                 e.preventDefault();
                 if (commentBody.trim()) {
-                  handleCommentSubmit(commentBody, commentVisibility);
+                  handleCommentSubmit(commentBody, commentVisibility, useMarkdown);
                   setCommentBody("");
                   setCommentVisibility("public");
+                  setUseMarkdown(false);
+                  setQuotedComment(null);
                 }
               }}
               className="space-y-4"
             >
               <div>
-                <label className="text-sm font-medium mb-2 block">Add a comment</label>
-                <textarea
-                  value={commentBody}
-                  onChange={e => setCommentBody(e.target.value)}
-                  className="w-full min-h-[100px] p-3 border rounded-md resize-y bg-background"
-                  placeholder="Write your comment..."
-                  required
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium">Add a comment</label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={useMarkdown}
+                        onChange={(e) => setUseMarkdown(e.target.checked)}
+                        className="mr-1"
+                      />
+                      Use markdown
+                    </label>
+                  </div>
+                </div>
+                
+                {useMarkdown ? (
+                  <MarkdownEditor
+                    value={commentBody}
+                    onChange={setCommentBody}
+                    placeholder="Write your comment in markdown..."
+                    quotedText={quotedComment ? quotedComment.body : undefined}
+                    rows={5}
+                  />
+                ) : (
+                  <textarea
+                    value={commentBody}
+                    onChange={e => setCommentBody(e.target.value)}
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-y bg-background"
+                    placeholder="Write your comment..."
+                    required
+                  />
+                )}
               </div>
               
               <div className="flex items-center justify-between">
@@ -543,4 +763,4 @@ export function CommentsSection({
       )}
     </div>
   );
-} 
+}
