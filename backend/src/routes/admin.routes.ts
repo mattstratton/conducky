@@ -556,8 +556,9 @@ router.post('/events/:eventId/invites', requireSuperAdmin(), async (req: Request
       return;
     }
 
-    // Generate unique invite code
-    const code = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Generate cryptographically secure invite code
+    const crypto = require('crypto');
+    const code = crypto.randomBytes(16).toString('hex');
 
     // Create invite link (expires in 7 days)
     const expiresAt = new Date();
