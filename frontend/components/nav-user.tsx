@@ -36,7 +36,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Switch } from "@/components/ui/switch"
+
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -164,16 +164,24 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <div className="flex items-center w-full" tabIndex={-1} role="menuitem">
-                  {mounted && theme === "dark" ? <Sun className="mr-2" /> : <Moon className="mr-2" />}
-                  <span className="flex-1">Dark Mode</span>
-                  <Switch
-                    checked={mounted ? theme === "dark" : false}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                    aria-label="Toggle dark mode"
-                    disabled={!mounted}
-                  />
-                </div>
+                <button 
+                  type="button"
+                  className="flex items-center w-full"
+                  onClick={() => setTheme(mounted && theme === "dark" ? "light" : "dark")}
+                  disabled={!mounted}
+                >
+                  {mounted && theme === "dark" ? (
+                    <>
+                      <Moon className="mr-2" />
+                      Dark Mode
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="mr-2" />
+                      Light Mode
+                    </>
+                  )}
+                </button>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
