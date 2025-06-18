@@ -71,6 +71,9 @@ export function NavUser({
 
   async function handleLogout() {
     setLoggingOut(true)
+    if (isMobile) {
+      setOpenMobile(false)
+    }
     try {
       await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/auth/logout", {
         method: "POST",
@@ -82,9 +85,6 @@ export function NavUser({
     setUser(null)
     setLoggingOut(false)
     router.push("/login")
-    if (isMobile) {
-      setOpenMobile(false)
-    }
   }
 
   return (
