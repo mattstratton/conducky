@@ -75,6 +75,61 @@ router.get('/session', async (req: any, res: Response): Promise<void> => {
   }
 });
 
+// Diagnostic endpoint to test database queries (temporary)
+router.get('/session-debug', async (req: any, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const diagnostics: any = {
+      userId: req.user.id,
+      queries: {}
+    };
+
+    try {
+      // Test UserEventRole query
+      const userEventRoles = await prisma.userEventRole.findMany({
+        where: { userId: req.user.id },
+        include: { role: true },
+      });
+      diagnostics.queries.userEventRoles = {
+        success: true,
+        count: userEventRoles.length,
+        data: userEventRoles
+      };
+    } catch (error: any) {
+      diagnostics.queries.userEventRoles = {
+        success: false,
+        error: error.message
+      };
+    }
+
+    try {
+      // Test UserAvatar query
+      const avatar = await prisma.userAvatar.findUnique({
+        where: { userId: req.user.id }
+      });
+      diagnostics.queries.userAvatar = {
+        success: true,
+        found: !!avatar,
+        data: avatar ? { id: avatar.id, filename: avatar.filename } : null
+      };
+    } catch (error: any) {
+      diagnostics.queries.userAvatar = {
+        success: false,
+        error: error.message
+      };
+    }
+
+    res.json(diagnostics);
+  } catch (error: any) {
+    console.error('Session debug error:', error);
+    res.status(500).json({ error: 'Debug failed', details: error.message });
+  }
+});
+
 // Check email availability
 router.get('/check-email', authController.checkEmail.bind(authController));
 
