@@ -46,6 +46,9 @@ export function AppSidebar({ user, events, ...props }: {
   // Track unread notification count
   const [unreadCount, setUnreadCount] = useState<number>(0);
   
+  // Track global user roles (like SuperAdmin)
+  const [globalRoles, setGlobalRoles] = useState<string[]>([]);
+  
   // Update selected event when in event context
   useEffect(() => {
     const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
@@ -69,32 +72,44 @@ export function AppSidebar({ user, events, ...props }: {
     }
   }, [events, selectedEventSlug]);
 
-  // Fetch unread notification count
+  // Fetch unread notification count and global roles
   useEffect(() => {
-    const fetchUnreadCount = async () => {
+    const fetchUserData = async () => {
       try {
-        const response = await fetch(
+        // Fetch notification stats
+        const notificationResponse = await fetch(
           (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/notifications/stats",
           { credentials: "include" }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setUnreadCount(data.unread || 0);
+        if (notificationResponse.ok) {
+          const notificationData = await notificationResponse.json();
+          setUnreadCount(notificationData.unread || 0);
+        }
+
+        // Fetch user events and global roles
+        const eventsResponse = await fetch(
+          (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/events",
+          { credentials: "include" }
+        );
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setGlobalRoles(eventsData.globalRoles || []);
         }
       } catch (error) {
-        console.warn("Failed to fetch notification stats:", error);
+        console.warn("Failed to fetch user data:", error);
       }
     };
 
     // Fetch on mount and when user changes
     if (user) {
-      fetchUnreadCount();
+      fetchUserData();
       
       // Set up interval to refresh every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
+      const interval = setInterval(fetchUserData, 30000);
       return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
+      setGlobalRoles([]);
     }
   }, [user]);
   
@@ -118,8 +133,8 @@ export function AppSidebar({ user, events, ...props }: {
   const isSystemAdmin = router.asPath.startsWith('/admin');
   const isEventContext = router.asPath.startsWith('/events/');
   
-  // Check if user is SuperAdmin
-  const isSuperAdmin = user.roles?.includes('SuperAdmin');
+  // Check if user is SuperAdmin using global roles
+  const isSuperAdmin = globalRoles.includes('SuperAdmin');
 
   // Get current event slug if in event context
   // Try router.query first (more reliable for dynamic routes), then fall back to asPath parsing
@@ -338,6 +353,9 @@ export function AppSidebar({ user, events, ...props }: {
     currentEventSlug,
     selectedEventSlug,
     events,
+    user,
+    unreadCount,
+    globalRoles,
   ]);
 
   // Collapsed event switcher: just the icon, opens the dropdown

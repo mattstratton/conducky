@@ -145,27 +145,41 @@ app.use('/api/admin', adminRoutes);
 // Missing API routes that frontend expects
 // Session route (frontend expects /api/session)
 app.get('/api/session', async (req: any, res: any) => {
+  console.log('[SESSION DEBUG] /api/session endpoint hit');
   if (req.user) {
+    console.log('[SESSION DEBUG] User exists:', req.user.id);
     try {
+      // Get user roles (same pattern as RBAC middleware)
+      const userEventRoles = await prisma.userEventRole.findMany({
+        where: { userId: req.user.id },
+        include: { role: true },
+      });
+      const roles = userEventRoles.map((uer: any) => uer.role.name);
+      console.log('[SESSION DEBUG] Found roles:', roles);
+
       // Get avatar if exists
       const avatar = await prisma.userAvatar.findUnique({
         where: { userId: req.user.id }
       });
 
-      res.json({ 
+      const response = { 
         authenticated: true, 
         user: {
           id: req.user.id,
           email: req.user.email,
           name: req.user.name,
+          roles: roles,
           avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
         }
-      });
+      };
+      console.log('[SESSION DEBUG] Sending response:', JSON.stringify(response, null, 2));
+      res.json(response);
     } catch (err: any) {
-      console.error('Error fetching user avatar for session:', err);
+      console.error('Error fetching session data:', err);
       res.status(500).json({ error: 'Failed to fetch session data' });
     }
   } else {
+    console.log('[SESSION DEBUG] No user in request');
     res.json({ authenticated: false });
   }
 });
