@@ -1,11 +1,12 @@
 import React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, FileText, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
+import { UserContext } from '../_app';
 
 
 
@@ -27,13 +28,39 @@ interface SystemStats {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user } = useContext(UserContext);
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check authentication and SuperAdmin status
+  useEffect(() => {
+    // Only redirect if we're certain user is null after context initialization
+    if (user === null && authChecked) {
+      router.replace('/login?next=' + encodeURIComponent('/admin/dashboard'));
+      return;
+    }
+    
+    // Check if user is SuperAdmin
+    if (user && authChecked && !user.roles?.includes('SuperAdmin')) {
+      router.replace('/dashboard'); // Redirect non-SuperAdmins to regular dashboard
+      return;
+    }
+  }, [user, authChecked, router]);
+
+  // Separate effect to mark auth as checked after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthChecked(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    fetchSystemStats();
-  }, []);
+    // Only fetch stats if user is authenticated and is SuperAdmin
+    if (user && user.roles?.includes('SuperAdmin')) {
+      fetchSystemStats();
+    }
+  }, [user]);
 
   const fetchSystemStats = async () => {
     try {
@@ -83,6 +110,34 @@ export default function AdminDashboard() {
       minute: '2-digit',
     });
   };
+
+  // Don't render anything while checking authentication
+  if (!authChecked || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">System Admin Dashboard</h1>
+            <p className="text-gray-600">Checking authorization...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is SuperAdmin (additional safety check)
+  if (!user.roles?.includes('SuperAdmin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Access Denied</h1>
+            <p className="text-gray-600">You do not have permission to access this page.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
