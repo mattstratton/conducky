@@ -24,8 +24,9 @@ interface User {
 interface UserContextType {
   user: User | null;
   setUser: Dispatch<SetStateAction<User | null>>;
+  sessionLoading: boolean;
 }
-export const UserContext = createContext<UserContextType>({ user: null, setUser: () => {} });
+export const UserContext = createContext<UserContextType>({ user: null, setUser: () => {}, sessionLoading: true });
 
 interface SidebarEvent {
   name: string;
@@ -38,6 +39,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [eventName, setEventName] = useState("");
   const [eventSlugForModal, setEventSlugForModal] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [events, setEvents] = useState<Array<{ name: string; url: string; icon: React.ElementType; role?: string }>>([]);
   const [globalRoles, setGlobalRoles] = useState<string[]>([]);
   const router = useRouter();
@@ -46,6 +48,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   // Restore user from session cookie on mount
   React.useEffect(() => {
+    setSessionLoading(true);
     fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/session", {
       credentials: "include",
     })
@@ -56,8 +59,12 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         } else {
           setUser(null);
         }
+        setSessionLoading(false);
       })
-      .catch(() => setUser(null));
+      .catch(() => {
+        setUser(null);
+        setSessionLoading(false);
+      });
   }, []); // Only run on mount
   
   // Re-check session after potential OAuth redirects
@@ -163,7 +170,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
-      <UserContext.Provider value={{ user, setUser }}>
+      <UserContext.Provider value={{ user, setUser, sessionLoading }}>
         <ModalContext.Provider value={{ openModal }}>
           <div className="flex min-h-screen flex-col">
             {user ? (

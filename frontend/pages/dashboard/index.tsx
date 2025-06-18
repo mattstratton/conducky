@@ -18,6 +18,7 @@ interface User {
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  sessionLoading: boolean;
 }
 
 interface Event {
@@ -31,25 +32,17 @@ interface Event {
 export default function GlobalDashboard() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { user, setUser } = useContext(UserContext) as UserContextType;
+  const { user, setUser, sessionLoading } = useContext(UserContext) as UserContextType;
   const [userEvents, setUserEvents] = useState<Event[] | null>(null);
   const [userEventsLoading, setUserEventsLoading] = useState(false);
   const [userEventsError, setUserEventsError] = useState('');
-  const [authChecked, setAuthChecked] = useState(false);
-
   // Check authentication status and redirect if needed
   useEffect(() => {
-    // Only redirect if we're certain user is null after context initialization
-    if (user === null && authChecked) {
+    // Only redirect if session loading is complete and user is null
+    if (!sessionLoading && user === null) {
       router.replace('/login?next=' + encodeURIComponent('/dashboard'));
     }
-  }, [user, authChecked, router]);
-
-  // Separate effect to mark auth as checked after initial render
-  useEffect(() => {
-    const timer = setTimeout(() => setAuthChecked(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
+  }, [user, sessionLoading, router]);
 
   // Authenticated user: fetch their events
   useEffect(() => {
@@ -70,8 +63,8 @@ export default function GlobalDashboard() {
     }
   }, [user]);
 
-  // Don't render anything while checking authentication
-  if (!authChecked || !user) {
+  // Don't render anything while session is loading or user is not authenticated
+  if (sessionLoading || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
         <Card className="w-full max-w-md text-center p-4 sm:p-8">
