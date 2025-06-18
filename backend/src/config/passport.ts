@@ -63,9 +63,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.BACKEND_BASE_URL || 'http://localhost:4000'}/api/auth/google/callback`,
-      scope: ['profile', 'email']
+      scope: ['profile', 'email'],
+      passReqToCallback: true // Enable passing request to callback for state access
     },
-    async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
+    async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
         if (!email) {
@@ -157,9 +158,10 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: `${process.env.BACKEND_BASE_URL || 'http://localhost:4000'}/api/auth/github/callback`,
-      scope: ['user:email']
+      scope: ['user:email'],
+      passReqToCallback: true // Enable passing request to callback for state access
     },
-    async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
+    async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
         if (!email) {
