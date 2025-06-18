@@ -1,8 +1,16 @@
 import { Router, Request, Response } from 'express';
+import passport from 'passport';
 import { AuthService } from '../services/auth.service';
 import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
+
+// Extend session interface to include OAuth state
+declare module 'express-session' {
+  interface SessionData {
+    oauthState?: string;
+  }
+}
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -222,5 +230,51 @@ router.get('/validate-reset-token', async (req: Request, res: Response): Promise
     res.status(500).json({ error: 'Token validation failed.' });
   }
 });
+
+// Google OAuth routes
+router.get('/google', (req: Request, res: Response, next: Function) => {
+  // Store state parameter in session for OAuth callback
+  if (req.query.state && typeof req.query.state === 'string') {
+    req.session.oauthState = req.query.state;
+  }
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
+  (req: Request, res: Response) => {
+    // Successful authentication, redirect based on stored state or default
+    const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
+    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    
+    // Clear the state from session
+    delete req.session.oauthState;
+    
+    res.redirect(`${frontendUrl}${nextUrl}`);
+  }
+);
+
+// GitHub OAuth routes
+router.get('/github', (req: Request, res: Response, next: Function) => {
+  // Store state parameter in session for OAuth callback
+  if (req.query.state && typeof req.query.state === 'string') {
+    req.session.oauthState = req.query.state;
+  }
+  passport.authenticate('github', { scope: ['user:email'] })(req, res, next);
+});
+
+router.get('/github/callback',
+  passport.authenticate('github', { failureRedirect: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3001'}/login?error=oauth_failed` }),
+  (req: Request, res: Response) => {
+    // Successful authentication, redirect based on stored state or default
+    const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3001';
+    const nextUrl = req.session.oauthState ? decodeURIComponent(req.session.oauthState as string) : '/dashboard';
+    
+    // Clear the state from session
+    delete req.session.oauthState;
+    
+    res.redirect(`${frontendUrl}${nextUrl}`);
+  }
+);
 
 export default router; 

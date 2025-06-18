@@ -10,10 +10,11 @@ if (process.env.NODE_ENV === 'test') {
 import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import bcrypt from 'bcrypt';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+
+// Import passport configuration
+import './src/config/passport';
 
 // Import route modules
 import { 
@@ -67,40 +68,7 @@ app.use(getSessionConfig());
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport local strategy
-passport.use(
-  new LocalStrategy(
-    { usernameField: 'email' },
-    async (email: string, password: string, done: any) => {
-      try {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.passwordHash) {
-          return done(null, false, { message: 'Incorrect email or password.' });
-        }
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) {
-          return done(null, false, { message: 'Incorrect email or password.' });
-        }
-        return done(null, user);
-      } catch (err) {
-        return done(err);
-      }
-    },
-  ),
-);
-
-passport.serializeUser((user: any, done: any) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id: string, done: any) => {
-  try {
-    const user = await prisma.user.findUnique({ where: { id } });
-    done(null, user);
-  } catch (err) {
-    done(err);
-  }
-});
+// Passport strategies are configured in ./src/config/passport
 
 // Basic routes
 app.get('/', async (_req: any, res: any) => {
