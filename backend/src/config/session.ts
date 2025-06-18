@@ -34,7 +34,7 @@ export const getSessionConfig = (environment: string = process.env.NODE_ENV || '
           secure: true, // HTTPS only
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          sameSite: 'strict' as const,
+          sameSite: 'lax' as const, // Railway requires lax
         },
       });
     
