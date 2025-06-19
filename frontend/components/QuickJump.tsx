@@ -109,6 +109,8 @@ export function QuickJump({ isOpen, onClose }: QuickJumpProps) {
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const totalItems = searchResults.length;
     
+    if (totalItems === 0) return;
+    
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(prev => (prev + 1) % totalItems);

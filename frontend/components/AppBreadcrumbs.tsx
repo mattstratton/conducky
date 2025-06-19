@@ -157,22 +157,40 @@ export function AppBreadcrumbs({ eventName, className }: AppBreadcrumbsProps) {
             <React.Fragment key={index}>
               {index > 0 && <BreadcrumbSeparator><ChevronRight className="h-4 w-4" /></BreadcrumbSeparator>}
               <BreadcrumbItem>
-                {crumb.href && index < breadcrumbs.length - 1 ? (
-                  <BreadcrumbLink asChild>
-                    <Link href={crumb.href} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                {/* Mobile: Only show last 2 breadcrumbs on small screens */}
+                <div className={cn(
+                  "flex items-center",
+                  breadcrumbs.length > 2 && index < breadcrumbs.length - 2 && "hidden sm:flex"
+                )}>
+                  {crumb.href && index < breadcrumbs.length - 1 ? (
+                    <BreadcrumbLink asChild>
+                      <Link 
+                        href={crumb.href} 
+                        className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                        // Deep-link optimization: Add prefetch for better navigation
+                        prefetch={index === breadcrumbs.length - 2} // Prefetch parent page
+                      >
+                        {index === 0 && <Home className="h-3 w-3" />}
+                        <span className="truncate max-w-[120px] sm:max-w-none">{crumb.label}</span>
+                      </Link>
+                    </BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbPage className="text-sm font-medium flex items-center gap-1">
                       {index === 0 && <Home className="h-3 w-3" />}
-                      {crumb.label}
-                    </Link>
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage className="text-sm font-medium flex items-center gap-1">
-                    {index === 0 && <Home className="h-3 w-3" />}
-                    {crumb.label}
-                  </BreadcrumbPage>
-                )}
+                      <span className="truncate max-w-[120px] sm:max-w-none">{crumb.label}</span>
+                    </BreadcrumbPage>
+                  )}
+                </div>
               </BreadcrumbItem>
             </React.Fragment>
           ))}
+          
+          {/* Mobile: Show ellipsis when breadcrumbs are condensed */}
+          {breadcrumbs.length > 2 && (
+            <BreadcrumbItem className="sm:hidden">
+              <span className="text-muted-foreground">...</span>
+            </BreadcrumbItem>
+          )}
         </BreadcrumbList>
       </Breadcrumb>
       
@@ -193,6 +211,7 @@ export function AppBreadcrumbs({ eventName, className }: AppBreadcrumbsProps) {
           onClick={handleFavoriteToggle}
           className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
           title={currentPageFavorited ? "Remove from favorites" : "Add to favorites"}
+          aria-label={currentPageFavorited ? "Remove from favorites" : "Add to favorites"}
         >
           <svg
             className="h-3 w-3"

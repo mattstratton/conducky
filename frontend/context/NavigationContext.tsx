@@ -80,7 +80,8 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
   // Get current event slug and name
   const currentEventSlug = React.useMemo(() => {
     if (currentContext === 'event') {
-      return router.query.eventSlug as string;
+      const eventSlug = router.query.eventSlug;
+      return Array.isArray(eventSlug) ? eventSlug[0] : eventSlug;
     }
     return undefined;
   }, [currentContext, router.query.eventSlug]);
@@ -107,14 +108,20 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
     }
   }, [user?.id]);
 
-  // Save favorites to localStorage
+  // Save favorites to localStorage with debouncing
   useEffect(() => {
-    if (typeof window !== 'undefined' && user?.id && favorites.length > 0) {
-      localStorage.setItem(`conducky_favorites_${user.id}`, JSON.stringify(favorites));
+    if (typeof window !== 'undefined' && user?.id) {
+      const timeoutId = setTimeout(() => {
+        if (favorites.length > 0) {
+          localStorage.setItem(`conducky_favorites_${user.id}`, JSON.stringify(favorites));
+        }
+      }, 500); // Debounce by 500ms
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [favorites, user?.id]);
 
-  // Add recent page when route changes
+  // Add recent page when route changes with cleanup
   useEffect(() => {
     if (router.isReady && router.pathname !== '/') {
       const pageTitle = getPageTitle(router.pathname, router.query, currentEventName);
@@ -129,15 +136,18 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
     }
   }, [router.asPath, router.isReady, currentContext, currentEventName]);
 
-  // Add recent page function
+  // Add recent page function with improved cleanup
   const addRecentPage = useCallback((item: NavigationItem) => {
     setRecentPages(prev => {
       // Remove if already exists
       const filtered = prev.filter(page => page.href !== item.href);
       // Add to beginning
       const updated = [item, ...filtered];
-      // Keep only last 10 items
-      return updated.slice(0, 10);
+      // Keep only last 10 items and clean up old entries (older than 7 days)
+      const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      return updated
+        .filter(page => !page.timestamp || page.timestamp > oneWeekAgo)
+        .slice(0, 10);
     });
   }, []);
 
@@ -222,7 +232,7 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
     );
   }, [quickJumpItems]);
 
-  // Navigation helpers
+  // Navigation helpers with improved back button optimization
   const navigateToEvent = useCallback((eventSlug: string) => {
     router.push(`/events/${eventSlug}/dashboard`);
   }, [router]);
@@ -232,7 +242,41 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
   }, [router]);
 
   const goBack = useCallback(() => {
-    router.back();
+    // Smart back navigation - try to go to a meaningful parent page
+    const currentPath = router.asPath;
+    
+    // If we're on a deep page, try to go to logical parent
+    if (currentPath.includes('/reports/') && currentPath.match(/\/reports\/[^/]+$/)) {
+      // From report detail to report list
+      const eventSlug = router.query.eventSlug as string;
+      if (eventSlug) {
+        router.push(`/events/${eventSlug}/reports`);
+        return;
+      }
+    }
+    
+    if (currentPath.includes('/events/') && currentPath.includes('/team/') && router.query.userId) {
+      // From team member detail to team list
+      const eventSlug = router.query.eventSlug as string;
+      if (eventSlug) {
+        router.push(`/events/${eventSlug}/team`);
+        return;
+      }
+    }
+    
+    if (currentPath.includes('/admin/events/') && currentPath.includes('/edit')) {
+      // From edit event to events list
+      router.push('/admin/events');
+      return;
+    }
+    
+    // Default browser back if no smart navigation applies
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // Fallback to dashboard if no history
+      router.push('/dashboard');
+    }
   }, [router]);
 
   const value: NavigationContextType = {

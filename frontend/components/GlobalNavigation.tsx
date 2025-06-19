@@ -19,22 +19,41 @@ interface NavigationHelpProps {
 function NavigationHelp({ isOpen, onClose }: NavigationHelpProps) {
   const { shortcuts } = useKeyboardShortcuts();
 
+  // Focus management
+  React.useEffect(() => {
+    if (isOpen) {
+      const focusableElement = document.querySelector('[role="dialog"] button') as HTMLElement;
+      focusableElement?.focus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="help-dialog-title"
+      aria-describedby="help-dialog-description"
+    >
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <h2 id="help-dialog-title" className="text-lg font-semibold flex items-center gap-2">
             <Keyboard className="h-5 w-5" />
             Keyboard Shortcuts
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            aria-label="Close keyboard shortcuts help"
+          >
             ×
           </Button>
         </div>
         
-        <div className="space-y-3">
+        <div id="help-dialog-description" className="space-y-3">
           {shortcuts.map((shortcut, index) => (
             <div key={index} className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
@@ -118,11 +137,16 @@ function NavigationControls() {
     <>
       {/* Discovery Hint for new users */}
       {showDiscoveryHint && (
-        <div className="fixed top-16 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg max-w-sm animate-in slide-in-from-right-2">
+        <div 
+          className="fixed top-16 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg max-w-sm animate-in slide-in-from-right-2"
+          role="alert"
+          aria-live="polite"
+          aria-labelledby="discovery-hint-title"
+        >
           <div className="flex items-start gap-2">
             <Search className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium">Quick Navigation Available!</p>
+              <p id="discovery-hint-title" className="text-sm font-medium">Quick Navigation Available!</p>
               <p className="text-xs text-blue-100 mt-1">
                 Press <kbd className="px-1 py-0.5 bg-blue-700 rounded text-xs">Ctrl+K</kbd> or <kbd className="px-1 py-0.5 bg-blue-700 rounded text-xs">/</kbd> to quickly jump to any page
               </p>
@@ -132,6 +156,7 @@ function NavigationControls() {
               size="sm"
               onClick={handleDiscoveryHintDismiss}
               className="h-6 w-6 p-0 text-blue-100 hover:text-white hover:bg-blue-700"
+              aria-label="Dismiss navigation hint"
             >
               ×
             </Button>
@@ -146,6 +171,7 @@ function NavigationControls() {
         onClick={() => setQuickJumpOpen(true)}
         className="fixed bottom-4 right-4 z-40 shadow-lg bg-background/95 backdrop-blur-sm md:hidden"
         title="Quick Jump (Ctrl+K)"
+        aria-label="Open quick navigation search"
       >
         <Search className="h-4 w-4" />
       </Button>
@@ -157,6 +183,7 @@ function NavigationControls() {
         onClick={() => setHelpOpen(true)}
         className="fixed bottom-4 right-16 z-40 shadow-lg bg-background/95 backdrop-blur-sm md:hidden"
         title="Keyboard Shortcuts (?)"
+        aria-label="Show keyboard shortcuts help"
       >
         <Keyboard className="h-4 w-4" />
       </Button>
