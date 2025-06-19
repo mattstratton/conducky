@@ -454,7 +454,8 @@ export class ReportService {
         }
 
         const hasResponderRole = assignedUser.userEventRoles.some((er: any) => 
-          ['Responder', 'Admin'].includes(er.role.name)
+          ['Responder', 'Admin'].includes(er.role.name) || 
+          ['responder', 'admin'].includes(er.role.name.toLowerCase())
         );
 
         if (!hasResponderRole) {
