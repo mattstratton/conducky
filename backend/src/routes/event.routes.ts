@@ -504,16 +504,57 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
   }
 });
 
-// Update report state
+// Get report state history
+router.get('/:eventId/reports/:reportId/state-history', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { reportId } = req.params;
+    
+    const result = await reportService.getReportStateHistory(reportId);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get report state history error:', error);
+    res.status(500).json({ error: 'Failed to fetch state history.' });
+  }
+});
+
+// Update report state with enhanced workflow support
 router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
-    const { state, status, priority, assignedToUserId, resolution } = req.body;
+    const { state, status, priority, assignedToUserId, resolution, notes, assignedTo } = req.body;
+    
+    console.log('[DEBUG Backend] State change request:', {
+      eventId,
+      reportId,
+      body: req.body,
+      notes: notes ? `"${notes}"` : null,
+      assignedTo,
+      assignedToUserId
+    });
     
     // Handle both 'state' and 'status' parameters for compatibility
     const stateValue = state || status;
     
-    const result = await reportService.updateReportState(eventId, reportId, stateValue);
+    // Handle both assignedToUserId and assignedTo for compatibility
+    const assignedUserId = assignedToUserId || assignedTo;
+    
+    const user = req.user as any;
+    const userId = user?.id;
+    
+    const result = await reportService.updateReportState(
+      eventId, 
+      reportId, 
+      stateValue, 
+      userId, 
+      notes, 
+      assignedUserId
+    );
     
     if (!result.success) {
       if (result.error?.includes('not found')) {

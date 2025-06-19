@@ -58,50 +58,16 @@ export default function RedeemInvitePage() {
 
   // Auto-redeem invite for authenticated users (e.g., after OAuth login)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AUTO-REDEEM DEBUG] useEffect triggered with:', {
-        user: user ? user.email : null,
-        code,
-        hasInvite: !!invite,
-        hasEvent: !!event,
-        success: !!success,
-        error: !!error,
-        redeeming: !!redeeming
-      });
-    }
-
     if (user && invite && event && !success && !error && !redeeming) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[AUTO-REDEEM] 🔍 Auto-redemption triggered for authenticated user:', user.email);
-        console.log('[AUTO-REDEEM] 🔍 About to call handleRedeem()');
-      }
-      
       // Add a small delay to ensure all state has settled
       setTimeout(() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[AUTO-REDEEM] 🔍 Executing handleRedeem() now');
-        }
         handleRedeem();
       }, 250);
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[AUTO-REDEEM] ❌ Auto-redemption conditions not met:', {
-          hasUser: !!user,
-          hasInvite: !!invite,
-          hasEvent: !!event,
-          isSuccess: !!success,
-          hasError: !!error,
-          isRedeeming: !!redeeming
-        });
-      }
     }
   }, [user, invite, event, success, error, redeeming]);
 
   // Handle redeem
   const handleRedeem = async () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[REDEEM] Starting invite redemption for code:', code);
-    }
     setRedeeming(true);
     setError('');
     setSuccess('');
@@ -110,26 +76,14 @@ export default function RedeemInvitePage() {
         method: 'POST',
         credentials: 'include',
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[REDEEM] Response status:', res.status);
-      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[REDEEM] Error response:', data);
-        }
         throw new Error(data.error || 'Failed to redeem invite');
       }
-      const data = await res.json();
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[REDEEM] Success response:', data);
-      }
+      await res.json();
       setSuccess('You have joined the event!');
       if (refreshUser) refreshUser();
     } catch (err) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[REDEEM] Error:', err);
-      }
       setError(err instanceof Error ? err.message : 'Failed to redeem invite');
     }
     setRedeeming(false);

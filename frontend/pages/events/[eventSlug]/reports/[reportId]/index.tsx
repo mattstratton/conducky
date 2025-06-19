@@ -233,48 +233,46 @@ export default function ReportDetail() {
   // Fetch event users for assignment dropdown if admin/responder
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEBUG] Fetching responders for assignment dropdown');
-    }
+
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[DEBUG] Fetched responders:', data.users);
-        }
+
         fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[DEBUG] Fetched admins:', data2.users);
-            }
+
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(all.reduce<Record<string, User>>((acc, u) => { 
               acc[u.id] = u; 
               return acc; 
             }, {}));
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[DEBUG] Final eventUsers for assignment dropdown:', deduped);
-            }
+
             setEventUsers(deduped);
           });
       });
   }, [eventSlug, isResponderOrAbove]);
 
-  const handleStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newState = e.target.value;
+  // Enhanced state change handler to support notes and assignments
+  const handleStateChange = async (newState: string, notes?: string, assignedToUserId?: string) => {
     setStateChangeError("");
     setStateChangeSuccess("");
     setLoading(true);
     try {
+      const requestBody = { 
+        state: newState, 
+        notes,
+        assignedTo: assignedToUserId 
+      };
+      
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/api/events/slug/${eventSlug}/reports/${reportId}`,
+          `/api/events/${report?.eventId}/reports/${reportId}/state`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ state: newState }),
+          body: JSON.stringify(requestBody),
         },
       );
       if (!res.ok) {
@@ -283,12 +281,37 @@ export default function ReportDetail() {
       } else {
         const data = await res.json();
         setReport(data.report);
-        setStateChangeSuccess("State updated!");
+        
+        // Update assignment fields if assignment changed
+        if (assignedToUserId !== undefined) {
+          setAssignmentFields(prev => ({
+            ...prev,
+            assignedResponderId: assignedToUserId || ''
+          }));
+        }
+        
+        // Also update assignment fields from the returned report data
+        if (data.report) {
+          setAssignmentFields(prev => ({
+            ...prev,
+            assignedResponderId: data.report.assignedResponderId || '',
+            severity: data.report.severity || prev.severity,
+            resolution: data.report.resolution || prev.resolution,
+            state: data.report.state
+          }));
+        }
+        
+        setStateChangeSuccess("State updated successfully!");
       }
     } catch (err) {
       setStateChangeError("Network error");
     }
     setLoading(false);
+  };
+
+  // Legacy state change handler for backward compatibility
+  const handleLegacyStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    await handleStateChange(e.target.value);
   };
 
   // Handle comment submit
@@ -605,7 +628,8 @@ export default function ReportDetail() {
       loading={loading}
       error={fetchError}
       eventSlug={eventSlug}
-      onStateChange={handleStateChange}
+      onStateChange={handleLegacyStateChange}
+      onEnhancedStateChange={handleStateChange}
       onCommentSubmit={handleCommentSubmit}
       onCommentEdit={handleEditSave}
       onCommentDelete={handleDeleteConfirm}
