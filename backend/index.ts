@@ -194,21 +194,46 @@ app.get('/api/system/settings', async (_req: any, res: any) => {
   }
 });
 
-// Evidence download route (standalone for public access)
+// Evidence download route (with proper access control)
 app.get('/api/evidence/:evidenceId/download', async (req: any, res: any) => {
   try {
     const { evidenceId } = req.params;
     
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const evidence = await prisma.evidenceFile.findUnique({
       where: { id: evidenceId },
+      include: {
+        report: {
+          include: {
+            event: true
+          }
+        }
+      }
     });
     
     if (!evidence) {
       return res.status(404).json({ error: 'Evidence file not found.' });
     }
+
+    // Check if user has access to this evidence file's report
+    const { ReportService } = await import('./src/services/report.service');
+    const reportService = new ReportService(prisma);
+    const accessResult = await reportService.checkReportAccess(req.user.id, evidence.reportId, evidence.report.eventId);
+    
+    if (!accessResult.success) {
+      return res.status(500).json({ error: accessResult.error });
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      return res.status(403).json({ error: 'Forbidden: insufficient permissions to access this evidence file' });
+    }
     
     res.setHeader('Content-Disposition', `attachment; filename="${evidence.filename}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Type', evidence.mimetype || 'application/octet-stream');
     res.setHeader('Content-Length', evidence.size);
     res.send(evidence.data);
   } catch (err: any) {

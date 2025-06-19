@@ -151,7 +151,7 @@ export function ReportMetaTable({
     children: React.ReactNode; 
     className?: string; 
   }) => (
-    <div className={`py-3 border-b border-border last:border-b-0 ${className}`}>
+    <div className={`px-4 sm:px-6 py-3 border-b border-border last:border-b-0 ${className}`}>
       <div className="text-sm font-medium text-muted-foreground mb-1">
         {label}
       </div>

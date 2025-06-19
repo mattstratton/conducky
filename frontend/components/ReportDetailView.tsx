@@ -402,7 +402,6 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
             <EvidenceSection
               evidenceFiles={evidenceFiles}
               apiBaseUrl={apiBaseUrl}
-              user={user}
               report={report}
               isResponderOrAbove={isResponderOrAbove}
               deletingEvidenceId={deletingEvidenceId}

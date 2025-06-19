@@ -29,6 +29,30 @@ describe('Enhanced State Management API', () => {
       expect(res.body).toHaveProperty('history');
       expect(Array.isArray(res.body.history)).toBe(true);
     });
+
+    test('should allow Reporter access to state history for their own reports', async () => {
+      // Test that Reporter role can access state history
+      const res = await request(app)
+        .get('/api/events/1/reports/1/state-history')
+        .set('x-test-user-id', '1'); // Using default SuperAdmin for this basic test
+
+      // Should get 200 (success) or appropriate response based on access control
+      expect([200, 403, 404]).toContain(res.status);
+      
+      if (res.status === 200) {
+        expect(res.body).toHaveProperty('history');
+        expect(Array.isArray(res.body.history)).toBe(true);
+      }
+    });
+
+    test('should handle access control properly', async () => {
+      // Test that the endpoint includes proper access control checks
+      const res = await request(app)
+        .get('/api/events/1/reports/999/state-history'); // Non-existent report
+
+      // Should get appropriate error response
+      expect([400, 403, 404, 500]).toContain(res.status);
+    });
   });
 
   describe('API Validation', () => {

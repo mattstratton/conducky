@@ -1239,16 +1239,18 @@ describe("Evidence endpoints", () => {
   });
 
   it("should download a specific evidence file by its ID", async () => {
-    // Upload a file
+    // Upload a file (this sets the correct test user context)
     const uploadRes = await request(app)
       .post(`/api/reports/${reportId}/evidence`)
       .attach("evidence", Buffer.from("downloadme"), "download.txt");
     const evidenceId = uploadRes.body.files[0].id;
+    
+    // Download the file (now requires authentication, but test middleware provides it)
     const res = await request(app).get(`/api/evidence/${evidenceId}/download`);
     expect(res.statusCode).toBe(200);
-    expect(res.header["content-type"]).toBe("application/octet-stream");
+    expect(res.header["content-type"]).toBe("text/plain; charset=utf-8");
     expect(res.header["content-disposition"]).toContain("download.txt");
-    expect(res.body).toBeInstanceOf(Buffer);
+    expect(res.text).toBe("downloadme");
   });
 });
 

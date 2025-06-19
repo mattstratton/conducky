@@ -5,7 +5,6 @@ import { FileText, Image, Download, Trash2, Upload } from "lucide-react";
 interface EvidenceSectionProps {
   evidenceFiles: any[];
   apiBaseUrl: string;
-  user: any;
   report: any;
   isResponderOrAbove: boolean;
   deletingEvidenceId: string | null;
@@ -20,7 +19,6 @@ interface EvidenceSectionProps {
 export function EvidenceSection({
   evidenceFiles,
   apiBaseUrl,
-  user,
   report,
   isResponderOrAbove,
   deletingEvidenceId,
@@ -46,25 +44,16 @@ export function EvidenceSection({
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const isImage = (mimetype: string) => mimetype.startsWith('image/');
+
 
   const EvidenceCard = ({ file }: { file: any }) => {
     const FileIcon = getFileIcon(file.mimetype);
     
     return (
       <div className="border border-border rounded-lg p-3 space-y-3 bg-background">
-        {/* File Preview/Icon */}
+        {/* File Icon */}
         <div className="flex items-center justify-center h-20 bg-muted rounded-lg">
-          {isImage(file.mimetype) ? (
-            <img 
-              src={`${apiBaseUrl}/evidence/${file.id}/download`}
-              alt={file.filename}
-              className="max-h-full max-w-full object-contain rounded"
-              loading="lazy"
-            />
-          ) : (
-            <FileIcon className="h-8 w-8 text-muted-foreground" />
-          )}
+          <FileIcon className="h-8 w-8 text-muted-foreground" />
         </div>
         
         {/* File Info */}
@@ -91,7 +80,7 @@ export function EvidenceSection({
             asChild
           >
             <a 
-              href={`${apiBaseUrl}/evidence/${file.id}/download`} 
+              href={`${apiBaseUrl}/api/evidence/${file.id}/download`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 no-underline"
@@ -167,7 +156,7 @@ export function EvidenceSection({
             asChild
           >
             <a 
-              href={`${apiBaseUrl}/evidence/${file.id}/download`} 
+              href={`${apiBaseUrl}/api/evidence/${file.id}/download`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-2 no-underline"
