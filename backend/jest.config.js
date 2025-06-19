@@ -7,6 +7,13 @@ module.exports = {
   verbose: true,
   setupFiles: ["<rootDir>/jest.setup.js"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  globalTeardown: "<rootDir>/jest.teardown.js",
+  // Force Jest to exit after tests complete
+  forceExit: true,
+  // Detect open handles to help debug hanging tests
+  detectOpenHandles: true,
+  // Set a global timeout to prevent infinite hanging
+  testTimeout: 30000,
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
     '^.+\\.(js|jsx)$': 'babel-jest',

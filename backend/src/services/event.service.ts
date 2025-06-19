@@ -1037,6 +1037,122 @@ export class EventService {
   }
 
   /**
+   * Get enhanced event card statistics by slug - optimized for dashboard cards
+   */
+  async getEventCardStats(slug: string, userId: string): Promise<ServiceResult<{
+    totalReports: number;
+    urgentReports: number;
+    assignedToMe: number;
+    needsResponse: number;
+    recentActivity: number;
+    recentReports: Array<{
+      id: string;
+      title: string;
+      state: string;
+      severity: string | null;
+      createdAt: string;
+    }>;
+  }>> {
+    try {
+      // Get event ID by slug
+      const event = await this.prisma.event.findUnique({
+        where: { slug },
+        select: { id: true }
+      });
+
+      if (!event) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      const eventId = event.id;
+
+      // Optimize queries by combining multiple counts into aggregation queries
+      const [
+        allReports,
+        recentReports
+      ] = await Promise.all([
+        // Get all reports with necessary fields for aggregation
+        this.prisma.report.findMany({
+          where: { eventId },
+          select: {
+            id: true,
+            severity: true,
+            state: true,
+            assignedResponderId: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }),
+        
+        // Recent reports for preview (last 3)
+        this.prisma.report.findMany({
+          where: { eventId },
+          select: {
+            id: true,
+            title: true,
+            state: true,
+            severity: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 3
+        })
+      ]);
+
+      // Calculate stats from the single query result
+      const now = Date.now();
+      const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      
+      const totalReports = allReports.length;
+      
+      const urgentReports = allReports.filter(report => 
+        report.severity === 'high' || 
+        (report.createdAt >= oneDayAgo && report.state === 'submitted')
+      ).length;
+      
+      const assignedToMe = allReports.filter(report => 
+        report.assignedResponderId === userId
+      ).length;
+      
+      const needsResponse = allReports.filter(report => 
+        ['submitted', 'acknowledged', 'investigating'].includes(report.state)
+      ).length;
+      
+      const recentActivity = allReports.filter(report => 
+        report.updatedAt >= sevenDaysAgo
+      ).length;
+
+      return {
+        success: true,
+        data: {
+          totalReports,
+          urgentReports,
+          assignedToMe,
+          needsResponse,
+          recentActivity,
+          recentReports: recentReports.map(report => ({
+            id: report.id,
+            title: report.title,
+            state: report.state,
+            severity: report.severity,
+            createdAt: report.createdAt.toISOString()
+          }))
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting event card stats:', error);
+      return {
+        success: false,
+        error: 'Failed to get event card statistics.'
+      };
+    }
+  }
+
+  /**
    * Get event statistics by slug
    */
   async getEventStats(slug: string, userId?: string): Promise<ServiceResult<{

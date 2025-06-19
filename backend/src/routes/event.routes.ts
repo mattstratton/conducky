@@ -244,6 +244,30 @@ router.get('/slug/:slug/stats', requireRole(['Responder', 'Admin', 'SuperAdmin']
   }
 });
 
+// Get enhanced event card data (by slug) - for dashboard cards
+router.get('/slug/:slug/cardstats', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const user = req.user as any;
+    
+    const result = await eventService.getEventCardStats(slug, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('not found')) {
+        res.status(404).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event card stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch event card statistics.' });
+  }
+});
+
 // ========================================
 // EVENT ID-BASED ROUTES
 // ========================================
