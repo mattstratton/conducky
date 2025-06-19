@@ -505,9 +505,22 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
 });
 
 // Get report state history
-router.get('/:eventId/reports/:reportId/state-history', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+router.get('/:eventId/reports/:reportId/state-history', requireRole(['Admin', 'SuperAdmin', 'Responder', 'Reporter']), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { reportId } = req.params;
+    const { eventId, reportId } = req.params;
+    const user = req.user as any;
+    
+    // Check if user has access to this report
+    const accessResult = await reportService.checkReportAccess(user.id, reportId, eventId);
+    if (!accessResult.success) {
+      res.status(500).json({ error: accessResult.error });
+      return;
+    }
+
+    if (!accessResult.data!.hasAccess) {
+      res.status(403).json({ error: 'Forbidden: insufficient role' });
+      return;
+    }
     
     const result = await reportService.getReportStateHistory(reportId);
     
