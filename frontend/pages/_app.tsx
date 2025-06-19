@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { GlobalNavigation } from "@/components/GlobalNavigation";
 import { Users } from "lucide-react";
 
 // User context for global user state
@@ -178,32 +179,34 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
       </Head>
       <UserContext.Provider value={{ user, setUser, sessionLoading }}>
         <ModalContext.Provider value={{ openModal }}>
-          <div className="flex min-h-screen flex-col">
-            {user ? (
-              <SidebarProvider>
-                <div className="fixed top-0 left-0 right-0 z-50 h-12 bg-background border-b flex items-center px-2">
-                  <SidebarTrigger />
-                  <span className="ml-3 font-bold text-lg text-yellow-500">Conducky</span>
-                  <AppBreadcrumbs eventName={eventName} />
-                </div>
-                <div className="flex flex-1 pt-12 md:pt-12">
-                  <AppSidebar user={{
-                    name: user.name || user.email || "User",
-                    email: user.email || "",
-                    avatar: user.avatarUrl || "",
-                    roles: user.roles || [],
-                  }} events={events} globalRoles={globalRoles} />
-                  <main className="flex-1 bg-background text-foreground pb-10">
-                    <Component {...pageProps} />
-                  </main>
-                </div>
-              </SidebarProvider>
-            ) : (
-              <main className="flex-1 bg-background text-foreground pb-10 pt-12 md:pt-12">
-                <Component {...pageProps} />
-              </main>
-            )}
-          </div>
+          <GlobalNavigation user={user} events={events.map(event => ({ slug: event.url.split('/')[2], name: event.name, role: event.role }))}>
+            <div className="flex min-h-screen flex-col">
+              {user ? (
+                <SidebarProvider>
+                  <div className="fixed top-0 left-0 right-0 z-50 h-12 bg-background border-b flex items-center px-2">
+                    <SidebarTrigger />
+                    <span className="ml-3 font-bold text-lg text-yellow-500">Conducky</span>
+                    <AppBreadcrumbs eventName={eventName} />
+                  </div>
+                  <div className="flex flex-1 pt-12 md:pt-12">
+                    <AppSidebar user={{
+                      name: user.name || user.email || "User",
+                      email: user.email || "",
+                      avatar: user.avatarUrl || "",
+                      roles: user.roles || [],
+                    }} events={events} globalRoles={globalRoles} />
+                    <main className="flex-1 bg-background text-foreground pb-10">
+                      <Component {...pageProps} />
+                    </main>
+                  </div>
+                </SidebarProvider>
+              ) : (
+                <main className="flex-1 bg-background text-foreground pb-10 pt-12 md:pt-12">
+                  <Component {...pageProps} />
+                </main>
+              )}
+            </div>
+          </GlobalNavigation>
           {eventSlugForModal && (
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
               <DialogContent className="max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
