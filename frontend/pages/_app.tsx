@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { GlobalNavigation } from "@/components/GlobalNavigation";
 import { Users } from "lucide-react";
 
 // User context for global user state
@@ -194,13 +195,17 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                     roles: user.roles || [],
                   }} events={events} globalRoles={globalRoles} />
                   <main className="flex-1 bg-background text-foreground pb-10">
-                    <Component {...pageProps} />
+                    <GlobalNavigation>
+                      <Component {...pageProps} />
+                    </GlobalNavigation>
                   </main>
                 </div>
               </SidebarProvider>
             ) : (
               <main className="flex-1 bg-background text-foreground pb-10 pt-12 md:pt-12">
-                <Component {...pageProps} />
+                <GlobalNavigation>
+                  <Component {...pageProps} />
+                </GlobalNavigation>
               </main>
             )}
           </div>
