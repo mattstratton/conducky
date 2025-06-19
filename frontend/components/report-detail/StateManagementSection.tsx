@@ -169,9 +169,13 @@ export function StateManagementSection({
             const isCompleted = getStatePosition(state) < currentPosition;
             const isPossible = allowedTransitions.includes(state);
             
+            // Find when this state was reached from state history
+            const stateEntry = stateHistory.find(entry => entry.toState === state);
+            const stateTimestamp = stateEntry ? new Date(stateEntry.changedAt).toLocaleString() : null;
+            
             return (
               <React.Fragment key={state}>
-                <div className="flex flex-col items-center min-w-[80px]">
+                <div className="flex flex-col items-center min-w-[100px]">
                   <div className={`
                     w-10 h-10 rounded-full border-2 flex items-center justify-center
                     ${isActive 
@@ -191,6 +195,12 @@ export function StateManagementSection({
                   <span className="text-xs mt-1 text-center font-medium">
                     {config?.label}
                   </span>
+                  {/* Show timestamp if state was reached */}
+                  {(isActive || isCompleted) && stateTimestamp && (
+                    <span className="text-xs mt-1 text-center text-muted-foreground">
+                      {stateTimestamp}
+                    </span>
+                  )}
                 </div>
                 {index < STATE_ORDER.length - 1 && (
                   <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
