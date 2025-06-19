@@ -53,6 +53,7 @@ app.use(helmet({
     },
   },
   crossOriginEmbedderPolicy: false, // Needed for file uploads
+  crossOriginResourcePolicy: false, // Allow cross-origin access to avatars/images
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
