@@ -6,9 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Search, Keyboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface User {
+  id: string;
+  email?: string;
+  name?: string;
+  roles?: string[];
+  avatarUrl?: string;
+}
+
+interface Event {
+  slug: string;
+  name: string;
+  role?: string;
+}
+
 interface GlobalNavigationProps {
   children: React.ReactNode;
   className?: string;
+  user?: User | null;
+  events?: Event[];
 }
 
 interface NavigationHelpProps {
@@ -85,18 +101,25 @@ function NavigationHelp({ isOpen, onClose }: NavigationHelpProps) {
   );
 }
 
-function NavigationControls() {
+interface NavigationControlsProps {
+  user?: User | null;
+}
+
+function NavigationControls({ user }: NavigationControlsProps) {
   const [quickJumpOpen, setQuickJumpOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [showDiscoveryHint, setShowDiscoveryHint] = useState(false);
 
-  // Initialize keyboard shortcuts
+  // Only initialize keyboard shortcuts if user is authenticated
   useKeyboardShortcuts({ 
-    onQuickJumpOpen: () => setQuickJumpOpen(true)
+    onQuickJumpOpen: () => setQuickJumpOpen(true),
+    enabled: !!user
   });
 
-  // Handle help shortcut separately
+  // Handle help shortcut separately - only when authenticated
   React.useEffect(() => {
+    if (!user) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
         const target = e.target as HTMLElement;
@@ -114,10 +137,12 @@ function NavigationControls() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [user]);
 
-  // Show discovery hint for new users
+  // Show discovery hint for new users - only when authenticated
   React.useEffect(() => {
+    if (!user) return;
+
     const hasSeenHint = localStorage.getItem('conducky_navigation_hint_seen');
     if (!hasSeenHint) {
       const timer = setTimeout(() => {
@@ -126,12 +151,17 @@ function NavigationControls() {
       
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user]);
 
   const handleDiscoveryHintDismiss = () => {
     setShowDiscoveryHint(false);
     localStorage.setItem('conducky_navigation_hint_seen', 'true');
   };
+
+  // Don't render any navigation controls if user is not authenticated
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
@@ -203,14 +233,20 @@ function NavigationControls() {
   );
 }
 
-export function GlobalNavigation({ children, className }: GlobalNavigationProps) {
-  // We'll pass empty data for now since NavigationProvider can work without it
-  // The user and events data will be populated as the app loads
+export function GlobalNavigation({ children, className, user, events = [] }: GlobalNavigationProps) {
+  // Convert user to NavigationProvider's expected format
+  const navigationUser = user ? {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    roles: user.roles
+  } : undefined;
+
   return (
-    <NavigationProvider user={undefined} events={[]}>
+    <NavigationProvider user={navigationUser} events={events}>
       <div className={cn("min-h-screen", className)}>
         {children}
-        <NavigationControls />
+        <NavigationControls user={user} />
       </div>
     </NavigationProvider>
   );

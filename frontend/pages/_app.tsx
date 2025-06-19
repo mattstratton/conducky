@@ -179,7 +179,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
       </Head>
       <UserContext.Provider value={{ user, setUser, sessionLoading }}>
         <ModalContext.Provider value={{ openModal }}>
-          <GlobalNavigation>
+          <GlobalNavigation user={user} events={events.map(event => ({ slug: event.url.split('/')[2], name: event.name, role: event.role }))}>
             <div className="flex min-h-screen flex-col">
               {user ? (
                 <SidebarProvider>
