@@ -69,6 +69,7 @@ function NavigationHelp({ isOpen, onClose }: NavigationHelpProps) {
 function NavigationControls() {
   const [quickJumpOpen, setQuickJumpOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [showDiscoveryHint, setShowDiscoveryHint] = useState(false);
 
   // Initialize keyboard shortcuts
   useKeyboardShortcuts({ 
@@ -96,8 +97,48 @@ function NavigationControls() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Show discovery hint for new users
+  React.useEffect(() => {
+    const hasSeenHint = localStorage.getItem('conducky_navigation_hint_seen');
+    if (!hasSeenHint) {
+      const timer = setTimeout(() => {
+        setShowDiscoveryHint(true);
+      }, 3000); // Show after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleDiscoveryHintDismiss = () => {
+    setShowDiscoveryHint(false);
+    localStorage.setItem('conducky_navigation_hint_seen', 'true');
+  };
+
   return (
     <>
+      {/* Discovery Hint for new users */}
+      {showDiscoveryHint && (
+        <div className="fixed top-16 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg max-w-sm animate-in slide-in-from-right-2">
+          <div className="flex items-start gap-2">
+            <Search className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Quick Navigation Available!</p>
+              <p className="text-xs text-blue-100 mt-1">
+                Press <kbd className="px-1 py-0.5 bg-blue-700 rounded text-xs">Ctrl+K</kbd> or <kbd className="px-1 py-0.5 bg-blue-700 rounded text-xs">/</kbd> to quickly jump to any page
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDiscoveryHintDismiss}
+              className="h-6 w-6 p-0 text-blue-100 hover:text-white hover:bg-blue-700"
+            >
+              ×
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Jump Button - Fixed position for easy access */}
       <Button
         variant="outline"
@@ -136,8 +177,10 @@ function NavigationControls() {
 }
 
 export function GlobalNavigation({ children, className }: GlobalNavigationProps) {
+  // We'll pass empty data for now since NavigationProvider can work without it
+  // The user and events data will be populated as the app loads
   return (
-    <NavigationProvider>
+    <NavigationProvider user={undefined} events={[]}>
       <div className={cn("min-h-screen", className)}>
         {children}
         <NavigationControls />

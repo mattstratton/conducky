@@ -42,4 +42,28 @@ DialogContent.displayName = RadixDialog.Content.displayName
 
 const DialogClose = RadixDialog.Close
 
-export { Dialog, DialogTrigger, DialogContent, DialogClose } 
+const DialogTitle = React.forwardRef<
+  React.ElementRef<typeof RadixDialog.Title>,
+  React.ComponentPropsWithoutRef<typeof RadixDialog.Title>
+>(({ className, ...props }, ref) => (
+  <RadixDialog.Title
+    ref={ref}
+    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    {...props}
+  />
+))
+DialogTitle.displayName = RadixDialog.Title.displayName
+
+const DialogDescription = React.forwardRef<
+  React.ElementRef<typeof RadixDialog.Description>,
+  React.ComponentPropsWithoutRef<typeof RadixDialog.Description>
+>(({ className, ...props }, ref) => (
+  <RadixDialog.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = RadixDialog.Description.displayName
+
+export { Dialog, DialogTrigger, DialogContent, DialogClose, DialogTitle, DialogDescription } 

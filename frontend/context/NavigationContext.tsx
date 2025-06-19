@@ -109,7 +109,7 @@ export function NavigationProvider({ children, user, events = [] }: NavigationPr
 
   // Save favorites to localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined' && user?.id) {
+    if (typeof window !== 'undefined' && user?.id && favorites.length > 0) {
       localStorage.setItem(`conducky_favorites_${user.id}`, JSON.stringify(favorites));
     }
   }, [favorites, user?.id]);

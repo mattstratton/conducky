@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigation } from '@/context/NavigationContext';
 import { useRouter } from 'next/router';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -149,7 +149,11 @@ export function QuickJump({ isOpen, onClose }: QuickJumpProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 gap-0">
+      <DialogContent className="max-w-2xl p-0 gap-0" aria-describedby="quick-jump-description">
+        <DialogTitle className="sr-only">Quick Jump Search</DialogTitle>
+        <DialogDescription id="quick-jump-description" className="sr-only">
+          Search and navigate to pages, events, and reports using keyboard shortcuts
+        </DialogDescription>
         <div className="flex items-center border-b px-4 py-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input

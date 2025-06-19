@@ -134,17 +134,16 @@ export function AppBreadcrumbs({ eventName, className }: AppBreadcrumbsProps) {
 
   // Get current page info for favorites
   const currentPage = breadcrumbs[breadcrumbs.length - 1];
-  const currentPageFavorited = currentPage?.href ? isFavorite(currentPage.href) : false;
+  const currentPageUrl = currentPage?.href || pathname; // Use current pathname if no href
+  const currentPageFavorited = isFavorite(currentPageUrl);
 
   const handleFavoriteToggle = () => {
-    if (!currentPage?.href) return;
-    
     if (currentPageFavorited) {
-      removeFavorite(currentPage.href);
+      removeFavorite(currentPageUrl);
     } else {
       addFavorite({
         title: currentPage.label,
-        href: currentPage.href,
+        href: currentPageUrl,
         context: currentContext,
       });
     }
@@ -177,8 +176,17 @@ export function AppBreadcrumbs({ eventName, className }: AppBreadcrumbsProps) {
         </BreadcrumbList>
       </Breadcrumb>
       
+      {/* Quick Jump hint for desktop */}
+      <div className="hidden md:flex items-center gap-2 ml-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">
+          <span>Press</span>
+          <kbd className="px-1 py-0.5 bg-background border rounded text-xs">Ctrl+K</kbd>
+          <span>to search</span>
+        </div>
+      </div>
+      
       {/* Favorite button for current page */}
-      {currentPage?.href && (
+      {currentPage && (
         <Button
           variant="ghost"
           size="sm"

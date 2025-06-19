@@ -1,6 +1,5 @@
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { useNavigation } from '@/context/NavigationContext';
 
 interface KeyboardShortcut {
   key: string;
@@ -21,7 +20,6 @@ export function useKeyboardShortcuts({
   enabled = true 
 }: UseKeyboardShortcutsProps = {}) {
   const router = useRouter();
-  const { goBack } = useNavigation();
 
   const shortcuts: KeyboardShortcut[] = [
     {
@@ -66,7 +64,7 @@ export function useKeyboardShortcuts({
       action: () => {
         // Close any open modals or go back
         if (window.history.length > 1) {
-          goBack();
+          router.back();
         }
       },
       description: 'Go back or close'
@@ -100,7 +98,7 @@ export function useKeyboardShortcuts({
       event.stopPropagation();
       shortcut.action();
     }
-  }, [shortcuts, goBack, onQuickJumpOpen, router]);
+  }, [shortcuts, onQuickJumpOpen, router]);
 
   useEffect(() => {
     if (!enabled) return;
