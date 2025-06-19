@@ -19,35 +19,11 @@ export default function EventReportsPage() {
   const { user } = useContext(UserContext) as UserContextType;
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch user's role for this event
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!eventSlug || !user) return;
-      
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/events/slug/${eventSlug}/user-role`,
-          { credentials: 'include' }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          // If user is a Reporter, redirect to my-reports page
-          if (data.role === 'Reporter') {
-            router.replace(`/events/${eventSlug}/my-reports`);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch user role:', error);
-      }
-      
+    if (eventSlug && user) {
       setLoading(false);
-    };
-
-    fetchUserRole();
-  }, [eventSlug, user, router]);
+    }
+  }, [eventSlug, user]);
 
   if (!user) {
     return (
@@ -67,8 +43,7 @@ export default function EventReportsPage() {
     );
   }
 
-  // This page should only be accessible to Responders and Admins
-  // Reporters are redirected to my-reports page above
+  // This page shows all event reports (accessible via navigation only to Responders/Admins)
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
       <h1 className="text-3xl font-bold mb-8">All Event Reports</h1>
