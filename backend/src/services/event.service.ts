@@ -1037,6 +1037,138 @@ export class EventService {
   }
 
   /**
+   * Get enhanced event card statistics by slug - optimized for dashboard cards
+   */
+  async getEventCardStats(slug: string, userId: string): Promise<ServiceResult<{
+    totalReports: number;
+    urgentReports: number;
+    assignedToMe: number;
+    needsResponse: number;
+    recentActivity: number;
+    recentReports: Array<{
+      id: string;
+      title: string;
+      state: string;
+      severity: string | null;
+      createdAt: string;
+    }>;
+  }>> {
+    try {
+      // Get event ID by slug
+      const event = await this.prisma.event.findUnique({
+        where: { slug },
+        select: { id: true }
+      });
+
+      if (!event) {
+        return {
+          success: false,
+          error: 'Event not found.'
+        };
+      }
+
+      const eventId = event.id;
+
+      // Get all counts in parallel for better performance
+      const [
+        totalReports,
+        urgentReports,
+        assignedToMe,
+        needsResponse,
+        recentActivity,
+        recentReports
+      ] = await Promise.all([
+        // Total reports for this event
+        this.prisma.report.count({
+          where: { eventId }
+        }),
+        
+        // Urgent reports (high severity or submitted in last 24 hours without response)
+        this.prisma.report.count({
+          where: {
+            eventId,
+            OR: [
+              { severity: 'high' },
+              {
+                createdAt: {
+                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+                },
+                state: 'submitted'
+              }
+            ]
+          }
+        }),
+        
+        // Reports assigned to the current user
+        this.prisma.report.count({
+          where: {
+            eventId,
+            assignedResponderId: userId
+          }
+        }),
+        
+        // Reports that need response
+        this.prisma.report.count({
+          where: {
+            eventId,
+            state: {
+              in: ['submitted', 'acknowledged', 'investigating']
+            }
+          }
+        }),
+        
+        // Recent activity count (last 7 days)
+        this.prisma.report.count({
+          where: {
+            eventId,
+            updatedAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+            }
+          }
+        }),
+        
+        // Recent reports for preview (last 3)
+        this.prisma.report.findMany({
+          where: { eventId },
+          select: {
+            id: true,
+            title: true,
+            state: true,
+            severity: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 3
+        })
+      ]);
+
+      return {
+        success: true,
+        data: {
+          totalReports,
+          urgentReports,
+          assignedToMe,
+          needsResponse,
+          recentActivity,
+          recentReports: recentReports.map(report => ({
+            id: report.id,
+            title: report.title,
+            state: report.state,
+            severity: report.severity,
+            createdAt: report.createdAt.toISOString()
+          }))
+        }
+      };
+    } catch (error: any) {
+      console.error('Error getting event card stats:', error);
+      return {
+        success: false,
+        error: 'Failed to get event card statistics.'
+      };
+    }
+  }
+
+  /**
    * Get event statistics by slug
    */
   async getEventStats(slug: string, userId?: string): Promise<ServiceResult<{

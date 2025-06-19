@@ -16,14 +16,27 @@ declare module 'express-session' {
 const oauthStateStore = new Map<string, { nextUrl: string; timestamp: number }>();
 
 // Clean up expired state entries (older than 10 minutes)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of oauthStateStore.entries()) {
-    if (now - value.timestamp > 10 * 60 * 1000) { // 10 minutes
-      oauthStateStore.delete(key);
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+// Only start cleanup interval in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of oauthStateStore.entries()) {
+      if (now - value.timestamp > 10 * 60 * 1000) { // 10 minutes
+        oauthStateStore.delete(key);
+      }
     }
+  }, 60 * 1000); // Clean up every minute
+}
+
+// Export cleanup function for tests
+export const cleanupOAuthInterval = () => {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
   }
-}, 60 * 1000); // Clean up every minute
+};
 
 const router = Router();
 const prisma = new PrismaClient();

@@ -37,6 +37,19 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('🛑 SIGINT received, shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
 // CRITICAL SECURITY: Add comprehensive security headers
 app.use(helmet({
   contentSecurityPolicy: {
