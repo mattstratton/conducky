@@ -117,11 +117,11 @@ export class ReportService {
       }
 
       // Validate report type
-      const validTypes = ['harassment', 'discrimination', 'conduct_violation', 'safety_concern', 'other'];
+      const validTypes = ['harassment', 'safety', 'other'];
       if (!validTypes.includes(data.type)) {
         return {
           success: false,
-          error: 'Invalid report type. Must be: harassment, discrimination, conduct_violation, safety_concern, or other.'
+          error: 'Invalid report type. Must be: harassment, safety, or other.'
         };
       }
 
@@ -1176,11 +1176,11 @@ export class ReportService {
   async updateReportType(eventId: string, reportId: string, type: string, userId?: string): Promise<ServiceResult<{ report: any }>> {
     try {
       // Validate report type
-      const validTypes = ['harassment', 'discrimination', 'conduct_violation', 'safety_concern', 'other'];
+      const validTypes = ['harassment', 'safety', 'other'];
       if (!validTypes.includes(type)) {
         return {
           success: false,
-          error: 'Invalid report type. Must be: harassment, discrimination, conduct_violation, safety_concern, or other.'
+          error: 'Invalid report type. Must be: harassment, safety, or other.'
         };
       }
 

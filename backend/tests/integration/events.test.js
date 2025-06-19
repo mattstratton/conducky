@@ -515,9 +515,9 @@ describe("Event endpoints", () => {
       // Update type
       const updateRes = await request(app)
         .patch(`/api/events/1/reports/${reportId}/type`)
-        .send({ type: "discrimination" });
+        .send({ type: "safety" });
       expect(updateRes.statusCode).toBe(200);
-      expect(updateRes.body.report).toHaveProperty("type", "discrimination");
+      expect(updateRes.body.report).toHaveProperty("type", "safety");
     });
 
     it("should reject invalid contact preference", async () => {

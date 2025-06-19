@@ -25,22 +25,28 @@ function validateFileContent(file: Express.Multer.File): boolean {
 
   // Check file signatures (magic numbers) for common file types
   const signatures = {
-    'image/png': [0x89, 0x50, 0x4E, 0x47],
+    'image/png': [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], // Complete PNG signature
     'image/jpeg': [0xFF, 0xD8, 0xFF],
     'image/jpg': [0xFF, 0xD8, 0xFF],
-    'application/pdf': [0x25, 0x50, 0x44, 0x46],
+    'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2D], // %PDF- (more complete)
     'text/plain': null, // Text files don't have reliable signatures
   };
 
   const signature = signatures[file.mimetype as keyof typeof signatures];
   if (!signature) {
-    // For file types without signatures, allow but log for monitoring
-    logger.warn('File uploaded without signature validation', { 
+    // Reject unknown file types for security
+    logger.security('Rejected file with unknown signature', { 
       mimetype: file.mimetype,
       filename: file.originalname 
     });
-    return true;
+    return false;
   }
+
+  // Handle text/plain case
+  if (signature === null) return true;
+
+  // Ensure buffer is long enough for signature check
+  if (buffer.length < signature.length) return false;
 
   // Check if buffer starts with expected signature
   for (let i = 0; i < signature.length; i++) {

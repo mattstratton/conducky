@@ -86,14 +86,23 @@ export function sessionSecurity(req: Request, res: Response, next: NextFunction)
   // Regenerate session ID periodically (every hour) to prevent fixation
   const regenerationInterval = 60 * 60 * 1000; // 1 hour
   if (!session.lastRegeneration || (now - session.lastRegeneration > regenerationInterval)) {
+    // Preserve essential session data before regeneration
+    const preservedData = {
+      lastActivity: session.lastActivity,
+      createdAt: session.createdAt,
+      lastRegeneration: now,
+      userId: (req.user as any)?.id
+    };
+    
     req.session.regenerate((err) => {
       if (err) {
         logger.error('Failed to regenerate session', { error: err.message });
         return next();
       }
       
-      session.lastRegeneration = now;
-      session.lastActivity = now;
+      // Restore preserved data to new session
+      Object.assign(req.session, preservedData);
+      
       logger.debug('Session ID regenerated', { 
         userId: (req.user as any)?.id,
         ip: req.ip 
