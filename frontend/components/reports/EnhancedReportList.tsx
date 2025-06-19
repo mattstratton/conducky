@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/router';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -86,7 +85,6 @@ export function EnhancedReportList({
   showExport = true,
   className
 }: EnhancedReportListProps) {
-  const router = useRouter();
   
   // State management
   const [reports, setReports] = useState<Report[]>([]);
@@ -98,9 +96,9 @@ export function EnhancedReportList({
   
   // Filter and search state
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [severityFilter, setSeverityFilter] = useState('');
-  const [assignedFilter, setAssignedFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [assignedFilter, setAssignedFilter] = useState('all');
   const [sortField, setSortField] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
@@ -108,7 +106,7 @@ export function EnhancedReportList({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalReports, setTotalReports] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const pageSize = 20; // Fixed page size for now
 
   // Build API URL based on context
   const apiUrl = useMemo(() => {
@@ -128,9 +126,9 @@ export function EnhancedReportList({
     params.set('includeStats', 'true');
     
     if (search) params.set('search', search);
-    if (statusFilter) params.set('status', statusFilter);
-    if (severityFilter) params.set('severity', severityFilter);
-    if (assignedFilter) params.set('assigned', assignedFilter);
+    if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+    if (severityFilter && severityFilter !== 'all') params.set('severity', severityFilter);
+    if (assignedFilter && assignedFilter !== 'all') params.set('assigned', assignedFilter);
     if (userId) params.set('userId', userId);
     if (sortField) {
       params.set('sort', sortField);
@@ -220,10 +218,6 @@ export function EnhancedReportList({
       }
       return newSet;
     });
-  };
-
-  const selectAll = () => {
-    setSelectedReports(new Set(reports.map(r => r.id)));
   };
 
   const clearSelection = () => {
@@ -378,11 +372,11 @@ export function EnhancedReportList({
           {/* Filters Row */}
           <div className="flex flex-wrap gap-4 items-center">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="submitted">Submitted</SelectItem>
                 <SelectItem value="acknowledged">Acknowledged</SelectItem>
                 <SelectItem value="investigating">Investigating</SelectItem>
@@ -392,11 +386,11 @@ export function EnhancedReportList({
             </Select>
 
             <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Severity" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Severity</SelectItem>
+                <SelectItem value="all">All Severity</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
                 <SelectItem value="high">High</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
@@ -409,7 +403,7 @@ export function EnhancedReportList({
                 <SelectValue placeholder="Assignment" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Reports</SelectItem>
+                <SelectItem value="all">All Reports</SelectItem>
                 <SelectItem value="me">Assigned to Me</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
               </SelectContent>
@@ -419,9 +413,9 @@ export function EnhancedReportList({
               variant="outline" 
               onClick={() => {
                 setSearch('');
-                setStatusFilter('');
-                setSeverityFilter('');
-                setAssignedFilter('');
+                setStatusFilter('all');
+                setSeverityFilter('all');
+                setAssignedFilter('all');
                 setSortField('createdAt');
                 setSortOrder('desc');
               }}
