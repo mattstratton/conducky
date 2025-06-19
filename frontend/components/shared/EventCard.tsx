@@ -5,6 +5,10 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { AlertTriangle, Clock, TrendingUp, Plus } from "lucide-react";
 
+// Simple in-memory cache for event card stats
+const statsCache = new Map<string, { data: EventCardStats; timestamp: number }>();
+const CACHE_DURATION = 30 * 1000; // 30 seconds
+
 interface EventCardStats {
   totalReports: number;
   urgentReports: number;
@@ -38,21 +42,45 @@ export function EventCard({ event }: EventCardProps) {
   
   const [stats, setStats] = useState<EventCardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   
   useEffect(() => {
     async function fetchStats() {
       try {
         setStatsLoading(true);
+        setStatsError(null);
+        
+        // Check cache first
+        const cacheKey = `stats-${slug}`;
+        const cached = statsCache.get(cacheKey);
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+          setStats(cached.data);
+          setStatsLoading(false);
+          return;
+        }
+        
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/events/slug/${slug}/cardstats`,
           { credentials: 'include' }
         );
+        
         if (response.ok) {
           const data = await response.json();
           setStats(data);
+          
+          // Cache the successful response
+          statsCache.set(cacheKey, { data, timestamp: now });
+        } else {
+          const errorMessage = `Failed to fetch stats: ${response.status} ${response.statusText}`;
+          console.warn(`Failed to fetch stats for event ${slug}: ${response.status}`);
+          setStatsError(errorMessage);
         }
       } catch (error) {
+        const errorMessage = 'Network error while fetching stats';
         console.error('Failed to fetch event card stats:', error);
+        setStatsError(errorMessage);
       } finally {
         setStatsLoading(false);
       }
@@ -99,6 +127,20 @@ export function EventCard({ event }: EventCardProps) {
               {stats.assignedToMe} assigned to me
             </div>
           )}
+        </div>
+      )}
+
+      {/* Error State */}
+      {!statsLoading && statsError && (
+        <div className="mb-3 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 p-2 rounded">
+          Unable to load event statistics
+        </div>
+      )}
+
+      {/* Loading State */}
+      {statsLoading && (
+        <div className="mb-3 text-xs text-muted-foreground">
+          Loading statistics...
         </div>
       )}
 

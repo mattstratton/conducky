@@ -1069,61 +1069,21 @@ export class EventService {
 
       const eventId = event.id;
 
-      // Get all counts in parallel for better performance
+      // Optimize queries by combining multiple counts into aggregation queries
       const [
-        totalReports,
-        urgentReports,
-        assignedToMe,
-        needsResponse,
-        recentActivity,
+        allReports,
         recentReports
       ] = await Promise.all([
-        // Total reports for this event
-        this.prisma.report.count({
-          where: { eventId }
-        }),
-        
-        // Urgent reports (high severity or submitted in last 24 hours without response)
-        this.prisma.report.count({
-          where: {
-            eventId,
-            OR: [
-              { severity: 'high' },
-              {
-                createdAt: {
-                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-                },
-                state: 'submitted'
-              }
-            ]
-          }
-        }),
-        
-        // Reports assigned to the current user
-        this.prisma.report.count({
-          where: {
-            eventId,
-            assignedResponderId: userId
-          }
-        }),
-        
-        // Reports that need response
-        this.prisma.report.count({
-          where: {
-            eventId,
-            state: {
-              in: ['submitted', 'acknowledged', 'investigating']
-            }
-          }
-        }),
-        
-        // Recent activity count (last 7 days)
-        this.prisma.report.count({
-          where: {
-            eventId,
-            updatedAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-            }
+        // Get all reports with necessary fields for aggregation
+        this.prisma.report.findMany({
+          where: { eventId },
+          select: {
+            id: true,
+            severity: true,
+            state: true,
+            assignedResponderId: true,
+            createdAt: true,
+            updatedAt: true
           }
         }),
         
@@ -1141,6 +1101,30 @@ export class EventService {
           take: 3
         })
       ]);
+
+      // Calculate stats from the single query result
+      const now = Date.now();
+      const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      
+      const totalReports = allReports.length;
+      
+      const urgentReports = allReports.filter(report => 
+        report.severity === 'high' || 
+        (report.createdAt >= oneDayAgo && report.state === 'submitted')
+      ).length;
+      
+      const assignedToMe = allReports.filter(report => 
+        report.assignedResponderId === userId
+      ).length;
+      
+      const needsResponse = allReports.filter(report => 
+        ['submitted', 'acknowledged', 'investigating'].includes(report.state)
+      ).length;
+      
+      const recentActivity = allReports.filter(report => 
+        report.updatedAt >= sevenDaysAgo
+      ).length;
 
       return {
         success: true,
