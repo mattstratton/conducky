@@ -120,6 +120,16 @@ export default function ReportDetail() {
   const [assignmentLoading, setAssignmentLoading] = useState<boolean>(false);
   const [assignmentError, setAssignmentError] = useState<string>('');
   const [assignmentSuccess, setAssignmentSuccess] = useState<string>('');
+  
+  // State history
+  const [stateHistory, setStateHistory] = useState<Array<{
+    id: string;
+    fromState: string;
+    toState: string;
+    changedBy: string;
+    changedAt: string;
+    notes?: string;
+  }>>([]);
 
   // Fetch report data
   useEffect(() => {
@@ -233,48 +243,64 @@ export default function ReportDetail() {
   // Fetch event users for assignment dropdown if admin/responder
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEBUG] Fetching responders for assignment dropdown');
-    }
+
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[DEBUG] Fetched responders:', data.users);
-        }
+
         fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[DEBUG] Fetched admins:', data2.users);
-            }
+
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(all.reduce<Record<string, User>>((acc, u) => { 
               acc[u.id] = u; 
               return acc; 
             }, {}));
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[DEBUG] Final eventUsers for assignment dropdown:', deduped);
-            }
+
             setEventUsers(deduped);
           });
       });
   }, [eventSlug, isResponderOrAbove]);
 
-  const handleStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newState = e.target.value;
+  // Fetch state history for the report
+  useEffect(() => {
+    if (!report?.eventId || !reportId) return;
+    
+    fetch(
+      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + 
+      `/api/events/${report.eventId}/reports/${reportId}/state-history`,
+      { credentials: "include" }
+    )
+      .then((res) => res.ok ? res.json() : { history: [] })
+      .then((data) => {
+        setStateHistory(data.history || []);
+      })
+      .catch(() => {
+        setStateHistory([]);
+      });
+  }, [report?.eventId, reportId]);
+
+  // Enhanced state change handler to support notes and assignments
+  const handleStateChange = async (newState: string, notes?: string, assignedToUserId?: string) => {
     setStateChangeError("");
     setStateChangeSuccess("");
     setLoading(true);
     try {
+      const requestBody = { 
+        state: newState, 
+        notes,
+        assignedTo: assignedToUserId 
+      };
+      
       const res = await fetch(
         (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") +
-          `/api/events/slug/${eventSlug}/reports/${reportId}`,
+          `/api/events/${report?.eventId}/reports/${reportId}/state`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ state: newState }),
+          body: JSON.stringify(requestBody),
         },
       );
       if (!res.ok) {
@@ -283,12 +309,53 @@ export default function ReportDetail() {
       } else {
         const data = await res.json();
         setReport(data.report);
-        setStateChangeSuccess("State updated!");
+        
+        // Update assignment fields if assignment changed
+        if (assignedToUserId !== undefined) {
+          setAssignmentFields(prev => ({
+            ...prev,
+            assignedResponderId: assignedToUserId || ''
+          }));
+        }
+        
+        // Also update assignment fields from the returned report data
+        if (data.report) {
+          setAssignmentFields(prev => ({
+            ...prev,
+            assignedResponderId: data.report.assignedResponderId || '',
+            severity: data.report.severity || prev.severity,
+            resolution: data.report.resolution || prev.resolution,
+            state: data.report.state
+          }));
+        }
+        
+        setStateChangeSuccess("State updated successfully!");
+        
+        // Refetch state history after state change
+        if (data.report?.eventId) {
+          fetch(
+            (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + 
+            `/api/events/${data.report.eventId}/reports/${reportId}/state-history`,
+            { credentials: "include" }
+          )
+            .then((res) => res.ok ? res.json() : { history: [] })
+            .then((historyData) => {
+              setStateHistory(historyData.history || []);
+            })
+            .catch(() => {
+              // Silently fail for state history
+            });
+        }
       }
     } catch (err) {
       setStateChangeError("Network error");
     }
     setLoading(false);
+  };
+
+  // Legacy state change handler for backward compatibility
+  const handleLegacyStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    await handleStateChange(e.target.value);
   };
 
   // Handle comment submit
@@ -605,7 +672,8 @@ export default function ReportDetail() {
       loading={loading}
       error={fetchError}
       eventSlug={eventSlug}
-      onStateChange={handleStateChange}
+      onStateChange={handleLegacyStateChange}
+      onEnhancedStateChange={handleStateChange}
       onCommentSubmit={handleCommentSubmit}
       onCommentEdit={handleEditSave}
       onCommentDelete={handleDeleteConfirm}
@@ -622,6 +690,7 @@ export default function ReportDetail() {
       assignmentLoading={assignmentLoading}
       assignmentError={assignmentError}
       assignmentSuccess={assignmentSuccess}
+      stateHistory={stateHistory}
       apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
       onTitleEdit={handleTitleEdit}
     />

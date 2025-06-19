@@ -379,7 +379,8 @@ export class ReportService {
   /**
    * Update report state
    */
-  async updateReportState(eventId: string, reportId: string, state: string): Promise<ServiceResult<{ report: any }>> {
+  async updateReportState(eventId: string, reportId: string, state: string, userId?: string, notes?: string, assignedToUserId?: string): Promise<ServiceResult<{ report: any }>> {
+    
     try {
       const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
       if (!state || !validStates.includes(state)) {
@@ -392,6 +393,10 @@ export class ReportService {
       // Check report exists and belongs to event
       const report = await this.prisma.report.findUnique({
         where: { id: reportId },
+        include: {
+          reporter: true,
+          assignedResponder: true
+        }
       });
 
       if (!report || report.eventId !== eventId) {
@@ -401,10 +406,131 @@ export class ReportService {
         };
       }
 
-      // Update state
-      const updated = await this.prisma.report.update({
-        where: { id: reportId },
-        data: { state: state as any },
+      // Validate state transition requirements
+      interface StateRequirement {
+        requiresAssignment?: boolean;
+        requiresNotes: boolean;
+      }
+      
+      const transitionRequirements: Record<string, StateRequirement> = {
+        investigating: { requiresAssignment: true, requiresNotes: true },
+        resolved: { requiresNotes: true },
+        closed: { requiresNotes: false }
+      };
+
+      const requirements = transitionRequirements[state];
+      
+      if (requirements?.requiresNotes && (!notes || !notes.trim())) {
+        return {
+          success: false,
+          error: `State transition to ${state} requires notes explaining the action.`
+        };
+      }
+
+      if (requirements?.requiresAssignment && !assignedToUserId) {
+        return {
+          success: false,
+          error: `State transition to ${state} requires assignment to a responder.`
+        };
+      }
+
+      // Verify assigned user exists and has appropriate role if assignment is required
+      if (assignedToUserId) {
+        const assignedUser = await this.prisma.user.findUnique({
+          where: { id: assignedToUserId },
+          include: {
+            userEventRoles: {
+              where: { eventId: eventId },
+              include: { role: true }
+            }
+          }
+        });
+
+        if (!assignedUser) {
+          return {
+            success: false,
+            error: 'Assigned user not found.'
+          };
+        }
+
+        const hasResponderRole = assignedUser.userEventRoles.some((er: any) => 
+          ['Responder', 'Admin'].includes(er.role.name) || 
+          ['responder', 'admin'].includes(er.role.name.toLowerCase())
+        );
+
+        if (!hasResponderRole) {
+          return {
+            success: false,
+            error: 'Assigned user must have Responder or Admin role for this event.'
+          };
+        }
+      }
+
+      const oldState = report.state;
+
+      // Prepare update data (Prisma type conflicts require any for now)
+      const updateData: any = { state };
+      if (assignedToUserId !== undefined && assignedToUserId !== null && assignedToUserId !== '') {
+        updateData.assignedResponderId = assignedToUserId;
+      }
+
+      // Update state and assignment in transaction
+      const updated = await this.prisma.$transaction(async (tx) => {
+        // Update the report
+        const updatedReport = await tx.report.update({
+          where: { id: reportId },
+          data: updateData,
+          include: {
+            reporter: true,
+            assignedResponder: true,
+            evidenceFiles: true
+          }
+        });
+
+        // Create audit log entry for state change
+        if (userId) {
+          await tx.auditLog.create({
+            data: {
+              eventId: eventId,
+              userId: userId,
+              action: `State changed from ${oldState} to ${state}`,
+              targetType: 'Report',
+              targetId: reportId,
+            }
+          });
+
+          // Create audit log for assignment if changed
+          if (assignedToUserId && assignedToUserId !== report.assignedResponderId) {
+            const assignedUserName = assignedToUserId ? 
+              (await tx.user.findUnique({ where: { id: assignedToUserId } }))?.name || 'Unknown' 
+              : 'Unassigned';
+            
+            await tx.auditLog.create({
+              data: {
+                eventId: eventId,
+                userId: userId,
+                action: `Report assigned to ${assignedUserName}`,
+                targetType: 'Report',
+                targetId: reportId,
+              }
+            });
+          }
+        }
+
+        // Add a comment with the state change notes if provided
+        if (notes && notes.trim() && userId) {
+          await tx.reportComment.create({
+            data: {
+              reportId: reportId,
+              authorId: userId,
+              body: `**State changed from ${oldState} to ${state}**\n\n${notes}`,
+              isMarkdown: true,
+              visibility: 'internal' // State change notes are internal by default
+            }
+          });
+        }
+
+        return updatedReport;
       });
 
       return {
@@ -416,6 +542,62 @@ export class ReportService {
       return {
         success: false,
         error: 'Failed to update report state.'
+      };
+    }
+  }
+
+  /**
+   * Get state history for a report
+   */
+  async getReportStateHistory(reportId: string): Promise<ServiceResult<{ history: Array<{ id: string; fromState: string; toState: string; changedBy: string; changedAt: string; notes?: string; }> }>> {
+    try {
+      const auditLogs = await this.prisma.auditLog.findMany({
+        where: {
+          targetType: 'Report',
+          targetId: reportId,
+          action: {
+            contains: 'State changed'
+          }
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      });
+
+      const history = auditLogs.map(log => {
+        // Parse the action to extract from/to states
+        const match = log.action.match(/State changed from (\w+) to (\w+)/);
+        const fromState = match ? match[1] : '';
+        const toState = match ? match[2] : '';
+        
+        return {
+          id: log.id,
+          fromState,
+          toState,
+          changedBy: log.user?.name || log.user?.email || 'Unknown',
+          changedAt: log.timestamp.toISOString(),
+          // Note: For now, notes are stored as comments with state changes
+          // We could enhance this to store notes directly in audit logs
+        };
+      });
+
+      return {
+        success: true,
+        data: { history }
+      };
+    } catch (error: any) {
+      console.error('Error fetching report state history:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch state history.'
       };
     }
   }

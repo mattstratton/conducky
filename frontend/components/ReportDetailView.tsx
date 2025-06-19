@@ -3,6 +3,7 @@ import { Card } from "./ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { TitleEditForm } from "./report-detail/TitleEditForm";
 import { ReportStateSelector } from "./report-detail/ReportStateSelector";
+import { StateManagementSection } from "./report-detail/StateManagementSection";
 import { AssignmentSection } from "./report-detail/AssignmentSection";
 import { EvidenceSection } from "./report-detail/EvidenceSection";
 import { CommentsSection } from "./report-detail/CommentsSection";
@@ -20,6 +21,7 @@ export interface ReportDetailViewProps {
   error?: string;
   eventSlug?: string; // Required for new CommentsSection
   onStateChange?: (e: ChangeEvent<HTMLSelectElement>) => void;
+  onEnhancedStateChange?: (newState: string, notes?: string, assignedToUserId?: string) => void;
   onAssignmentChange?: () => void;
   onCommentSubmit?: (body: string, visibility: string, isMarkdown?: boolean) => void;
   onCommentEdit?: (comment: any, body: string, visibility: string, isMarkdown?: boolean) => void;
@@ -40,6 +42,14 @@ export interface ReportDetailViewProps {
   assignmentLoading?: boolean;
   assignmentError?: string;
   assignmentSuccess?: string;
+  stateHistory?: Array<{
+    id: string;
+    fromState: string;
+    toState: string;
+    changedBy: string;
+    changedAt: string;
+    notes?: string;
+  }>;
   apiBaseUrl?: string;
   onTitleEdit?: (title: string) => Promise<void>;
   [key: string]: any;
@@ -56,6 +66,7 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   error = "",
   eventSlug,
   onStateChange = () => {},
+  onEnhancedStateChange,
   onAssignmentChange = () => {},
   onCommentSubmit,
   onCommentEdit,
@@ -71,6 +82,7 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   assignmentLoading = false,
   assignmentError = "",
   assignmentSuccess = "",
+  stateHistory = [],
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
   onTitleEdit,
   ...rest
@@ -238,54 +250,71 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
           }
         }}
       />
-      <Table>
-        <TableBody>
-          <TableRow>
-            <TableCell className="font-bold">State</TableCell>
-            <TableCell>
-              {canChangeState ? (
-                editingState ? (
-                  <div className="flex items-center gap-2">
-                    <ReportStateSelector
-                      currentState={report.state}
-                      allowedTransitions={getAllowedTransitions(report.state)}
-                      onChange={onStateChange}
-                      loading={stateChangeLoading}
-                      error={stateChangeError}
-                      success={stateChangeSuccess}
-                    />
-                    <button type="button" onClick={() => setEditingState(false)} className="ml-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-xs">Cancel</button>
-                  </div>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    {report.state}
-                    <button type="button" onClick={() => setEditingState(true)} className="ml-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Edit state">
-                      <Pencil size={16} />
-                    </button>
-                  </span>
-                )
-              ) : (
-                report.state
-              )}
-            </TableCell>
-          </TableRow>
-          {adminMode && (
+      {/* Enhanced State Management Section */}
+      {onEnhancedStateChange ? (
+        <StateManagementSection
+          currentState={report.state}
+          allowedTransitions={getAllowedTransitions(report.state)}
+          onStateChange={onEnhancedStateChange}
+          loading={stateChangeLoading}
+          error={stateChangeError}
+          success={stateChangeSuccess}
+          canChangeState={canChangeState}
+          eventUsers={eventUsers}
+          assignedResponderId={assignmentFields.assignedResponderId}
+          stateHistory={stateHistory}
+        />
+      ) : (
+        /* Legacy State Management */
+        <Table>
+          <TableBody>
             <TableRow>
-              <TableCell colSpan={2}>
-                <AssignmentSection
-                  assignmentFields={assignmentFields}
-                  setAssignmentFields={setAssignmentFields}
-                  eventUsers={eventUsers}
-                  loading={assignmentLoading}
-                  error={assignmentError}
-                  success={assignmentSuccess}
-                  onSave={onAssignmentChange}
-                />
+              <TableCell className="font-bold">State</TableCell>
+              <TableCell>
+                {canChangeState ? (
+                  editingState ? (
+                    <div className="flex items-center gap-2">
+                      <ReportStateSelector
+                        currentState={report.state}
+                        allowedTransitions={getAllowedTransitions(report.state)}
+                        onChange={onStateChange}
+                        loading={stateChangeLoading}
+                        error={stateChangeError}
+                        success={stateChangeSuccess}
+                      />
+                      <button type="button" onClick={() => setEditingState(false)} className="ml-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-xs">Cancel</button>
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      {report.state}
+                      <button type="button" onClick={() => setEditingState(true)} className="ml-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Edit state">
+                        <Pencil size={16} />
+                      </button>
+                    </span>
+                  )
+                ) : (
+                  report.state
+                )}
               </TableCell>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            {adminMode && (
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <AssignmentSection
+                    assignmentFields={assignmentFields}
+                    setAssignmentFields={setAssignmentFields}
+                    eventUsers={eventUsers}
+                    loading={assignmentLoading}
+                    error={assignmentError}
+                    success={assignmentSuccess}
+                    onSave={onAssignmentChange}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
       <EvidenceSection
         evidenceFiles={evidenceFiles}
         apiBaseUrl={apiBaseUrl}

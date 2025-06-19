@@ -504,16 +504,58 @@ router.get('/:eventId/reports/:reportId', async (req: Request, res: Response): P
   }
 });
 
-// Update report state
+// Get report state history
+router.get('/:eventId/reports/:reportId/state-history', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { reportId } = req.params;
+    
+    const result = await reportService.getReportStateHistory(reportId);
+    
+    if (!result.success) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get report state history error:', error);
+    res.status(500).json({ error: 'Failed to fetch state history.' });
+  }
+});
+
+// Update report state with enhanced workflow support
 router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAdmin', 'Responder']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId, reportId } = req.params;
-    const { state, status, priority, assignedToUserId, resolution } = req.body;
+    const { state, status, priority, assignedToUserId, resolution, notes, assignedTo } = req.body;
     
     // Handle both 'state' and 'status' parameters for compatibility
     const stateValue = state || status;
     
-    const result = await reportService.updateReportState(eventId, reportId, stateValue);
+    // Handle both assignedToUserId and assignedTo for compatibility
+    const assignedUserId = assignedToUserId || assignedTo;
+    
+    const user = req.user as any;
+    const userId = user?.id;
+    
+    // Get the current report state before update to check for changes
+    const currentReport = await reportService.getReportById(reportId, eventId);
+    if (!currentReport.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    const oldAssignedUserId = currentReport.data?.report?.assignedResponderId;
+    const oldState = currentReport.data?.report?.state;
+    
+    const result = await reportService.updateReportState(
+      eventId, 
+      reportId, 
+      stateValue, 
+      userId, 
+      notes, 
+      assignedUserId
+    );
     
     if (!result.success) {
       if (result.error?.includes('not found')) {
@@ -522,6 +564,23 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
         res.status(400).json({ error: result.error });
       }
       return;
+    }
+
+    // Trigger notifications for state change and assignment
+    try {
+      // Always notify about state change if state actually changed
+      if (oldState !== stateValue) {
+        await notificationService.notifyReportEvent(reportId, 'report_status_changed', userId);
+      }
+      
+      // Notify about assignment if assignment changed
+      if (assignedUserId && assignedUserId !== oldAssignedUserId) {
+        // For assignments, don't exclude the assigned user even if they assigned it to themselves
+        await notificationService.notifyReportEvent(reportId, 'report_assigned', null);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications:', notificationError);
+      // Don't fail the main operation if notifications fail
     }
 
     res.json(result.data);
