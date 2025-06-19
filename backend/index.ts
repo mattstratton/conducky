@@ -228,7 +228,7 @@ app.get('/api/evidence/:evidenceId/download', async (req: any, res: any) => {
       return res.status(500).json({ error: accessResult.error });
     }
 
-    if (!accessResult.data!.hasAccess) {
+    if (!accessResult.data?.hasAccess) {
       return res.status(403).json({ error: 'Forbidden: insufficient permissions to access this evidence file' });
     }
     
