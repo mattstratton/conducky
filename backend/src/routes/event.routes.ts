@@ -529,15 +529,6 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
     const { eventId, reportId } = req.params;
     const { state, status, priority, assignedToUserId, resolution, notes, assignedTo } = req.body;
     
-    console.log('[DEBUG Backend] State change request:', {
-      eventId,
-      reportId,
-      body: req.body,
-      notes: notes ? `"${notes}"` : null,
-      assignedTo,
-      assignedToUserId
-    });
-    
     // Handle both 'state' and 'status' parameters for compatibility
     const stateValue = state || status;
     
@@ -546,6 +537,16 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
     
     const user = req.user as any;
     const userId = user?.id;
+    
+    // Get the current report state before update to check for changes
+    const currentReport = await reportService.getReportById(reportId, eventId);
+    if (!currentReport.success) {
+      res.status(404).json({ error: 'Report not found.' });
+      return;
+    }
+    
+    const oldAssignedUserId = currentReport.data?.report?.assignedResponderId;
+    const oldState = currentReport.data?.report?.state;
     
     const result = await reportService.updateReportState(
       eventId, 
@@ -563,6 +564,22 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
         res.status(400).json({ error: result.error });
       }
       return;
+    }
+
+    // Trigger notifications for state change and assignment
+    try {
+      // Always notify about state change if state actually changed
+      if (oldState !== stateValue) {
+        await notificationService.notifyReportEvent(reportId, 'report_status_changed', userId);
+      }
+      
+      // Notify about assignment if assignment changed
+      if (assignedUserId && assignedUserId !== oldAssignedUserId) {
+        await notificationService.notifyReportEvent(reportId, 'report_assigned', userId);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications:', notificationError);
+      // Don't fail the main operation if notifications fail
     }
 
     res.json(result.data);
