@@ -292,6 +292,17 @@ export class AuthService {
       // Always return success to prevent email enumeration
       // but only send email if user exists
       if (user) {
+        // Create rate limit attempt record for tracking
+        const rateLimitKey = `reset_attempt_${email.toLowerCase()}`;
+        await this.prisma.rateLimitAttempt.create({
+          data: {
+            key: rateLimitKey,
+            type: 'password_reset',
+            identifier: email.toLowerCase(),
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+          }
+        });
+
         // Generate secure reset token
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now

@@ -325,12 +325,16 @@ describe("Event endpoints", () => {
     });
 
     it("should create a report with evidence file upload", async () => {
+      // Use proper text content that will pass validation
+      const textContent = "This is a valid text file for testing evidence upload.";
+      
       const res = await request(app)
         .post("/api/events/1/reports")
-        .attach("evidence", Buffer.from("fake evidence data"), "evidence.txt")
+        .attach("evidence", Buffer.from(textContent), "evidence.txt")
         .field("type", "harassment")
         .field("description", "Test with file")
         .field("title", "A valid report title");
+      
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty("report");
       expect(res.body.report).toHaveProperty("title", "A valid report title");

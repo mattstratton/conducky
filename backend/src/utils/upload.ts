@@ -33,6 +33,10 @@ function validateFileContent(file: Express.Multer.File): boolean {
   };
 
   const signature = signatures[file.mimetype as keyof typeof signatures];
+  
+  // Handle text/plain case (no reliable signature)
+  if (signature === null) return true;
+  
   if (!signature) {
     // Reject unknown file types for security
     logger.security('Rejected file with unknown signature', { 
@@ -41,9 +45,6 @@ function validateFileContent(file: Express.Multer.File): boolean {
     });
     return false;
   }
-
-  // Handle text/plain case
-  if (signature === null) return true;
 
   // Ensure buffer is long enough for signature check
   if (buffer.length < signature.length) return false;
