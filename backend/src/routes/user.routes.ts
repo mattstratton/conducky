@@ -249,7 +249,9 @@ router.get('/:userId/avatar', async (req: Request, res: Response): Promise<void>
     res.set({
       'Content-Type': mimetype,
       'Content-Disposition': `inline; filename="${filename}"`,
-      'Content-Length': data.length.toString()
+      'Content-Length': data.length.toString(),
+      'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || 'http://localhost:3001',
+      'Access-Control-Allow-Credentials': 'true'
     });
     
     res.send(data);
