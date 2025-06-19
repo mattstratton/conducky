@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
+import { EventService } from "../services/event.service";
 
 const prisma = new PrismaClient();
 
@@ -30,160 +31,89 @@ type RoleName = "SuperAdmin" | "Admin" | "Responder" | "Reporter";
  * ```
  */
 export function requireRole(allowedRoles: RoleName[]) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log("[RBAC DEBUG] Function entry");
-    console.log("[RBAC DEBUG] req.params:", req.params);
-    
-    const params = typeof req.params === "object" && req.params !== null ? req.params : {};
-    console.log("[RBAC DEBUG] params:", params);
-    
-    let eventId: string | undefined =
-      (req.query?.eventId as string) ||
-      (req.body?.eventId as string) ||
-      (params.eventId as string);
-    
-    console.log("[RBAC DEBUG] eventId after assignment:", eventId);
-
-    // If eventId is missing but reportId is present, fetch the report to get eventId
-    if (!eventId && params.reportId) {
-      try {
-        console.log(
-          "[RBAC DEBUG] eventId missing, trying to fetch report for reportId:",
-          params.reportId,
-        );
-        const report = await prisma.report.findUnique({
-          where: { id: params.reportId as string },
-        });
-        if (report) {
-          eventId = report.eventId;
-          console.log(
-            "[RBAC DEBUG] Found eventId from report:",
-            eventId,
-            "for reportId:",
-            params.reportId,
-          );
-        } else {
-          console.log(
-            "[RBAC DEBUG] No report found for reportId:",
-            params.reportId,
-          );
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const params = req.params as Record<string, string>;
+      
+      // Extract eventId from params (could be 'eventId' or 'id')
+      let eventId = params.eventId || params.id;
+      
+      // If no eventId but we have a slug, try to get eventId from slug
+      if (!eventId && params.slug) {
+        try {
+          const eventService = new EventService(prisma);
+          const foundEventId = await eventService.getEventIdBySlug(params.slug);
+          if (foundEventId) {
+            eventId = foundEventId;
+          }
+        } catch (error) {
+          console.error('[RBAC] Error fetching eventId by slug:', error);
         }
-      } catch (err) {
-        console.log(
-          "[RBAC DEBUG] Error fetching report for reportId:",
-          params.reportId,
-          err,
-        );
       }
-    }
+      
+      // Check authentication
+      if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
+      }
 
-    // If eventId is missing but slug is present, resolve eventId from slug
-    if (!eventId && params.slug) {
-      try {
-        console.log(
-          "[RBAC DEBUG] eventId missing, trying to fetch eventId for slug:",
-          params.slug,
-        );
-        const event = await prisma.event.findUnique({
-          where: { slug: params.slug as string },
+      const user = req.user as any;
+
+      // SuperAdmins can access anything
+      if (allowedRoles.includes('SuperAdmin')) {
+        const allUserRoles = await prisma.userEventRole.findMany({
+          where: { userId: user.id },
+          include: { role: true },
         });
-        if (event) {
-          eventId = event.id;
-          console.log(
-            "[RBAC DEBUG] Found eventId from slug:",
-            eventId,
-            "for slug:",
-            params.slug,
-          );
-        } else {
-          console.log("[RBAC DEBUG] No event found for slug:", params.slug);
-          // Return 404 immediately when event is not found by slug
-          res.status(404).json({ error: "Event not found." });
+
+        const isSuperAdmin = allUserRoles.some((uer) => uer.role.name === 'SuperAdmin');
+        if (isSuperAdmin) {
+          next();
           return;
         }
-      } catch (err) {
-        console.log(
-          "[RBAC DEBUG] Error fetching event for slug:",
-          params.slug,
-          err,
-        );
-        res.status(500).json({ error: "Failed to fetch event." });
-        return;
-      }
-    }
-
-    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
-      res.status(401).json({ error: "Not authenticated" });
-      return;
-    }
-
-    console.log("[RBAC] requireRole:", {
-      url: req.url,
-      method: req.method,
-      params,
-      query: req.query,
-      body: req.body,
-      eventId,
-    });
-
-    try {
-      // Check for SuperAdmin role globally
-      const user = req.user as any; // Type assertion for user with id property
-      const allUserRoles = await prisma.userEventRole.findMany({
-        where: { userId: user.id },
-        include: { role: true },
-      });
-      
-      console.log(
-        "[RBAC DEBUG] allUserRoles:",
-        JSON.stringify(allUserRoles, null, 2),
-      );
-      
-      const isSuperAdmin = allUserRoles.some(
-        (uer) => uer.role.name === "SuperAdmin",
-      );
-      
-      if (allowedRoles.includes("SuperAdmin") && isSuperAdmin) {
-        console.log("[RBAC DEBUG] User is SuperAdmin, access granted");
-        return next();
       }
 
-      // For non-SuperAdmin, require eventId
-      if (!eventId) {
-        console.log("[RBAC DEBUG] Missing eventId, returning 400");
-        res.status(400).json({
-          error:
-            "Missing eventId (checked req.query, req.body, req.params, or derived from reportId or slug)",
+      // For event-specific routes, check event-specific roles
+      if (eventId) {
+        const allUserRoles = await prisma.userEventRole.findMany({
+          where: { userId: user.id },
+          include: { role: true },
         });
-        return;
-      }
 
-      // Otherwise, check for allowed roles for this event
-      const userRoles = allUserRoles.filter((uer) => uer.eventId === eventId);
-      console.log(
-        "[RBAC DEBUG] userRoles for event",
-        eventId,
-        ":",
-        JSON.stringify(userRoles, null, 2),
-      );
-      console.log("[RBAC DEBUG] allowedRoles:", allowedRoles);
-      
-      const hasRole = userRoles.some((uer) =>
-        allowedRoles.includes(uer.role.name as RoleName),
-      );
-      console.log("[RBAC DEBUG] hasRole:", hasRole);
-      
-      if (!hasRole) {
-        console.log("[RBAC DEBUG] Forbidden: insufficient role");
-        res.status(403).json({ error: "Forbidden: insufficient role" });
-        return;
+        // Otherwise, check for allowed roles for this event
+        const userRoles = allUserRoles.filter((uer) => uer.eventId === eventId);
+        
+        const hasRole = userRoles.some((uer) =>
+          allowedRoles.includes(uer.role.name as RoleName),
+        );
+        
+        if (!hasRole) {
+          res.status(403).json({ error: "Forbidden: insufficient role" });
+          return;
+        }
+        
+        next();
+      } else {
+        // For non-event-specific routes, just check if user has any of the allowed roles
+        const allUserRoles = await prisma.userEventRole.findMany({
+          where: { userId: user.id },
+          include: { role: true },
+        });
+
+        const hasRole = allUserRoles.some((uer) =>
+          allowedRoles.includes(uer.role.name as RoleName),
+        );
+
+        if (!hasRole) {
+          res.status(403).json({ error: "Forbidden: insufficient role" });
+          return;
+        }
+
+        next();
       }
-      
-      next();
     } catch (err: any) {
-      res
-        .status(500)
-        .json({ error: "RBAC check failed", details: err.message });
+      console.error('[RBAC] Error in requireRole middleware:', err);
+      res.status(500).json({ error: 'Internal server error' });
     }
   };
 }

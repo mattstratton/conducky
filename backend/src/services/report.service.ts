@@ -33,6 +33,7 @@ export interface ReportQuery {
   assigned?: string;
   sort?: string;
   order?: string;
+  reportIds?: string[];
 }
 
 export interface EvidenceFile {
@@ -1451,7 +1452,8 @@ export class ReportService {
         sort = 'createdAt',
         order = 'desc',
         userId: filterUserId,
-        includeStats = false
+        includeStats = false,
+        reportIds
       } = query;
 
       // Validate pagination parameters
@@ -1533,6 +1535,11 @@ export class ReportService {
       if (filterUserId) {
         // Filter by specific user (for "My Reports" view)
         filters.push({ reporterId: filterUserId });
+      }
+
+      if (reportIds && reportIds.length > 0) {
+        // Filter by specific report IDs (for export)
+        filters.push({ id: { in: reportIds } });
       }
 
       // Combine base access control with filters
@@ -1687,6 +1694,137 @@ export class ReportService {
       return {
         success: false,
         error: 'Failed to fetch event reports'
+      };
+    }
+  }
+
+  // Bulk update reports (assign, status change, delete)
+  async bulkUpdateReports(eventId: string, reportIds: string[], action: string, options: {
+    assignedTo?: string;
+    status?: string;
+    notes?: string;
+    userId: string;
+  }): Promise<ServiceResult<{ updated: number; errors: string[] }>> {
+    try {
+      const { assignedTo, status, notes, userId } = options;
+      let updated = 0;
+      const errors: string[] = [];
+
+      // Verify user has access to the event
+      const userEventRoles = await this.prisma.userEventRole.findMany({
+        where: {
+          userId,
+          eventId
+        },
+        include: {
+          role: true
+        }
+      });
+
+      if (userEventRoles.length === 0) {
+        return {
+          success: false,
+          error: 'Access denied: User not authorized for this event'
+        };
+      }
+
+      const userRoles = userEventRoles.map(uer => uer.role.name);
+      const canBulkUpdate = userRoles.some(role => ['Responder', 'Admin', 'SuperAdmin'].includes(role));
+
+      if (!canBulkUpdate) {
+        return {
+          success: false,
+          error: 'Access denied: Insufficient permissions for bulk operations'
+        };
+      }
+
+      // Process each report
+      for (const reportId of reportIds) {
+        try {
+          // Verify report exists and belongs to event
+          const report = await this.prisma.report.findFirst({
+            where: {
+              id: reportId,
+              eventId
+            }
+          });
+
+          if (!report) {
+            errors.push(`Report ${reportId} not found or not in this event`);
+            continue;
+          }
+
+          // Perform the action
+          switch (action) {
+            case 'assign':
+              if (assignedTo) {
+                await this.prisma.report.update({
+                  where: { id: reportId },
+                  data: { assignedResponderId: assignedTo }
+                });
+                updated++;
+              } else {
+                errors.push(`Report ${reportId}: assignedTo is required for assign action`);
+              }
+              break;
+
+            case 'status':
+              if (status) {
+                // Validate status is a valid ReportState
+                const validStates = ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'];
+                if (!validStates.includes(status)) {
+                  errors.push(`Report ${reportId}: Invalid status ${status}`);
+                  continue;
+                }
+                
+                await this.prisma.report.update({
+                  where: { id: reportId },
+                  data: { state: status as any }
+                });
+                updated++;
+              } else {
+                errors.push(`Report ${reportId}: status is required for status action`);
+              }
+              break;
+
+            case 'delete':
+              // Delete associated evidence files first
+              await this.prisma.evidenceFile.deleteMany({
+                where: { reportId }
+              });
+              
+              // Delete associated comments
+              await this.prisma.reportComment.deleteMany({
+                where: { reportId }
+              });
+              
+              // Delete the report
+              await this.prisma.report.delete({
+                where: { id: reportId }
+              });
+              updated++;
+              break;
+
+            default:
+              errors.push(`Report ${reportId}: Unknown action ${action}`);
+          }
+        } catch (error: any) {
+          errors.push(`Report ${reportId}: ${error.message}`);
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          updated,
+          errors
+        }
+      };
+    } catch (error: any) {
+      console.error('Error in bulk update reports:', error);
+      return {
+        success: false,
+        error: 'Failed to perform bulk update'
       };
     }
   }

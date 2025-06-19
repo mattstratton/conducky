@@ -31,8 +31,8 @@ export function EvidenceSection({
 }: EvidenceSectionProps) {
   const [viewMode, setViewMode] = useState<'list' | 'gallery'>('gallery');
   
-  const getFileIcon = (mimetype: string) => {
-    if (mimetype.startsWith('image/')) {
+  const getFileIcon = (mimetype?: string) => {
+    if (mimetype && mimetype.startsWith('image/')) {
       return Image;
     }
     return FileText;

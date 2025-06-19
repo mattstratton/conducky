@@ -123,15 +123,3 @@ Stay informed about important activities across all your events:
 - **Mobile Optimized**: Fully responsive design for mobile and desktop use
 
 See the [Notification Center Guide](./notification-center.md) for complete details.
-
-## Environment Variables
-
-Before running Conducky, you must set the required environment variables for both backend and frontend. See the [Developer Docs Introduction](../developer-docs/intro.md#environment-variables-standardized) for the full list and details.
-
-## Installing Conducky
-
-TODO
-
-## Configuring Conducky
-
-TODO

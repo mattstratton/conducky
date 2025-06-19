@@ -72,10 +72,18 @@ class PrismaClient {
         ({ where }) =>
           inMemoryStore.roles.find((r) => r.name === where.name) || null,
       ),
-      create: jest.fn(({ data }) => ({
-        id: (inMemoryStore.roles.length + 1).toString(),
-        ...data,
-      })),
+      findFirst: jest.fn(
+        ({ where }) =>
+          inMemoryStore.roles.find((r) => r.name === where.name) || null,
+      ),
+      create: jest.fn(({ data }) => {
+        const newRole = {
+          id: (inMemoryStore.roles.length + 1).toString(),
+          ...data,
+        };
+        inMemoryStore.roles.push(newRole);
+        return newRole;
+      }),
     };
     this.user = {
       findUnique: jest.fn(
@@ -206,6 +214,19 @@ class PrismaClient {
         inMemoryStore.userEventRoles.push(newUER);
         return newUER;
       }),
+      createMany: jest.fn(({ data }) => {
+        const created = [];
+        data.forEach(item => {
+          const newUER = {
+            ...item,
+            role: inMemoryStore.roles.find((r) => r.id === item.roleId),
+            user: inMemoryStore.users.find((u) => u.id === item.userId),
+          };
+          inMemoryStore.userEventRoles.push(newUER);
+          created.push(newUER);
+        });
+        return { count: created.length };
+      }),
       delete: jest.fn(({ where }) => {
         const idx = inMemoryStore.userEventRoles.findIndex(
           (uer) =>
@@ -290,6 +311,16 @@ class PrismaClient {
         if (report) Object.assign(report, data);
         return { ...report, reporter: inMemoryStore.users[0] };
       }),
+      delete: jest.fn(({ where }) => {
+        const idx = inMemoryStore.reports.findIndex((r) => r.id === where.id);
+        if (idx === -1) {
+          const err = new Error("Record not found");
+          err.code = "P2025";
+          throw err;
+        }
+        const deletedReport = inMemoryStore.reports.splice(idx, 1)[0];
+        return deletedReport;
+      }),
       create: jest.fn(({ data }) => {
         const newReport = {
           id: `r${inMemoryStore.reports.length + 1}`,
@@ -319,6 +350,11 @@ class PrismaClient {
           if (condition.eventId && condition.eventId.in) {
             // Multiple events filter (for cross-event queries)
             results = results.filter((r) => condition.eventId.in.includes(r.eventId));
+          }
+          
+          if (condition.id && condition.id.in) {
+            // Filter by multiple IDs (for export with specific report IDs)
+            results = results.filter((r) => condition.id.in.includes(r.id));
           }
           
           if (condition.state) {
@@ -446,6 +482,11 @@ class PrismaClient {
             results = results.filter((r) => condition.eventId.in.includes(r.eventId));
           }
           
+          if (condition.id && condition.id.in) {
+            // Filter by multiple IDs (for export with specific report IDs)
+            results = results.filter((r) => condition.id.in.includes(r.id));
+          }
+          
           if (condition.state) {
             results = results.filter((r) => r.state === condition.state);
           }
@@ -507,6 +548,10 @@ class PrismaClient {
           }
           if (condition.id) {
             results = results.filter((r) => r.id === condition.id);
+          }
+          if (condition.id && condition.id.in) {
+            // Filter by multiple IDs (for export with specific report IDs)
+            results = results.filter((r) => condition.id.in.includes(r.id));
           }
           if (condition.reporterId) {
             results = results.filter((r) => r.reporterId === condition.reporterId);
@@ -583,6 +628,11 @@ class PrismaClient {
           
           if (condition.eventId && condition.eventId.in) {
             results = results.filter((r) => condition.eventId.in.includes(r.eventId));
+          }
+          
+          if (condition.id && condition.id.in) {
+            // Filter by multiple IDs (for export with specific report IDs)
+            results = results.filter((r) => condition.id.in.includes(r.id));
           }
           
           if (condition.state) {
@@ -805,7 +855,18 @@ class PrismaClient {
         }
         return [];
       }),
+      deleteMany: jest.fn(({ where }) => {
+        if (!inMemoryStore.evidenceFiles) return { count: 0 };
+        const before = inMemoryStore.evidenceFiles.length;
+        if (where.reportId) {
+          inMemoryStore.evidenceFiles = inMemoryStore.evidenceFiles.filter(
+            (e) => e.reportId !== where.reportId
+          );
+        }
+        return { count: before - inMemoryStore.evidenceFiles.length };
+      }),
     };
+    // Note: reportComment methods are defined later in the constructor
     this.userAvatar = {
       findUnique: jest.fn(({ where }) => {
         return (
@@ -1191,6 +1252,19 @@ class PrismaClient {
         }
         
         return results[0] || null;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        if (!inMemoryStore.reportComments) {
+          inMemoryStore.reportComments = [];
+          return { count: 0 };
+        }
+        const before = inMemoryStore.reportComments.length;
+        if (where.reportId) {
+          inMemoryStore.reportComments = inMemoryStore.reportComments.filter(
+            (c) => c.reportId !== where.reportId
+          );
+        }
+        return { count: before - inMemoryStore.reportComments.length };
       }),
     };
     this.rateLimitAttempt = {

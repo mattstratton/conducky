@@ -18,10 +18,32 @@ export default function EventReportsPage() {
   const { eventSlug } = router.query;
   const { user } = useContext(UserContext) as UserContextType;
   const [loading, setLoading] = useState<boolean>(true);
+  const [accessDenied, setAccessDenied] = useState<boolean>(false);
 
   useEffect(() => {
     if (eventSlug && user) {
-      setLoading(false);
+      // Fetch user's roles for this event
+      fetch(`/api/events/slug/${eventSlug}/my-roles`, {
+        credentials: 'include'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.roles) {
+            // Check if user has responder or admin role
+            const hasAccess = data.roles.some((role: string) => 
+              ['responder', 'admin'].includes(role.toLowerCase())
+            );
+            setAccessDenied(!hasAccess);
+          } else {
+            setAccessDenied(true);
+          }
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error fetching user roles:', error);
+          setAccessDenied(true);
+          setLoading(false);
+        });
     }
   }, [eventSlug, user]);
 
@@ -39,6 +61,17 @@ export default function EventReportsPage() {
       <Card className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
         <h2 className="text-2xl font-bold mb-6">Event Reports</h2>
         <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      </Card>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <Card className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
+        <h2 className="text-2xl font-bold mb-6">Access Denied</h2>
+        <div className="text-gray-500 dark:text-gray-400">
+          You don&apos;t have permission to view all event reports. Only Responders and Admins can access this page.
+        </div>
       </Card>
     );
   }
