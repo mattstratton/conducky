@@ -28,6 +28,7 @@ export interface ReportQuery {
   limit?: number;
   search?: string;
   status?: string;
+  severity?: string;
   event?: string;
   assigned?: string;
   sort?: string;
@@ -1417,6 +1418,275 @@ export class ReportService {
       return {
         success: false,
         error: 'Failed to update report type.'
+      };
+    }
+  }
+
+  /**
+   * Get reports for a specific event with enhanced filtering, search, and optional stats
+   */
+  async getEventReports(eventId: string, userId: string, query: ReportQuery & { includeStats?: boolean }): Promise<ServiceResult<{
+    reports: ReportWithDetails[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    stats?: {
+      submitted: number;
+      acknowledged: number;
+      investigating: number;
+      resolved: number;
+      closed: number;
+      total: number;
+    };
+  }>> {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        search,
+        status,
+        severity,
+        assigned,
+        sort = 'createdAt',
+        order = 'desc',
+        userId: filterUserId,
+        includeStats = false
+      } = query;
+
+      // Validate pagination parameters
+      const pageNum = parseInt(String(page), 10);
+      const limitNum = parseInt(String(limit), 10);
+
+      if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+        return {
+          success: false,
+          error: 'Invalid pagination parameters. Page and limit must be positive integers.'
+        };
+      }
+
+      if (limitNum > 100) {
+        return {
+          success: false,
+          error: 'Limit cannot exceed 100 items per page.'
+        };
+      }
+
+      const skip = (pageNum - 1) * limitNum;
+
+      // Get user's roles for this event to determine access
+      const userEventRoles = await this.prisma.userEventRole.findMany({
+        where: { 
+          userId,
+          eventId 
+        },
+        include: {
+          role: true
+        }
+      });
+
+      if (userEventRoles.length === 0) {
+        return {
+          success: false,
+          error: 'Access denied. User has no roles for this event.'
+        };
+      }
+
+      const userRoles = userEventRoles.map(uer => uer.role.name);
+
+      // Build base where clause based on user roles
+      let baseWhere: any = { eventId };
+
+      // Role-based access control
+      if (userRoles.includes('Reporter') && !userRoles.includes('Responder') && !userRoles.includes('Admin')) {
+        // Reporters can only see their own reports
+        baseWhere.reporterId = userId;
+      }
+      // Responders and Admins can see all reports in the event
+
+      // Apply additional filters
+      const filters: any[] = [];
+
+      if (search) {
+        filters.push({
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } }
+          ]
+        });
+      }
+
+      if (status) {
+        filters.push({ state: status });
+      }
+
+      if (severity) {
+        filters.push({ severity });
+      }
+
+      if (assigned === 'me') {
+        filters.push({ assignedResponderId: userId });
+      } else if (assigned === 'unassigned') {
+        filters.push({ assignedResponderId: null });
+      }
+
+      if (filterUserId) {
+        // Filter by specific user (for "My Reports" view)
+        filters.push({ reporterId: filterUserId });
+      }
+
+      // Combine base access control with filters
+      const whereClause = filters.length > 0 ? {
+        AND: [baseWhere, ...filters]
+      } : baseWhere;
+
+      // Build sort clause
+      const validSortFields = ['createdAt', 'updatedAt', 'title', 'state', 'severity'];
+      const sortField = validSortFields.includes(sort) ? sort : 'createdAt';
+      const sortOrder = order === 'asc' ? 'asc' : 'desc';
+
+      // Get total count
+      const total = await this.prisma.report.count({ where: whereClause });
+      const totalPages = Math.ceil(total / limitNum);
+
+      // Get reports with includes
+      const reports = await this.prisma.report.findMany({
+        where: whereClause,
+        include: {
+          reporter: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          assignedResponder: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          evidenceFiles: {
+            select: {
+              id: true,
+              filename: true,
+              mimetype: true,
+              size: true,
+              createdAt: true,
+              uploader: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          },
+          event: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            }
+          },
+          _count: {
+            select: {
+              comments: true
+            }
+          }
+        },
+        orderBy: { [sortField]: sortOrder },
+        skip,
+        take: limitNum
+      });
+
+      // Add user roles to each report
+      const reportsWithRoles = reports.map(report => ({
+        ...report,
+        userRoles
+      }));
+
+      // Get stats if requested
+      let stats: {
+        submitted: number;
+        acknowledged: number;
+        investigating: number;
+        resolved: number;
+        closed: number;
+        total: number;
+      } | undefined;
+      
+      if (includeStats) {
+        try {
+          const statsResult = await this.prisma.report.groupBy({
+            by: ['state'],
+            where: baseWhere, // Use base access control for stats
+            _count: {
+              _all: true
+            }
+          });
+
+          stats = {
+            submitted: 0,
+            acknowledged: 0,
+            investigating: 0,
+            resolved: 0,
+            closed: 0,
+            total: 0
+          };
+
+          statsResult.forEach(stat => {
+            const count = stat._count._all;
+            switch (stat.state) {
+              case 'submitted':
+                stats!.submitted = count;
+                break;
+              case 'acknowledged':
+                stats!.acknowledged = count;
+                break;
+              case 'investigating':
+                stats!.investigating = count;
+                break;
+              case 'resolved':
+                stats!.resolved = count;
+                break;
+              case 'closed':
+                stats!.closed = count;
+                break;
+            }
+            stats!.total += count;
+          });
+        } catch (statsError) {
+          console.error('Error fetching stats:', statsError);
+          // Don't fail the entire request if stats fail
+          stats = {
+            submitted: 0,
+            acknowledged: 0,
+            investigating: 0,
+            resolved: 0,
+            closed: 0,
+            total: 0
+          };
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          reports: reportsWithRoles,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages,
+          ...(stats && { stats })
+        }
+      };
+    } catch (error: any) {
+      console.error('Error fetching event reports:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch event reports'
       };
     }
   }

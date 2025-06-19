@@ -325,6 +325,14 @@ class PrismaClient {
             results = results.filter((r) => r.state === condition.state);
           }
           
+          if (condition.severity) {
+            results = results.filter((r) => r.severity === condition.severity);
+          }
+          
+          if (condition.reporterId) {
+            results = results.filter((r) => r.reporterId === condition.reporterId);
+          }
+          
           if (condition.assignedResponderId) {
             results = results.filter((r) => r.assignedResponderId === condition.assignedResponderId);
           }
@@ -442,6 +450,14 @@ class PrismaClient {
             results = results.filter((r) => r.state === condition.state);
           }
           
+          if (condition.severity) {
+            results = results.filter((r) => r.severity === condition.severity);
+          }
+          
+          if (condition.reporterId) {
+            results = results.filter((r) => r.reporterId === condition.reporterId);
+          }
+          
           if (condition.assignedResponderId) {
             results = results.filter((r) => r.assignedResponderId === condition.assignedResponderId);
           }
@@ -555,6 +571,75 @@ class PrismaClient {
         }
         
         return results[0] || null;
+      }),
+      groupBy: jest.fn(({ by, where, _count }) => {
+        let results = [...inMemoryStore.reports];
+        
+        // Apply where filters using the same logic as findMany
+        const applyWhereCondition = (results, condition) => {
+          if (condition.eventId && !condition.eventId.in) {
+            results = results.filter((r) => r.eventId === condition.eventId);
+          }
+          
+          if (condition.eventId && condition.eventId.in) {
+            results = results.filter((r) => condition.eventId.in.includes(r.eventId));
+          }
+          
+          if (condition.state) {
+            results = results.filter((r) => r.state === condition.state);
+          }
+          
+          if (condition.severity) {
+            results = results.filter((r) => r.severity === condition.severity);
+          }
+          
+          if (condition.reporterId) {
+            results = results.filter((r) => r.reporterId === condition.reporterId);
+          }
+          
+          if (condition.assignedResponderId) {
+            results = results.filter((r) => r.assignedResponderId === condition.assignedResponderId);
+          }
+          
+          if (condition.assignedResponderId === null) {
+            results = results.filter((r) => !r.assignedResponderId);
+          }
+          
+          return results;
+        };
+        
+        if (where) {
+          if (where.AND) {
+            for (const condition of where.AND) {
+              results = applyWhereCondition(results, condition);
+            }
+          } else {
+            results = applyWhereCondition(results, where);
+          }
+        }
+        
+        // Group by the specified field
+        const groups = {};
+        results.forEach(report => {
+          const key = report[by[0]]; // Assuming single field grouping
+          if (!groups[key]) {
+            groups[key] = [];
+          }
+          groups[key].push(report);
+        });
+        
+        // Return grouped results with counts
+        return Object.keys(groups).map(key => {
+          const result = {};
+          result[by[0]] = key;
+          if (_count) {
+            result._count = {};
+            Object.keys(_count).forEach(countField => {
+              result._count[countField] = groups[key].length;
+            });
+          }
+          return result;
+        });
       }),
     };
     this.auditLog = {

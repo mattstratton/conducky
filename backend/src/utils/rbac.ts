@@ -97,6 +97,9 @@ export function requireRole(allowedRoles: RoleName[]) {
           );
         } else {
           console.log("[RBAC DEBUG] No event found for slug:", params.slug);
+          // Return 404 immediately when event is not found by slug
+          res.status(404).json({ error: "Event not found." });
+          return;
         }
       } catch (err) {
         console.log(
@@ -104,6 +107,8 @@ export function requireRole(allowedRoles: RoleName[]) {
           params.slug,
           err,
         );
+        res.status(500).json({ error: "Failed to fetch event." });
+        return;
       }
     }
 

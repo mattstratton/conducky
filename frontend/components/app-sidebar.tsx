@@ -275,8 +275,10 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
             icon: ClipboardList,
             items: [
               {
-                title: "All Reports",
-                url: `/events/${targetEventSlug}/reports`,
+                title: userEventRole === 'Reporter' ? "My Reports" : "All Reports",
+                url: userEventRole === 'Reporter' 
+                  ? `/events/${targetEventSlug}/my-reports` 
+                  : `/events/${targetEventSlug}/reports`,
               },
               {
                 title: "Submit Report",
