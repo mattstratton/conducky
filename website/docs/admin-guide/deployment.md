@@ -103,17 +103,7 @@ Detailed AWS deployment instructions coming soon.
 After deployment:
 
 1. **Create the first SuperAdmin user**:
-   - Register a new account through the UI
-   - Manually promote them to SuperAdmin in the database:
-     ```sql
-     INSERT INTO "UserEventRole" (id, "userId", "eventId", "roleId")
-     VALUES (
-       gen_random_uuid(),
-       'USER_ID_HERE',
-       NULL,
-       (SELECT id FROM "Role" WHERE name = 'SuperAdmin')
-     );
-     ```
+   - When you first access the application, you will be prompted to create a SuperAdmin user.
 
 2. **Create your first event** via the admin interface
 

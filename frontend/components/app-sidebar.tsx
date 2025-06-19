@@ -275,9 +275,14 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
             icon: ClipboardList,
             items: [
               {
+                title: "My Reports",
+                url: `/events/${targetEventSlug}/my-reports`,
+              },
+              // Add "All Reports" for Responders and Admins
+              ...(isEventResponder ? [{
                 title: "All Reports",
                 url: `/events/${targetEventSlug}/reports`,
-              },
+              }] : []),
               {
                 title: "Submit Report",
                 url: `/events/${targetEventSlug}/reports/new`,

@@ -268,6 +268,51 @@ router.get('/slug/:slug/cardstats', requireRole(['Reporter', 'Responder', 'Admin
   }
 });
 
+// Get current user's role for an event (by slug)
+router.get('/slug/:slug/user-role', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const user = req.user as any;
+    
+    if (!user?.id) {
+      res.status(401).json({ error: 'User not authenticated.' });
+      return;
+    }
+    
+    // Find the event by slug
+    const event = await prisma.event.findUnique({
+      where: { slug },
+      select: { id: true }
+    });
+    
+    if (!event) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+    
+    // Find the user's role for this event
+    const userRole = await prisma.userEventRole.findFirst({
+      where: {
+        eventId: event.id,
+        userId: user.id
+      },
+      include: {
+        role: true
+      }
+    });
+    
+    if (!userRole) {
+      res.status(403).json({ error: 'User does not have access to this event.' });
+      return;
+    }
+    
+    res.json({ role: userRole.role.name });
+  } catch (error: any) {
+    console.error('Get user role error:', error);
+    res.status(500).json({ error: 'Failed to fetch user role.' });
+  }
+});
+
 // ========================================
 // EVENT ID-BASED ROUTES
 // ========================================
@@ -576,7 +621,7 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
     const userId = user?.id;
     
     // Get the current report state before update to check for changes
-    const currentReport = await reportService.getReportById(reportId, eventId);
+    const currentReport = await reportService.getReportById(reportId);
     if (!currentReport.success) {
       res.status(404).json({ error: 'Report not found.' });
       return;
@@ -983,8 +1028,26 @@ router.patch('/slug/:slug', requireRole(['Admin', 'SuperAdmin']), async (req: Re
 router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const recent = req.query.recent === '1';
+    
+    // Parse query parameters
+    const pageParam = req.query.page as string;
+    const limitParam = req.query.limit as string;
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const limit = limitParam ? Math.min(parseInt(limitParam, 10), 100) : 20;
+    const search = req.query.search as string;
+    const status = req.query.status as string;
+    const severity = req.query.severity as string;
+    const assigned = req.query.assigned as string;
+    const sort = req.query.sort as string || 'createdAt';
+    const order = req.query.order as string || 'desc';
+    const userId = req.query.userId as string; // For filtering user's own reports
+    const includeStats = req.query.includeStats === 'true';
+
+    // Validate pagination
+    if ((pageParam && (isNaN(page) || page < 1)) || (limitParam && (isNaN(limit) || limit < 1))) {
+      res.status(400).json({ error: 'Invalid pagination parameters. Page and limit must be positive integers.' });
+      return;
+    }
 
     // Get event ID by slug
     const eventId = await eventService.getEventIdBySlug(slug);
@@ -992,15 +1055,202 @@ router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin',
       res.status(404).json({ error: 'Event not found.' });
       return;
     }
-    
-    // Get reports for this event with pagination and recent filter
-    const options = {
+
+    // Get authenticated user for role-based access
+    const user = req.user as any;
+    if (!user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    // Build query options
+    const queryOptions = {
+      page,
       limit,
-      sort: recent ? 'createdAt' : undefined,
-      order: recent ? 'desc' : undefined
+      search,
+      status,
+      severity,
+      assigned,
+      sort,
+      order,
+      userId,
+      includeStats
     };
     
-    const result = await reportService.getReportsByEventId(eventId, options);
+    // Get reports for this event with enhanced filtering
+    const result = await reportService.getEventReports(eventId, user.id, queryOptions);
+    
+    if (!result.success) {
+      // Check if it's a validation error
+      if (result.error?.includes('Invalid pagination parameters') || 
+          result.error?.includes('Limit cannot exceed') ||
+          result.error?.includes('Access denied')) {
+        res.status(400).json({ error: result.error });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+      return;
+    }
+
+    res.json(result.data);
+  } catch (error: any) {
+    console.error('Get event reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch event reports.' });
+  }
+});
+
+// Test route to verify routing is working
+router.get('/slug/:slug/test-export', (req: Request, res: Response) => {
+  console.log('[TEST] Test export route reached');
+  res.json({ message: 'Test route works', slug: req.params.slug });
+});
+
+// Export event reports (CSV/PDF)
+router.get('/slug/:slug/reports/export', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const format = req.query.format as string;
+    const ids = req.query.ids as string; // Comma-separated report IDs
+    
+    if (!format || !['csv', 'pdf'].includes(format)) {
+      res.status(400).json({ error: 'Format must be csv or pdf' });
+      return;
+    }
+
+    // Get event ID by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found' });
+      return;
+    }
+
+    // Check authentication
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const user = req.user as any;
+
+    // Build query options for export
+    const queryOptions = {
+      page: 1,
+      limit: 100, // Use maximum allowed limit for export
+      search: req.query.search as string,
+      status: req.query.status as string,
+      severity: req.query.severity as string,
+      assigned: req.query.assigned as string,
+      sort: 'createdAt',
+      order: 'desc' as 'desc',
+      userId: req.query.userId as string,
+      includeStats: false,
+      reportIds: ids ? ids.split(',') : undefined
+    };
+
+    const result = await reportService.getEventReports(eventId, user.id, queryOptions);
+    
+    if (!result.success) {
+      res.status(500).json({ error: result.error });
+      return;
+    }
+
+    const reports = result.data!.reports;
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    if (format === 'csv') {
+      // Generate CSV
+      const csvRows = [
+        'ID,Title,Type,Status,Severity,Reporter,Assigned,Created,Description'
+      ];
+      
+      reports.forEach(report => {
+        const row = [
+          report.id,
+          `"${report.title.replace(/"/g, '""')}"`, // Escape quotes
+          report.type,
+          report.state,
+          report.severity || '',
+          report.reporter?.name || '',
+          report.assignedResponder?.name || '',
+          new Date(report.createdAt).toISOString(),
+          `"${report.description.replace(/"/g, '""')}"` // Escape quotes
+        ].join(',');
+        csvRows.push(row);
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="reports_${slug}_${currentDate}.csv"`);
+      res.send(csvContent);
+    } else if (format === 'pdf') {
+      // Generate simple text format (placeholder for PDF)
+      let textContent = `Event Reports - ${slug}\n`;
+      textContent += `Generated: ${new Date().toISOString()}\n\n`;
+      
+      reports.forEach(report => {
+        textContent += `ID: ${report.id}\n`;
+        textContent += `Title: ${report.title}\n`;
+        textContent += `Type: ${report.type}\n`;
+        textContent += `Status: ${report.state}\n`;
+        textContent += `Severity: ${report.severity || 'Not specified'}\n`;
+        textContent += `Reporter: ${report.reporter?.name || 'Unknown'}\n`;
+        textContent += `Assigned: ${report.assignedResponder?.name || 'Unassigned'}\n`;
+        textContent += `Created: ${new Date(report.createdAt).toISOString()}\n`;
+        textContent += `Description: ${report.description}\n`;
+        textContent += '\n---\n\n';
+      });
+      
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="reports_${slug}_${currentDate}.txt"`);
+      res.send(textContent);
+    }
+  } catch (error: any) {
+    console.error('Export event reports error:', error);
+    res.status(500).json({ error: 'Failed to export event reports.' });
+  }
+});
+
+// Bulk actions for event reports
+router.post('/slug/:slug/reports/bulk', requireRole(['Responder', 'Admin', 'SuperAdmin']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    const { action, reportIds, assignedTo, status, notes } = req.body;
+    
+    if (!action || !reportIds || !Array.isArray(reportIds) || reportIds.length === 0) {
+      res.status(400).json({ error: 'Action and reportIds array are required' });
+      return;
+    }
+
+    if (!['assign', 'status', 'delete'].includes(action)) {
+      res.status(400).json({ error: 'Action must be assign, status, or delete' });
+      return;
+    }
+
+    // Get event ID by slug
+    const eventId = await eventService.getEventIdBySlug(slug);
+    if (!eventId) {
+      res.status(404).json({ error: 'Event not found.' });
+      return;
+    }
+
+    // Get authenticated user
+    const user = req.user as any;
+    if (!user?.id) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    // Process bulk action
+    console.log('[BULK DEBUG] Calling bulkUpdateReports with:', { eventId, reportIds, action, options: { assignedTo, status, notes, userId: user.id } });
+    const result = await reportService.bulkUpdateReports(eventId, reportIds, action, {
+      assignedTo,
+      status,
+      notes,
+      userId: user.id
+    });
+    
+    console.log('[BULK DEBUG] Service result:', result);
     
     if (!result.success) {
       res.status(500).json({ error: result.error });
@@ -1009,8 +1259,8 @@ router.get('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin',
 
     res.json(result.data);
   } catch (error: any) {
-    console.error('Get event reports error:', error);
-    res.status(500).json({ error: 'Failed to fetch event reports.' });
+    console.error('Bulk action error:', error);
+    res.status(500).json({ error: 'Failed to perform bulk action.' });
   }
 });
 

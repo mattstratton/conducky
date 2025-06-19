@@ -12,9 +12,11 @@ To run the full stack locally:
 
 1. Ensure you have Docker and docker-compose installed.
 2. Run:
+
    ```sh
    docker-compose up --build -d
    ```
+
 3. The frontend (Next.js) and backend (Node.js) will be available on their respective ports (see docker-compose.yml).
 
 > **Note:** Full setup, configuration, and usage documentation will be added as features are implemented.
@@ -37,11 +39,13 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 - **Backend:**
   - `backend/.env` (example):
+
     ```env
     PORT=4000
     DATABASE_URL=postgres://postgres:postgres@db:5432/conducky
     SESSION_SECRET=changeme
     FRONTEND_BASE_URL=http://localhost:3001
+    BACKEND_BASE_URL=http://localhost:4000
     CORS_ORIGIN=http://localhost:3001
     # Email Configuration
     EMAIL_PROVIDER=console
@@ -58,15 +62,24 @@ Both the frontend and backend use `.env` files to manage environment variables a
     # SendGrid Configuration (if EMAIL_PROVIDER=sendgrid)
     SENDGRID_API_KEY=
 
+    # OAuth Configuration
+    GOOGLE_CLIENT_ID=
+    GOOGLE_CLIENT_SECRET=
+    GITHUB_CLIENT_ID=
+    GITHUB_CLIENT_SECRET=
+
     ```
+
 - **Frontend:**
   - `frontend/.env` (example):
+
     ```env
     NEXT_PUBLIC_API_URL=http://localhost:4000
     BACKEND_API_URL=http://localhost:4000
     ```
 
 ### Overriding Variables
+
 - For local development, edit the `.env` files directly.
 - For production, set environment variables in your hosting provider or CI/CD pipeline as needed.
 - **Do not commit secrets to version control.**
@@ -75,21 +88,22 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 ## Backend: Prisma & Database
 
-- **After starting or rebuilding the backend container, you must generate the Prisma client inside the container before using the backend:**
   ```sh
-  docker-compose exec backend npx prisma generate
-  ```
 - **To run the seed script (populate default roles, a test event, and test users), run:**
   ```sh
   docker-compose exec backend npm run seed
   ```
-- If you encounter errors about missing Prisma client, re-run the generate command above inside the backend container.
 
-- **Note:** The Prisma client is not generated automatically during Docker build. You must always run the generate command after starting the stack.
+- If you encounter errors about missing Prisma client, re-run the generate command:
+
+```sh
+docker-compose exec backend npx prisma generate
+```
 
 - **Audit Logging:**
   - Use the `logAudit` helper in `backend/utils/audit.js` to log actions to the `AuditLog` table.
   - Example usage:
+
     ```js
     await logAudit({
       eventId: 'event-id',
@@ -99,21 +113,8 @@ Both the frontend and backend use `.env` files to manage environment variables a
       targetId: 'entity-id',
     });
     ```
+
   - See the `/audit-test` endpoint in `index.js` for a working example.
-
-## RBAC Middleware
-
-- Use the `requireRole` middleware from `backend/utils/rbac.js` to protect routes based on user roles for a given event.
-- Example usage:
-  ```js
-  // Only allow Admins for the event
-  app.get('/admin-only', requireRole(['Admin']), (req, res) => {
-    res.json({ message: 'You are an admin for this event!' });
-  });
-  ```
-- The middleware expects `eventId` to be provided as a query param, body, or route param.
-  - Example: `GET /admin-only?eventId=YOUR_EVENT_ID`
-- Returns 401 if not authenticated, 400 if eventId is missing, and 403 if the user does not have the required role.
 
 **What the seed script loads:**
 

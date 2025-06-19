@@ -102,7 +102,12 @@ app.use(
     origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Cookie',
+      ...(process.env.NODE_ENV === 'test' ? ['x-test-user-id', 'x-test-disable-auth'] : [])
+    ],
   }),
 );
 
