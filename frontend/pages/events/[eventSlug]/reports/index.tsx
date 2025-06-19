@@ -20,16 +20,28 @@ export default function EventReportsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [accessDenied, setAccessDenied] = useState<boolean>(false);
 
+  // Fetch user roles for this event after user is set
   useEffect(() => {
     if (eventSlug && user) {
-      // Fetch user's roles for this event
-      fetch(`/api/events/slug/${eventSlug}/my-roles`, {
+      // Fetch user's roles for this event using the full backend URL
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/my-roles`, {
         credentials: 'include'
       })
-        .then(response => response.json())
-        .then(data => {
+        .then(async response => {
+          let data = null;
+          try {
+            data = await response.json();
+          } catch (e) {
+            data = { error: await response.text() };
+          }
+          if (!response.ok) {
+            console.error('Error fetching user roles:', data.error || data);
+            setAccessDenied(true);
+            setLoading(false);
+            return;
+          }
           if (data.roles) {
-            // Check if user has responder or admin role
+            // Check if user has responder, admin, superadmin, or global admin role
             const hasAccess = data.roles.some((role: string) => 
               ['responder', 'admin'].includes(role.toLowerCase())
             );
@@ -40,7 +52,7 @@ export default function EventReportsPage() {
           setLoading(false);
         })
         .catch(error => {
-          console.error('Error fetching user roles:', error);
+          console.error('Network or parsing error fetching user roles:', error);
           setAccessDenied(true);
           setLoading(false);
         });
@@ -89,4 +101,4 @@ export default function EventReportsPage() {
       />
     </div>
   );
-} 
+}
