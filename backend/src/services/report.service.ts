@@ -467,8 +467,8 @@ export class ReportService {
 
       const oldState = report.state;
 
-      // Prepare update data
-      const updateData: any = { state: state as any };
+      // Prepare update data (Prisma type conflicts require any for now)
+      const updateData: any = { state };
       if (assignedToUserId !== undefined && assignedToUserId !== null && assignedToUserId !== '') {
         updateData.assignedResponderId = assignedToUserId;
       }

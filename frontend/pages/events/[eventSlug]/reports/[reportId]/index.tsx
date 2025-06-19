@@ -120,6 +120,16 @@ export default function ReportDetail() {
   const [assignmentLoading, setAssignmentLoading] = useState<boolean>(false);
   const [assignmentError, setAssignmentError] = useState<string>('');
   const [assignmentSuccess, setAssignmentSuccess] = useState<string>('');
+  
+  // State history
+  const [stateHistory, setStateHistory] = useState<Array<{
+    id: string;
+    fromState: string;
+    toState: string;
+    changedBy: string;
+    changedAt: string;
+    notes?: string;
+  }>>([]);
 
   // Fetch report data
   useEffect(() => {
@@ -253,6 +263,24 @@ export default function ReportDetail() {
       });
   }, [eventSlug, isResponderOrAbove]);
 
+  // Fetch state history for the report
+  useEffect(() => {
+    if (!report?.eventId || !reportId) return;
+    
+    fetch(
+      (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + 
+      `/api/events/${report.eventId}/reports/${reportId}/state-history`,
+      { credentials: "include" }
+    )
+      .then((res) => res.ok ? res.json() : { history: [] })
+      .then((data) => {
+        setStateHistory(data.history || []);
+      })
+      .catch(() => {
+        setStateHistory([]);
+      });
+  }, [report?.eventId, reportId]);
+
   // Enhanced state change handler to support notes and assignments
   const handleStateChange = async (newState: string, notes?: string, assignedToUserId?: string) => {
     setStateChangeError("");
@@ -302,6 +330,22 @@ export default function ReportDetail() {
         }
         
         setStateChangeSuccess("State updated successfully!");
+        
+        // Refetch state history after state change
+        if (data.report?.eventId) {
+          fetch(
+            (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + 
+            `/api/events/${data.report.eventId}/reports/${reportId}/state-history`,
+            { credentials: "include" }
+          )
+            .then((res) => res.ok ? res.json() : { history: [] })
+            .then((historyData) => {
+              setStateHistory(historyData.history || []);
+            })
+            .catch(() => {
+              // Silently fail for state history
+            });
+        }
       }
     } catch (err) {
       setStateChangeError("Network error");
@@ -646,6 +690,7 @@ export default function ReportDetail() {
       assignmentLoading={assignmentLoading}
       assignmentError={assignmentError}
       assignmentSuccess={assignmentSuccess}
+      stateHistory={stateHistory}
       apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
       onTitleEdit={handleTitleEdit}
     />

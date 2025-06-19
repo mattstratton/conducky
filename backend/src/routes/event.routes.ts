@@ -575,7 +575,8 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
       
       // Notify about assignment if assignment changed
       if (assignedUserId && assignedUserId !== oldAssignedUserId) {
-        await notificationService.notifyReportEvent(reportId, 'report_assigned', userId);
+        // For assignments, don't exclude the assigned user even if they assigned it to themselves
+        await notificationService.notifyReportEvent(reportId, 'report_assigned', null);
       }
     } catch (notificationError) {
       console.error('Failed to send notifications:', notificationError);

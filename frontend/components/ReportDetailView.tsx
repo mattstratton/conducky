@@ -42,6 +42,14 @@ export interface ReportDetailViewProps {
   assignmentLoading?: boolean;
   assignmentError?: string;
   assignmentSuccess?: string;
+  stateHistory?: Array<{
+    id: string;
+    fromState: string;
+    toState: string;
+    changedBy: string;
+    changedAt: string;
+    notes?: string;
+  }>;
   apiBaseUrl?: string;
   onTitleEdit?: (title: string) => Promise<void>;
   [key: string]: any;
@@ -74,6 +82,7 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   assignmentLoading = false,
   assignmentError = "",
   assignmentSuccess = "",
+  stateHistory = [],
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
   onTitleEdit,
   ...rest
@@ -253,7 +262,7 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
           canChangeState={canChangeState}
           eventUsers={eventUsers}
           assignedResponderId={assignmentFields.assignedResponderId}
-          stateHistory={[]} // Will be fetched separately
+          stateHistory={stateHistory}
         />
       ) : (
         /* Legacy State Management */
