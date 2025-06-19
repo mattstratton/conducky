@@ -8,7 +8,7 @@ import { NotificationService } from '../services/notification.service';
 import { requireRole } from '../middleware/rbac';
 import { UserResponse } from '../types';
 import { PrismaClient, CommentVisibility } from '@prisma/client';
-import multer from 'multer';
+import { createUploadMiddleware, validateUploadedFiles } from '../utils/upload';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -19,16 +19,18 @@ const inviteService = new InviteService(prisma);
 const commentService = new CommentService(prisma);
 const notificationService = new NotificationService(prisma);
 
-// Multer setup for logo uploads (memory storage, 5MB limit)
-const uploadLogo = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+// Secure multer setup for logo uploads
+const uploadLogo = createUploadMiddleware({
+  allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg'],
+  maxSizeMB: 5,
+  allowedExtensions: ['png', 'jpg', 'jpeg']
 });
 
-// Multer setup for evidence uploads (memory storage, 10MB limit)
-const uploadEvidence = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+// Secure multer setup for evidence uploads
+const uploadEvidence = createUploadMiddleware({
+  allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'text/plain'],
+  maxSizeMB: 10,
+  allowedExtensions: ['png', 'jpg', 'jpeg', 'pdf', 'txt']
 });
 
 // ========================================
@@ -381,7 +383,7 @@ router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (re
 });
 
 // Create report for event
-router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
+router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), validateUploadedFiles, async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;

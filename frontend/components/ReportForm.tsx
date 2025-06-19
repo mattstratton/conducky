@@ -80,7 +80,7 @@ const urgencyLevels = [
   },
 ];
 
-export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, onSuccess }) => {
+const ReportFormComponent: React.FC<ReportFormProps> = ({ eventSlug, eventName, onSuccess }) => {
   const router = useRouter();
   const form = useForm<ReportFormValues>({
     defaultValues: {
@@ -530,4 +530,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ eventSlug, eventName, on
       </Card>
     </div>
   );
-}; 
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const ReportForm = React.memo(ReportFormComponent); 

@@ -12,6 +12,7 @@ import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import helmet from 'helmet';
 
 // Import passport configuration
 import './src/config/passport';
@@ -35,6 +36,38 @@ import { getSessionConfig } from './src/config/session';
 const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// CRITICAL SECURITY: Add comprehensive security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for Next.js dev
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Needed for file uploads
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Request logger (only in development)
 if (process.env.NODE_ENV === 'development') {
