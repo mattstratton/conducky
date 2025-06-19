@@ -94,21 +94,27 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   useEffect(() => {
     // Wait for router to be ready and ensure we have a valid eventSlug
     if (router.isReady && eventSlug && typeof eventSlug === 'string' && eventSlug !== '[eventSlug]') {
-      console.log('Fetching event data for slug:', eventSlug);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching event data for slug:', eventSlug);
+      }
       fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.event) setEventName(data.event.name);
         })
         .catch((error) => {
-          console.warn('Failed to fetch event details:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to fetch event details:', error);
+          }
         });
       fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + `/api/events/slug/${eventSlug}/users`, { credentials: "include" })
         .then(() => {
           // No-op for now; events are fetched from /api/users/me/events
         })
         .catch((error) => {
-          console.warn('Failed to fetch event users:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to fetch event users:', error);
+          }
           // Don't clear events here - they should persist across pages
         });
     } else {

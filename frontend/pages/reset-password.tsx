@@ -99,7 +99,9 @@ export default function ResetPasswordPage() {
         });
       }
     } catch (err) {
-      console.error('Token validation error:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Token validation error:', err);
+      }
       setTokenValidation({
         isValidating: false,
         isValid: false,
@@ -182,10 +184,11 @@ export default function ResetPasswordPage() {
         setError(data.error || 'Failed to reset password');
       }
     } catch (err) {
-      console.error('Reset password error:', err);
-      setError('Network error. Please try again.');
-    } finally {
       setIsLoading(false);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Reset password error:', err);
+      }
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     }
   };
 

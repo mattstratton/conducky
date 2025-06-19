@@ -3,7 +3,7 @@ if (process.env.NODE_ENV === 'test') {
   try {
     require('dotenv').config({ path: '.env.test', override: true });
   } catch (error) {
-    console.warn('Failed to load .env.test file:', error);
+    // Silently handle missing .env.test file
   }
 }
 
@@ -12,6 +12,7 @@ import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import helmet from 'helmet';
 
 // Import passport configuration
 import './src/config/passport';
@@ -36,11 +37,45 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Global request logger
-app.use((req: any, _res: any, next: any) => {
-  console.log('[GLOBAL] Incoming request:', req.method, req.url);
+// CRITICAL SECURITY: Add comprehensive security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for Next.js dev
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Needed for file uploads
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
+
+// Request logger (only in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req: any, _res: any, next: any) => {
+    console.log('[DEV] Request:', req.method, req.url);
+    next();
+  });
+}
 
 // Add test-only authentication middleware for tests
 if (process.env.NODE_ENV === 'test') {
@@ -107,9 +142,7 @@ app.use('/api/admin', adminRoutes);
 // Missing API routes that frontend expects
 // Session route (frontend expects /api/session)
 app.get('/api/session', async (req: any, res: any) => {
-  console.log('[SESSION DEBUG] /api/session endpoint hit');
   if (req.user) {
-    console.log('[SESSION DEBUG] User exists:', req.user.id);
     try {
       // Get user roles (same pattern as RBAC middleware)
       const userEventRoles = await prisma.userEventRole.findMany({
@@ -117,7 +150,6 @@ app.get('/api/session', async (req: any, res: any) => {
         include: { role: true },
       });
       const roles = userEventRoles.map((uer: any) => uer.role.name);
-      console.log('[SESSION DEBUG] Found roles:', roles);
 
       // Get avatar if exists
       const avatar = await prisma.userAvatar.findUnique({
@@ -134,14 +166,11 @@ app.get('/api/session', async (req: any, res: any) => {
           avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
         }
       };
-      console.log('[SESSION DEBUG] Sending response:', JSON.stringify(response, null, 2));
       res.json(response);
     } catch (err: any) {
-      console.error('Error fetching session data:', err);
       res.status(500).json({ error: 'Failed to fetch session data' });
     }
   } else {
-    console.log('[SESSION DEBUG] No user in request');
     res.json({ authenticated: false });
   }
 });
@@ -160,7 +189,6 @@ app.get('/api/system/settings', async (_req: any, res: any) => {
     
     res.json({ settings: settingsObj });
   } catch (err: any) {
-    console.error('Error fetching system settings:', err);
     res.status(500).json({ error: 'Failed to fetch system settings', details: err.message });
   }
 });
@@ -209,7 +237,6 @@ app.get('/session', async (req: any, res: any) => {
         }
       });
     } catch (err: any) {
-      console.error('Error fetching user avatar for session:', err);
       res.status(500).json({ error: 'Failed to fetch session data' });
     }
   } else {
@@ -249,7 +276,10 @@ app.get('/admin-only', async (req: any, res: any) => {
 
 // Error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Unhandled error:', err);
+  // Log errors only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Unhandled error:', err);
+  }
   res.status(500).json({ 
     error: 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { details: err.message })

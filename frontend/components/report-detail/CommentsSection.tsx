@@ -56,8 +56,8 @@ interface CommentsSectionProps {
 }
 
 // Helper function to return plain text for ReactMarkdown (HTML injection removed for security)
-// TODO: Implement proper markdown-aware search highlighting in future iteration
-const highlightSearchTerm = (text: string, _searchTerm: string) => {
+// Note: Markdown-aware search highlighting is a future enhancement
+const highlightSearchTerm = (text: string) => {
   // Return original text to prevent XSS vulnerabilities from HTML injection
   // ReactMarkdown expects plain text, not HTML strings
   return text;
@@ -596,7 +596,7 @@ export function CommentsSection({
                       ) : (
                         <div className="prose prose-sm max-w-none dark:prose-invert">
                           <ReactMarkdown>
-                            {highlightSearchTerm(comment.body, searchTerm)}
+                            {highlightSearchTerm(comment.body)}
                           </ReactMarkdown>
                         </div>
                       )}

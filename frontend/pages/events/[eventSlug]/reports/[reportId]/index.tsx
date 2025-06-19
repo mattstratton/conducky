@@ -233,21 +233,29 @@ export default function ReportDetail() {
   // Fetch event users for assignment dropdown if admin/responder
   useEffect(() => {
     if (!eventSlug || !isResponderOrAbove) return;
-    console.log('[DEBUG] Fetching responders for assignment dropdown');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] Fetching responders for assignment dropdown');
+    }
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Responder&limit=1000`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : { users: [] })
       .then(data => {
-        console.log('[DEBUG] Fetched responders:', data.users);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[DEBUG] Fetched responders:', data.users);
+        }
         fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/events/slug/${eventSlug}/users?role=Admin&limit=1000`, { credentials: 'include' })
           .then(res2 => res2.ok ? res2.json() : { users: [] })
           .then(data2 => {
-            console.log('[DEBUG] Fetched admins:', data2.users);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[DEBUG] Fetched admins:', data2.users);
+            }
             const all = [...(data.users || []), ...(data2.users || [])];
             const deduped = Object.values(all.reduce<Record<string, User>>((acc, u) => { 
               acc[u.id] = u; 
               return acc; 
             }, {}));
-            console.log('[DEBUG] Final eventUsers for assignment dropdown:', deduped);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[DEBUG] Final eventUsers for assignment dropdown:', deduped);
+            }
             setEventUsers(deduped);
           });
       });

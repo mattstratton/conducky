@@ -22,7 +22,7 @@ interface InviteInfo {
 /**
  * JoinEventWidget allows a logged-in user to join an event using an invite code or link.
  * Shows validation, error, and success states. On success, suggests refreshing the dashboard.
- * TODO: After joining, auto-link to the event dashboard (needs event slug from backend response).
+ * Automatically shows a link to the event dashboard after successful joining.
  */
 export function JoinEventWidget({ onJoin }: { onJoin?: () => void }) {
   const [input, setInput] = useState("");

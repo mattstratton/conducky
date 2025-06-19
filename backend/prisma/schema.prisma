@@ -284,3 +284,15 @@ model SocialAccount {
   @@unique([provider, providerId])
   @@unique([userId, provider])
 }
+
+model RateLimitAttempt {
+  id         String   @id @default(uuid())
+  key        String   // Rate limit key (e.g., "reset_attempt_email@example.com")
+  type       String   // Type of rate limit (e.g., "password_reset", "login_attempt")
+  identifier String   // The identifier being rate limited (email, IP, etc.)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  
+  @@index([key, type])
+  @@index([expiresAt])
+}

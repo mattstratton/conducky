@@ -27,6 +27,7 @@ const inMemoryStore = {
   passwordResetTokens: [],
   notifications: [],
   reportComments: [],
+  rateLimitAttempts: [],
   systemSettings: [
     { id: "1", key: "showPublicEventList", value: "false" }
   ],
@@ -757,9 +758,33 @@ class PrismaClient {
         }
         return token || null;
       }),
+      findFirst: jest.fn(({ where, orderBy }) => {
+        let results = inMemoryStore.passwordResetTokens;
+        
+        if (where) {
+          if (where.user && where.user.email) {
+            const user = inMemoryStore.users.find(u => u.email === where.user.email);
+            if (user) {
+              results = results.filter(t => t.userId === user.id);
+            } else {
+              return null; // No user found with that email
+            }
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            results = results.filter(t => new Date(t.createdAt) >= where.createdAt.gte);
+          }
+        }
+        
+        if (orderBy && orderBy.createdAt === 'asc') {
+          results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        }
+        
+        return results[0] || null;
+      }),
       create: jest.fn(({ data }) => {
         const token = {
           id: String(inMemoryStore.passwordResetTokens.length + 1),
+          createdAt: new Date(),
           ...data,
         };
         inMemoryStore.passwordResetTokens.push(token);
@@ -777,6 +802,25 @@ class PrismaClient {
           return inMemoryStore.passwordResetTokens[idx];
         }
         return null;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = inMemoryStore.passwordResetTokens;
+        
+        if (where) {
+          if (where.user && where.user.email) {
+            const user = inMemoryStore.users.find(u => u.email === where.user.email);
+            if (user) {
+              results = results.filter(t => t.userId === user.id);
+            } else {
+              return 0; // No user found with that email
+            }
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            results = results.filter(t => new Date(t.createdAt) >= where.createdAt.gte);
+          }
+        }
+        
+        return results.length;
       }),
       deleteMany: jest.fn(({ where }) => {
         const before = inMemoryStore.passwordResetTokens.length;
@@ -1058,6 +1102,63 @@ class PrismaClient {
             results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           } else if (orderBy.createdAt === 'asc') {
             results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          }
+        }
+        
+        return results[0] || null;
+      }),
+    };
+    this.rateLimitAttempt = {
+      count: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.rateLimitAttempts];
+        
+        if (where) {
+          if (where.key) {
+            results = results.filter((attempt) => attempt.key === where.key);
+          }
+          if (where.type) {
+            results = results.filter((attempt) => attempt.type === where.type);
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            const gteDate = new Date(where.createdAt.gte);
+            results = results.filter((attempt) => new Date(attempt.createdAt) >= gteDate);
+          }
+        }
+        
+        return results.length;
+      }),
+      create: jest.fn(({ data }) => {
+        const attempt = {
+          id: `ra${inMemoryStore.rateLimitAttempts.length + 1}`,
+          createdAt: new Date().toISOString(),
+          ...data,
+        };
+        inMemoryStore.rateLimitAttempts.push(attempt);
+        return attempt;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const originalLength = inMemoryStore.rateLimitAttempts.length;
+        
+        if (where) {
+          if (where.expiresAt && where.expiresAt.lt) {
+            const ltDate = new Date(where.expiresAt.lt);
+            inMemoryStore.rateLimitAttempts = inMemoryStore.rateLimitAttempts.filter(
+              (attempt) => new Date(attempt.expiresAt) >= ltDate
+            );
+          }
+        }
+        
+        return { count: originalLength - inMemoryStore.rateLimitAttempts.length };
+      }),
+      findFirst: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.rateLimitAttempts];
+        
+        if (where) {
+          if (where.key) {
+            results = results.filter((attempt) => attempt.key === where.key);
+          }
+          if (where.type) {
+            results = results.filter((attempt) => attempt.type === where.type);
           }
         }
         

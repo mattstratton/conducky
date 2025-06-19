@@ -124,7 +124,10 @@ const NotificationCenter: React.FC = () => {
         setStats(data);
       }
     } catch (err) {
-      console.error('Failed to fetch notification stats:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch notification stats:', err);
+      }
+      // Continue with default empty state
     }
   };
 

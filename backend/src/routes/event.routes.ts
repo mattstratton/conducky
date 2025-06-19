@@ -8,7 +8,7 @@ import { NotificationService } from '../services/notification.service';
 import { requireRole } from '../middleware/rbac';
 import { UserResponse } from '../types';
 import { PrismaClient, CommentVisibility } from '@prisma/client';
-import multer from 'multer';
+import { createUploadMiddleware, validateUploadedFiles } from '../utils/upload';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -19,16 +19,18 @@ const inviteService = new InviteService(prisma);
 const commentService = new CommentService(prisma);
 const notificationService = new NotificationService(prisma);
 
-// Multer setup for logo uploads (memory storage, 5MB limit)
-const uploadLogo = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+// Secure multer setup for logo uploads
+const uploadLogo = createUploadMiddleware({
+  allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg'],
+  maxSizeMB: 5,
+  allowedExtensions: ['png', 'jpg', 'jpeg']
 });
 
-// Multer setup for evidence uploads (memory storage, 10MB limit)
-const uploadEvidence = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+// Secure multer setup for evidence uploads
+const uploadEvidence = createUploadMiddleware({
+  allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf', 'text/plain'],
+  maxSizeMB: 10,
+  allowedExtensions: ['png', 'jpg', 'jpeg', 'pdf', 'txt']
 });
 
 // ========================================
@@ -381,7 +383,7 @@ router.delete('/:eventId/roles', requireRole(['Admin', 'SuperAdmin']), async (re
 });
 
 // Create report for event
-router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
+router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 'SuperAdmin']), uploadEvidence.array('evidence'), validateUploadedFiles, async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { type, description, title, incidentAt, parties, location, contactPreference, urgency } = req.body;
@@ -1029,20 +1031,17 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
   
   // Check authentication
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
-    console.log(`[DEBUG] Report access denied - not authenticated. Slug: ${slug}, ReportId: ${reportId}`);
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
   try {
     const user = req.user as any;
-    console.log(`[DEBUG] Report access check - User: ${user.id}, Slug: ${slug}, ReportId: ${reportId}`);
     
     // First get the report to check access
     const result = await reportService.getReportBySlugAndId(slug, reportId);
     
     if (!result.success) {
-      console.log(`[DEBUG] Report fetch failed: ${result.error}`);
       if (result.error?.includes('not found')) {
         res.status(404).json({ error: result.error });
       } else {
@@ -1051,26 +1050,19 @@ router.get('/slug/:slug/reports/:reportId', async (req: Request, res: Response):
       return;
     }
 
-    console.log(`[DEBUG] Report found - EventId: ${result.data?.report?.eventId}, ReporterId: ${result.data?.report?.reporterId}`);
-
     // Check access control using the service
     const accessResult = await reportService.checkReportAccess(user.id, reportId);
     
     if (!accessResult.success) {
-      console.log(`[DEBUG] Access check failed: ${accessResult.error}`);
       res.status(500).json({ error: accessResult.error });
       return;
     }
 
-    console.log(`[DEBUG] Access check result - HasAccess: ${accessResult.data!.hasAccess}, IsReporter: ${accessResult.data!.isReporter}, Roles: ${JSON.stringify(accessResult.data!.roles)}`);
-
     if (!accessResult.data!.hasAccess) {
-      console.log(`[DEBUG] Access denied - insufficient permissions`);
       res.status(403).json({ error: 'Forbidden: insufficient role' });
       return;
     }
 
-    console.log(`[DEBUG] Access granted - returning report data`);
     res.json(result.data);
   } catch (error: any) {
     console.error('Get report by slug error:', error);

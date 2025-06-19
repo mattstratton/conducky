@@ -46,10 +46,11 @@ export default function ForgotPasswordPage() {
         setError(data.error || 'Failed to send reset email');
       }
     } catch (err) {
-      console.error('Forgot password error:', err);
-      setError('Network error. Please try again.');
-    } finally {
       setIsLoading(false);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Forgot password error:', err);
+      }
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     }
   };
 

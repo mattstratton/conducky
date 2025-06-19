@@ -325,12 +325,16 @@ describe("Event endpoints", () => {
     });
 
     it("should create a report with evidence file upload", async () => {
+      // Use proper text content that will pass validation
+      const textContent = "This is a valid text file for testing evidence upload.";
+      
       const res = await request(app)
         .post("/api/events/1/reports")
-        .attach("evidence", Buffer.from("fake evidence data"), "evidence.txt")
+        .attach("evidence", Buffer.from(textContent), "evidence.txt")
         .field("type", "harassment")
         .field("description", "Test with file")
         .field("title", "A valid report title");
+      
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty("report");
       expect(res.body.report).toHaveProperty("title", "A valid report title");
@@ -515,9 +519,9 @@ describe("Event endpoints", () => {
       // Update type
       const updateRes = await request(app)
         .patch(`/api/events/1/reports/${reportId}/type`)
-        .send({ type: "discrimination" });
+        .send({ type: "safety" });
       expect(updateRes.statusCode).toBe(200);
-      expect(updateRes.body.report).toHaveProperty("type", "discrimination");
+      expect(updateRes.body.report).toHaveProperty("type", "safety");
     });
 
     it("should reject invalid contact preference", async () => {

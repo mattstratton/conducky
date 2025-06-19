@@ -154,7 +154,7 @@ export default function SystemEventSettings() {
     const inviteUrl = `${window.location.origin}/invite/${code}`;
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      // TODO: Show toast notification
+      alert('Invite link copied to clipboard!');
     } catch (error) {
       console.warn('Failed to copy to clipboard:', error);
       // Fallback: select text for manual copy
@@ -164,6 +164,7 @@ export default function SystemEventSettings() {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
+      alert('Invite link copied to clipboard!');
     }
   };
 

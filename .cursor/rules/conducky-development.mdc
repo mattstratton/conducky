@@ -7,6 +7,8 @@ alwaysApply: true
 
 ## Project Context Rules
 
+Development environment is in `docker compose`. Run all commands for the backend of frontend using `docker compose`. Do not remove any volumes from the docker compose environment without consulting the user.
+
 ### Core Principles
 - This is a code of conduct incident management system for conferences and events
 - Mobile-first design is critical - most reporters and responders use mobile devices

@@ -59,7 +59,9 @@ export default function ProfilePage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        console.error("[Avatar Upload] Failed to upload avatar", data.error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error("[Avatar Upload] Failed to upload avatar", data.error);
+        }
         setError(data.error || "Failed to upload avatar.");
       } else {
         setSuccess("Avatar updated!");

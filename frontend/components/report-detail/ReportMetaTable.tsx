@@ -106,7 +106,9 @@ export function ReportMetaTable({
       }
       setEditingField(null);
     } catch (error) {
-      console.error(`Failed to update ${field}:`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Failed to update ${field}:`, error);
+      }
       // Error handling is done by the parent component
     }
   };

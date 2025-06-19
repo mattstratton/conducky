@@ -105,6 +105,9 @@ export default function CrossEventReports() {
 
   // Fetch user's events for filter dropdown
   const fetchEvents = async () => {
+    setLoading(true);
+    setError('');
+    
     try {
       const response = await fetch(`${apiUrl}/api/users/me/events`, {
         credentials: 'include',
@@ -115,7 +118,12 @@ export default function CrossEventReports() {
         setEvents(data.events || []);
       }
     } catch (err) {
-      console.error('Error fetching events:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching events:', err);
+      }
+      setError(err instanceof Error ? err.message : 'Failed to load events');
+    } finally {
+      setLoading(false);
     }
   };
 
