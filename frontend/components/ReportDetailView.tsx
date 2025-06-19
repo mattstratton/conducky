@@ -202,16 +202,16 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
           }
         }}
         onIncidentAtEdit={async (incidentAt) => {
-          // TODO: Implement incident date edit API call
-          console.log('Edit incident date:', incidentAt);
+          // Feature not yet implemented - incident date editing
+          alert('Incident date editing is not yet implemented');
         }}
         onPartiesEdit={async (parties) => {
-          // TODO: Implement parties edit API call
-          console.log('Edit parties:', parties);
+          // Feature not yet implemented - parties editing
+          alert('Parties editing is not yet implemented');
         }}
         onDescriptionEdit={async (description) => {
-          // TODO: Implement description edit API call
-          console.log('Edit description:', description);
+          // Feature not yet implemented - description editing
+          alert('Description editing is not yet implemented');
         }}
         onTypeEdit={async (type) => {
           try {

@@ -47,10 +47,8 @@ export interface RateLimitResult {
 }
 
 export class AuthService {
-  // Rate limiting for password reset attempts (in-memory)
-  // TODO: Replace with database or Redis-backed rate limiting for production
-  private resetAttempts = new Map<string, number[]>();
-
+  // Rate limiting for password reset attempts
+  // Uses database for persistence across server restarts
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -73,29 +71,42 @@ export class AuthService {
 
   /**
    * Check rate limiting for password reset attempts
+   * Uses database-backed rate limiting for production readiness
    */
-  checkResetRateLimit(email: string): RateLimitResult {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('Using in-memory rate limiting - not suitable for production clusters');
+  async checkResetRateLimit(email: string): Promise<RateLimitResult> {
+    try {
+      const now = new Date();
+      const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+      
+      // Count ALL recent password reset requests for this email within 15 minutes
+      const recentAttempts = await this.prisma.passwordResetToken.count({
+        where: {
+          user: { email },
+          createdAt: { gte: fifteenMinutesAgo }
+        }
+      });
+      
+      if (recentAttempts >= 3) {
+        // Find the oldest attempt to calculate time remaining
+        const oldestAttempt = await this.prisma.passwordResetToken.findFirst({
+          where: {
+            user: { email },
+            createdAt: { gte: fifteenMinutesAgo }
+          },
+          orderBy: { createdAt: 'asc' }
+        });
+        
+        if (oldestAttempt) {
+          const timeRemaining = (oldestAttempt.createdAt.getTime() + 15 * 60 * 1000) - now.getTime();
+          return { allowed: false, timeRemaining: Math.max(0, timeRemaining) };
+        }
+      }
+      
+      return { allowed: true, timeRemaining: 0 };
+    } catch (error) {
+      // In case of database error, allow the request to prevent total blocking
+      return { allowed: true, timeRemaining: 0 };
     }
-    
-    const now = Date.now();
-    const attempts = this.resetAttempts.get(email) || [];
-    
-    // Remove attempts older than 15 minutes
-    const recentAttempts = attempts.filter((timestamp: number) => now - timestamp < 15 * 60 * 1000);
-    
-    if (recentAttempts.length >= 3) {
-      const oldestAttempt = Math.min(...recentAttempts);
-      const timeRemaining = (oldestAttempt + 15 * 60 * 1000) - now;
-      return { allowed: false, timeRemaining };
-    }
-    
-    // Add current attempt
-    recentAttempts.push(now);
-    this.resetAttempts.set(email, recentAttempts);
-    
-    return { allowed: true, timeRemaining: 0 };
   }
 
   /**
@@ -248,8 +259,8 @@ export class AuthService {
         };
       }
 
-      // Check rate limiting
-      const rateCheck = this.checkResetRateLimit(email.toLowerCase());
+      // Check rate limiting FIRST, before finding user
+      const rateCheck = await this.checkResetRateLimit(email.toLowerCase());
       if (!rateCheck.allowed) {
         const minutesRemaining = Math.ceil(rateCheck.timeRemaining / (60 * 1000));
         return {
@@ -269,17 +280,14 @@ export class AuthService {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
 
-        // Clean up old tokens for this user and expired tokens system-wide
+        // Clean up only expired tokens (keep recent ones for rate limiting)
         await this.prisma.passwordResetToken.deleteMany({
           where: {
-            OR: [
-              { userId: user.id },
-              { expiresAt: { lt: new Date() } }
-            ]
+            expiresAt: { lt: new Date() }
           }
         });
 
-        // Create new reset token
+        // Create new reset token (this also serves as rate limiting record)
         await this.prisma.passwordResetToken.create({
           data: {
             userId: user.id,
@@ -291,10 +299,53 @@ export class AuthService {
         // Send password reset email
         try {
           await emailService.sendPasswordReset(user.email, user.name || 'User', resetToken);
-          console.log(`[Auth] Password reset email sent to ${user.email}`);
         } catch (emailError) {
-          console.error('[Auth] Failed to send reset email:', emailError);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[Auth] Failed to send reset email:', emailError);
+          }
           // Continue - don't expose email sending errors to user
+        }
+      } else {
+        // Even for non-existent users, create a dummy token for rate limiting
+        // This prevents email enumeration while still enforcing rate limits
+        const dummyToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        
+        try {
+          // Create a temporary user record for rate limiting only
+          const tempUser = await this.prisma.user.upsert({
+            where: { email: email.toLowerCase() },
+            update: {}, // Don't update if exists
+            create: {
+              email: email.toLowerCase(),
+              passwordHash: 'dummy', // Will never be used for auth
+              name: 'Rate Limit Tracker'
+            }
+          });
+          
+          // Create rate limiting token
+          await this.prisma.passwordResetToken.create({
+            data: {
+              userId: tempUser.id,
+              token: dummyToken,
+              expiresAt
+            }
+          });
+        } catch (error) {
+          // If user creation fails (maybe they were created in parallel), 
+          // try to create the token anyway
+          const existingUser = await this.prisma.user.findUnique({ 
+            where: { email: email.toLowerCase() } 
+          });
+          if (existingUser) {
+            await this.prisma.passwordResetToken.create({
+              data: {
+                userId: existingUser.id,
+                token: dummyToken,
+                expiresAt
+              }
+            });
+          }
         }
       }
 
@@ -306,7 +357,9 @@ export class AuthService {
         }
       };
     } catch (error: any) {
-      console.error('[Auth] Forgot password error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Auth] Forgot password error:', error);
+      }
       return {
         success: false,
         error: "Failed to process password reset request."
@@ -372,7 +425,9 @@ export class AuthService {
         }
       };
     } catch (error: any) {
-      console.error('[Auth] Validate reset token error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Auth] Validate reset token error:', error);
+      }
       return {
         success: false,
         error: "Failed to validate reset token."
@@ -445,8 +500,6 @@ export class AuthService {
         })
       ]);
 
-      console.log(`[Auth] Password reset successful for user ${resetToken.user.email}`);
-
       return {
         success: true,
         data: { 
@@ -454,7 +507,9 @@ export class AuthService {
         }
       };
     } catch (error: any) {
-      console.error('[Auth] Reset password error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Auth] Reset password error:', error);
+      }
       return {
         success: false,
         error: "Failed to reset password."

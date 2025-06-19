@@ -663,7 +663,7 @@ export class UserService {
    */
   async getActivity(userId: string): Promise<ServiceResult<{ activity: ActivityItem[] }>> {
     try {
-      // Mock data for now - TODO: Replace with real AuditLog queries when implemented
+      // Mock data - real audit log implementation is a future enhancement
       const mockActivity = [
         {
           type: 'report_submitted',

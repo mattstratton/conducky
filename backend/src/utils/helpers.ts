@@ -40,43 +40,7 @@ export async function getUserRoleForEvent(userId: string, eventId: string): Prom
   return userEventRole?.role.name || null;
 }
 
-/**
- * Rate limiting for password reset attempts
- * In-memory rate limiting (should be replaced with Redis in production)
- */
-const resetAttempts = new Map<string, number[]>();
 
-/**
- * Check if email has exceeded rate limit for password reset
- * @param email - Email to check
- * @returns boolean - True if rate limited
- */
-export function checkResetRateLimit(email: string): boolean {
-  // TODO: Replace with database or Redis-backed rate limiting for production
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('Using in-memory rate limiting - not suitable for production clusters');
-  }
-  
-  const now = Date.now();
-  const attempts = resetAttempts.get(email) || [];
-  
-  // Remove attempts older than 1 hour
-  const recentAttempts = attempts.filter(timestamp => now - timestamp < 60 * 60 * 1000);
-  
-  // Update the attempts list
-  resetAttempts.set(email, recentAttempts);
-  
-  // Check if we've exceeded the limit (3 attempts per hour)
-  if (recentAttempts.length >= 3) {
-    return true; // Rate limited
-  }
-  
-  // Add this attempt
-  recentAttempts.push(now);
-  resetAttempts.set(email, recentAttempts);
-  
-  return false; // Not rate limited
-}
 
 /**
  * Generate a secure random token

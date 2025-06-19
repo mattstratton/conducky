@@ -757,9 +757,33 @@ class PrismaClient {
         }
         return token || null;
       }),
+      findFirst: jest.fn(({ where, orderBy }) => {
+        let results = inMemoryStore.passwordResetTokens;
+        
+        if (where) {
+          if (where.user && where.user.email) {
+            const user = inMemoryStore.users.find(u => u.email === where.user.email);
+            if (user) {
+              results = results.filter(t => t.userId === user.id);
+            } else {
+              return null; // No user found with that email
+            }
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            results = results.filter(t => new Date(t.createdAt) >= where.createdAt.gte);
+          }
+        }
+        
+        if (orderBy && orderBy.createdAt === 'asc') {
+          results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        }
+        
+        return results[0] || null;
+      }),
       create: jest.fn(({ data }) => {
         const token = {
           id: String(inMemoryStore.passwordResetTokens.length + 1),
+          createdAt: new Date(),
           ...data,
         };
         inMemoryStore.passwordResetTokens.push(token);
@@ -777,6 +801,25 @@ class PrismaClient {
           return inMemoryStore.passwordResetTokens[idx];
         }
         return null;
+      }),
+      count: jest.fn(({ where }) => {
+        let results = inMemoryStore.passwordResetTokens;
+        
+        if (where) {
+          if (where.user && where.user.email) {
+            const user = inMemoryStore.users.find(u => u.email === where.user.email);
+            if (user) {
+              results = results.filter(t => t.userId === user.id);
+            } else {
+              return 0; // No user found with that email
+            }
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            results = results.filter(t => new Date(t.createdAt) >= where.createdAt.gte);
+          }
+        }
+        
+        return results.length;
       }),
       deleteMany: jest.fn(({ where }) => {
         const before = inMemoryStore.passwordResetTokens.length;
