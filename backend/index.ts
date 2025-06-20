@@ -305,7 +305,7 @@ app.get('/api/config/email-enabled', (_req, res) => {
     } else if (config.provider === 'sendgrid') {
       enabled = !!(config.sendgrid && config.sendgrid.apiKey);
     } else if (config.provider === 'console') {
-      enabled = false; // Console provider is not real email
+      enabled = true; // Console provider is valid for testing
     }
     res.json({ enabled });
   } catch (err) {

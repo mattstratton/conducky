@@ -173,16 +173,51 @@ export class EmailService {
   }
 
   /**
-   * Render an email template with Handlebars
+   * Render an email template with the given data
    * @param templateName - Name of the template file (without extension)
-   * @param data - Data to inject into the template
+   * @param data - Data to pass to the template
    * @returns Rendered HTML string
    */
   private renderTemplate(templateName: string, data: Record<string, any>): string {
-    const templatePath = path.join(__dirname, '../../email-templates', `${templateName}.hbs`);
-    const templateSource = fs.readFileSync(templatePath, 'utf8');
-    const template = Handlebars.compile(templateSource);
-    return template(data);
+    // Validate and sanitize template name to prevent path traversal
+    if (!templateName || typeof templateName !== 'string') {
+      throw new Error('Invalid template name');
+    }
+    
+    // Remove any path traversal sequences and only allow alphanumeric, dash, underscore
+    const sanitizedTemplateName = templateName.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (sanitizedTemplateName !== templateName) {
+      throw new Error('Template name contains invalid characters');
+    }
+    
+    // Ensure template name is not empty after sanitization
+    if (!sanitizedTemplateName) {
+      throw new Error('Template name is empty after sanitization');
+    }
+    
+    try {
+      const templatePath = path.join(__dirname, '../../email-templates', `${sanitizedTemplateName}.hbs`);
+      
+      // Additional security: ensure the resolved path is within the email-templates directory
+      const emailTemplatesDir = path.resolve(__dirname, '../../email-templates');
+      const resolvedTemplatePath = path.resolve(templatePath);
+      
+      if (!resolvedTemplatePath.startsWith(emailTemplatesDir)) {
+        throw new Error('Template path is outside allowed directory');
+      }
+      
+      // Check if file exists before reading
+      if (!fs.existsSync(resolvedTemplatePath)) {
+        throw new Error(`Template file not found: ${sanitizedTemplateName}`);
+      }
+      
+      const templateSource = fs.readFileSync(resolvedTemplatePath, 'utf8');
+      const template = Handlebars.compile(templateSource);
+      return template(data);
+    } catch (error: any) {
+      console.error('Failed to render email template:', error);
+      throw new Error(`Template rendering failed: ${error.message}`);
+    }
   }
 
   /**

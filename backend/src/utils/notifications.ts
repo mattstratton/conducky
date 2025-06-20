@@ -65,13 +65,18 @@ export async function createNotification({
       // Fetch user email (assume userId is valid)
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user && user.email) {
-        await emailService.sendNotificationEmail({
-          to: user.email,
-          name: user.name || user.email,
-          subject: title,
-          message,
-          actionUrl: actionUrl || undefined,
-        });
+        try {
+          await emailService.sendNotificationEmail({
+            to: user.email,
+            name: user.name || user.email,
+            subject: title,
+            message,
+            actionUrl: actionUrl || undefined,
+          });
+        } catch (emailError) {
+          console.error('Failed to send notification email:', emailError);
+          // Continue with notification creation even if email fails
+        }
       }
     }
     return notification;
