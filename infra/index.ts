@@ -165,7 +165,6 @@ const frontendTaskDef = new aws.ecs.TaskDefinition("frontend-taskdef", {
         image: frontendImage,
         portMappings: [{ containerPort: 3000, hostPort: 3000, protocol: "tcp" }],
         environment: [
-          { name: "NODE_ENV", value: "production" },
           { name: "NEXT_PUBLIC_API_URL", value: `http://${backendDns}` },
           { name: "BACKEND_API_URL", value: `http://${backendDns}` }
         ],
@@ -196,7 +195,6 @@ const backendTaskDef = new aws.ecs.TaskDefinition("backend-taskdef", {
         image: backendImage,
         portMappings: [{ containerPort: 4000, hostPort: 4000, protocol: "tcp" }],
         environment: [
-          { name: "NODE_ENV", value: "production" },
           { name: "PORT", value: backendPort },
           { name: "DATABASE_URL", value: dbConn },
           { name: "JWT_SECRET", value: jwt },

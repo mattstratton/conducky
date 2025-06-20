@@ -86,6 +86,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   notifications  Notification[]
   socialAccounts SocialAccount[]
+  notificationSettings UserNotificationSettings?
 }
 
 model Event {
@@ -295,4 +296,26 @@ model RateLimitAttempt {
   
   @@index([key, type])
   @@index([expiresAt])
+}
+
+model UserNotificationSettings {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  reportSubmittedInApp   Boolean @default(true)
+  reportSubmittedEmail   Boolean @default(false)
+  reportAssignedInApp    Boolean @default(true)
+  reportAssignedEmail    Boolean @default(false)
+  reportStatusChangedInApp Boolean @default(true)
+  reportStatusChangedEmail Boolean @default(false)
+  reportCommentAddedInApp Boolean @default(true)
+  reportCommentAddedEmail Boolean @default(false)
+  eventInvitationInApp   Boolean @default(true)
+  eventInvitationEmail   Boolean @default(false)
+  eventRoleChangedInApp  Boolean @default(true)
+  eventRoleChangedEmail  Boolean @default(false)
+  systemAnnouncementInApp Boolean @default(true)
+  systemAnnouncementEmail Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

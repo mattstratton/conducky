@@ -5,6 +5,8 @@ import inviteRoutes from './invite.routes';
 import reportRoutes from './report.routes';
 import notificationRoutes from './notification.routes';
 import adminRoutes from './admin.routes';
+import userNotificationSettingsRoutes from './user-notification-settings';
+import configRoutes from './config.routes';
 
 export {
   authRoutes,
@@ -13,5 +15,7 @@ export {
   inviteRoutes,
   reportRoutes,
   notificationRoutes,
-  adminRoutes
-}; 
+  adminRoutes,
+  userNotificationSettingsRoutes,
+  configRoutes
+};

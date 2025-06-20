@@ -20,7 +20,18 @@ const inMemoryStore = {
     },
   ],
   reports: [{ id: "r1", eventId: "1", state: "submitted" }],
-  auditLogs: [],
+  auditLogs: [
+    // Example state change log for report r1
+    {
+      id: "al1",
+      targetType: "Report",
+      targetId: "r1",
+      action: "State changed from submitted to acknowledged",
+      userId: "1",
+      timestamp: new Date(),
+      user: { name: "Admin", email: "admin@example.com" }
+    }
+  ],
   eventLogos: [],
   eventInvites: [],
   userAvatars: [],
@@ -31,16 +42,33 @@ const inMemoryStore = {
   systemSettings: [
     { id: "1", key: "showPublicEventList", value: "false" }
   ],
+  evidenceFiles: [
+    {
+      id: "e1",
+      filename: "download.txt",
+      mimetype: "text/plain; charset=utf-8",
+      size: 10,
+      data: Buffer.from("downloadme"),
+      reportId: "r1",
+      report: {
+        id: "r1",
+        eventId: "1",
+        event: { id: "1", name: "Event1", slug: "event1" }
+      }
+    }
+  ],
 };
 
 class PrismaClient {
+  async $disconnect() {
+    // No-op for mock
+    return Promise.resolve();
+  }
   constructor() {
     this.event = {
       findUnique: jest.fn(
         ({ where }) =>
-          inMemoryStore.events.find(
-            (e) => e.id === where.id || e.slug === where.slug,
-          ) || null,
+          inMemoryStore.events.find((e) => e.id === where.id || e.slug === where.slug) || null
       ),
       create: jest.fn(({ data }) => {
         if (inMemoryStore.events.some((e) => e.slug === data.slug)) {
@@ -107,6 +135,13 @@ class PrismaClient {
         const user = inMemoryStore.users.find((u) => u.id === where.id);
         if (user) Object.assign(user, data);
         return user;
+      }),
+      delete: jest.fn(({ where }) => {
+        const idx = inMemoryStore.users.findIndex((u) => u.id === where.id);
+        if (idx !== -1) {
+          return inMemoryStore.users.splice(idx, 1)[0];
+        }
+        return null;
       }),
     };
     this.userEventRole = {
@@ -232,7 +267,7 @@ class PrismaClient {
           (uer) =>
             uer.userId === where.userId &&
             uer.eventId === where.eventId &&
-            uer.roleId === where.roleId,
+            uer.roleId === where.roleId
         );
         if (idx !== -1) {
           return inMemoryStore.userEventRoles.splice(idx, 1)[0];
@@ -247,7 +282,7 @@ class PrismaClient {
             if (where.eventId && uer.eventId !== where.eventId) return true;
             if (where.roleId && uer.roleId !== where.roleId) return true;
             return false;
-          },
+          }
         );
         return { count: before - inMemoryStore.userEventRoles.length };
       }),
@@ -259,16 +294,15 @@ class PrismaClient {
           }
           if (where.eventId) {
             results = results.filter(
-              (uer) => String(uer.eventId) === String(where.eventId),
+              (uer) => String(uer.eventId) === String(where.eventId)
             );
           }
           if (where.role && where.role.name) {
             results = results.filter(
-              (uer) => uer.role && uer.role.name === where.role.name,
+              (uer) => uer.role && uer.role.name === where.role.name
             );
           }
         }
-        // If include.role is true, populate the role property from inMemoryStore.roles
         if (include && include.role) {
           results = results.map((uer) => ({
             ...uer,
@@ -279,22 +313,19 @@ class PrismaClient {
         return results.length > 0 ? results[0] : null;
       }),
       upsert: jest.fn(async ({ where, update, create }) => {
-        // Find by unique keys (simulate composite unique constraint)
         const idx = inMemoryStore.userEventRoles.findIndex(
           (uer) =>
             uer.userId === where.userId &&
             uer.eventId === where.eventId &&
-            uer.roleId === where.roleId,
+            uer.roleId === where.roleId
         );
         if (idx !== -1) {
-          // Update existing
           inMemoryStore.userEventRoles[idx] = {
             ...inMemoryStore.userEventRoles[idx],
             ...update,
           };
           return inMemoryStore.userEventRoles[idx];
         } else {
-          // Create new
           const newRole = { ...create };
           inMemoryStore.userEventRoles.push(newRole);
           return newRole;
@@ -837,11 +868,14 @@ class PrismaClient {
       findUnique: jest.fn(({ where }) => {
         if (!inMemoryStore.evidenceFiles) return null;
         if (where.id) {
-          return (
-            inMemoryStore.evidenceFiles.find(
-              (e) => e.id === where.id,
-            ) || null
+          const found = inMemoryStore.evidenceFiles.find(
+            (e) => e.id === where.id,
           );
+          // Ensure .data is a Buffer (simulate DB binary storage)
+          if (found && !(found.data instanceof Buffer)) {
+            found.data = Buffer.from(found.data);
+          }
+          return found || null;
         }
         return null;
       }),
@@ -1124,21 +1158,18 @@ class PrismaClient {
           err.code = "P2025";
           throw err;
         }
-        
         const deleted = inMemoryStore.notifications[idx];
         inMemoryStore.notifications.splice(idx, 1);
         return deleted;
       }),
       groupBy: jest.fn(({ by, where, _count }) => {
         let results = [...inMemoryStore.notifications];
-        
         // Apply where filters
         if (where) {
           if (where.userId) {
             results = results.filter((n) => n.userId === where.userId);
           }
         }
-        
         // Group by the specified field
         const groups = {};
         results.forEach(notification => {
@@ -1148,7 +1179,6 @@ class PrismaClient {
           }
           groups[key].push(notification);
         });
-        
         // Return grouped results with counts
         return Object.keys(groups).map(key => {
           const result = {};
@@ -1353,6 +1383,57 @@ class PrismaClient {
           );
         }
         return { count: originalLength - inMemoryStore.systemSettings.length };
+      }),
+    };
+    this.userNotificationSettings = {
+      findUnique: jest.fn(({ where }) =>
+        inMemoryStore.userNotificationSettings?.find((s) => s.userId === where.userId) || null
+      ),
+      create: jest.fn(({ data }) => {
+        const newSettings = {
+          id: (Math.random() + 1).toString(36).substring(7),
+          ...{
+            reportSubmittedInApp: true,
+            reportSubmittedEmail: false,
+            reportAssignedInApp: true,
+            reportAssignedEmail: false,
+            reportStatusChangedInApp: true,
+            reportStatusChangedEmail: false,
+            reportCommentAddedInApp: true,
+            reportCommentAddedEmail: false,
+            eventInvitationInApp: true,
+            eventInvitationEmail: false,
+            eventRoleChangedInApp: true,
+            eventRoleChangedEmail: false,
+            systemAnnouncementInApp: true,
+            systemAnnouncementEmail: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          ...data,
+        };
+        if (!inMemoryStore.userNotificationSettings) inMemoryStore.userNotificationSettings = [];
+        inMemoryStore.userNotificationSettings.push(newSettings);
+        return newSettings;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.userNotificationSettings?.findIndex((s) => s.userId === where.userId);
+        if (idx === -1 || idx === undefined) throw new Error('Not found');
+        const updated = {
+          ...inMemoryStore.userNotificationSettings[idx],
+          ...data,
+          updatedAt: new Date(),
+        };
+        inMemoryStore.userNotificationSettings[idx] = updated;
+        return updated;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        if (!inMemoryStore.userNotificationSettings) return { count: 0 };
+        const before = inMemoryStore.userNotificationSettings.length;
+        inMemoryStore.userNotificationSettings = inMemoryStore.userNotificationSettings.filter(
+          (s) => s.userId !== where.userId
+        );
+        return { count: before - inMemoryStore.userNotificationSettings.length };
       }),
     };
     

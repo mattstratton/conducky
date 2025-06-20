@@ -49,19 +49,27 @@ export default function ProfileSettings() {
     confirm: false
   });
   
-  // Notification preferences state (placeholder for future implementation)
+  // Notification preferences state (now connected to backend)
   const [notifications, setNotifications] = useState({
-    emailReports: true,
-    emailAssignments: true,
-    emailComments: false,
-    pushNotifications: false
+    reportSubmittedEmail: false,
+    reportAssignedEmail: false,
+    reportCommentAddedEmail: false,
+    // Add more fields if you want to expose more notification types
+    pushNotifications: false // Placeholder for future push support
   });
-  
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifError, setNotifError] = useState('');
+  const [notifSuccess, setNotifSuccess] = useState('');
+
   // Privacy settings state (placeholder for future implementation)
   const [privacy, setPrivacy] = useState({
     showEmailToTeam: false,
     allowDirectMessages: true
   });
+
+  // Email enabled state
+  const [emailEnabled, setEmailEnabled] = useState<boolean | null>(null);
+  const [emailConfigError, setEmailConfigError] = useState('');
 
   // Initialize form with user data
   useEffect(() => {
@@ -72,6 +80,48 @@ export default function ProfileSettings() {
       });
     }
   }, [user]);
+
+  // Fetch notification settings from backend
+  useEffect(() => {
+    async function fetchNotificationSettings() {
+      setNotifLoading(true);
+      setNotifError('');
+      try {
+        const res = await fetch(`${apiUrl}/api/user/notification-settings`, {
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to fetch notification settings');
+        const data = await res.json();
+        setNotifications({
+          reportSubmittedEmail: !!data.reportSubmittedEmail,
+          reportAssignedEmail: !!data.reportAssignedEmail,
+          reportCommentAddedEmail: !!data.reportCommentAddedEmail,
+          pushNotifications: !!data.pushNotifications // fallback for future
+        });
+      } catch (err) {
+        setNotifError('Could not load notification settings.');
+      } finally {
+        setNotifLoading(false);
+      }
+    }
+    fetchNotificationSettings();
+  }, []);
+
+  // Check if email is enabled
+  useEffect(() => {
+    async function fetchEmailEnabled() {
+      try {
+        const res = await fetch(`${apiUrl}/api/config/email-enabled`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to check email config');
+        const data = await res.json();
+        setEmailEnabled(!!data.enabled);
+      } catch (err) {
+        setEmailEnabled(false);
+        setEmailConfigError('Could not determine email notification availability.');
+      }
+    }
+    fetchEmailEnabled();
+  }, []);
 
   // Password strength validation
   const validatePassword = (password: string) => {
@@ -175,6 +225,28 @@ export default function ProfileSettings() {
       setPasswordError('Network error. Please try again.');
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  // Update notification settings in backend
+  const handleNotificationChange = async (field: string, value: boolean) => {
+    setNotifications(prev => ({ ...prev, [field]: value }));
+    setNotifLoading(true);
+    setNotifError('');
+    setNotifSuccess('');
+    try {
+      const res = await fetch(`${apiUrl}/api/user/notification-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ [field]: value })
+      });
+      if (!res.ok) throw new Error('Failed to update notification settings');
+      setNotifSuccess('Notification settings updated.');
+    } catch (err) {
+      setNotifError('Could not update notification settings.');
+    } finally {
+      setNotifLoading(false);
     }
   };
 
@@ -390,59 +462,69 @@ export default function ProfileSettings() {
               Notification Preferences
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Configure how you want to receive notifications (coming soon)
+              {notifError && <span className="text-red-500">{notifError}</span>}
+              {notifSuccess && <span className="text-green-600">{notifSuccess}</span>}
+              {!notifError && !notifSuccess && 'Configure how you want to receive notifications.'}
             </p>
           </CardHeader>
           <CardContent>
+            {emailEnabled === false && (
+              <div className="mb-4 text-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200 rounded p-3">
+                Email notifications are currently unavailable. Please contact your administrator if you believe this is an error.
+              </div>
+            )}
+            {emailConfigError && (
+              <div className="mb-4 text-red-600 dark:text-red-400">{emailConfigError}</div>
+            )}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email notifications for new reports</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive emails when new reports are submitted in your events
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.emailReports}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailReports: checked }))}
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email notifications for assignments</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive emails when reports are assigned to you
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.emailAssignments}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailAssignments: checked }))}
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email notifications for comments</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive emails when someone comments on your reports
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.emailComments}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, emailComments: checked }))}
-                  disabled
-                />
-              </div>
-              
-              <Separator />
-              
+              {/* Email notification switches, hidden/disabled if email is not enabled */}
+              {emailEnabled !== false && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Email notifications for new reports</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive emails when new reports are submitted in your events
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!notifications.reportSubmittedEmail}
+                      onCheckedChange={(checked) => handleNotificationChange('reportSubmittedEmail', !!checked)}
+                      disabled={notifLoading || emailEnabled === false}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Email notifications for assignments</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive emails when reports are assigned to you
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!notifications.reportAssignedEmail}
+                      onCheckedChange={(checked) => handleNotificationChange('reportAssignedEmail', !!checked)}
+                      disabled={notifLoading || emailEnabled === false}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Email notifications for comments</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive emails when someone comments on your reports
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!!notifications.reportCommentAddedEmail}
+                      onCheckedChange={(checked) => handleNotificationChange('reportCommentAddedEmail', !!checked)}
+                      disabled={notifLoading || emailEnabled === false}
+                    />
+                  </div>
+                  <Separator />
+                </>
+              )}
+              {/* Push notifications always shown */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Push notifications</Label>
@@ -451,12 +533,22 @@ export default function ProfileSettings() {
                   </p>
                 </div>
                 <Switch
-                  checked={notifications.pushNotifications}
-                  onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, pushNotifications: checked }))}
-                  disabled
+                  checked={!!notifications.pushNotifications}
+                  onCheckedChange={(checked) => handleNotificationChange('pushNotifications', !!checked)}
+                  disabled={notifLoading}
                 />
               </div>
             </div>
+            {notifError && (
+              <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+                {notifError}
+              </div>
+            )}
+            {notifSuccess && (
+              <div className="mt-4 text-sm text-green-600 dark:text-green-400">
+                {notifSuccess}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -508,4 +600,4 @@ export default function ProfileSettings() {
       </div>
     </div>
   );
-} 
+}

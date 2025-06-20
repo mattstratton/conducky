@@ -1,4 +1,7 @@
 import nodemailer = require('nodemailer');
+import * as fs from 'fs';
+import * as path from 'path';
+import Handlebars from 'handlebars';
 
 /**
  * Email configuration for different providers
@@ -167,6 +170,19 @@ export class EmailService {
       });
       this.isInitialized = true;
     }
+  }
+
+  /**
+   * Render an email template with Handlebars
+   * @param templateName - Name of the template file (without extension)
+   * @param data - Data to inject into the template
+   * @returns Rendered HTML string
+   */
+  private renderTemplate(templateName: string, data: Record<string, any>): string {
+    const templatePath = path.join(__dirname, '../../email-templates', `${templateName}.hbs`);
+    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const template = Handlebars.compile(templateSource);
+    return template(data);
   }
 
   /**
@@ -401,7 +417,34 @@ The Conducky Team
       html,
     });
   }
+
+  /**
+   * Send a notification email using the externalized template
+   * @param to - Recipient email address
+   * @param name - User's display name
+   * @param subject - Email subject
+   * @param message - Main message content
+   * @param actionUrl - Optional action URL for button
+   * @returns Promise resolving to email result
+   */
+  async sendNotificationEmail({
+    to,
+    name,
+    subject,
+    message,
+    actionUrl
+  }: {
+    to: string;
+    name: string;
+    subject: string;
+    message: string;
+    actionUrl?: string;
+  }): Promise<EmailResult> {
+    const html = this.renderTemplate('notification', { name, subject, message, actionUrl });
+    const text = `${message}${actionUrl ? `\n\nView details: ${actionUrl}` : ''}`;
+    return await this.sendEmail({ to, subject, text, html });
+  }
 }
 
 // Create and export a singleton instance
-export const emailService = new EmailService(); 
+export const emailService = new EmailService();
