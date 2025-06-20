@@ -15,5 +15,9 @@ npx prisma migrate deploy
 echo "Building TypeScript..."
 npm run build
 
+echo "Copying email templates..."
+mkdir -p /app/dist/email-templates
+cp -r /app/email-templates/* /app/dist/email-templates/
+
 echo "Starting TypeScript backend server..."
 npm run start:ts 

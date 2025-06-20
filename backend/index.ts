@@ -25,7 +25,9 @@ import {
   inviteRoutes, 
   reportRoutes,
   notificationRoutes,
-  adminRoutes
+  adminRoutes,
+  userNotificationSettingsRoutes,
+  configRoutes
 } from './src/routes';
 
 // Import middleware
@@ -157,6 +159,8 @@ app.use('/invites', inviteRoutes); // Backward compatibility for tests
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/user/notification-settings', userNotificationSettingsRoutes); // Fix 404 error for /api/user/notification-settings
+app.use('/api/config', configRoutes); // Mount configRoutes at /api/config
 
 // Missing API routes that frontend expects
 // Session route (frontend expects /api/session)
@@ -288,6 +292,27 @@ app.get('/session', async (req: any, res: any) => {
   }
 });
 
+// Email config status endpoint
+import { EmailService } from './src/utils/email';
+
+app.get('/api/config/email-enabled', (_req, res) => {
+  try {
+    const emailService = new EmailService();
+    const config = (emailService as any).config;
+    let enabled = false;
+    if (config.provider === 'smtp') {
+      enabled = !!(config.smtp && config.smtp.host && config.smtp.port && config.smtp.auth && config.smtp.auth.user && config.smtp.auth.pass);
+    } else if (config.provider === 'sendgrid') {
+      enabled = !!(config.sendgrid && config.sendgrid.apiKey);
+    } else if (config.provider === 'console') {
+      enabled = true; // Console provider is valid for testing
+    }
+    res.json({ enabled });
+  } catch (err) {
+    res.status(500).json({ enabled: false, error: 'Could not determine email configuration.' });
+  }
+});
+
 // Testing/utility routes
 app.get('/audit-test', async (req: any, res: any) => {
   try {
@@ -343,4 +368,5 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-module.exports = app; 
+export default app;
+module.exports = app;

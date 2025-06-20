@@ -5,6 +5,7 @@ import { UserService } from '../services/user.service';
 import { InviteService } from '../services/invite.service';
 import { CommentService } from '../services/comment.service';
 import { NotificationService } from '../services/notification.service';
+import { notifyReportEvent } from '../utils/notifications';
 import { requireRole } from '../middleware/rbac';
 import { UserResponse } from '../types';
 import { PrismaClient, CommentVisibility } from '@prisma/client';
@@ -514,6 +515,16 @@ router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Admin', 
       return;
     }
 
+    // Trigger notifications for new report submission
+    try {
+      if (result.data?.report?.id) {
+        await notifyReportEvent(result.data.report.id, 'submitted', user.id);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications for new report:', notificationError);
+      // Don't fail the main operation if notifications fail
+    }
+
     res.status(201).json(result.data);
   } catch (error: any) {
     console.error('Create report error:', error);
@@ -652,13 +663,13 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Admin', 'SuperAd
     try {
       // Always notify about state change if state actually changed
       if (oldState !== stateValue) {
-        await notificationService.notifyReportEvent(reportId, 'report_status_changed', userId);
+        await notifyReportEvent(reportId, 'status_changed', userId);
       }
       
       // Notify about assignment if assignment changed
       if (assignedUserId && assignedUserId !== oldAssignedUserId) {
         // For assignments, don't exclude the assigned user even if they assigned it to themselves
-        await notificationService.notifyReportEvent(reportId, 'report_assigned', null);
+        await notifyReportEvent(reportId, 'assigned', null);
       }
     } catch (notificationError) {
       console.error('Failed to send notifications:', notificationError);
@@ -1334,6 +1345,16 @@ router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Admin'
       return;
     }
 
+    // Trigger notifications for new report submission
+    try {
+      if (result.data?.report?.id) {
+        await notifyReportEvent(result.data.report.id, 'submitted', user.id);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications for new report:', notificationError);
+      // Don't fail the main operation if notifications fail
+    }
+
     res.status(201).json(result.data);
   } catch (error: any) {
     console.error('Create report by slug error:', error);
@@ -1666,7 +1687,7 @@ router.post('/slug/:slug/reports/:reportId/comments', requireRole(['Reporter', '
 
     // Create notifications for comment added (exclude the comment author)
     try {
-      await notificationService.notifyReportEvent(reportId, 'comment_added', user.id);
+      await notifyReportEvent(reportId, 'comment_added', user.id);
     } catch (error) {
       console.error('Failed to create comment notification:', error);
       // Don't fail the request if notification creation fails

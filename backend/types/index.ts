@@ -273,6 +273,30 @@ export enum NotificationPriority {
   URGENT = 'urgent'
 }
 
+/**
+ * User notification settings (per-user preferences)
+ */
+export interface UserNotificationSettings {
+  id: string;
+  userId: string;
+  reportSubmittedInApp: boolean;
+  reportSubmittedEmail: boolean;
+  reportAssignedInApp: boolean;
+  reportAssignedEmail: boolean;
+  reportStatusChangedInApp: boolean;
+  reportStatusChangedEmail: boolean;
+  reportCommentAddedInApp: boolean;
+  reportCommentAddedEmail: boolean;
+  eventInvitationInApp: boolean;
+  eventInvitationEmail: boolean;
+  eventRoleChangedInApp: boolean;
+  eventRoleChangedEmail: boolean;
+  systemAnnouncementInApp: boolean;
+  systemAnnouncementEmail: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ============================================================================
 // API REQUEST/RESPONSE TYPES
 // ============================================================================
@@ -547,4 +571,4 @@ export interface AppConfig {
     from: string;
     replyTo?: string;
   };
-} 
+}

@@ -5,6 +5,8 @@
  */
 
 import { prisma } from '../config/database';
+import { getUserNotificationSettings } from '../services/user-notification-settings.service';
+import { emailService } from './email';
 
 /**
  * Create a notification for a user
@@ -44,6 +46,39 @@ export async function createNotification({
         actionUrl,
       },
     });
+
+    // Check user notification settings for email delivery
+    const settings = await getUserNotificationSettings(userId);
+    let shouldSendEmail = false;
+    // Type-safe mapping for settings key
+    const emailTypeMap: Record<string, keyof typeof settings> = {
+      report_submitted: 'reportSubmittedEmail',
+      report_assigned: 'reportAssignedEmail',
+      report_status_changed: 'reportStatusChangedEmail',
+      report_comment_added: 'reportCommentAddedEmail',
+      event_invitation: 'eventInvitationEmail',
+      event_role_changed: 'eventRoleChangedEmail',
+      system_announcement: 'systemAnnouncementEmail',
+    };
+    const emailTypeKey = emailTypeMap[type];
+    if (emailTypeKey && settings[emailTypeKey]) {
+      // Fetch user email (assume userId is valid)
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.email) {
+        try {
+          await emailService.sendNotificationEmail({
+            to: user.email,
+            name: user.name || user.email,
+            subject: title,
+            message,
+            actionUrl: actionUrl || undefined,
+          });
+        } catch (emailError) {
+          console.error('Failed to send notification email:', emailError);
+          // Continue with notification creation even if email fails
+        }
+      }
+    }
     return notification;
   } catch (error) {
     console.error('Failed to create notification:', error);
@@ -121,6 +156,9 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
             priority = 'normal';
         }
 
+        const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000';
+        const actionUrl = `${frontendBaseUrl}/events/${report.event.slug}/reports/${report.id}`;
+        
         return createNotification({
           userId: userRole.userId,
           type: type === 'submitted' ? 'report_submitted' : 
@@ -132,7 +170,7 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
           message,
           eventId: report.eventId,
           reportId: report.id,
-          actionUrl: `/events/${report.event.slug}/reports/${report.id}`,
+          actionUrl,
         });
       });
 
@@ -209,4 +247,4 @@ export async function getNotificationStats(userId: string) {
     console.error('Failed to get notification stats:', error);
     throw error;
   }
-} 
+}

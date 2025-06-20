@@ -497,13 +497,14 @@ export class NotificationService {
    */
   async createTestNotification(userId: string): Promise<ServiceResult<{ notification: any }>> {
     try {
+      const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000';
       const notification = await this.createNotification({
         userId,
         type: 'system_announcement' as NotificationType,
         priority: 'normal',
         title: 'Test Notification',
         message: 'This is a test notification to verify the notification system is working.',
-        actionUrl: '/dashboard'
+        actionUrl: `${frontendBaseUrl}/dashboard`
       });
 
       return notification;

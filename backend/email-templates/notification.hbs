@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{subject}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #ffffff; padding: 30px; border: 1px solid #dee2e6; }
+    .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .button:hover { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🦆 Conducky Notification</h1>
+    </div>
+    <div class="content">
+      <p>Hello {{name}},</p>
+      <p>{{message}}</p>
+      {{#if actionUrl}}
+      <div style="text-align: center;">
+        <a href="{{actionUrl}}" class="button">View Details</a>
+      </div>
+      {{/if}}
+    </div>
+    <div class="footer">
+      <p>This email was sent by Conducky Code of Conduct Management System</p>
+    </div>
+  </div>
+</body>
+</html>
