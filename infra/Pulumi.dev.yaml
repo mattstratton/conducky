@@ -1,10 +1,10 @@
 config:
   aws:region: us-east-1 # Set via pulumi config or environment variable
   aws:profile: conducky-pulumi
-  infra:corsOrigin: "https://frontend-alb-a2da796-1663715036.us-east-1.elb.amazonaws.com"
-  infra:dbPassword: "asdfasdfa"
-  infra:dbUsername: postgres
-  infra:frontendBaseUrl: "https://frontend-alb-a2da796-1663715036.us-east-1.elb.amazonaws.com"
-  infra:jwtSecret: "asdfasdfa"
-  infra:sessionSecret: "adsfasdfad"
-  infra:nextPublicApiUrl: "https://backend-alb-f39e316-23503587.us-east-1.elb.amazonaws.com"
+  infra:dbPassword:
+    secure: AAABALuHalYpZSFG5JTrkjxjTKU+eFoNOk5qswMyWY3ZRHCdZmA4wULeR5pgxVA=
+  infra:dbUsername: conducky
+  infra:jwtSecret:
+    secure: AAABAIdregvQGuNudxvCyBR3yz+O6QUupcAPvrJzbANCEZ44eTEt5l2a5gB2gzmf
+  infra:sessionSecret:
+    secure: AAABAKUy/7Yhi+zXdTAFm4P3NskYc1XD8npp7hQLSm3kwd9uCgEYIfdUr6a3O7O9Qg==
