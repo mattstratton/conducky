@@ -1,7 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
-import * as docker from "@pulumi/docker";
 
 // --- Managed VPC (using awsx) ---
 // Creates a new VPC with public and private subnets in 2 AZs
@@ -11,20 +10,6 @@ const vpc = new awsx.ec2.Vpc("conducky-vpc", {
 });
 const vpcId = vpc.vpcId;
 const publicSubnets = vpc.publicSubnetIds;
-
-// --- ECR Repositories ---
-const frontendRepo = new aws.ecr.Repository("frontend-repo", {
-    forceDelete: true,
-    imageScanningConfiguration: { scanOnPush: true },
-    tags: { Project: "conducky", Service: "frontend" },
-});
-const backendRepo = new aws.ecr.Repository("backend-repo", {
-    forceDelete: true,
-    imageScanningConfiguration: { scanOnPush: true },
-    tags: { Project: "conducky", Service: "backend" },
-});
-export const frontendRepoUrl = frontendRepo.repositoryUrl;
-export const backendRepoUrl = backendRepo.repositoryUrl;
 
 // --- ECS Cluster ---
 const cluster = new aws.ecs.Cluster("conducky-cluster", {
@@ -82,7 +67,7 @@ const db = new aws.rds.Instance("conducky-db", {
     tags: { Project: "conducky", Service: "db" },
 });
 export const dbEndpoint = db.endpoint;
-export const dbConnectionString = pulumi.interpolate`postgresql://${dbUsername}:${dbPassword}@${db.endpoint}:5432/${dbName}`;
+export const dbConnectionString = pulumi.interpolate`postgresql://${dbUsername}:${dbPassword.apply(p => encodeURIComponent(p))}@${db.endpoint}/${dbName}`;
 
 // --- Security Groups ---
 const ecsSg = new aws.ec2.SecurityGroup("ecs-sg", {
@@ -106,6 +91,13 @@ const frontendAlb = new aws.lb.LoadBalancer("frontend-alb", {
     subnets: publicSubnets,
     tags: { Project: "conducky", Service: "frontend" },
 });
+const backendAlb = new aws.lb.LoadBalancer("backend-alb", {
+    internal: false,
+    loadBalancerType: "application",
+    securityGroups: [ecsSg.id],
+    subnets: publicSubnets,
+    tags: { Project: "conducky", Service: "backend" },
+});
 const frontendTargetGroup = new aws.lb.TargetGroup("frontend-tg", {
     port: 3000,
     protocol: "HTTP",
@@ -119,13 +111,6 @@ new aws.lb.Listener("frontend-listener", {
     port: 80,
     protocol: "HTTP",
     defaultActions: [{ type: "forward", targetGroupArn: frontendTargetGroup.arn }],
-});
-const backendAlb = new aws.lb.LoadBalancer("backend-alb", {
-    internal: false,
-    loadBalancerType: "application",
-    securityGroups: [ecsSg.id],
-    subnets: publicSubnets,
-    tags: { Project: "conducky", Service: "backend" },
 });
 const backendTargetGroup = new aws.lb.TargetGroup("backend-tg", {
     port: 4000,
@@ -143,101 +128,108 @@ new aws.lb.Listener("backend-listener", {
 });
 
 // --- Pulumi Config for Environment Variables ---
-const frontendBaseUrl = config.require("frontendBaseUrl");
-const corsOrigin = config.require("corsOrigin");
 const jwtSecret = config.requireSecret("jwtSecret");
 const sessionSecret = config.requireSecret("sessionSecret");
-// DATABASE_URL is constructed from dbConnectionString
 const backendPort = "4000";
 const frontendPort = "3000";
-const nextPublicApiUrl = config.require("nextPublicApiUrl");
 
-// --- Docker Image Build and Push (Cross-Platform) ---
-// ECR credentials for authentication
-const frontendEcrCreds = aws.ecr.getCredentialsOutput({ registryId: frontendRepo.registryId });
-const backendEcrCreds = aws.ecr.getCredentialsOutput({ registryId: backendRepo.registryId });
+// --- Container Version Config ---
+const containerVersion = config.get("containerVersion") || "latest";
+const backendImage = `mattstratton/conducky-backend:${containerVersion}`;
+const frontendImage = `mattstratton/conducky-frontend:${containerVersion}`;
 
-// Helper to decode ECR auth token
-function ecrRegistryBlock(repoUrl: pulumi.Output<string>, authToken: pulumi.Output<string>) {
-    return pulumi.all([repoUrl, authToken]).apply(([url, token]) => {
-        const decoded = Buffer.from(token, "base64").toString();
-        const [username, password] = decoded.split(":");
-        return {
-            server: url.split("/")[0],
-            username,
-            password,
-        };
-    });
-}
-
-// Build and push frontend image for linux/amd64
-const frontendImage = new docker.Image("frontend-image", {
-    build: {
-        context: "../frontend",
-        dockerfile: "../frontend/Dockerfile",
-        platform: "linux/amd64",
-    },
-    imageName: pulumi.interpolate`${frontendRepo.repositoryUrl}:latest`,
-    registry: ecrRegistryBlock(frontendRepo.repositoryUrl, frontendEcrCreds.authorizationToken),
+// --- CloudWatch Log Group for ECS ---
+const logGroup = new aws.cloudwatch.LogGroup("conducky-ecs-logs", {
+    retentionInDays: 7,
+    tags: { Project: "conducky" },
 });
 
-// Build and push backend image for linux/amd64
-const backendImage = new docker.Image("backend-image", {
-    build: {
-        context: "../backend",
-        dockerfile: "../backend/Dockerfile",
-        platform: "linux/amd64",
-    },
-    imageName: pulumi.interpolate`${backendRepo.repositoryUrl}:latest`,
-    registry: ecrRegistryBlock(backendRepo.repositoryUrl, backendEcrCreds.authorizationToken),
-});
+// --- Container Resource Config (with defaults, overridable via Pulumi config) ---
+const frontendCpu = config.get("frontendCpu") || "512";
+const frontendMemory = config.get("frontendMemory") || "1024";
+const backendCpu = config.get("backendCpu") || "512";
+const backendMemory = config.get("backendMemory") || "1024";
 
 // --- Task Definitions ---
 const frontendTaskDef = new aws.ecs.TaskDefinition("frontend-taskdef", {
     family: "frontend-taskdef",
-    cpu: "256",
-    memory: "512",
+    cpu: frontendCpu,
+    memory: frontendMemory,
     networkMode: "awsvpc",
     requiresCompatibilities: ["FARGATE"],
     executionRoleArn: executionRole.arn,
     taskRoleArn: taskRole.arn,
-    containerDefinitions: pulumi.interpolate`[
+    containerDefinitions: pulumi.all([frontendAlb.dnsName, backendAlb.dnsName, logGroup.name]).apply(([frontendDns, backendDns, logGroupName]) => JSON.stringify([
       {
-        "name": "frontend",
-        "image": "${frontendImage.repoDigest}",
-        "portMappings": [{ "containerPort": 3000, "hostPort": 3000, "protocol": "tcp" }],
-        "environment": [
-          { "name": "NEXT_PUBLIC_API_URL", "value": "${nextPublicApiUrl}" }
+        name: "frontend",
+        image: frontendImage,
+        portMappings: [{ containerPort: 3000, hostPort: 3000, protocol: "tcp" }],
+        environment: [
+          { name: "NODE_ENV", value: "production" },
+          { name: "NEXT_PUBLIC_API_URL", value: `http://${backendDns}` },
+          { name: "BACKEND_API_URL", value: `http://${backendDns}` }
         ],
-        "essential": true
+        logConfiguration: {
+          logDriver: "awslogs",
+          options: {
+            "awslogs-group": logGroupName,
+            "awslogs-region": aws.config.region,
+            "awslogs-stream-prefix": "frontend"
+          }
+        },
+        essential: true
       }
-    ]`,
+    ])),
     tags: { Project: "conducky", Service: "frontend" },
 });
 const backendTaskDef = new aws.ecs.TaskDefinition("backend-taskdef", {
     family: "backend-taskdef",
-    cpu: "256",
-    memory: "512",
+    cpu: backendCpu,
+    memory: backendMemory,
     networkMode: "awsvpc",
     requiresCompatibilities: ["FARGATE"],
     executionRoleArn: executionRole.arn,
     taskRoleArn: taskRole.arn,
-    containerDefinitions: pulumi.interpolate`[
+    containerDefinitions: pulumi.all([frontendAlb.dnsName, backendAlb.dnsName, dbConnectionString, jwtSecret, sessionSecret, logGroup.name]).apply(([frontendDns, backendDns, dbConn, jwt, session, logGroupName]) => JSON.stringify([
       {
-        "name": "backend",
-        "image": "${backendImage.repoDigest}",
-        "portMappings": [{ "containerPort": 4000, "hostPort": 4000, "protocol": "tcp" }],
-        "environment": [
-          { "name": "PORT", "value": "${backendPort}" },
-          { "name": "DATABASE_URL", "value": "${dbConnectionString}" },
-          { "name": "JWT_SECRET", "value": "${jwtSecret}" },
-          { "name": "FRONTEND_BASE_URL", "value": "${frontendBaseUrl}" },
-          { "name": "SESSION_SECRET", "value": "${sessionSecret}" },
-          { "name": "CORS_ORIGIN", "value": "${corsOrigin}" }
+        name: "backend",
+        image: backendImage,
+        portMappings: [{ containerPort: 4000, hostPort: 4000, protocol: "tcp" }],
+        environment: [
+          { name: "NODE_ENV", value: "production" },
+          { name: "PORT", value: backendPort },
+          { name: "DATABASE_URL", value: dbConn },
+          { name: "JWT_SECRET", value: jwt },
+          { name: "SESSION_SECRET", value: session },
+          { name: "FRONTEND_BASE_URL", value: `http://${frontendDns}` },
+          { name: "CORS_ORIGIN", value: `http://${frontendDns}` },
+          { name: "EMAIL_PROVIDER", value: config.get("emailProvider") || "console" },
+          { name: "EMAIL_FROM", value: config.get("emailFrom") || "noreply@conducky.local" },
+          { name: "EMAIL_REPLY_TO", value: config.get("emailReplyTo") || "" },
+          { name: "SMTP_HOST", value: config.get("smtpHost") || "" },
+          { name: "SMTP_PORT", value: config.get("smtpPort") || "587" },
+          { name: "SMTP_SECURE", value: config.get("smtpSecure") || "false" },
+          { name: "SMTP_USER", value: config.get("smtpUser") || "" },
+          { name: "SMTP_PASS", value: config.get("smtpPass") || "" },
+          { name: "SENDGRID_API_KEY", value: config.getSecret("sendgridApiKey") || "" },
+          { name: "GOOGLE_CLIENT_ID", value: config.get("googleClientId") || "" },
+          { name: "GOOGLE_CLIENT_SECRET", value: config.getSecret("googleClientSecret") || "" },
+          { name: "GITHUB_CLIENT_ID", value: config.get("githubClientId") || "" },
+          { name: "GITHUB_CLIENT_SECRET", value: config.getSecret("githubClientSecret") || "" },
+          { name: "BACKEND_BASE_URL", value: `http://${backendDns}` },
+          { name: "FRONTEND_BASE_URL", value: `http://${frontendDns}` }
         ],
-        "essential": true
+        logConfiguration: {
+          logDriver: "awslogs",
+          options: {
+            "awslogs-group": logGroupName,
+            "awslogs-region": aws.config.region,
+            "awslogs-stream-prefix": "backend"
+          }
+        },
+        essential: true
       }
-    ]`,
+    ])),
     tags: { Project: "conducky", Service: "backend" },
 });
 const frontendService = new aws.ecs.Service("frontend-service", {
@@ -255,6 +247,7 @@ const frontendService = new aws.ecs.Service("frontend-service", {
         containerName: "frontend",
         containerPort: 3000,
     }],
+    healthCheckGracePeriodSeconds: 120, // Allow more time for the frontend to become healthy
     tags: { Project: "conducky", Service: "frontend" },
 });
 const backendService = new aws.ecs.Service("backend-service", {
@@ -272,6 +265,7 @@ const backendService = new aws.ecs.Service("backend-service", {
         containerName: "backend",
         containerPort: 4000,
     }],
+    healthCheckGracePeriodSeconds: 120, // Allow more time for the backend to become healthy
     tags: { Project: "conducky", Service: "backend" },
 });
 
