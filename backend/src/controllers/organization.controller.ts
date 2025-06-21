@@ -11,8 +11,31 @@ interface AuthenticatedRequest extends Request {
 }
 
 const organizationService = new OrganizationService();
-const prisma = new PrismaClient();
+// Use a singleton PrismaClient instance to avoid connection leaks
+let prismaInstance: PrismaClient | null = null;
+const getPrismaClient = () => {
+  if (!prismaInstance) {
+    prismaInstance = new PrismaClient();
+  }
+  return prismaInstance;
+};
+const prisma = getPrismaClient();
 const eventService = new EventService(prisma);
+
+// Helper function to check if user is SuperAdmin
+async function isSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    const userRoles = await prisma.userEventRole.findMany({
+      where: { userId },
+      include: { role: true },
+    });
+    
+    return userRoles.some(uer => uer.role.name === 'SuperAdmin');
+  } catch (error) {
+    console.error('Error checking SuperAdmin status:', error);
+    return false;
+  }
+}
 
 export class OrganizationController {
   /**
@@ -44,13 +67,15 @@ export class OrganizationController {
       }
 
       // Log audit event
-      await logAudit({
-        eventId: '', // No specific event for org creation
-        userId,
-        action: 'create_organization',
-        targetType: 'organization',
-        targetId: result.data!.organization.id,
-      });
+      if (result.data?.organization?.id) {
+        await logAudit({
+          eventId: '', // No specific event for org creation
+          userId,
+          action: 'create_organization',
+          targetType: 'organization',
+          targetId: result.data.organization.id,
+        });
+      }
 
       res.status(201).json(result.data);
     } catch (error: any) {
@@ -126,7 +151,7 @@ export class OrganizationController {
 
       const hasAccess = await organizationService.hasOrganizationRole(
         userId,
-        (organization as any).id
+        organization.id as string
       );
 
       if (!hasAccess) {
@@ -210,6 +235,13 @@ export class OrganizationController {
         return;
       }
 
+      // Verify SuperAdmin permission (defense in depth)
+      const isUserSuperAdmin = await isSuperAdmin(userId);
+      if (!isUserSuperAdmin) {
+        res.status(403).json({ error: 'SuperAdmin access required' });
+        return;
+      }
+
       const result = await organizationService.deleteOrganization(organizationId);
 
       if (!result.success) {
@@ -242,6 +274,13 @@ export class OrganizationController {
 
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // Verify SuperAdmin permission (defense in depth)
+      const isUserSuperAdmin = await isSuperAdmin(userId);
+      if (!isUserSuperAdmin) {
+        res.status(403).json({ error: 'SuperAdmin access required' });
         return;
       }
 
@@ -303,13 +342,15 @@ export class OrganizationController {
       }
 
       // Log audit event
-      await logAudit({
-        eventId: '',
-        userId,
-        action: 'add_organization_member',
-        targetType: 'organization_membership',
-        targetId: result.data!.membership.id,
-      });
+      if (result.data?.membership?.id) {
+        await logAudit({
+          eventId: '',
+          userId,
+          action: 'add_organization_member',
+          targetType: 'organization_membership',
+          targetId: result.data.membership.id,
+        });
+      }
 
       res.status(201).json(result.data);
     } catch (error: any) {
@@ -361,13 +402,15 @@ export class OrganizationController {
       }
 
       // Log audit event
-      await logAudit({
-        eventId: '',
-        userId,
-        action: 'update_organization_member_role',
-        targetType: 'organization_membership',
-        targetId: result.data!.membership.id,
-      });
+      if (result.data?.membership?.id) {
+        await logAudit({
+          eventId: '',
+          userId,
+          action: 'update_organization_member_role',
+          targetType: 'organization_membership',
+          targetId: result.data.membership.id,
+        });
+      }
 
       res.json(result.data);
     } catch (error: any) {
@@ -502,7 +545,7 @@ export class OrganizationController {
           contactEmail: contactEmail || null,
           codeOfConduct: codeOfConduct || null,
           organizationId,
-        } as any,
+        },
       });
 
       // Automatically assign the creator as event admin

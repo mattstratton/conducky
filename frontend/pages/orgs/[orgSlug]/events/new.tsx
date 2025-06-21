@@ -84,10 +84,12 @@ export default function NewEventInOrganization() {
   // Auto-generate slug from name
   useEffect(() => {
     if (formData.name) {
-      const slug = formData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+          const slug = formData.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 50);
       setFormData(prev => ({ ...prev, slug }));
     }
   }, [formData.name]);

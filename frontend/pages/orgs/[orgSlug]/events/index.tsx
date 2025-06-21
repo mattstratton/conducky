@@ -159,7 +159,7 @@ export default function OrganizationEvents() {
 
   const getEventStatus = (event: Event) => {
     if (event._count.reports > 0) {
-      return { label: 'Active', variant: 'destructive' as const };
+      return { label: 'Active', variant: 'default' as const };
     }
     return { label: 'Quiet', variant: 'secondary' as const };
   };
