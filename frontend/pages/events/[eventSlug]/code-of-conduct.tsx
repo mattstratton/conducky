@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 import { Card } from "../../../components/ui/card";
 
 interface Event {
@@ -55,7 +55,7 @@ export default function EventCodeOfConductPage() {
         </h2>
         {event.codeOfConduct ? (
           <div className="prose dark:prose-invert max-h-[70vh] overflow-y-auto">
-            <ReactMarkdown>{event.codeOfConduct}</ReactMarkdown>
+                            <SecureMarkdown type="event">{event.codeOfConduct}</SecureMarkdown>
           </div>
         ) : (
           <div className="text-gray-500 italic">

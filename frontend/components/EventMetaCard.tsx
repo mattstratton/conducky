@@ -1,5 +1,5 @@
 import React from "react";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 import { Card } from "./ui/card";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -455,7 +455,7 @@ export default function EventMetaCard({
                     </div>
                   </SheetHeader>
                   <div className="mt-6 prose dark:prose-invert max-h-[70vh] overflow-y-auto">
-                    <ReactMarkdown>{event.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown>
+                    <SecureMarkdown type="event">{event.codeOfConduct || "No code of conduct provided for this event."}</SecureMarkdown>
                   </div>
                 </SheetContent>
               </Sheet>

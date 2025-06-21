@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -412,7 +412,7 @@ export default function PublicEventPage() {
             </CardHeader>
             <CardContent>
               <div className="prose dark:prose-invert max-w-none max-h-96 overflow-y-auto">
-                <ReactMarkdown>{event.codeOfConduct}</ReactMarkdown>
+                                  <SecureMarkdown type="event">{event.codeOfConduct || ""}</SecureMarkdown>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button 
