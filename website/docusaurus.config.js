@@ -47,6 +47,8 @@ const config = {
           sidebarPath: './sidebars.js',
           routeBasePath: '/',
           editUrl: 'https://github.com/mattstratton/conducky/tree/main/website/',
+          docRootComponent: "@theme/DocRoot",
+          docItemComponent: "@theme/ApiItem",
         },
         blog: false,
         theme: {
@@ -55,6 +57,32 @@ const config = {
       }),
     ],
   ],
+
+  plugins: [
+    [
+      'docusaurus-plugin-openapi-docs',
+      {
+        id: 'conducky-api',
+        docsPluginId: 'classic',
+        config: {
+          conducky: {
+            specPath: '../backend/swagger.json',
+            outputDir: 'docs/api',
+            sidebarOptions: {
+              groupPathsBy: 'tag',
+              categoryLinkSource: 'tag',
+            },
+            downloadUrl: '/api-docs.json',
+            hideSendButton: false,
+            showSchemas: true,
+          },
+        },
+      },
+    ],
+
+  ],
+
+  themes: ["docusaurus-theme-openapi-docs"],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
@@ -92,6 +120,12 @@ const config = {
             label: 'Developer Docs',
           },
           {
+            type: 'docSidebar',
+            sidebarId: 'apiSidebar',
+            position: 'left',
+            label: 'API Reference',
+          },
+          {
             href: 'https://github.com/mattstratton/conducky',
             label: 'GitHub',
             position: 'right',
@@ -113,8 +147,12 @@ const config = {
                 to: '/admin-guide/intro',
               },
               {
-                label: 'Developer Docs',
+                                label: 'Developer Docs',
                 to: '/developer-docs/intro',
+              },
+              {
+                label: 'API Reference',
+                to: '/api',
               },
             ],
           },
@@ -137,26 +175,14 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ['bash', 'diff', 'json'],
+      },
+      colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: true,
       },
     }),
-
-  plugins: [
-    [
-      'docusaurus-plugin-react-docgen-typescript',
-      {
-        src: ['../frontend/components/**/*.tsx'],
-        ignore: ['../frontend/components/**/*test.*'],
-        parserOptions: {
-          propFilter: (prop, component) => {
-            if (prop.parent) {
-              return !prop.parent.fileName.includes('@types/react');
-            }
-            return true;
-          },
-        },
-      },
-    ],
-  ],
 };
 
 export default config;

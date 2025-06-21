@@ -1,0 +1,71 @@
+---
+id: create-a-new-event
+title: "Create a new event"
+description: "Create a new event (admin only)"
+sidebar_label: "Create a new event"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVluP0zoQ/iuWn0DqjQXpiD5RYJFWgM6KBZ2HVR/cZNqadezgS6GK+t/PjJ02SZNdFsQjL61jz3ye+ebminuxcXx+yy93oL3jyxHPwWVWll4azef8jQXhgQmm4TsDEmJPRF5IzYxW+6d8xB1kwUq/R5QKP5xDxUXwW/xeHhDPwrcAzr82OYpU8VNayPnc2wAjnhntEZWORFkqmQm6efrV0fUImG2hELTy+xLQILP6CpnHe0trSrBegqNTLQpoSTlvpd7wA5qnwmbwoOPnkKIX1r9F5/unI742thBoNM9JAKVB54+WJZdF5i8LIdWDChAlDodRi7Xb5GrtWNvMxoizK5aHQ8JwpdEu8XUxe0Z/3WDHJGBZDHnOXMgyDOc6KLXnfyxQMn/Q5RBQ4DwJk11BS8wkJnP8kGsJlrgcjvswQJS9NyWGdb58+sCi/M8yZli9vYcI0i0yL3dti1fGKBC6p//fFvwWLMOfuu6kY1hpFpdqz0TC+bU8HbYxArBfTuRhMFRnv5nnvdaT1Fk8ZSjccBHRU5ou/E9NHXtZ3GdvRMENRjLIRFHGevPSKzgK8VQ/L2azfslc6Z1QMmdSl8H/uSpBW5zYPCazrUVijuKR9PzRalE2JrZHit2QWV21RZ5LWgrFICIcNTuc0cmJs+d9zt4Zu5I5ljEbszRLROw07NTl/vLY4RE3C+wGBlsnL42LbgqasHwqSjmFNLtpFNsdWBcncbBYc3zrfTmfTpXJhNqi5hyTeNYz5y0iKFMWsRtEDPSmDeEQA2+aYFTykN3tcVH0UK6twcNYTEeQZfM8uKGIpaB0HgknqhD/PdCgkQSWGXMnqWhTg6d80MjkxA2Mh5uEN14Jh2NLICxNiJQxkVHKmk/NM+TyB5a5gubZ0EQ3jYb7ot2INT0XJ+nFi/Hsn/HFy9YEPtvudkIekJ9XkKyIVNJo0GsT2aij/6ammi2urxCB4pqMeDaZTfohRKnYIk9qY1zmwMy63sL5obM4O1khNCZ5ivbeeSgaC1ucnJBuQlkaS0nXTYizZIDaOZfEX3WO0UGsYcDXR+uGj1efe6BYvNqZYDOYGLuZ1kpuSrIUSkp/tL9tZ++Fek5O1XSTR7xn63T08MNPSyVkHNzRyKquulvKVfL49Gam0qL9qqIc/GLV4UDbmHGW3sW43AkrxYoii69iVACRY4FQod5h0qdhh2jjz3Q7iauQiuKs91FdJo0F9szSPyi7bPWN639viO1V/QwvYnvjVnzHTfqdc1yYyFgs0rhXcSX0JsQOyhMmBUH0KvcuVm69IK+OR3rfsrBbxMkN+iWnBhWqKnUFpPMon47u1aiJPUpT9Oj5+z+XP2+I
+sidebar_class_name: "post api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create a new event"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/api/events"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Create a new event (admin only)
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string"},"slug":{"type":"string"},"description":{"type":"string"},"startDate":{"type":"string","format":"date"},"endDate":{"type":"string","format":"date"},"contactEmail":{"type":"string","format":"email"}},"required":["name","slug","startDate","endDate","contactEmail"]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Event created successfully","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Event unique identifier"},"name":{"type":"string","description":"Event name"},"slug":{"type":"string","description":"Event URL slug"},"description":{"type":"string","description":"Event description"},"isActive":{"type":"boolean","description":"Whether the event is currently active"},"startDate":{"type":"string","format":"date","description":"Event start date"},"endDate":{"type":"string","format":"date","description":"Event end date"},"contactEmail":{"type":"string","format":"email","description":"Contact email for the event"},"createdAt":{"type":"string","format":"date-time","description":"Event creation timestamp"}},"title":"Event"}}}},"400":{"description":"Invalid input","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Error message"},"code":{"type":"string","description":"Error code"},"details":{"type":"object","description":"Additional error details"}},"title":"Error"}}}},"403":{"description":"Forbidden - admin access required","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Error message"},"code":{"type":"string","description":"Error code"},"details":{"type":"object","description":"Additional error details"}},"title":"Error"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

@@ -1,0 +1,71 @@
+---
+id: user-login
+title: "User login"
+description: "Authenticate user with email and password"
+sidebar_label: "User login"
+hide_title: true
+hide_table_of_contents: true
+api: eJytVktv2zgQ/isEz4mdLnryqd6NsQi2TY04wR4CH2iKttlIpMqHU8PQf99vSNqRH+imQH2wSHHmm9c3Q+14ECvPR898HMNamaClCNoaPr/ilfLS6TZtR/1zxaJXjr3qsGaqEbpmwlSsFd6/WlfxK+7U96h8+NNWWz7apa12quKj4KK64tKaACg6Em1bF5PDb54M7biXa6DSKmxbBdN28U3JANzW2Va5oJWn02S6J+aD02YFsaV1jQB8keiguPftTLrrrnr+PReVnsa867KMb63x2fIfNzf0OE7QZ7vShvkopfJ+GQnkNwVaMHuCC2trJQyFRqX4fwh9IfReomLUVLfjgJ6oyNFo1JLpimq/1LAFm+/N/EXEwpiqchQT0Jba+XAvGnUJ8QJAkmeGFKBdi19SJvGDrkMWL+kpExsiw+xpOnkY3365u8fL/fNhMpt+vb+d3D9i8/fTZPZ43izJ1Kq2C1GzZATGtB/LoDfqQhlP1f9dKzSbY/jLrSaktNEEpj2WCQSA0in0YjUOP61EBZnroBHwWUcX0ISDV4ykfBBNm7oi6EDZSbHwrstt8PHmwznz78xG1LoioEQTUfvfR3645MXqHeWdOGcd24tTfmz1brUk29FZADv9JbdOkldVmpYosEoIe81+6hI2L6lrUFOLNuSt9SlMEdbYDUWrhwLDdVjTAMEB8r1RjobyjkeHPuPrENrREAJS1Gtojz7eYAKdunSrNqq2bYOks4yBiPoQHhiwNkBlqihftlg0ZyhTZ3GY+LAHmZNPMjodtskpTEGPc7oRsJ/3z2dU1TK1+lKHdML+P2oLq5qMSWtfNDEzdSTtjUG2B/7COJplvOuF8Kpi4vi6ogQTsx7ebp7JDzA593eZV2lWflL5fQn+7WY43Ajk29Imn0sd/yoJY+PpHXSoOtmnD4ObwXkhIMXQf+ygdo1lpZhdlldoZCPTSGWNMKBrrtnWB9WUzkGbkwclLwekWWxb64g+x2U9Kek+YJ/FPx0d09DUUuEy61n4cvd4Boo2NN5GJ9XAutWwKPkhyVLCicjwv4eSR2zh8VFSdm/z4Jc+JQptgvoRhm0tdL7zXLp9cgc9E6cgSYzAI1sHJalR6HS3I8Y8ubrr6DX44YjGWG6E02JBFQaJoaBERXcpGP4Ciqask8fXj+QDidcxU/hkmlGXZQ2MVNWGn8rOe5Ng+nVGWV+U76QmDSzuxCt9Q+F/xLGwKYOppdK7Ha48s4ppJvKMSb//AJ85YyQ=
+sidebar_class_name: "post api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"User login"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/api/auth/login"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Authenticate user with email and password
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"email":{"type":"string","format":"email"},"password":{"type":"string"}},"required":["email","password"]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Login successful","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"user":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"User unique identifier"},"email":{"type":"string","format":"email","description":"User email address"},"firstName":{"type":"string","description":"User first name"},"lastName":{"type":"string","description":"User last name"},"role":{"type":"string","enum":["SUPERADMIN","ADMIN","RESPONDENT","GUEST"],"description":"User global role"},"isActive":{"type":"boolean","description":"Whether the user account is active"},"createdAt":{"type":"string","format":"date-time","description":"Account creation timestamp"}},"title":"User"}}}}}},"401":{"description":"Invalid credentials","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Error message"},"code":{"type":"string","description":"Error code"},"details":{"type":"object","description":"Additional error details"}},"title":"Error"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

@@ -1,0 +1,71 @@
+---
+id: create-a-new-report
+title: "Create a new report"
+description: "Submit a new incident report"
+sidebar_label: "Create a new report"
+hide_title: true
+hide_table_of_contents: true
+api: eJytV21v4jgQ/iuRP91J5bUt3eXTsZC9RteWCuiu7ipUmcSAdxM7ZzvtIsR/vxk7QAjpy1Xth+LY42dePPOMvSaGLjTp3pMRS6UymkxPSMR0qHhquBSkS8bZLOHGo55gTx4XIY+YMJ6y4uSEKPZvxrT5IqMV6a7tJ1csIl2jMnZCQikMyOMSTdOYhxRhGz80Yq+JDpcsoTgyq5SBNjn7wULETZVMmTKcabvKTcwKYtooLhZkUzK2Yt1NlBdOCBNZgn73hwP/Yfj1oT+8Gdz1J7By2Rv1xuNr/wY/xr2v/uRvGAwnl/6ITAFxG4OeqcKdS5VQWCERNaxmeMLQilg6xytNTKn1MxCPMn7E0FXIYBxpaG4VmzPFRPiiT/51L7iC79vL4Y0Pvzf4Y03XPSHFKpGZLuyfSRkzKlANewTHggoTCo5lGY/IZnNSOOv7/IAOjyMP/h51utm4fTqVQruTbTdb+HOYcy4ZvVAxCGLk6SwMmdbzLI5X5MNyir/BzXIx5IZlgkPWezYN+JwzZTOtOkefgbDSDZ0lCVWrVxO5DDJghvIYQuPq0CuufnzSl7VPANaT8y0JgEJtqDnIqSOV47sv18Fk4g9g7u5m4I8eRv63wP8OnyN/PLz6Zlf6V8MxDI409jOlkHacHtRtlqyoH1JMcbN6yYKrISq79gfB3TV6HPx5iRpHwSTo964qiC/H9GIYxFud2+on72GCsorvSyYOUD0Zhuhq9DJpVOAo9jzQqwRTxrt1GwDN7YDBkfMfwEhHai0WGO3l4F7CzFJGHoSycOCu3F7msooIAUARxXuiGpgFmxtyDN2Cxav/RYRlRT2tZcgtbVkMLxgQy3nO8vdAjvK9XqbhXzDwfhPAhDYoO6t/h104S2fIQdh7QSnVmi8EiybynZ7Y3Z7ja5tVuQVVynKyfnctFDkfZjwUgnJPUgxflkYfAR5TDT5YrCL+nrxzQeIa1VmzedyboIpozLEk0sx8XDcCYzRdvKF/+ErBwW/FbSFGb95mZW2zwf6hq8wqJUEUcRzS2GMWYbuzGDSLbWMGk65kYTaV2rpJzRK+GjTlDZVfMpGwFbAr3jzXJFMxCCyNSbuNBpJevIStXYh+s6LxARfLNLHNwGKAO0UIDRigqg7HEmXhzxUMkmN+UxIWbZptQaZoE1CmbSJgFFxPNKz3MrT+flpcH+ORulM7kNrFEvT/xfCmwlFZKOVPjikpaMLstxAQ6rquqLmxw6vNqEZOAli8YeRtAKOLaTXaX7n9X5DA+a0jP4xnzn83ndt4fAUodjO4lrXPas2LWvvzpHXePW9125/qzYvWP6TYlvagRx1mv1TRJ3bt4IDD3YNhR7zkdE4/nc87Z7Xzi9ZF7ey8067NTudhrR1+7pzOOx06px3XheeyGIB+fvJe7zYAHZhmztpWvVk/ziiQslS621aDYWTvN27K7JtqQgUUnUu+lTYs2fuHFuQHvEMaZ2n+SjrMz1JuAj9wXNZO/I+DZbwH8JDBdbmgAW5SR6BAJkLLTIWsLtWikW/SDZTFzMFyBPuLdlrGzl92uwdd6R66o7fXHoJ5Xhn2yzTSmHJ7EbUmrnMOuMfCINteaJ+aWOi4sF5jxt+peLPBachvhWUIw0equOsz9/iCWTIaQblihf6EErPBRvtqE/fUAG7OXAmWqBhZwu3owWMiNS/KTgs0djscY7Bn+QM3sWxLFH1CT+B/l8BA2nhZSrBzaxJTscgsoROHiX//AaVlRoY=
+sidebar_class_name: "post api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create a new report"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/api/reports"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Submit a new incident report
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"title":{"type":"string"},"description":{"type":"string"},"type":{"type":"string","enum":["CODE_OF_CONDUCT","HARASSMENT","SAFETY","OTHER"]},"incidentAt":{"type":"string","format":"date-time"},"location":{"type":"string"},"partiesInvolved":{"type":"string"},"contactPreference":{"type":"string","enum":["EMAIL","PHONE","NONE"]},"isAnonymous":{"type":"boolean"},"eventId":{"type":"string","format":"uuid"}},"required":["title","description","type","eventId"]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Report created successfully","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Report unique identifier"},"title":{"type":"string","description":"Report title/summary"},"description":{"type":"string","description":"Detailed report description"},"type":{"type":"string","enum":["CODE_OF_CONDUCT","HARASSMENT","SAFETY","OTHER"],"description":"Type of report"},"status":{"type":"string","enum":["SUBMITTED","UNDER_REVIEW","RESOLVED","CLOSED"],"description":"Current status of the report"},"severity":{"type":"string","enum":["LOW","MEDIUM","HIGH","CRITICAL"],"description":"Severity level of the incident"},"incidentAt":{"type":"string","format":"date-time","description":"When the incident occurred"},"location":{"type":"string","description":"Where the incident occurred"},"partiesInvolved":{"type":"string","description":"Parties involved in the incident"},"contactPreference":{"type":"string","enum":["EMAIL","PHONE","NONE"],"description":"Preferred contact method for the reporter"},"isAnonymous":{"type":"boolean","description":"Whether the report was submitted anonymously"},"eventId":{"type":"string","format":"uuid","description":"Associated event ID"},"reporterId":{"type":"string","format":"uuid","description":"Reporter user ID (null for anonymous)","nullable":true},"assignedToId":{"type":"string","format":"uuid","description":"Assigned respondent user ID","nullable":true},"createdAt":{"type":"string","format":"date-time","description":"Report creation timestamp"},"updatedAt":{"type":"string","format":"date-time","description":"Report last update timestamp"}},"title":"Report"}}}},"400":{"description":"Invalid input","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Error message"},"code":{"type":"string","description":"Error code"},"details":{"type":"object","description":"Additional error details"}},"title":"Error"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      
