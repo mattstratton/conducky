@@ -350,7 +350,7 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
         const userEventRole = targetEvent?.role;
         
         // Check role permissions
-        const isEventAdmin = userEventRole === 'Admin' || isSuperAdmin;
+        const isEventAdmin = userEventRole === 'Event Admin' || isSuperAdmin;
         const isEventResponder = userEventRole === 'Responder' || isEventAdmin;
 
         // Base navigation items (available to all roles)
