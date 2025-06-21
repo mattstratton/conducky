@@ -313,7 +313,8 @@ export class UserService {
     total: number; 
     page: number; 
     limit: number; 
-    totalPages: number; 
+    totalPages: number;
+    canViewAssignments: boolean;
   }>> {
     try {
       const {
@@ -360,7 +361,7 @@ export class UserService {
       if (userEventRoles.length === 0) {
         return {
           success: true,
-          data: { reports: [], total: 0, page: pageNum, limit: limitNum, totalPages: 0 }
+          data: { reports: [], total: 0, page: pageNum, limit: limitNum, totalPages: 0, canViewAssignments: false }
         };
       }
 
@@ -459,7 +460,7 @@ export class UserService {
           // User doesn't have access to this event
           return {
             success: true,
-            data: { reports: [], total: 0, page: pageNum, limit: limitNum, totalPages: 0 }
+            data: { reports: [], total: 0, page: pageNum, limit: limitNum, totalPages: 0, canViewAssignments: false }
           };
         }
       }
@@ -519,6 +520,8 @@ export class UserService {
         userRoles: eventRoles.get(report.eventId)?.roles || []
       }));
 
+      const canViewAssignments = responderAdminEvents.length > 0;
+
       return {
         success: true,
         data: {
@@ -526,7 +529,8 @@ export class UserService {
           total,
           page: pageNum,
           limit: limitNum,
-          totalPages: Math.ceil(total / limitNum)
+          totalPages: Math.ceil(total / limitNum),
+          canViewAssignments
         }
       };
     } catch (error: any) {
