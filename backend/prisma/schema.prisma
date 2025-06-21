@@ -69,6 +69,11 @@ enum SocialProvider {
   github
 }
 
+enum OrganizationRole {
+  org_admin
+  org_viewer
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -87,6 +92,9 @@ model User {
   notifications  Notification[]
   socialAccounts SocialAccount[]
   notificationSettings UserNotificationSettings?
+  organizationMemberships OrganizationMembership[]
+  createdOrganizations Organization[] @relation("OrganizationCreator")
+  createdMemberships OrganizationMembership[] @relation("MembershipCreator")
 }
 
 model Event {
@@ -102,6 +110,8 @@ model Event {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  organizationId String?  // Nullable initially for migration
+  organization   Organization? @relation(fields: [organizationId], references: [id])
   userEventRoles UserEventRole[]
   reports        Report[]
   auditLogs      AuditLog[]
@@ -163,6 +173,8 @@ model AuditLog {
   targetType String
   targetId   String
   timestamp  DateTime @default(now())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 }
 
 model EventInviteLink {
@@ -318,4 +330,49 @@ model UserNotificationSettings {
   systemAnnouncementEmail Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  website     String?
+  logoUrl     String?
+  settings    String?  // JSON string for flexible settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("OrganizationCreator", fields: [createdById], references: [id])
+  createdById String
+  
+  // Relationships
+  memberships OrganizationMembership[]
+  events      Event[]
+  auditLogs   AuditLog[]
+  logo        OrganizationLogo?
+}
+
+model OrganizationMembership {
+  id             String           @id @default(uuid())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  role           OrganizationRole
+  createdAt      DateTime         @default(now())
+  createdBy      User?            @relation("MembershipCreator", fields: [createdById], references: [id])
+  createdById    String?
+  
+  @@unique([organizationId, userId])
+}
+
+model OrganizationLogo {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String       @unique
+  filename       String
+  mimetype       String
+  size           Int
+  data           Bytes
+  createdAt      DateTime     @default(now())
 }

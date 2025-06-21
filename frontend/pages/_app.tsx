@@ -42,6 +42,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [user, setUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [events, setEvents] = useState<Array<{ name: string; url: string; icon: React.ElementType; role?: string }>>([]);
+  const [organizations, setOrganizations] = useState<Array<{ name: string; slug: string; role?: string }>>([]);
   const [globalRoles, setGlobalRoles] = useState<string[]>([]);
   const router = useRouter();
   const eventSlugMatch = router.asPath.match(/^\/events\/([^/]+)/);
@@ -135,6 +136,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
 
   useEffect(() => {
     if (user) {
+      // Fetch user's events
       fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/users/me/events", {
         credentials: "include",
       })
@@ -157,9 +159,30 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
           setEvents([]);
           setGlobalRoles([]);
         });
+
+      // Fetch user's organizations
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000") + "/api/organizations/me", {
+        credentials: "include",
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.organizations)) {
+            setOrganizations(
+              data.organizations.map((org: { name: string; slug: string; membership?: { role: string } }) => ({
+                name: org.name,
+                slug: org.slug,
+                role: org.membership?.role,
+              }))
+            );
+          }
+        })
+        .catch(() => {
+          setOrganizations([]);
+        });
     } else {
-      // Clear events and global roles when user is logged out or session is lost
+      // Clear events, organizations, and global roles when user is logged out or session is lost
       setEvents([]);
+      setOrganizations([]);
       setGlobalRoles([]);
     }
   }, [user]);
@@ -194,7 +217,7 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                       email: user.email || "",
                       avatar: user.avatarUrl || "",
                       roles: user.roles || [],
-                    }} events={events} globalRoles={globalRoles} />
+                    }} events={events} organizations={organizations} globalRoles={globalRoles} />
                     <main className="flex-1 bg-background text-foreground pb-10">
                       <Component {...pageProps} />
                     </main>

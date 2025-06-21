@@ -7,6 +7,7 @@ import notificationRoutes from './notification.routes';
 import adminRoutes from './admin.routes';
 import userNotificationSettingsRoutes from './user-notification-settings';
 import configRoutes from './config.routes';
+import organizationRoutes from './organization.routes';
 
 export {
   authRoutes,
@@ -17,5 +18,6 @@ export {
   notificationRoutes,
   adminRoutes,
   userNotificationSettingsRoutes,
-  configRoutes
+  configRoutes,
+  organizationRoutes
 };

@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useMemo } from "react"
 import {
   BookOpen,
+  Building2,
   ClipboardList,
   Home,
   Settings2,
   Users,
   Shield,
-  UserCog,
   type LucideIcon,
 } from "lucide-react"
 import { useRouter } from "next/router"
 
 import { NavMain } from "@/components/nav-main"
 import { NavEvents } from "@/components/nav-projects"
+import { NavOrganizations } from "@/components/nav-organizations"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -23,7 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ user, events, globalRoles, ...props }: {
+export function AppSidebar({ user, events, organizations, globalRoles, ...props }: {
   user: {
     name: string
     email: string
@@ -36,6 +37,11 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
     icon: React.ElementType
     role?: string
   }[]
+  organizations: {
+    name: string
+    slug: string
+    role?: string
+  }[]
   globalRoles?: string[]
 } & React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
@@ -43,6 +49,9 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
   
   // Track the user's selected event (persists when navigating out of event context)
   const [selectedEventSlug, setSelectedEventSlug] = useState<string | null>(null);
+  
+  // Track the user's selected organization (persists when navigating out of org context)
+  const [selectedOrgSlug, setSelectedOrgSlug] = useState<string | null>(null);
   
   // Track unread notification count
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -60,6 +69,16 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
     }
   }, [router.asPath]);
   
+  // Update selected organization when in organization context
+  useEffect(() => {
+    const orgSlugMatch = router.asPath.match(/^\/orgs\/([^/]+)/);
+    const currentOrgSlug = orgSlugMatch ? orgSlugMatch[1] : null;
+    
+    if (currentOrgSlug) {
+      setSelectedOrgSlug(currentOrgSlug);
+    }
+  }, [router.asPath]);
+  
   // Initialize selected event to first available event if none selected
   useEffect(() => {
     if (!selectedEventSlug && events.length > 0) {
@@ -72,6 +91,13 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
       }
     }
   }, [events, selectedEventSlug]);
+
+  // Initialize selected organization to first available organization if none selected
+  useEffect(() => {
+    if (!selectedOrgSlug && organizations.length > 0) {
+      setSelectedOrgSlug(organizations[0].slug);
+    }
+  }, [organizations, selectedOrgSlug]);
 
   // Fetch unread notification count and global roles
   useEffect(() => {
@@ -126,6 +152,7 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
   // Determine current context based on URL
   const isSystemAdmin = router.asPath.startsWith('/admin');
   const isEventContext = router.asPath.startsWith('/events/');
+  const isOrgContext = router.asPath.startsWith('/orgs/');
   
   // Check if user is SuperAdmin using global roles
   const isSuperAdmin = currentGlobalRoles.includes('SuperAdmin');
@@ -137,9 +164,17 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
     : null;
   
   // Memoize navigation building logic to improve performance
-  const { globalNav, eventNav, showEventNav } = useMemo(() => {
+  const { globalNav, orgNav, eventNav, showOrgNav, showEventNav } = useMemo(() => {
     // Global navigation (always visible except in system admin)
     let globalNavItems: Array<{
+      title: string;
+      url: string;
+      icon?: LucideIcon;
+      isActive?: boolean;
+      badge?: string;
+      items?: Array<{ title: string; url: string; }>;
+    }> = [];
+    let orgNavItems: Array<{
       title: string;
       url: string;
       icon?: LucideIcon;
@@ -155,6 +190,7 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
       badge?: string;
       items?: Array<{ title: string; url: string; }>;
     }> = [];
+    let shouldShowOrgNav = false;
     let shouldShowEventNav = false;
 
     // Global Navigation (always visible)
@@ -188,22 +224,18 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
           isActive: router.asPath === "/admin/dashboard",
         },
         {
-          title: "Events Management",
-          url: "/admin/events",
-          icon: UserCog,
-          isActive: router.asPath.startsWith("/admin/events"),
+          title: "Organizations",
+          url: "/admin/organizations",
+          icon: Building2,
+          isActive: router.asPath.startsWith("/admin/organizations"),
           items: [
             {
-              title: "All Events",
-              url: "/admin/events",
+              title: "All Organizations",
+              url: "/admin/organizations",
             },
             {
-              title: "Create Event",
-              url: "/admin/events/new",
-            },
-            {
-              title: "Disabled Events",
-              url: "/admin/events/disabled",
+              title: "Create Organization",
+              url: "/admin/organizations/new",
             },
           ],
         },
@@ -227,6 +259,66 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
           ],
         }
       );
+    }
+
+    // Organization-specific navigation
+    let targetOrgSlug = isOrgContext ? router.asPath.split('/')[2] : null;
+    
+    if (isOrgContext && targetOrgSlug) {
+      // In organization context with a specific organization
+      shouldShowOrgNav = true;
+    } else if (!isOrgContext && selectedOrgSlug && organizations.length > 0) {
+      // On global dashboard - show navigation for the user's selected organization
+      targetOrgSlug = selectedOrgSlug;
+      shouldShowOrgNav = true;
+    }
+    
+    if (shouldShowOrgNav && targetOrgSlug) {
+      
+      // Get user's role for the target organization
+      const targetOrg = organizations.find(org => org.slug === targetOrgSlug);
+      const userOrgRole = targetOrg?.role;
+      
+      // Check role permissions
+      const isOrgAdmin = userOrgRole === 'org_admin' || isSuperAdmin;
+      
+      // Base navigation items (available to all org members)
+      orgNavItems = [
+        {
+          title: "Organization Dashboard",
+          url: `/orgs/${targetOrgSlug}`,
+          icon: Home,
+          isActive: router.asPath === `/orgs/${targetOrgSlug}`,
+        },
+        {
+          title: "Events",
+          url: `/orgs/${targetOrgSlug}/events`,
+          icon: ClipboardList,
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/events`),
+        },
+        {
+          title: "Reports Overview",
+          url: `/orgs/${targetOrgSlug}/reports`,
+          icon: BookOpen,
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/reports`),
+        },
+        {
+          title: "Team",
+          url: `/orgs/${targetOrgSlug}/team`,
+          icon: Users,
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/team`),
+        },
+      ];
+
+      // Organization Settings (Admins only)
+      if (isOrgAdmin) {
+        orgNavItems.push({
+          title: "Organization Settings",
+          url: `/orgs/${targetOrgSlug}/settings`,
+          icon: Settings2,
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/settings`),
+        });
+      }
     }
 
       // Event-specific navigation
@@ -341,7 +433,9 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
 
     return {
       globalNav: globalNavItems,
+      orgNav: orgNavItems,
       eventNav: eventNavItems,
+      showOrgNav: shouldShowOrgNav,
       showEventNav: shouldShowEventNav,
     };
   }, [
@@ -349,13 +443,26 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
     isSuperAdmin,
     router.asPath,
     isEventContext,
+    isOrgContext,
     currentEventSlug,
     selectedEventSlug,
+    selectedOrgSlug,
     events,
+    organizations,
     user,
     unreadCount,
     currentGlobalRoles,
   ]);
+
+  // Collapsed organization switcher: just the icon, opens the dropdown
+  const CollapsedOrgSwitcher = () => {
+    if (!organizations.length) return null;
+    return (
+      <div className="flex flex-col items-center py-2">
+        <NavOrganizations organizations={organizations} collapsed selectedOrgSlug={selectedOrgSlug} />
+      </div>
+    );
+  };
 
   // Collapsed event switcher: just the icon, opens the dropdown
   const CollapsedEventSwitcher = () => {
@@ -376,6 +483,21 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
         {/* Global Navigation (includes system admin navigation for SuperAdmins) */}
         <NavMain items={globalNav} label="Platform" />
         
+        {/* Organization Navigation Section */}
+        {organizations.length > 0 && (
+          <>
+            {/* Organization Switcher */}
+            {state === "expanded" && <NavOrganizations organizations={organizations} selectedOrgSlug={selectedOrgSlug} />}
+            
+            {/* Organization-specific Navigation */}
+            {(showOrgNav || orgNav.length > 0) && (
+              <div className="mt-0">
+                <NavMain items={orgNav} label="" />
+              </div>
+            )}
+          </>
+        )}
+        
         {/* Event Navigation Section */}
         <>
           {/* Event Switcher */}
@@ -389,7 +511,12 @@ export function AppSidebar({ user, events, globalRoles, ...props }: {
           )}
         </>
       </SidebarContent>
-      {state === "collapsed" && <CollapsedEventSwitcher />}
+      {state === "collapsed" && (
+        <>
+          {organizations.length > 0 && <CollapsedOrgSwitcher />}
+          <CollapsedEventSwitcher />
+        </>
+      )}
       <SidebarFooter>
         <NavUser user={{ ...user, avatar: user.avatar || "", roles: user.roles || [] }} />
       </SidebarFooter>

@@ -8,3 +8,6 @@ node_modules/
 # Test coverage output
 **/coverage/
 reference/cursor_fixing_issue_90_and_project_guid.md
+
+# Temporary testing files
+reference/sample-users-testing.md
