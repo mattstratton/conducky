@@ -98,7 +98,7 @@ export default function InviteUsersPage() {
   }
 
   const isSuperAdmin = hasGlobalRole("SuperAdmin");
-  const isEventAdmin = hasEventRole("Admin");
+  const isEventAdmin = hasEventRole("Event Admin");
 
   if (loading) {
     return (

@@ -27,7 +27,7 @@ export function EventHeader({ event, userRoles, logoExists }: EventHeaderProps) 
   const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const logoSrc = logoExists ? `${backendBaseUrl}/api/events/slug/${event.slug}/logo` : null;
   
-  const isAdmin = userRoles.includes("Admin") || userRoles.includes("SuperAdmin");
+  const isAdmin = userRoles.includes("Event Admin") || userRoles.includes("SuperAdmin");
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return null;

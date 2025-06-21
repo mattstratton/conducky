@@ -135,7 +135,7 @@ export default function EventAdminPage() {
   }
 
   const isSuperAdmin = hasGlobalRole("SuperAdmin");
-  const isEventAdmin = hasEventRole("Admin");
+  const isEventAdmin = hasEventRole("Event Admin");
 
   // Only allow SuperAdmins or Event Admins to access settings
   if (!isSuperAdmin && !isEventAdmin) {

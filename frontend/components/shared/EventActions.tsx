@@ -11,7 +11,7 @@ interface EventActionsProps {
 }
 
 export function EventActions({ eventSlug, userRoles, onSubmitReport }: EventActionsProps) {
-  const isAdmin = userRoles.includes("Admin") || userRoles.includes("SuperAdmin");
+  const isAdmin = userRoles.includes("Event Admin") || userRoles.includes("SuperAdmin");
   const isResponder = userRoles.includes("Responder");
   const isReporter = userRoles.includes("Reporter");
 

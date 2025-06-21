@@ -327,7 +327,7 @@ export function StateManagementSection({
                   <option value="">Select a responder...</option>
                   {eventUsers
                     .filter(user => user.roles?.some((role: string) => 
-                      ['responder', 'admin'].includes(role.toLowerCase())
+                      ['responder', 'event admin'].includes(role.toLowerCase())
                     ))
                     .map((user) => (
                       <option key={user.id} value={user.id}>

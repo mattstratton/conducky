@@ -107,13 +107,13 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
       return;
     }
 
-    // Get all users with Responder or Admin roles for this event
+    // Get all users with Responder or Event Admin roles for this event
     const eventUsers = await prisma.userEventRole.findMany({
       where: {
         eventId: report.eventId,
         role: {
           name: {
-            in: ['Responder', 'Admin'],
+            in: ['Responder', 'Event Admin'],
           },
         },
       },

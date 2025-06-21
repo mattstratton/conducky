@@ -50,7 +50,7 @@ export default function EventTeam() {
   }, [searchTerm]);
 
   // Check if current user has admin permissions
-  const isAdmin = user && ['Admin', 'SuperAdmin'].some(role => 
+  const isAdmin = user && ['Event Admin', 'SuperAdmin'].some(role => 
     user.roles?.includes(role)
   );
 
