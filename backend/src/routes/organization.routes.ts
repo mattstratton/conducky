@@ -21,6 +21,9 @@ router.get('/', organizationController.listOrganizations.bind(organizationContro
 // Get user's organizations
 router.get('/me', organizationController.getUserOrganizations.bind(organizationController));
 
+// Get organization by slug (must come before /:organizationId to avoid conflicts)
+router.get('/slug/:orgSlug', organizationController.getOrganizationBySlug.bind(organizationController));
+
 // Get organization by ID
 router.get('/:organizationId', organizationController.getOrganization.bind(organizationController));
 
@@ -43,11 +46,6 @@ router.put('/:organizationId/members/:userId', organizationController.updateMemb
 // Remove member from organization (Org Admin only)
 router.delete('/:organizationId/members/:userId', organizationController.removeMember.bind(organizationController));
 
-/**
- * Organization by Slug Routes (for frontend navigation)
- */
 
-// Get organization by slug
-router.get('/slug/:orgSlug', organizationController.getOrganizationBySlug.bind(organizationController));
 
 export default router; 
