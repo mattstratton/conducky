@@ -57,7 +57,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchSettingsAndEvents() {
       try {
-        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/system/settings');
+        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/system/settings/public');
         const data = await res.json();
         if (data.settings && data.settings.showPublicEventList === 'true') {
           setShowEventList(true);

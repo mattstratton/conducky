@@ -28,7 +28,7 @@ export default function SystemSettings() {
     try {
       setLoading(true);
       const response = await fetch(
-        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/system/settings',
+        (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/admin/system/settings',
         { credentials: 'include' }
       );
 

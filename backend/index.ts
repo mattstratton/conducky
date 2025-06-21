@@ -211,11 +211,36 @@ app.get('/api/session', async (req: any, res: any) => {
   }
 });
 
-// System settings route (frontend expects /api/system/settings)
+// Public system settings route (only safe settings, no authentication required)
+app.get('/api/system/settings/public', async (_req: any, res: any) => {
+  try {
+    // Only expose safe, public settings
+    const publicSettings = ['showPublicEventList'];
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { in: publicSettings } }
+    });
+    
+    // Convert array to object for easier frontend usage
+    const settingsObj: Record<string, string> = {};
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    res.json({ settings: settingsObj });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch public system settings', details: err.message });
+  }
+});
+
+// Legacy endpoint for backward compatibility - redirects to public endpoint
+// TODO: Remove this after frontend is updated
 app.get('/api/system/settings', async (_req: any, res: any) => {
   try {
-    // Get system settings from database
-    const settings = await prisma.systemSetting.findMany();
+    // Only expose safe, public settings for backward compatibility
+    const publicSettings = ['showPublicEventList'];
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { in: publicSettings } }
+    });
     
     // Convert array to object for easier frontend usage
     const settingsObj: Record<string, string> = {};
