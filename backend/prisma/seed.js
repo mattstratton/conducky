@@ -1,17 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
+const { seedRoles } = require('./roles-seed');
 const prisma = new PrismaClient();
 
 async function main() {
-  // Updated roles to include Event Admin (renamed from Admin)
-  const roles = ['Reporter', 'Responder', 'Event Admin', 'SuperAdmin'];
-  for (const name of roles) {
-    await prisma.role.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-  }
+  console.log('🌱 Starting development seed data...');
+  
+  // First, ensure essential roles exist
+  await seedRoles();
 
   // Create SuperAdmin user first (needed for organization creation)
   const superEmail = 'superadmin@test.com';
@@ -158,14 +154,13 @@ async function main() {
     create: { key: 'showPublicEventList', value: 'false' },
   });
 
-  console.log('✅ Default roles seeded (including Event Admin).');
   console.log('✅ Test organization created:', testOrg.name, '(ID:', testOrg.id + ')');
   console.log('✅ Test event linked to organization. Event ID:', event.id);
   console.log('✅ SuperAdmin user seeded:', superEmail, '/ password:', superPassword);
   console.log('✅ Event Admin user seeded:', adminEmail, '/ password:', adminPassword, '(also org admin)');
   console.log('✅ Org Viewer user seeded:', viewerEmail, '/ password:', viewerPassword);
   console.log('✅ SystemSetting seeded: showPublicEventList = false');
-  console.log('\n🎯 Organization structure ready for testing!');
+  console.log('\n🎯 Development seed data complete!');
 }
 
 main()

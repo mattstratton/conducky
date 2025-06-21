@@ -549,7 +549,7 @@ export class OrganizationController {
       });
 
       // Automatically assign the creator as event admin
-      const adminRole = await prisma.role.findUnique({ where: { name: 'Admin' } });
+      const adminRole = await prisma.role.findUnique({ where: { name: 'Event Admin' } });
       if (adminRole) {
         await prisma.userEventRole.create({
           data: {

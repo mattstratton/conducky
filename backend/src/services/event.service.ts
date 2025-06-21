@@ -556,12 +556,12 @@ export class EventService {
         include: { role: true }
       });
 
-      const isAdmin = userRoles.some(ur => ur.role.name === 'Admin');
+      const isAdmin = userRoles.some(ur => ur.role.name === 'Event Admin');
       if (isAdmin) {
         const adminCount = await this.prisma.userEventRole.count({
           where: {
             eventId,
-            role: { name: 'Admin' }
+            role: { name: 'Event Admin' }
           }
         });
 

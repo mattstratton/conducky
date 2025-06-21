@@ -11,7 +11,7 @@ describe('requireRole middleware', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('should return 401 if not authenticated', async () => {
-    const allowedRoles = ['Admin'];
+    const allowedRoles = ['Event Admin'];
     const middleware = requireRole(allowedRoles);
     const req = {
       isAuthenticated: () => false,
@@ -29,7 +29,7 @@ describe('requireRole middleware', () => {
   });
 
   it('should return 403 if user lacks required role', async () => {
-    const allowedRoles = ['Admin'];
+    const allowedRoles = ['Event Admin'];
     const middleware = requireRole(allowedRoles);
     const req = {
       isAuthenticated: () => true,
@@ -48,7 +48,7 @@ describe('requireRole middleware', () => {
   });
 
   it('should return 403 if eventId missing and user lacks global role', async () => {
-    const allowedRoles = ['Admin'];
+    const allowedRoles = ['Event Admin'];
     const middleware = requireRole(allowedRoles);
     const req = {
       isAuthenticated: () => true,
@@ -87,7 +87,7 @@ describe('requireSuperAdmin middleware', () => {
   it('should return 403 if not SuperAdmin', async () => {
     const middleware = requireSuperAdmin();
     const req = { isAuthenticated: () => true, user: { id: 'user1' } };
-    mPrisma.userEventRole.findMany.mockResolvedValue([{ role: { name: 'Admin' } }]);
+    mPrisma.userEventRole.findMany.mockResolvedValue([{ role: { name: 'Event Admin' } }]);
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
     await middleware(req, res, next);

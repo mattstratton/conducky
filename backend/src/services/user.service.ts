@@ -557,12 +557,12 @@ export class UserService {
       }
 
       // Check if user is the only admin
-      const isAdmin = userRoles.some(ur => ur.role.name === 'Admin');
+      const isAdmin = userRoles.some(ur => ur.role.name === 'Event Admin');
       if (isAdmin) {
         const adminCount = await this.prisma.userEventRole.count({
           where: {
             eventId,
-            role: { name: 'Admin' }
+            role: { name: 'Event Admin' }
           }
         });
 
@@ -621,7 +621,7 @@ export class UserService {
       
       // Count events where user is admin
       const adminEventIds = userEventRoles
-        .filter(uer => uer.role.name === 'Admin' && uer.eventId)
+        .filter(uer => uer.role.name === 'Event Admin' && uer.eventId)
         .map(uer => uer.eventId!)
         .filter((id): id is string => id !== null);
       const adminIds = adminEventIds.length > 0 ? await this.prisma.report.findMany({ 

@@ -5,9 +5,15 @@ const inMemoryStore = {
   events: [{ id: "1", name: "Event1", slug: "event1" }],
   roles: [
     { id: "1", name: "SuperAdmin" },
-    { id: "2", name: "Admin" },
+    { id: "2", name: "Event Admin" },
     { id: "3", name: "Responder" },
     { id: "4", name: "Reporter" },
+  ],
+  organizations: [
+    { id: "1", name: "Test Organization", slug: "test-org", description: "Test org", createdById: "1" }
+  ],
+  organizationMemberships: [
+    { id: "1", organizationId: "1", userId: "1", role: "org_admin", createdById: "1" }
   ],
   users: [{ id: "1", email: "admin@example.com", name: "Admin" }],
   userEventRoles: [
@@ -57,6 +63,11 @@ const inMemoryStore = {
       }
     }
   ],
+  // Organization-related models
+  organizations: [],
+  organizationMemberships: [],
+  organizationLogos: [],
+  organizationInviteLinks: [],
 };
 
 class PrismaClient {
@@ -1434,6 +1445,165 @@ class PrismaClient {
           (s) => s.userId !== where.userId
         );
         return { count: before - inMemoryStore.userNotificationSettings.length };
+      }),
+    };
+    
+    // Organization models
+    this.organization = {
+      findUnique: jest.fn(({ where }) =>
+        inMemoryStore.organizations.find((o) => o.id === where.id || o.slug === where.slug) || null
+      ),
+      findMany: jest.fn(({ where, include }) => {
+        let results = [...inMemoryStore.organizations];
+        if (where) {
+          if (where.createdById) {
+            results = results.filter((o) => o.createdById === where.createdById);
+          }
+        }
+        return results;
+      }),
+      create: jest.fn(({ data }) => {
+        if (inMemoryStore.organizations.some((o) => o.slug === data.slug)) {
+          const err = new Error("Unique constraint failed");
+          err.code = "P2002";
+          throw err;
+        }
+        const newOrg = {
+          id: (inMemoryStore.organizations.length + 1).toString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data,
+        };
+        inMemoryStore.organizations.push(newOrg);
+        return newOrg;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.organizations.findIndex((o) => o.id === where.id);
+        if (idx === -1) throw new Error("Organization not found");
+        inMemoryStore.organizations[idx] = { 
+          ...inMemoryStore.organizations[idx], 
+          ...data,
+          updatedAt: new Date()
+        };
+        return inMemoryStore.organizations[idx];
+      }),
+      delete: jest.fn(({ where }) => {
+        const idx = inMemoryStore.organizations.findIndex((o) => o.id === where.id);
+        if (idx !== -1) {
+          return inMemoryStore.organizations.splice(idx, 1)[0];
+        }
+        return null;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.organizations.length;
+        if (where) {
+          if (where.slug) {
+            inMemoryStore.organizations = inMemoryStore.organizations.filter(
+              (o) => o.slug !== where.slug
+            );
+          }
+          if (where.id) {
+            inMemoryStore.organizations = inMemoryStore.organizations.filter(
+              (o) => o.id !== where.id
+            );
+          }
+        }
+        return { count: before - inMemoryStore.organizations.length };
+      }),
+    };
+    
+    this.organizationMembership = {
+      findUnique: jest.fn(({ where }) => {
+        // Handle compound key lookup for organizationId_userId
+        if (where.organizationId_userId) {
+          const { organizationId, userId } = where.organizationId_userId;
+          return inMemoryStore.organizationMemberships.find(
+            (m) => m.organizationId === organizationId && m.userId === userId
+          ) || null;
+        }
+        // Handle simple id lookup
+        if (where.id) {
+          return inMemoryStore.organizationMemberships.find((m) => m.id === where.id) || null;
+        }
+        return null;
+      }),
+      findMany: jest.fn(({ where, include }) => {
+        let results = [...inMemoryStore.organizationMemberships];
+        if (where) {
+          if (where.userId) {
+            results = results.filter((m) => m.userId === where.userId);
+          }
+          if (where.organizationId) {
+            results = results.filter((m) => m.organizationId === where.organizationId);
+          }
+          if (where.role) {
+            results = results.filter((m) => m.role === where.role);
+          }
+        }
+        return results;
+      }),
+      findFirst: jest.fn(({ where }) => {
+        let results = [...inMemoryStore.organizationMemberships];
+        if (where) {
+          if (where.userId) {
+            results = results.filter((m) => m.userId === where.userId);
+          }
+          if (where.organizationId) {
+            results = results.filter((m) => m.organizationId === where.organizationId);
+          }
+          if (where.role) {
+            results = results.filter((m) => m.role === where.role);
+          }
+        }
+        return results[0] || null;
+      }),
+      create: jest.fn(({ data }) => {
+        const newMembership = {
+          id: (inMemoryStore.organizationMemberships.length + 1).toString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data,
+        };
+        inMemoryStore.organizationMemberships.push(newMembership);
+        return newMembership;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.organizationMemberships.findIndex((m) => m.id === where.id);
+        if (idx === -1) throw new Error("Membership not found");
+        inMemoryStore.organizationMemberships[idx] = { 
+          ...inMemoryStore.organizationMemberships[idx], 
+          ...data,
+          updatedAt: new Date()
+        };
+        return inMemoryStore.organizationMemberships[idx];
+      }),
+      delete: jest.fn(({ where }) => {
+        const idx = inMemoryStore.organizationMemberships.findIndex((m) => m.id === where.id);
+        if (idx !== -1) {
+          return inMemoryStore.organizationMemberships.splice(idx, 1)[0];
+        }
+        return null;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.organizationMemberships.length;
+        if (where) {
+          if (where.userId) {
+            inMemoryStore.organizationMemberships = inMemoryStore.organizationMemberships.filter(
+              (m) => m.userId !== where.userId
+            );
+          }
+          if (where.id) {
+            inMemoryStore.organizationMemberships = inMemoryStore.organizationMemberships.filter(
+              (m) => m.id !== where.id
+            );
+          }
+          if (where.organizationId) {
+            inMemoryStore.organizationMemberships = inMemoryStore.organizationMemberships.filter(
+              (m) => m.organizationId !== where.organizationId
+            );
+          }
+        }
+        return { count: before - inMemoryStore.organizationMemberships.length };
       }),
     };
     

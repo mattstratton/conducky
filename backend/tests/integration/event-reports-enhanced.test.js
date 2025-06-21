@@ -96,7 +96,7 @@ describe('Enhanced Event Reports API Integration Tests', () => {
         eventId: 'event1',
         roleId: 'admin-role',
         event: mockEvents[0],
-        role: { name: 'Admin' }
+        role: { name: 'Event Admin' }
       },
       {
         userId: '3',
@@ -387,12 +387,12 @@ describe('Event Reports Export and Bulk Actions', () => {
     }
     
     try {
-      adminRole = await prisma.role.findFirst({ where: { name: 'Admin' } });
+      adminRole = await prisma.role.findFirst({ where: { name: 'Event Admin' } });
       if (!adminRole) {
-        adminRole = await prisma.role.create({ data: { name: 'Admin' } });
+        adminRole = await prisma.role.create({ data: { name: 'Event Admin' } });
       }
     } catch {
-      adminRole = await prisma.role.create({ data: { name: 'Admin' } });
+      adminRole = await prisma.role.create({ data: { name: 'Event Admin' } });
     }
 
     // Assign roles
