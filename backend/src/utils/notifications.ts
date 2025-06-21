@@ -11,6 +11,11 @@ import { emailService } from './email';
 /**
  * Create a notification for a user
  */
+// Define notification types for better type safety
+type ReportNotificationType = 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added';
+type SystemNotificationType = 'event_invitation' | 'event_role_changed' | 'system_announcement';
+type NotificationType = ReportNotificationType | SystemNotificationType;
+
 export async function createNotification({
   userId,
   type,
@@ -23,7 +28,7 @@ export async function createNotification({
   actionUrl = null
 }: {
   userId: string;
-  type: 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' | 'event_invitation' | 'event_role_changed' | 'system_announcement';
+  type: NotificationType;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   title: string;
   message: string;
@@ -166,8 +171,8 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
         const actionUrl = `${frontendBaseUrl}/events/${report.event.slug}/reports/${report.id}`;
         
         // Map notification types with fallback error handling
-        const getNotificationType = (inputType: string): 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' => {
-          const typeMap: Record<string, 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added'> = {
+        const getNotificationType = (inputType: string): ReportNotificationType => {
+          const typeMap: Record<string, ReportNotificationType> = {
             'report_submitted': 'report_submitted', 
             'submitted': 'report_submitted',
             'report_assigned': 'report_assigned', 
@@ -187,7 +192,7 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
 
         return createNotification({
           userId: userRole.userId,
-          type: getNotificationType(type) as 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' | 'event_invitation' | 'event_role_changed' | 'system_announcement',
+          type: getNotificationType(type),
           priority,
           title,
           message,
