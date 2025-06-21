@@ -165,8 +165,8 @@ model Report {
 
 model AuditLog {
   id         String   @id @default(uuid())
-  event      Event    @relation(fields: [eventId], references: [id])
-  eventId    String
+  event      Event?   @relation(fields: [eventId], references: [id])
+  eventId    String?
   user       User?    @relation(fields: [userId], references: [id])
   userId     String?
   action     String

@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
  * Parameters for logging an audit event
  */
 export interface AuditLogParams {
-  /** The event/tenant ID */
-  eventId: string;
+  /** The event/tenant ID (optional for organization-level actions) */
+  eventId?: string | null;
   /** The user performing the action (optional for anonymous actions) */
   userId?: string | null;
   /** The action performed (e.g., 'report_created', 'user_assigned') */
@@ -27,13 +27,13 @@ export interface AuditLogParams {
 export async function logAudit(params: AuditLogParams): Promise<any> {
   const { eventId, userId, action, targetType, targetId } = params;
 
-  if (!eventId || !action || !targetType || !targetId) {
-    throw new Error('Missing required fields: eventId, action, targetType, and targetId are required');
+  if (!action || !targetType || !targetId) {
+    throw new Error('Missing required fields: action, targetType, and targetId are required');
   }
 
   return prisma.auditLog.create({
     data: {
-      eventId,
+      eventId: eventId || undefined,
       userId: userId ?? null,
       action,
       targetType,
