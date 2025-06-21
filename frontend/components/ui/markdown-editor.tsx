@@ -13,7 +13,7 @@ import {
   Heading2,
   Heading3
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 
 interface MarkdownEditorProps {
   value: string;
@@ -222,7 +222,7 @@ export function MarkdownEditor({
               <div className="text-sm text-muted-foreground mb-2 font-medium">Preview:</div>
               {value.trim() ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{value}</ReactMarkdown>
+                  <SecureMarkdown>{value}</SecureMarkdown>
                 </div>
               ) : (
                 <div className="text-muted-foreground italic">Nothing to preview</div>

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PencilIcon, CheckIcon, XMarkIcon, LinkIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 import { isValidEmail } from "@/lib/utils";
 
 export interface EventMeta {
@@ -253,7 +253,7 @@ export function EventMetaEditor({
                       </div>
                     </SheetHeader>
                     <div className="mt-6 prose dark:prose-invert max-h-[70vh] overflow-y-auto">
-                      <ReactMarkdown>{event.codeOfConduct || "No code of conduct provided for this event."}</ReactMarkdown>
+                      <SecureMarkdown type="event">{event.codeOfConduct || "No code of conduct provided for this event."}</SecureMarkdown>
                     </div>
                   </SheetContent>
                 </Sheet>

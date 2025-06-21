@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Filter, ChevronLeft, ChevronRight, Link, Check, Quote } from "lucide-react";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
-import ReactMarkdown from "react-markdown";
+import { SecureMarkdown } from "@/components/ui/secure-markdown";
 
 interface User {
   id: string;
@@ -595,9 +595,9 @@ export function CommentsSection({
                         </div>
                       ) : (
                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                          <ReactMarkdown>
+                          <SecureMarkdown type="comment">
                             {highlightSearchTerm(comment.body)}
-                          </ReactMarkdown>
+                          </SecureMarkdown>
                         </div>
                       )}
 
