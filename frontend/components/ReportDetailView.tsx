@@ -259,16 +259,76 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                 }
               }}
               onIncidentAtEdit={async (incidentAt) => {
-                // Feature not yet implemented - incident date editing
-                alert('Incident date editing is not yet implemented');
+                try {
+                  const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/incident-date`, {
+                    method: 'PATCH',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ incidentAt }),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error((errorData as { error?: string }).error || 'Failed to update incident date');
+                  }
+
+                  // Refresh the page to show updated data
+                  window.location.reload();
+                } catch (error) {
+                  console.error('Failed to update incident date:', error);
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to update incident date. Please try again.';
+                  alert(errorMessage);
+                }
               }}
               onPartiesEdit={async (parties) => {
-                // Feature not yet implemented - parties editing
-                alert('Parties editing is not yet implemented');
+                try {
+                  const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/parties`, {
+                    method: 'PATCH',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ parties }),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error((errorData as { error?: string }).error || 'Failed to update parties involved');
+                  }
+
+                  // Refresh the page to show updated data
+                  window.location.reload();
+                } catch (error) {
+                  console.error('Failed to update parties involved:', error);
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to update parties involved. Please try again.';
+                  alert(errorMessage);
+                }
               }}
               onDescriptionEdit={async (description) => {
-                // Feature not yet implemented - description editing
-                alert('Description editing is not yet implemented');
+                try {
+                  const response = await fetch(`${apiBaseUrl}/api/events/${report.eventId}/reports/${report.id}/description`, {
+                    method: 'PATCH',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ description }),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error((errorData as { error?: string }).error || 'Failed to update description');
+                  }
+
+                  // Refresh the page to show updated data
+                  window.location.reload();
+                } catch (error) {
+                  console.error('Failed to update description:', error);
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to update description. Please try again.';
+                  alert(errorMessage);
+                }
               }}
               onTypeEdit={async (type) => {
                 try {

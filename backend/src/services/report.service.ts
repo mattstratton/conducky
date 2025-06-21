@@ -1424,6 +1424,232 @@ export class ReportService {
   }
 
   /**
+   * Update report description (with authorization check)
+   */
+  async updateReportDescription(eventId: string, reportId: string, description: string, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      // Validate description
+      if (!description || description.trim().length === 0) {
+        return {
+          success: false,
+          error: 'Description is required.'
+        };
+      }
+
+      if (description.length > 5000) {
+        return {
+          success: false,
+          error: 'Description must be less than 5000 characters.'
+        };
+      }
+
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions - description is more sensitive, only reporter and event admin+
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        const userEventRoles = await this.prisma.userEventRole.findMany({
+          where: { userId, eventId },
+          include: { role: true },
+        });
+
+        const userRoles = userEventRoles.map(uer => uer.role.name);
+        const isAdminOrAbove = userRoles.some(r => ['Event Admin', 'SuperAdmin'].includes(r));
+
+        const canEdit = isReporter || isAdminOrAbove;
+
+        if (!canEdit) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to edit this report description.'
+          };
+        }
+      }
+
+      // Update description
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { description: description.trim() },
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report description:', error);
+      return {
+        success: false,
+        error: 'Failed to update report description.'
+      };
+    }
+  }
+
+  /**
+   * Update report incident date (with authorization check)
+   */
+  async updateReportIncidentDate(eventId: string, reportId: string, incidentAt: string | null, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      let incidentDate: Date | null = null;
+
+      // Validate and parse incident date if provided
+      if (incidentAt) {
+        incidentDate = new Date(incidentAt);
+        if (isNaN(incidentDate.getTime())) {
+          return {
+            success: false,
+            error: 'Invalid incident date format.'
+          };
+        }
+
+        // Check if date is not too far in the future
+        const now = new Date();
+        const maxFutureDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+        if (incidentDate > maxFutureDate) {
+          return {
+            success: false,
+            error: 'Incident date cannot be more than 24 hours in the future.'
+          };
+        }
+      }
+
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions if userId provided
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        const userEventRoles = await this.prisma.userEventRole.findMany({
+          where: { userId, eventId },
+          include: { role: true },
+        });
+
+        const userRoles = userEventRoles.map(uer => uer.role.name);
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
+
+        const canEdit = isReporter || isResponderOrAbove;
+
+        if (!canEdit) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to edit this report incident date.'
+          };
+        }
+      }
+
+      // Update incident date
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { incidentAt: incidentDate },
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report incident date:', error);
+      return {
+        success: false,
+        error: 'Failed to update report incident date.'
+      };
+    }
+  }
+
+  /**
+   * Update report parties involved (with authorization check)
+   */
+  async updateReportParties(eventId: string, reportId: string, parties: string | null, userId?: string): Promise<ServiceResult<{ report: any }>> {
+    try {
+      // Validate parties if provided
+      if (parties && parties.length > 1000) {
+        return {
+          success: false,
+          error: 'Parties involved must be less than 1000 characters.'
+        };
+      }
+
+      // Check report exists and belongs to event
+      const report = await this.prisma.report.findUnique({
+        where: { id: reportId },
+        include: { reporter: true },
+      });
+
+      if (!report || report.eventId !== eventId) {
+        return {
+          success: false,
+          error: 'Report not found for this event.'
+        };
+      }
+
+      // Check edit permissions if userId provided
+      if (userId) {
+        const isReporter = !!(report.reporterId && userId === report.reporterId);
+
+        const userEventRoles = await this.prisma.userEventRole.findMany({
+          where: { userId, eventId },
+          include: { role: true },
+        });
+
+        const userRoles = userEventRoles.map(uer => uer.role.name);
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
+
+        const canEdit = isReporter || isResponderOrAbove;
+
+        if (!canEdit) {
+          return {
+            success: false,
+            error: 'Insufficient permissions to edit this report parties involved.'
+          };
+        }
+      }
+
+      // Update parties
+      const updated = await this.prisma.report.update({
+        where: { id: reportId },
+        data: { parties: parties ? parties.trim() : null },
+        include: { reporter: true },
+      });
+
+      return {
+        success: true,
+        data: { report: updated }
+      };
+    } catch (error: any) {
+      console.error('Error updating report parties:', error);
+      return {
+        success: false,
+        error: 'Failed to update report parties involved.'
+      };
+    }
+  }
+
+  /**
    * Get reports for a specific event with enhanced filtering, search, and optional stats
    */
   async getEventReports(eventId: string, userId: string, query: ReportQuery & { includeStats?: boolean }): Promise<ServiceResult<{

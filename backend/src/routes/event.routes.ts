@@ -809,6 +809,86 @@ router.patch('/:eventId/reports/:reportId/type', requireRole(['Event Admin', 'Su
   }
 });
 
+// Update report description
+router.patch('/:eventId/reports/:reportId/description', requireRole(['Event Admin', 'SuperAdmin', 'Reporter']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { description } = req.body;
+    
+    if (!description) {
+      res.status(400).json({ error: 'Description is required.' });
+      return;
+    }
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportDescription(eventId, reportId, description, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report description:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// Update report incident date
+router.patch('/:eventId/reports/:reportId/incident-date', requireRole(['Event Admin', 'SuperAdmin', 'Reporter', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { incidentAt } = req.body;
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportIncidentDate(eventId, reportId, incidentAt, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report incident date:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// Update report parties involved
+router.patch('/:eventId/reports/:reportId/parties', requireRole(['Event Admin', 'SuperAdmin', 'Reporter', 'Responder']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId, reportId } = req.params;
+    const { parties } = req.body;
+    
+    const user = req.user as any;
+    const result = await reportService.updateReportParties(eventId, reportId, parties, user?.id);
+    
+    if (!result.success) {
+      if (result.error?.includes('Insufficient permissions')) {
+        res.status(403).json({ error: result.error });
+        return;
+      }
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    
+    res.json(result.data);
+  } catch (error) {
+    console.error('Error updating report parties:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 // Upload evidence for report
 router.post('/:eventId/reports/:reportId/evidence', requireRole(['Event Admin', 'SuperAdmin', 'Responder']), uploadEvidence.array('evidence'), async (req: Request, res: Response): Promise<void> => {
   try {
