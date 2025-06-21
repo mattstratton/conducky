@@ -84,40 +84,22 @@ export default function OrganizationEvents() {
         const orgData = await orgResponse.json();
         setOrganization(orgData.organization);
         
-        // TODO: Fetch organization events when API is ready
-        // For now, use mock data
-        const mockEvents: Event[] = [
-          {
-            id: '1',
-            name: 'DevConf Berlin 2025',
-            slug: 'devconf-berlin-2025',
-            organizationId: orgData.organization.id,
-            createdAt: '2024-01-15T00:00:00Z',
-            updatedAt: '2024-12-20T10:30:00Z',
-            _count: { reports: 3, userEventRoles: 12 }
-          },
-          {
-            id: '2', 
-            name: 'PyCon Portland 2025',
-            slug: 'pycon-portland-2025',
-            organizationId: orgData.organization.id,
-            createdAt: '2024-02-01T00:00:00Z',
-            updatedAt: '2024-12-19T14:15:00Z',
-            _count: { reports: 0, userEventRoles: 8 }
-          },
-          {
-            id: '3',
-            name: 'JSConf Austin 2025',
-            slug: 'jsconf-austin-2025',
-            organizationId: orgData.organization.id,
-            createdAt: '2024-03-10T00:00:00Z',
-            updatedAt: '2024-12-18T09:20:00Z',
-            _count: { reports: 1, userEventRoles: 15 }
-          }
-        ];
+        // Fetch organization events from API
+        const eventsResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/organizations/${orgData.organization.id}/events`,
+          { credentials: 'include' }
+        );
         
-        setEvents(mockEvents);
-        setFilteredEvents(mockEvents);
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setEvents(eventsData.events || []);
+          setFilteredEvents(eventsData.events || []);
+        } else {
+          console.error('Failed to fetch organization events:', eventsResponse.status);
+          // Fall back to empty array if API call fails
+          setEvents([]);
+          setFilteredEvents([]);
+        }
         
       } catch (err) {
         console.error('Error fetching data:', err);

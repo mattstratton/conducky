@@ -104,17 +104,31 @@ export default function NewEventInOrganization() {
       setSaving(true);
       setError(null);
 
-      // TODO: Replace with actual API call
-      console.log('Creating event in organization:', organization.slug, formData);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/organizations/${organization.id}/events`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create event');
+      }
+
+      const result = await response.json();
+      console.log('Event created:', result);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to the new event (using mock slug for now)
+      // Navigate to the organization events list
       router.push(`/orgs/${orgSlug}/events`);
     } catch (err) {
       console.error('Error creating event:', err);
-      setError('Failed to create event. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to create event. Please try again.');
     } finally {
       setSaving(false);
     }

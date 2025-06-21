@@ -92,26 +92,20 @@ export default function OrganizationDashboard() {
         const orgData = await orgResponse.json();
         setOrganization(orgData.organization);
         
-        // TODO: Fetch organization events when API is ready
-        // For now, use mock data
-        setEvents([
-          {
-            id: '1',
-            name: 'DevConf Berlin 2025',
-            slug: 'devconf-berlin-2025',
-            organizationId: orgData.organization.id,
-            createdAt: '2024-01-15T00:00:00Z',
-            _count: { reports: 3 }
-          },
-          {
-            id: '2', 
-            name: 'PyCon Portland 2025',
-            slug: 'pycon-portland-2025',
-            organizationId: orgData.organization.id,
-            createdAt: '2024-02-01T00:00:00Z',
-            _count: { reports: 0 }
-          }
-        ]);
+        // Fetch organization events from API
+        const eventsResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/organizations/${orgData.organization.id}/events`,
+          { credentials: 'include' }
+        );
+        
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setEvents(eventsData.events || []);
+        } else {
+          console.error('Failed to fetch organization events:', eventsResponse.status);
+          // Fall back to empty array if API call fails
+          setEvents([]);
+        }
         
         // TODO: Fetch recent activity when API is ready
         setRecentActivity([

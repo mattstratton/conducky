@@ -46,6 +46,14 @@ router.put('/:organizationId/members/:userId', organizationController.updateMemb
 // Remove member from organization (Org Admin only)
 router.delete('/:organizationId/members/:userId', organizationController.removeMember.bind(organizationController));
 
+/**
+ * Organization Events Routes
+ */
 
+// Create event in organization (Org Admin only)
+router.post('/:organizationId/events', organizationController.createEvent.bind(organizationController));
+
+// List organization events
+router.get('/:organizationId/events', organizationController.getEvents.bind(organizationController));
 
 export default router; 

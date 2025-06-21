@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { OrganizationService } from '../services/organization.service';
+import { EventService } from '../services/event.service';
 import { logAudit } from '../utils/audit';
 import { UserResponse } from '../types';
+import { PrismaClient } from '@prisma/client';
 
 // Extend Request type to include user
 interface AuthenticatedRequest extends Request {
@@ -9,6 +11,8 @@ interface AuthenticatedRequest extends Request {
 }
 
 const organizationService = new OrganizationService();
+const prisma = new PrismaClient();
+const eventService = new EventService(prisma);
 
 export class OrganizationController {
   /**
@@ -122,7 +126,7 @@ export class OrganizationController {
 
       const hasAccess = await organizationService.hasOrganizationRole(
         userId,
-        organization.id
+        (organization as any).id
       );
 
       if (!hasAccess) {
@@ -442,6 +446,137 @@ export class OrganizationController {
       res.json(result.data);
     } catch (error: any) {
       console.error('Error getting user organizations:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Create event in organization (Org Admin only)
+   */
+  async createEvent(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+      const { 
+        name, 
+        slug, 
+        description, 
+        startDate, 
+        endDate, 
+        website, 
+        contactEmail,
+        codeOfConduct 
+      } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      if (!name || !slug) {
+        res.status(400).json({ error: 'Name and slug are required' });
+        return;
+      }
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      // Create event with organization ID
+      const event = await prisma.event.create({
+        data: {
+          name,
+          slug,
+          description: description || null,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+          website: website || null,
+          contactEmail: contactEmail || null,
+          codeOfConduct: codeOfConduct || null,
+          organizationId,
+        } as any,
+      });
+
+      // Automatically assign the creator as event admin
+      const adminRole = await prisma.role.findUnique({ where: { name: 'Admin' } });
+      if (adminRole) {
+        await prisma.userEventRole.create({
+          data: {
+            userId,
+            eventId: event.id,
+            roleId: adminRole.id,
+          },
+        });
+      }
+
+      // Log audit event
+      await logAudit({
+        eventId: event.id,
+        userId,
+        action: 'create_event',
+        targetType: 'event',
+        targetId: event.id,
+      });
+
+      res.status(201).json({ event });
+    } catch (error: any) {
+      console.error('Error creating event:', error);
+      if (error.code === 'P2002') {
+        res.status(400).json({ error: 'Event slug already exists' });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  }
+
+  /**
+   * Get organization events
+   */
+  async getEvents(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // Check if user has access to this organization
+      const hasAccess = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId
+      );
+
+      if (!hasAccess) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+
+      const events = await prisma.event.findMany({
+        where: { organizationId } as any,
+        include: {
+          _count: {
+            select: {
+              reports: true,
+              userEventRoles: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json({ events });
+    } catch (error: any) {
+      console.error('Error getting organization events:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
