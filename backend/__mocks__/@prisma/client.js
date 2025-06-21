@@ -15,7 +15,11 @@ const inMemoryStore = {
   organizationMemberships: [
     { id: "1", organizationId: "1", userId: "1", role: "org_admin", createdById: "1" }
   ],
-  users: [{ id: "1", email: "admin@example.com", name: "Admin" }],
+  users: [
+    { id: "1", email: "admin@example.com", name: "Admin" },
+    { id: "2", email: "reporter@example.com", name: "Reporter User" },
+    { id: "3", email: "responder@example.com", name: "Responder User" }
+  ],
   userEventRoles: [
     {
       userId: "1",
@@ -24,14 +28,51 @@ const inMemoryStore = {
       role: { name: "SuperAdmin" },
       user: { id: "1", email: "admin@example.com", name: "Admin" },
     },
+    {
+      userId: "2",
+      eventId: "1",
+      roleId: "4",
+      role: { name: "Reporter" },
+      user: { id: "2", email: "reporter@example.com", name: "Reporter User" },
+    },
+    {
+      userId: "3",
+      eventId: "1",
+      roleId: "3",
+      role: { name: "Responder" },
+      user: { id: "3", email: "responder@example.com", name: "Responder User" },
+    },
   ],
-  reports: [{ id: "r1", eventId: "1", state: "submitted" }],
+  reports: [
+    { id: "r1", eventId: "1", state: "submitted" },
+    { 
+      id: "1", 
+      eventId: "1", 
+      state: "submitted", 
+      reporterId: "2", 
+      title: "Test Report", 
+      description: "Test description",
+      type: "harassment",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ],
   auditLogs: [
-    // Example state change log for report r1
+    // Example state change log for report r1 (for existing tests)
+    {
+      id: "al0",
+      targetType: "Report",
+      targetId: "r1",
+      action: "State changed from submitted to acknowledged",
+      userId: "1",
+      timestamp: new Date(),
+      user: { name: "Admin", email: "admin@example.com" }
+    },
+    // Example state change log for report 1 (for new tests)
     {
       id: "al1",
       targetType: "Report",
-      targetId: "r1",
+      targetId: "1",
       action: "State changed from submitted to acknowledged",
       userId: "1",
       timestamp: new Date(),
@@ -55,9 +96,9 @@ const inMemoryStore = {
       mimetype: "text/plain; charset=utf-8",
       size: 10,
       data: Buffer.from("downloadme"),
-      reportId: "r1",
+      reportId: "1",
       report: {
-        id: "r1",
+        id: "1",
         eventId: "1",
         event: { id: "1", name: "Event1", slug: "event1" }
       }
