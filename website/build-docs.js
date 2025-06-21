@@ -115,8 +115,39 @@ For more information, see the [API Documentation Setup Guide](/developer-docs/ap
   const fallbackPath = path.join(apiDocsDir, 'conducky-api.info.mdx');
   fs.writeFileSync(fallbackPath, fallbackContent);
   
+  // Create API index page
+  const indexContent = `---
+id: api-index
+title: API Documentation
+slug: /api
+---
+
+# Conducky API Documentation
+
+Welcome to the Conducky API documentation. 
+
+[View the complete API reference →](/api/conducky-api)
+
+## Quick Links
+
+- [Authentication](/api/user-login)
+- [Events](/api/get-all-events)  
+- [Reports](/api/get-reports)
+- [Users](/api/get-users)
+- [Schemas](/api/schemas/user)
+`;
+  
+  const indexPath = path.join(apiDocsDir, 'index.md');
+  fs.writeFileSync(indexPath, indexContent);
+  
   // Create sidebar.ts file
   const sidebarContent = `export default [
+  {
+    type: "doc",
+    id: "api/api-index",
+    label: "API Overview",
+    className: "api-method"
+  },
   {
     type: "doc",
     id: "api/conducky-api",
