@@ -94,14 +94,14 @@ describe('Enhanced Event Reports API Integration Tests', () => {
       {
         userId: '1',
         eventId: 'event1',
-        roleId: 'admin-role',
+        roleId: '2', // Event Admin role ID
         event: mockEvents[0],
         role: { name: 'Event Admin' }
       },
       {
         userId: '3',
         eventId: 'event1',
-        roleId: 'reporter-role',
+        roleId: '4', // Reporter role ID
         event: mockEvents[0],
         role: { name: 'Reporter' }
       }

@@ -90,7 +90,7 @@ export class EventService {
       }
 
       // Return the highest role for this event
-      const roleHierarchy = ['SuperAdmin', 'Admin', 'Responder', 'Reporter'];
+      const roleHierarchy = ['SuperAdmin', 'Event Admin', 'Responder', 'Reporter'];
       for (const role of roleHierarchy) {
         if (userEventRoles.some(uer => uer.role.name === role)) {
           return role;

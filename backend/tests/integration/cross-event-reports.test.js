@@ -102,14 +102,14 @@ describe('Cross-Event Reports API Integration Tests', () => {
       {
         userId: '1',
         eventId: 'event1',
-        roleId: 'admin-role',
+        roleId: '2', // Event Admin role ID
         event: mockEvents[0],
         role: { name: 'Event Admin' }
       },
       {
         userId: '1',
         eventId: 'event2',
-        roleId: 'responder-role',
+        roleId: '3', // Responder role ID
         event: mockEvents[1],
         role: { name: 'Responder' }
       }

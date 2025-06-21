@@ -176,37 +176,36 @@ class PrismaClient {
           if (where.user && where.user.OR) {
             results = results.filter((uer) => {
               return where.user.OR.some((cond) => {
-                if (cond.name && cond.name.contains) {
-                  if (
-                    !uer.user.name ||
-                    !uer.user.name
-                      .toLowerCase()
-                      .includes(cond.name.contains.toLowerCase())
-                  )
-                    return false;
+                if (cond.email) {
+                  return uer.user && uer.user.email === cond.email;
                 }
-                if (cond.email && cond.email.contains) {
-                  if (
-                    !uer.user.email ||
-                    !uer.user.email
-                      .toLowerCase()
-                      .includes(cond.email.contains.toLowerCase())
-                  )
-                    return false;
-                }
-                return true;
+                return false;
               });
             });
           }
         }
-        // If include.role is true, populate the role property from inMemoryStore.roles
-        if (include && include.role) {
-          results = results.map((uer) => ({
-            ...uer,
-            role:
-              inMemoryStore.roles.find((r) => r.id === uer.roleId) || uer.role,
-          }));
+        
+        if (include) {
+          results = results.map((result) => {
+            const enhancedResult = { ...result };
+            
+            if (include.role) {
+              // Role is already included in the mock data
+              enhancedResult.role = result.role;
+            }
+            
+            if (include.event) {
+              // Find the event
+              const event = inMemoryStore.events.find(e => String(e.id) === String(result.eventId));
+              if (event) {
+                enhancedResult.event = event;
+              }
+            }
+            
+            return enhancedResult;
+          });
         }
+        
         return results;
       }),
       count: jest.fn(({ where }) => {
@@ -314,14 +313,27 @@ class PrismaClient {
             );
           }
         }
-        if (include && include.role) {
-          results = results.map((uer) => ({
-            ...uer,
-            role:
-              inMemoryStore.roles.find((r) => r.id === uer.roleId) || uer.role,
-          }));
+        
+        if (results.length === 0) {
+          return null;
         }
-        return results.length > 0 ? results[0] : null;
+        
+        let result = results[0];
+        
+        // Handle includes
+        if (include) {
+          result = { ...result };
+          
+          if (include.role) {
+            result.role = inMemoryStore.roles.find((r) => r.id === result.roleId) || result.role;
+          }
+          
+          if (include.event) {
+            result.event = inMemoryStore.events.find((e) => e.id === result.eventId) || result.event;
+          }
+        }
+        
+        return result;
       }),
       upsert: jest.fn(async ({ where, update, create }) => {
         const idx = inMemoryStore.userEventRoles.findIndex(
@@ -740,7 +752,7 @@ class PrismaClient {
         inMemoryStore.auditLogs.push(log);
         return log;
       }),
-      findMany: jest.fn(({ where, orderBy, skip, take }) => {
+      findMany: jest.fn(({ where, orderBy, skip, take, include }) => {
         let results = [...inMemoryStore.auditLogs];
         
         if (where) {
@@ -750,15 +762,38 @@ class PrismaClient {
           if (where.eventId) {
             results = results.filter((log) => log.eventId === where.eventId);
           }
+          if (where.targetType) {
+            results = results.filter((log) => log.targetType === where.targetType);
+          }
+          if (where.targetId) {
+            results = results.filter((log) => log.targetId === where.targetId);
+          }
         }
         
-        // Apply ordering
+        // Apply ordering - use timestamp instead of createdAt
         if (orderBy) {
-          if (orderBy.createdAt === 'desc') {
-            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          } else if (orderBy.createdAt === 'asc') {
-            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          if (orderBy.timestamp === 'desc') {
+            results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+          } else if (orderBy.timestamp === 'asc') {
+            results.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
           }
+          // Also support createdAt for backward compatibility
+          if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
+          } else if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt || a.timestamp) - new Date(b.createdAt || b.timestamp));
+          }
+        }
+        
+        // Apply includes
+        if (include && include.user) {
+          results = results.map(log => {
+            const user = inMemoryStore.users.find(u => u.id === log.userId);
+            return {
+              ...log,
+              user: user || null
+            };
+          });
         }
         
         // Apply pagination
@@ -876,17 +911,42 @@ class PrismaClient {
         return newEvidence;
       }),
       // findUnique should only be used for id, not reportId (reportId is not unique)
-      findUnique: jest.fn(({ where }) => {
+      findUnique: jest.fn(({ where, include }) => {
         if (!inMemoryStore.evidenceFiles) return null;
         if (where.id) {
           const found = inMemoryStore.evidenceFiles.find(
             (e) => e.id === where.id,
           );
+          if (!found) return null;
+          
           // Ensure .data is a Buffer (simulate DB binary storage)
-          if (found && !(found.data instanceof Buffer)) {
+          if (!(found.data instanceof Buffer)) {
             found.data = Buffer.from(found.data);
           }
-          return found || null;
+          
+          // Handle includes
+          if (include) {
+            const result = { ...found };
+            
+            if (include.report) {
+              const report = inMemoryStore.reports.find(r => r.id === found.reportId);
+              if (report) {
+                result.report = { ...report };
+                
+                // Handle nested includes
+                if (include.report.include && include.report.include.event) {
+                  const event = inMemoryStore.events.find(e => e.id === report.eventId);
+                  if (event) {
+                    result.report.event = event;
+                  }
+                }
+              }
+            }
+            
+            return result;
+          }
+          
+          return found;
         }
         return null;
       }),
@@ -1330,7 +1390,7 @@ class PrismaClient {
       create: jest.fn(({ data }) => {
         const attempt = {
           id: `ra${inMemoryStore.rateLimitAttempts.length + 1}`,
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(),
           ...data,
         };
         inMemoryStore.rateLimitAttempts.push(attempt);
@@ -1350,7 +1410,7 @@ class PrismaClient {
         
         return { count: originalLength - inMemoryStore.rateLimitAttempts.length };
       }),
-      findFirst: jest.fn(({ where }) => {
+      findFirst: jest.fn(({ where, orderBy }) => {
         let results = [...inMemoryStore.rateLimitAttempts];
         
         if (where) {
@@ -1359,6 +1419,19 @@ class PrismaClient {
           }
           if (where.type) {
             results = results.filter((attempt) => attempt.type === where.type);
+          }
+          if (where.createdAt && where.createdAt.gte) {
+            const gteDate = new Date(where.createdAt.gte);
+            results = results.filter((attempt) => new Date(attempt.createdAt) >= gteDate);
+          }
+        }
+        
+        // Apply ordering
+        if (orderBy) {
+          if (orderBy.createdAt === 'asc') {
+            results.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          } else if (orderBy.createdAt === 'desc') {
+            results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           }
         }
         

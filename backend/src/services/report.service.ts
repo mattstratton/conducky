@@ -455,15 +455,15 @@ export class ReportService {
           };
         }
 
-        const hasResponderRole = assignedUser.userEventRoles.some((er: any) => 
-          ['Responder', 'Admin'].includes(er.role.name) || 
-          ['responder', 'admin'].includes(er.role.name.toLowerCase())
+        const hasResponderOrAdmin = assignedUser.userEventRoles.some((er: any) => 
+                  ['Responder', 'Event Admin', 'SuperAdmin'].includes(er.role.name) ||
+        ['responder', 'event admin'].includes(er.role.name.toLowerCase())
         );
 
-        if (!hasResponderRole) {
+        if (!hasResponderOrAdmin) {
           return {
             success: false,
-            error: 'Assigned user must have Responder or Admin role for this event.'
+            error: 'Assigned user must have Responder or Event Admin role for this event.'
           };
         }
       }
@@ -985,7 +985,7 @@ export class ReportService {
 
       eventRoles.forEach((eventData: any, eventId: string) => {
         const roles = eventData.roles;
-        const hasResponderOrAdmin = roles.some((r: string) => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+        const hasResponderOrAdmin = roles.some((r: string) => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
 
         if (hasResponderOrAdmin) {
           responderAdminEvents.push(eventId);
@@ -1172,7 +1172,7 @@ export class ReportService {
       });
 
       const roles = userEventRoles.map(uer => uer.role.name);
-      const isResponderOrAbove = roles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+      const isResponderOrAbove = roles.some(r => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
 
       const hasAccess = isReporter || isResponderOrAbove;
 
@@ -1215,7 +1215,7 @@ export class ReportService {
       });
 
       const userRoles = userEventRoles.map(uer => uer.role.name);
-      const isAdminOrSuper = userRoles.includes('Admin') || userRoles.includes('SuperAdmin');
+      const isAdminOrSuper = userRoles.includes('Event Admin') || userRoles.includes('SuperAdmin');
 
       const canEdit = isReporter || isAdminOrSuper;
 
@@ -1263,7 +1263,7 @@ export class ReportService {
         });
 
         const userRoles = userEventRoles.map(uer => uer.role.name);
-        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
 
         const canEdit = isReporter || isResponderOrAbove;
 
@@ -1391,7 +1391,7 @@ export class ReportService {
         });
 
         const userRoles = userEventRoles.map(uer => uer.role.name);
-        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+        const isResponderOrAbove = userRoles.some(r => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
 
         const canEdit = isReporter || isResponderOrAbove;
 
@@ -1500,7 +1500,7 @@ export class ReportService {
       let baseWhere: any = { eventId };
 
       // Role-based access control
-      if (userRoles.includes('Reporter') && !userRoles.includes('Responder') && !userRoles.includes('Admin')) {
+      if (userRoles.includes('Reporter') && !userRoles.includes('Responder') && !userRoles.includes('Event Admin')) {
         // Reporters can only see their own reports
         baseWhere.reporterId = userId;
       }
@@ -1729,7 +1729,7 @@ export class ReportService {
       }
 
       const userRoles = userEventRoles.map(uer => uer.role.name);
-      const canBulkUpdate = userRoles.some(role => ['Responder', 'Admin', 'SuperAdmin'].includes(role));
+      const canBulkUpdate = userRoles.some(role => ['Responder', 'Event Admin', 'SuperAdmin'].includes(role));
 
       if (!canBulkUpdate) {
         return {

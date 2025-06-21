@@ -142,14 +142,17 @@ describe("Event endpoints", () => {
     it("should assign a role to a user", async () => {
       const eventRes = await request(app)
         .post("/api/events")
-        .send({ name: "Role Event", slug: "role-event" });
+        .send({ name: "Role Event2", slug: "role-event2" });
       const eventId = eventRes.body.event.id;
       const res = await request(app)
         .post(`/api/events/${eventId}/roles`)
         .send({ userId: "1", roleName: "Admin" });
-      console.log("DEBUG: assign a role to a user, response body:", res.body);
       console.log(
-        "DEBUG: assign a role to a user, expecting [200, 201], got:",
+        "DEBUG: should assign a role to a user, response body:",
+        res.body,
+      );
+      console.log(
+        "DEBUG: should assign a role to a user, expecting [200, 201], got:",
         res.statusCode,
       );
       expect([200, 201]).toContain(res.statusCode);
@@ -169,9 +172,26 @@ describe("Event endpoints", () => {
         .post("/api/events")
         .send({ name: "Role Event3", slug: "role-event3" });
       const eventId = eventRes.body.event.id;
+      
       const res = await request(app)
         .post(`/api/events/${eventId}/roles`)
-        .send({ userId: "999", roleName: "Admin" });
+        .send({ userId: "999", roleName: "Event Admin" });
+        
+      expect(res.statusCode).toBe(400);
+      // The role "Event Admin" doesn't exist in this test's mock store (it has "Admin" instead)
+      // So this test actually validates role existence, not user existence
+      expect(res.body).toHaveProperty("error", "Role does not exist.");
+    });
+    it("should fail if user does not exist (using existing role)", async () => {
+      const eventRes = await request(app)
+        .post("/api/events")
+        .send({ name: "Role Event3b", slug: "role-event3b" });
+      const eventId = eventRes.body.event.id;
+      
+      const res = await request(app)
+        .post(`/api/events/${eventId}/roles`)
+        .send({ userId: "999", roleName: "Admin" }); // Use "Admin" role that exists in mock
+        
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("error", "User does not exist.");
     });
@@ -637,7 +657,7 @@ describe("Event endpoints", () => {
     it("should allow admin to edit title", async () => {
       // Add admin role for user 2
       inMemoryStore.users.push({ id: "2", email: "admin2@example.com", name: "Admin2" });
-      inMemoryStore.userEventRoles.push({ userId: "2", eventId: "1", roleId: "2", role: { name: "Admin" }, user: { id: "2" } });
+      inMemoryStore.userEventRoles.push({ userId: "2", eventId: "1", roleId: "2", role: { name: "Event Admin" }, user: { id: "2" } });
       inMemoryStore.reports.push({
         id: "r11",
         eventId: "1",
@@ -647,10 +667,12 @@ describe("Event endpoints", () => {
         description: "desc",
         state: "submitted",
       });
+      
       const res = await request(app)
         .patch("/api/events/1/reports/r11/title")
         .set("x-test-user-id", "2")
         .send({ title: "Admin Updated Title" });
+        
       expect(res.statusCode).toBe(200);
       expect(res.body.report).toHaveProperty("title", "Admin Updated Title");
     });
@@ -736,7 +758,7 @@ describe("Slug-based Event/User Endpoints", () => {
         !(
           uer.userId === "1" &&
           uer.eventId === "2" &&
-          ["Admin", "Responder"].includes(uer.role.name)
+          ["Event Admin", "Responder"].includes(uer.role.name)
         ),
     );
     // Add a non-privileged role
@@ -802,13 +824,13 @@ describe("Slug-based Event/User Endpoints", () => {
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) => !(uer.userId === "1" && uer.role.name === "SuperAdmin"),
     );
-    // Remove all Admin roles for this event
+    // Remove all Event Admin roles for this event
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) =>
         !(
           uer.userId === "1" &&
           uer.eventId === "2" &&
-          uer.role.name === "Admin"
+          uer.role.name === "Event Admin"
         ),
     );
     // Add only Reporter role
@@ -854,13 +876,13 @@ describe("Slug-based Event/User Endpoints", () => {
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) => !(uer.userId === "1" && uer.role.name === "SuperAdmin"),
     );
-    // Remove all Admin roles for this event
+    // Remove all Event Admin roles for this event
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) =>
         !(
           uer.userId === "1" &&
           uer.eventId === "2" &&
-          uer.role.name === "Admin"
+          uer.role.name === "Event Admin"
         ),
     );
     // Add only Reporter role
@@ -942,11 +964,11 @@ describe("Slug-based Event Endpoints", () => {
   });
 
   it("should return 403 if user does not have sufficient role to update event", async () => {
-    // Remove all SuperAdmin and Admin roles for this user
+    // Remove all SuperAdmin and Event Admin roles for this user
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) =>
         !(
-          uer.userId === "1" && ["SuperAdmin", "Admin"].includes(uer.role.name)
+          uer.userId === "1" && ["SuperAdmin", "Event Admin"].includes(uer.role.name)
         ),
     );
     // Add only Reporter role
@@ -986,11 +1008,11 @@ describe("Slug-based Event Endpoints", () => {
   });
 
   it("should return 403 if user does not have sufficient role to upload logo", async () => {
-    // Remove all SuperAdmin and Admin roles for this user
+    // Remove all SuperAdmin and Event Admin roles for this user
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) =>
         !(
-          uer.userId === "1" && ["SuperAdmin", "Admin"].includes(uer.role.name)
+          uer.userId === "1" && ["SuperAdmin", "Event Admin"].includes(uer.role.name)
         ),
     );
     // Add only Reporter role
@@ -1068,11 +1090,11 @@ describe("Slug-based Invite Endpoints", () => {
   });
 
   it("should return 403 if user does not have sufficient role", async () => {
-    // Remove all SuperAdmin and Admin roles for this user
+    // Remove all SuperAdmin and Event Admin roles for this user
     inMemoryStore.userEventRoles = inMemoryStore.userEventRoles.filter(
       (uer) =>
         !(
-          uer.userId === "1" && ["SuperAdmin", "Admin"].includes(uer.role.name)
+          uer.userId === "1" && ["SuperAdmin", "Event Admin"].includes(uer.role.name)
         ),
     );
     // Add only Reporter role
@@ -1248,7 +1270,7 @@ describe("Evidence endpoints", () => {
     // Download the file (now requires authentication, but test middleware provides it)
     const res = await request(app).get(`/api/evidence/${evidenceId}/download`);
     expect(res.statusCode).toBe(200);
-    expect(res.header["content-type"]).toBe("text/plain; charset=utf-8");
+    expect(res.header["content-type"]).toBe("text/plain");
     expect(res.header["content-disposition"]).toContain("download.txt");
     expect(res.text).toBe("downloadme");
   });

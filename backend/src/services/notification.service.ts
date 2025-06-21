@@ -415,7 +415,7 @@ export class NotificationService {
         where: {
           eventId: report.eventId,
           role: {
-            name: { in: ['Admin', 'Responder'] }
+            name: { in: ['Event Admin', 'Responder'] }
           }
         },
         include: { user: true }

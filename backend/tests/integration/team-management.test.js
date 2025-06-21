@@ -79,7 +79,7 @@ beforeEach(() => {
   inMemoryStore.events = [{ id: "1", name: "Event1", slug: "event1" }];
   inMemoryStore.roles = [
     { id: "1", name: "SuperAdmin" },
-    { id: "2", name: "Admin" },
+    { id: "2", name: "Event Admin" },
     { id: "3", name: "Responder" },
     { id: "4", name: "Reporter" },
   ];
@@ -93,7 +93,7 @@ beforeEach(() => {
       userId: "1",
       eventId: "1",
       roleId: "2",
-      role: { name: "Admin" },
+      role: { name: "Event Admin" },
       user: { id: "1", email: "admin@example.com", name: "Admin", createdAt: new Date('2024-01-01') },
     },
     {

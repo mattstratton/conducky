@@ -388,7 +388,7 @@ export class UserService {
       
       eventRoles.forEach((eventData: any, eventId: string) => {
         const roles = eventData.roles;
-        const hasResponderOrAdmin = roles.some((r: string) => ['Responder', 'Admin', 'SuperAdmin'].includes(r));
+        const hasResponderOrAdmin = roles.some((r: string) => ['Responder', 'Event Admin', 'SuperAdmin'].includes(r));
         
         if (hasResponderOrAdmin) {
           responderAdminEvents.push(eventId);

@@ -533,7 +533,7 @@ export class CommentService {
         // Check if user is reporter, assigned responder, or has admin/responder role
         const isReporter = report.reporterId === userId;
         const isAssigned = report.assignedResponderId === userId;
-        const hasResponderRole = ['Admin', 'Responder', 'SuperAdmin'].includes(userRole);
+        const hasResponderRole = ['Event Admin', 'Responder', 'SuperAdmin'].includes(userRole);
 
         if (isReporter || isAssigned || hasResponderRole) {
           visibleComments.push('internal');

@@ -230,9 +230,9 @@ describe("Profile Management API", () => {
           id: "uer1",
           userId: mockUser.id,
           eventId: mockEvent.id,
-          roleId: "2", // Admin role
+          roleId: "2", // Event Admin role
           event: mockEvent,
-          role: { id: "2", name: "Admin" }
+          role: { id: "2", name: "Event Admin" }
         }
       ];
 
@@ -274,7 +274,7 @@ describe("Profile Management API", () => {
           eventId: "event1",
           roleId: "2",
           event: { id: "event1", name: "Event 1", slug: "event-1", description: "First event" },
-          role: { id: "2", name: "Admin" }
+          role: { id: "2", name: "Event Admin" }
         },
         {
           id: "uer2",
@@ -301,7 +301,7 @@ describe("Profile Management API", () => {
       expect(res.body.events).toHaveLength(2); // Two unique events
       
       const event1 = res.body.events.find(e => e.id === "event1");
-      expect(event1.roles).toEqual(["Admin", "Reporter"]);
+      expect(event1.roles).toEqual(["Event Admin", "Reporter"]);
       
       const event2 = res.body.events.find(e => e.id === "event2");
       expect(event2.roles).toEqual(["Responder"]);

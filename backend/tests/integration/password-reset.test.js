@@ -374,7 +374,7 @@ describe("Password Reset Integration Tests", () => {
   describe("Rate Limiting", () => {
     beforeEach(() => {
       // Clear rate limiting state between tests
-      // Note: In a real implementation, you'd want to clear the rate limiting store
+      inMemoryStore.rateLimitAttempts = [];
       inMemoryStore.users = [
         { id: "1", email: "ratelimit@example.com", name: "Rate Test", passwordHash: "hashedpassword" }
       ];
@@ -407,6 +407,22 @@ describe("Password Reset Integration Tests", () => {
       expect(res.statusCode).toBe(429);
       expect(res.body.error).toContain("Too many password reset attempts");
       expect(res.body.error).toContain("minutes");
+    });
+
+    it("should verify rate limiting logic at service level", async () => {
+      const AuthService = require('../../src/services/auth.service').AuthService;
+      const authService = new AuthService(require('../../__mocks__/@prisma/client').prismaMock);
+
+      // Make 3 attempts
+      for (let i = 0; i < 3; i++) {
+        await authService.requestPasswordReset({ email: "servicetest@example.com" });
+      }
+
+      // 4th attempt should be blocked
+      const result = await authService.requestPasswordReset({ email: "servicetest@example.com" });
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Too many password reset attempts");
     });
   });
 
