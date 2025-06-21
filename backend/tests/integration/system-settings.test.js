@@ -114,10 +114,10 @@ describe("System Settings Integration Tests", () => {
     ];
   });
 
-  describe("GET /api/system/settings", () => {
-    it("should allow unauthenticated access to system settings", async () => {
+  describe("GET /api/system/settings/public", () => {
+    it("should allow unauthenticated access to public system settings", async () => {
       const response = await request(app)
-        .get("/api/system/settings")
+        .get("/api/system/settings/public")
         .expect(200);
 
       expect(response.body).toHaveProperty("settings");
@@ -125,26 +125,73 @@ describe("System Settings Integration Tests", () => {
       expect(response.body.settings).toHaveProperty("showPublicEventList");
     });
 
-    it("should return system settings to authenticated users", async () => {
+    it("should only return safe public settings", async () => {
+      // Add a sensitive setting to the mock store
+      inMemoryStore.systemSettings.push({ 
+        id: "sensitive", 
+        key: "sensitiveApiKey", 
+        value: "secret123" 
+      });
+
+      const response = await request(app)
+        .get("/api/system/settings/public")
+        .expect(200);
+
+      expect(response.body.settings).toHaveProperty("showPublicEventList");
+      expect(response.body.settings).not.toHaveProperty("sensitiveApiKey");
+    });
+  });
+
+  describe("GET /api/system/settings (legacy endpoint)", () => {
+    it("should allow unauthenticated access but only return public settings", async () => {
+      // Add a sensitive setting to the mock store
+      inMemoryStore.systemSettings.push({ 
+        id: "sensitive", 
+        key: "sensitiveApiKey", 
+        value: "secret123" 
+      });
+
       const response = await request(app)
         .get("/api/system/settings")
-        .set('x-test-user-id', '2') // Regular user
         .expect(200);
 
       expect(response.body).toHaveProperty("settings");
       expect(response.body.settings).toHaveProperty("showPublicEventList");
-      expect(response.body.settings.showPublicEventList).toBe("false");
+      expect(response.body.settings).not.toHaveProperty("sensitiveApiKey");
+    });
+  });
+
+  describe("GET /api/admin/system/settings", () => {
+    it("should require authentication", async () => {
+      await request(app)
+        .get("/api/admin/system/settings")
+        .expect(401);
     });
 
-    it("should return system settings to SuperAdmin", async () => {
+    it("should require SuperAdmin role", async () => {
+      await request(app)
+        .get("/api/admin/system/settings")
+        .set('x-test-user-id', '2') // Regular user (not SuperAdmin)
+        .expect(403);
+    });
+
+    it("should return all system settings to SuperAdmin", async () => {
+      // Add sensitive settings to the mock store
+      inMemoryStore.systemSettings.push({ 
+        id: "sensitive", 
+        key: "sensitiveApiKey", 
+        value: "secret123" 
+      });
+
       const response = await request(app)
-        .get("/api/system/settings")
+        .get("/api/admin/system/settings")
         .set('x-test-user-id', '1') // SuperAdmin user
         .expect(200);
 
       expect(response.body).toHaveProperty("settings");
       expect(response.body.settings).toHaveProperty("showPublicEventList");
-      expect(response.body.settings.showPublicEventList).toBe("false");
+      expect(response.body.settings).toHaveProperty("sensitiveApiKey");
+      expect(response.body.settings.sensitiveApiKey).toBe("secret123");
     });
   });
 
@@ -266,9 +313,9 @@ describe("System Settings Integration Tests", () => {
         .send({ showPublicEventList: "false" })
         .expect(200);
 
-      // Check settings
+      // Check settings via public endpoint
       const response1 = await request(app)
-        .get("/api/system/settings")
+        .get("/api/system/settings/public")
         .expect(200);
 
       expect(response1.body.settings.showPublicEventList).toBe("false");
@@ -280,12 +327,19 @@ describe("System Settings Integration Tests", () => {
         .send({ showPublicEventList: "true" })
         .expect(200);
 
-      // Check settings
+      // Check settings via public endpoint
       const response2 = await request(app)
-        .get("/api/system/settings")
+        .get("/api/system/settings/public")
         .expect(200);
 
       expect(response2.body.settings.showPublicEventList).toBe("true");
+
+      // Verify legacy endpoint also works
+      const response3 = await request(app)
+        .get("/api/system/settings")
+        .expect(200);
+
+      expect(response3.body.settings.showPublicEventList).toBe("true");
     });
   });
 }); 

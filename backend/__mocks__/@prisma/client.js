@@ -1439,7 +1439,14 @@ class PrismaClient {
       }),
     };
     this.systemSetting = {
-      findMany: jest.fn(() => [...inMemoryStore.systemSettings]),
+      findMany: jest.fn(({ where } = {}) => {
+        let results = [...inMemoryStore.systemSettings];
+        if (where && where.key && where.key.in) {
+          // Filter by key array (for public settings)
+          results = results.filter(s => where.key.in.includes(s.key));
+        }
+        return results;
+      }),
       findUnique: jest.fn(({ where }) => {
         return inMemoryStore.systemSettings.find(s => s.key === where.key) || null;
       }),

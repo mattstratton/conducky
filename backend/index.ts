@@ -211,11 +211,16 @@ app.get('/api/session', async (req: any, res: any) => {
   }
 });
 
-// System settings route (frontend expects /api/system/settings)
-app.get('/api/system/settings', async (_req: any, res: any) => {
+// Public system settings that can be exposed without authentication
+const PUBLIC_SETTINGS = ['showPublicEventList'];
+
+// Public system settings route (only safe settings, no authentication required)
+app.get('/api/system/settings/public', async (_req: any, res: any) => {
   try {
-    // Get system settings from database
-    const settings = await prisma.systemSetting.findMany();
+    // Only expose safe, public settings
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { in: PUBLIC_SETTINGS } }
+    });
     
     // Convert array to object for easier frontend usage
     const settingsObj: Record<string, string> = {};
@@ -225,7 +230,29 @@ app.get('/api/system/settings', async (_req: any, res: any) => {
     
     res.json({ settings: settingsObj });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to fetch system settings', details: err.message });
+    console.error('Error fetching public system settings:', err);
+    res.status(500).json({ error: 'Failed to fetch system settings' });
+  }
+});
+
+// Legacy system settings route (now returns only public settings for backward compatibility)
+app.get('/api/system/settings', async (_req: any, res: any) => {
+  try {
+    // Only expose safe, public settings (same as /public endpoint for security)
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { in: PUBLIC_SETTINGS } }
+    });
+    
+    // Convert array to object for easier frontend usage
+    const settingsObj: Record<string, string> = {};
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    res.json({ settings: settingsObj });
+  } catch (err: any) {
+    console.error('Error fetching system settings:', err);
+    res.status(500).json({ error: 'Failed to fetch system settings' });
   }
 });
 

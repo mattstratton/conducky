@@ -301,6 +301,31 @@ router.get('/events/stats', requireSuperAdmin(), async (req: Request, res: Respo
 });
 
 /**
+ * GET /api/admin/system/settings
+ * Get all system settings (SuperAdmin only)
+ */
+router.get('/system/settings', requireSuperAdmin(), async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get all system settings from database
+    const settings = await prisma.systemSetting.findMany();
+    
+    // Convert array to object for easier frontend usage
+    const settingsObj: Record<string, string> = {};
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    res.json({ settings: settingsObj });
+  } catch (err: any) {
+    console.error('Error fetching admin system settings:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch system settings',
+      ...(process.env.NODE_ENV !== 'production' && { details: err.message })
+    });
+  }
+});
+
+/**
  * PATCH /api/admin/system/settings
  * Update system settings (SuperAdmin only)
  */
@@ -346,7 +371,7 @@ router.patch('/system/settings', requireSuperAdmin(), async (req: Request, res: 
     console.error('Error updating system settings:', error);
     res.status(500).json({
       error: 'Failed to update system settings',
-      details: error.message,
+      ...(process.env.NODE_ENV !== 'production' && { details: error.message })
     });
   }
 });
