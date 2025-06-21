@@ -165,12 +165,29 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
         const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000';
         const actionUrl = `${frontendBaseUrl}/events/${report.event.slug}/reports/${report.id}`;
         
+        // Map notification types with fallback error handling
+        const getNotificationType = (inputType: string): 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' => {
+          const typeMap: Record<string, 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added'> = {
+            'report_submitted': 'report_submitted', 
+            'submitted': 'report_submitted',
+            'report_assigned': 'report_assigned', 
+            'assigned': 'report_assigned',
+            'report_status_changed': 'report_status_changed', 
+            'status_changed': 'report_status_changed',
+            'report_comment_added': 'report_comment_added', 
+            'comment_added': 'report_comment_added'
+          };
+          
+          if (!(inputType in typeMap)) {
+            console.warn(`Unknown notification type: ${inputType}, falling back to 'report_submitted'`);
+            return 'report_submitted';
+          }
+          return typeMap[inputType];
+        };
+
         return createNotification({
           userId: userRole.userId,
-          type: type === 'report_submitted' || type === 'submitted' ? 'report_submitted' : 
-                type === 'report_assigned' || type === 'assigned' ? 'report_assigned' :
-                type === 'report_status_changed' || type === 'status_changed' ? 'report_status_changed' :
-                type === 'report_comment_added' || type === 'comment_added' ? 'report_comment_added' : 'report_submitted',
+          type: getNotificationType(type),
           priority,
           title,
           message,
