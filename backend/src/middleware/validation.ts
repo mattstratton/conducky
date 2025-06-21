@@ -4,8 +4,8 @@
  * This module contains request validation middleware functions
  */
 
-import { body, param, query, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
+import { body, param, query, validationResult } from 'express-validator';
 import validator from 'validator';
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -257,40 +257,191 @@ export const validateOrganization = [
 ];
 
 /**
- * General input sanitization middleware
- * Sanitizes all string inputs in request body, query, and params
+ * Sanitize input middleware with enhanced validation
+ * Applies DOMPurify sanitization to request data while preserving sensitive fields
+ * Enhanced with type validation for sensitive fields
  */
 export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
-  const sanitizeObject = (obj: any): any => {
-    if (typeof obj === 'string') {
-      return sanitizeString(obj);
+  const sanitizeObject = (obj: any, path = ''): any => {
+    if (obj === null || obj === undefined) {
+      return obj;
     }
     
     if (Array.isArray(obj)) {
-      return obj.map(sanitizeObject);
+      return obj.map((item, index) => sanitizeObject(item, `${path}[${index}]`));
     }
     
-    if (obj && typeof obj === 'object') {
+    if (typeof obj === 'object') {
       const sanitized: any = {};
+      
       for (const [key, value] of Object.entries(obj)) {
-        // Skip certain fields that should not be sanitized
-        if (['password', 'token', 'hash'].includes(key.toLowerCase())) {
-          sanitized[key] = value;
+        const fieldPath = path ? `${path}.${key}` : key;
+        
+        // Enhanced validation for sensitive fields
+        if (key.toLowerCase().includes('password')) {
+          // Validate password format without sanitizing
+          if (typeof value === 'string') {
+            // Check for basic password requirements and potential attacks
+            if (value.length < 8 || value.length > 128) {
+              throw new Error(`Invalid password length in ${fieldPath}`);
+            }
+            // Ensure password doesn't contain obvious attack patterns
+            if (/<script|javascript:|on\w+=/gi.test(value)) {
+              throw new Error(`Invalid password format in ${fieldPath}`);
+            }
+            sanitized[key] = value; // Don't sanitize passwords
+          } else {
+            throw new Error(`Password must be a string in ${fieldPath}`);
+          }
+        } else if (key.toLowerCase().includes('token') || key.toLowerCase().includes('hash')) {
+          // Validate token/hash format without sanitizing
+          if (typeof value === 'string') {
+            // Tokens/hashes should be alphanumeric with limited special chars
+            if (!/^[a-zA-Z0-9._-]+$/.test(value)) {
+              throw new Error(`Invalid token/hash format in ${fieldPath}`);
+            }
+            if (value.length > 500) { // Reasonable token length limit
+              throw new Error(`Token/hash too long in ${fieldPath}`);
+            }
+            sanitized[key] = value; // Don't sanitize tokens/hashes
+          } else {
+            throw new Error(`Token/hash must be a string in ${fieldPath}`);
+          }
+        } else if (key.toLowerCase().includes('email')) {
+          // Enhanced email validation
+          if (typeof value === 'string') {
+            if (!validator.isEmail(value)) {
+              throw new Error(`Invalid email format in ${fieldPath}`);
+            }
+            if (value.length > 254) { // RFC 5321 limit
+              throw new Error(`Email too long in ${fieldPath}`);
+            }
+            // Sanitize email but preserve valid format
+            sanitized[key] = DOMPurify.sanitize(value, {
+              ALLOWED_TAGS: [],
+              ALLOWED_ATTR: [],
+            });
+          } else if (value !== null && value !== undefined) {
+            throw new Error(`Email must be a string in ${fieldPath}`);
+          } else {
+            sanitized[key] = value;
+          }
+        } else if (key.toLowerCase().includes('url') || key.toLowerCase().includes('website')) {
+          // Enhanced URL validation
+          if (typeof value === 'string') {
+            if (!validator.isURL(value, { 
+              protocols: ['http', 'https'],
+              require_protocol: true,
+              require_valid_protocol: true,
+              allow_underscores: false,
+              allow_trailing_dot: false,
+              allow_protocol_relative_urls: false
+            })) {
+              throw new Error(`Invalid URL format in ${fieldPath}`);
+            }
+            if (value.length > 2048) { // Reasonable URL length limit
+              throw new Error(`URL too long in ${fieldPath}`);
+            }
+            sanitized[key] = DOMPurify.sanitize(value, {
+              ALLOWED_TAGS: [],
+              ALLOWED_ATTR: [],
+            });
+          } else if (value !== null && value !== undefined) {
+            throw new Error(`URL must be a string in ${fieldPath}`);
+          } else {
+            sanitized[key] = value;
+          }
+        } else if (key.toLowerCase().includes('phone')) {
+          // Enhanced phone validation
+          if (typeof value === 'string') {
+            // Allow international phone formats
+            if (!validator.isMobilePhone(value, 'any', { strictMode: false })) {
+              throw new Error(`Invalid phone format in ${fieldPath}`);
+            }
+            sanitized[key] = DOMPurify.sanitize(value, {
+              ALLOWED_TAGS: [],
+              ALLOWED_ATTR: [],
+            });
+          } else if (value !== null && value !== undefined) {
+            throw new Error(`Phone must be a string in ${fieldPath}`);
+          } else {
+            sanitized[key] = value;
+          }
+        } else if (typeof value === 'string') {
+          // Enhanced sanitization for regular string fields
+          let sanitizedValue = DOMPurify.sanitize(value, {
+            ALLOWED_TAGS: [],
+            ALLOWED_ATTR: [],
+            ALLOW_DATA_ATTR: false,
+            SANITIZE_DOM: true,
+            KEEP_CONTENT: false,
+          });
+          
+          // Additional validation for sanitized content
+          if (sanitizedValue !== value) {
+            // Log when content was modified by sanitization
+            console.warn(`Content sanitized in ${fieldPath}:`, {
+              original: value.substring(0, 100),
+              sanitized: sanitizedValue.substring(0, 100),
+              ip: req.ip,
+              userAgent: req.get('User-Agent'),
+              path: req.path,
+            });
+          }
+          
+          // Check for length limits based on field type
+          if (key.toLowerCase().includes('name') && sanitizedValue.length > 100) {
+            throw new Error(`Name too long in ${fieldPath}`);
+          } else if (key.toLowerCase().includes('description') && sanitizedValue.length > 5000) {
+            throw new Error(`Description too long in ${fieldPath}`);
+          } else if (key.toLowerCase().includes('title') && sanitizedValue.length > 200) {
+            throw new Error(`Title too long in ${fieldPath}`);
+          } else if (sanitizedValue.length > 10000) {
+            throw new Error(`Content too long in ${fieldPath}`);
+          }
+          
+          sanitized[key] = sanitizedValue;
         } else {
-          sanitized[key] = sanitizeObject(value);
+          // Recursively sanitize nested objects
+          sanitized[key] = sanitizeObject(value, fieldPath);
         }
       }
+      
       return sanitized;
     }
     
     return obj;
   };
-
-  req.body = sanitizeObject(req.body);
-  req.query = sanitizeObject(req.query);
-  req.params = sanitizeObject(req.params);
   
-  next();
+  try {
+    // Sanitize request body
+    if (req.body) {
+      req.body = sanitizeObject(req.body, 'body');
+    }
+    
+    // Sanitize query parameters
+    if (req.query) {
+      req.query = sanitizeObject(req.query, 'query');
+    }
+    
+    // Note: We don't sanitize req.params as they should be validated by route handlers
+    // and contain only URL segments
+    
+    next();
+  } catch (error) {
+    console.warn('Input sanitization failed:', error, {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return res.status(400).json({
+      error: 'Invalid input',
+      message: error instanceof Error ? error.message : 'Input validation failed',
+    });
+  }
 };
 
 /**

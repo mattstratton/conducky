@@ -164,36 +164,167 @@ export const corsSecurityOptions = {
 /**
  * Input validation security middleware
  * Checks for common attack patterns in request data
+ * Enhanced with more comprehensive detection patterns
  */
 export const inputSecurityCheck = (req: Request, res: Response, next: NextFunction) => {
   const checkForAttacks = (obj: any, path = ''): string | null => {
     if (typeof obj === 'string') {
-      // Check for common XSS patterns
+      // Enhanced XSS pattern detection
       const xssPatterns = [
+        // Script tags (various encodings)
         /<script[^>]*>.*?<\/script>/gi,
+        /<script[^>]*>/gi,
         /javascript:/gi,
         /vbscript:/gi,
-        /on\w+\s*=/gi,
-        /<iframe[^>]*>.*?<\/iframe>/gi,
-        /<object[^>]*>.*?<\/object>/gi,
-        /<embed[^>]*>.*?<\/embed>/gi,
+        /data:text\/html/gi,
+        /data:application\/javascript/gi,
+        
+        // Event handlers (comprehensive list)
+        /on(load|error|click|mouseover|mouseout|focus|blur|change|submit|reset|select|resize|scroll|unload|beforeunload|hashchange|popstate|storage|message|offline|online|pagehide|pageshow|beforeprint|afterprint|dragstart|drag|dragenter|dragover|dragleave|drop|dragend|copy|cut|paste|selectstart|contextmenu|wheel|touchstart|touchmove|touchend|touchcancel|animationstart|animationend|animationiteration|transitionend)\s*=/gi,
+        
+        // Dangerous HTML elements
+        /<(iframe|object|embed|applet|form|input|textarea|select|option|button|label|fieldset|legend|datalist|output|progress|meter)[^>]*>/gi,
+        /<\/?(iframe|object|embed|applet|form|input|textarea|select|option|button|label|fieldset|legend|datalist|output|progress|meter)>/gi,
+        
+        // CSS expressions and imports
+        /expression\s*\(/gi,
+        /@import/gi,
+        /url\s*\(/gi,
+        
+        // Protocol handlers
+        /^(javascript|vbscript|data|file|ftp):/gi,
+        
+        // HTML entities that could be used for obfuscation
+        /&#x?[0-9a-f]+;/gi,
+        
+        // Base64 encoded potential payloads
+        /data:.*;base64,/gi,
+        
+        // Common XSS vectors
+        /alert\s*\(/gi,
+        /confirm\s*\(/gi,
+        /prompt\s*\(/gi,
+        /eval\s*\(/gi,
+        /setTimeout\s*\(/gi,
+        /setInterval\s*\(/gi,
+        /Function\s*\(/gi,
+        
+        // SVG-based XSS
+        /<svg[^>]*>/gi,
+        /<foreignobject[^>]*>/gi,
+        /<use[^>]*>/gi,
+        
+        // Meta refresh redirects
+        /<meta[^>]*http-equiv[^>]*refresh/gi,
       ];
       
       for (const pattern of xssPatterns) {
         if (pattern.test(obj)) {
-          return `Potential XSS attack detected in ${path}`;
+          return `Potential XSS attack detected in ${path}: ${pattern.source}`;
         }
       }
       
-      // Check for SQL injection patterns
+      // Enhanced SQL injection pattern detection (removed length restriction)
       const sqlPatterns = [
-        /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute)\b)/gi,
-        /(;|\||&|\$|\*|%|@|#)/g,
+        // SQL keywords (case insensitive)
+        /\b(union|select|insert|update|delete|drop|create|alter|exec|execute|declare|cast|convert|having|group\s+by|order\s+by|limit|offset)\b/gi,
+        
+        // SQL injection characters and patterns
+        /('|\"|;|--|\|\||&&|\*|%|@|#|\$|\^|`|~)/g,
+        
+        // SQL functions commonly used in attacks
+        /\b(concat|substring|ascii|char|chr|length|len|mid|left|right|replace|reverse|upper|lower|ltrim|rtrim|trim)\s*\(/gi,
+        
+        // Database-specific functions
+        /\b(sleep|benchmark|waitfor|delay|pg_sleep|dbms_pipe\.receive_message)\s*\(/gi,
+        
+        // Comment patterns used to bypass filters
+        /\/\*.*?\*\//g,
+        /#.*$/gm,
+        /--.*$/gm,
+        
+        // UNION-based injection patterns
+        /\bunion\b.*\bselect\b/gi,
+        
+        // Boolean-based blind injection
+        /\b(and|or)\b\s+\d+\s*[=<>]+\s*\d+/gi,
+        
+        // Time-based blind injection
+        /\bif\s*\(\s*\d+\s*[=<>]+\s*\d+/gi,
+        
+        // Error-based injection
+        /\b(extractvalue|updatexml|exp|floor|rand|count)\s*\(/gi,
       ];
       
       for (const pattern of sqlPatterns) {
-        if (pattern.test(obj) && obj.length > 50) { // Only flag longer strings to avoid false positives
-          return `Potential SQL injection detected in ${path}`;
+        if (pattern.test(obj)) {
+          return `Potential SQL injection detected in ${path}: ${pattern.source}`;
+        }
+      }
+      
+      // NoSQL injection patterns
+      const noSqlPatterns = [
+        /\$where/gi,
+        /\$ne/gi,
+        /\$gt/gi,
+        /\$lt/gi,
+        /\$gte/gi,
+        /\$lte/gi,
+        /\$in/gi,
+        /\$nin/gi,
+        /\$regex/gi,
+        /\$exists/gi,
+        /\$type/gi,
+        /\$mod/gi,
+        /\$all/gi,
+        /\$size/gi,
+        /\$elemMatch/gi,
+        /\$not/gi,
+        /\$or/gi,
+        /\$and/gi,
+        /\$nor/gi,
+      ];
+      
+      for (const pattern of noSqlPatterns) {
+        if (pattern.test(obj)) {
+          return `Potential NoSQL injection detected in ${path}: ${pattern.source}`;
+        }
+      }
+      
+      // Command injection patterns
+      const commandPatterns = [
+        /[;&|`$(){}[\]\\]/g,
+        /\b(cat|ls|dir|type|echo|ping|nslookup|dig|curl|wget|nc|netcat|telnet|ssh|ftp|tftp)\b/gi,
+        /\.\.\//g,
+        /~\//g,
+        /\/etc\/passwd/gi,
+        /\/proc\//gi,
+        /cmd\.exe/gi,
+        /powershell/gi,
+        /bash/gi,
+        /sh\s/gi,
+      ];
+      
+      for (const pattern of commandPatterns) {
+        if (pattern.test(obj)) {
+          return `Potential command injection detected in ${path}: ${pattern.source}`;
+        }
+      }
+      
+      // Path traversal patterns
+      const pathTraversalPatterns = [
+        /\.\.[\/\\]/g,
+        /[\/\\]\.\.[\/\\]/g,
+        /%2e%2e[\/\\]/gi,
+        /%2e%2e%2f/gi,
+        /%2e%2e%5c/gi,
+        /\.\.%2f/gi,
+        /\.\.%5c/gi,
+      ];
+      
+      for (const pattern of pathTraversalPatterns) {
+        if (pattern.test(obj)) {
+          return `Potential path traversal detected in ${path}: ${pattern.source}`;
         }
       }
     }
@@ -219,6 +350,15 @@ export const inputSecurityCheck = (req: Request, res: Response, next: NextFuncti
   if (req.body) {
     const bodyAttack = checkForAttacks(req.body, 'body');
     if (bodyAttack) {
+      // Log the security violation for monitoring
+      console.warn(`Security violation detected: ${bodyAttack}`, {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        timestamp: new Date().toISOString(),
+      });
+      
       return res.status(400).json({
         error: 'Invalid input detected',
         message: 'Request contains potentially malicious content',
@@ -230,6 +370,33 @@ export const inputSecurityCheck = (req: Request, res: Response, next: NextFuncti
   if (req.query) {
     const queryAttack = checkForAttacks(req.query, 'query');
     if (queryAttack) {
+      console.warn(`Security violation detected: ${queryAttack}`, {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        timestamp: new Date().toISOString(),
+      });
+      
+      return res.status(400).json({
+        error: 'Invalid input detected',
+        message: 'Request contains potentially malicious content',
+      });
+    }
+  }
+  
+  // Check URL parameters
+  if (req.params) {
+    const paramsAttack = checkForAttacks(req.params, 'params');
+    if (paramsAttack) {
+      console.warn(`Security violation detected: ${paramsAttack}`, {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        timestamp: new Date().toISOString(),
+      });
+      
       return res.status(400).json({
         error: 'Invalid input detected',
         message: 'Request contains potentially malicious content',
