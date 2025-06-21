@@ -16,7 +16,7 @@ interface User {
 /**
  * Role names supported by the RBAC system
  */
-type RoleName = "SuperAdmin" | "Admin" | "Responder" | "Reporter";
+type RoleName = "SuperAdmin" | "Event Admin" | "Responder" | "Reporter";
 
 /**
  * Middleware to require a user to have one of the allowed roles for an event.
