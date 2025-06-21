@@ -411,15 +411,17 @@ describe("Password Reset Integration Tests", () => {
 
     it("should verify rate limiting logic at service level", async () => {
       const AuthService = require('../../src/services/auth.service').AuthService;
-      const authService = new AuthService(require('../../__mocks__/@prisma/client').prismaMock);
+      const { PrismaClient } = require('../../__mocks__/@prisma/client');
+const prisma = new PrismaClient();
+const authService = new AuthService(prisma);
 
-      // Make 3 attempts
+      // Make 3 attempts using the same email that exists in the test setup
       for (let i = 0; i < 3; i++) {
-        await authService.requestPasswordReset({ email: "servicetest@example.com" });
+        await authService.requestPasswordReset({ email: "ratelimit@example.com" });
       }
 
       // 4th attempt should be blocked
-      const result = await authService.requestPasswordReset({ email: "servicetest@example.com" });
+      const result = await authService.requestPasswordReset({ email: "ratelimit@example.com" });
       
       expect(result.success).toBe(false);
       expect(result.error).toContain("Too many password reset attempts");

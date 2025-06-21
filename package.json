@@ -11,7 +11,7 @@
     "backend": "docker compose up -d --build backend",
     "front-and-back": "docker compose up -d --build frontend backend",
     "all": "docker compose up -d --build",
-    "test:all": "cd backend && npm test && cd ../frontend && npm test && cd ..",
+    "test:all": "cd backend && npm test; cd ../frontend && npm test; cd ..",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "dev:ts": "nodemon --exec ts-node server.ts",

@@ -51,12 +51,13 @@ describe('QuickJump', () => {
     expect(screen.queryByPlaceholderText('Search pages, events, reports...')).not.toBeInTheDocument();
   });
 
-  it('shows default message when no query', () => {
+  it('shows quick access shortcuts when no query', () => {
     renderWithNavigation(
       <QuickJump isOpen={true} onClose={mockOnClose} />
     );
 
-    expect(screen.getByText('Start typing to search...')).toBeInTheDocument();
+    // Should show Quick Access category with default shortcuts
+    expect(screen.getByText('Quick Access')).toBeInTheDocument();
   });
 
   it('handles search input', async () => {
@@ -102,7 +103,7 @@ describe('QuickJump', () => {
       <QuickJump isOpen={true} onClose={mockOnClose} />
     );
 
-    // Should show 0 results initially
-    expect(screen.getByText(/0 result/)).toBeInTheDocument();
+    // Should show the default shortcuts count (not 0, since shortcuts are shown by default)
+    expect(screen.getByText(/Quick jump • \d+ results?/)).toBeInTheDocument();
   });
 }); 

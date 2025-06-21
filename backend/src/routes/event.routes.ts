@@ -518,7 +518,7 @@ router.post('/:eventId/reports', requireRole(['Reporter', 'Responder', 'Event Ad
     // Trigger notifications for new report submission
     try {
       if (result.data?.report?.id) {
-        await notifyReportEvent(result.data.report.id, 'submitted', user.id);
+        await notifyReportEvent(result.data.report.id, 'report_submitted', user.id);
       }
     } catch (notificationError) {
       console.error('Failed to send notifications for new report:', notificationError);
@@ -663,13 +663,13 @@ router.patch('/:eventId/reports/:reportId/state', requireRole(['Event Admin', 'S
     try {
       // Always notify about state change if state actually changed
       if (oldState !== stateValue) {
-        await notifyReportEvent(reportId, 'status_changed', userId);
+        await notifyReportEvent(reportId, 'report_status_changed', userId);
       }
       
       // Notify about assignment if assignment changed
       if (assignedUserId && assignedUserId !== oldAssignedUserId) {
         // For assignments, don't exclude the assigned user even if they assigned it to themselves
-        await notifyReportEvent(reportId, 'assigned', null);
+        await notifyReportEvent(reportId, 'report_assigned', null);
       }
     } catch (notificationError) {
       console.error('Failed to send notifications:', notificationError);
@@ -1253,7 +1253,10 @@ router.post('/slug/:slug/reports/bulk', requireRole(['Responder', 'Event Admin',
     }
 
     // Process bulk action
-    console.log('[BULK DEBUG] Calling bulkUpdateReports with:', { eventId, reportIds, action, options: { assignedTo, status, notes, userId: user.id } });
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('[BULK DEBUG] Calling bulkUpdateReports with:', { eventId, reportIds, action, options: { assignedTo, status, notes, userId: user.id } });
+    }
+    
     const result = await reportService.bulkUpdateReports(eventId, reportIds, action, {
       assignedTo,
       status,
@@ -1261,7 +1264,9 @@ router.post('/slug/:slug/reports/bulk', requireRole(['Responder', 'Event Admin',
       userId: user.id
     });
     
-    console.log('[BULK DEBUG] Service result:', result);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('[BULK DEBUG] Service result:', result);
+    }
     
     if (!result.success) {
       res.status(500).json({ error: result.error });
@@ -1348,7 +1353,7 @@ router.post('/slug/:slug/reports', requireRole(['Reporter', 'Responder', 'Event 
     // Trigger notifications for new report submission
     try {
       if (result.data?.report?.id) {
-        await notifyReportEvent(result.data.report.id, 'submitted', user.id);
+        await notifyReportEvent(result.data.report.id, 'report_submitted', user.id);
       }
     } catch (notificationError) {
       console.error('Failed to send notifications for new report:', notificationError);

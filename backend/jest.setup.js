@@ -9,9 +9,11 @@ delete process.env.DATABASE_URL;
 require('dotenv').config({ path: '.env.test', override: true });
 
 // Verify the environment is set correctly
-console.log('🧪 Test Environment Loaded');
-console.log('📝 NODE_ENV:', process.env.NODE_ENV);
-console.log('🗄️ Database URL:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@')); // Hide password
+if (process.env.JEST_VERBOSE === 'true') {
+  console.log('🧪 Test Environment Loaded');
+  console.log('📝 NODE_ENV:', process.env.NODE_ENV);
+  console.log('🗄️ Database URL:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@')); // Hide password
+}
 
 // Ensure the test database URL is set
 if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes('localhost:5432')) {
@@ -35,14 +37,18 @@ global.PrismaClient = class extends OriginalPrismaClient {
 
 // Global cleanup function for test teardown
 global.cleanupPrismaConnections = async () => {
-  console.log('🧹 Cleaning up Prisma connections...');
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('🧹 Cleaning up Prisma connections...');
+  }
   
   // Disconnect all tracked Prisma instances
   const disconnectPromises = Array.from(global.prismaInstances).map(async (prisma) => {
     try {
       await prisma.$disconnect();
     } catch (error) {
-      console.warn('Warning: Error disconnecting Prisma client:', error.message);
+      if (process.env.NODE_ENV !== 'test') {
+        console.warn('Warning: Error disconnecting Prisma client:', error.message);
+      }
     }
   });
   
@@ -59,16 +65,22 @@ global.cleanupPrismaConnections = async () => {
     // Ignore if auth routes not loaded
   }
   
-  console.log('✅ Test cleanup complete');
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('✅ Test cleanup complete');
+  }
 };
 
 // Handle process exit to ensure cleanup
 process.on('exit', () => {
-  console.log('🚪 Process exiting...');
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('🚪 Process exiting...');
+  }
 });
 
 process.on('SIGINT', async () => {
-  console.log('🛑 SIGINT received, cleaning up...');
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('🛑 SIGINT received, cleaning up...');
+  }
   try {
     await global.cleanupPrismaConnections();
   } catch (error) {
@@ -78,11 +90,24 @@ process.on('SIGINT', async () => {
 });
 
 process.on('SIGTERM', async () => {
-  console.log('🛑 SIGTERM received, cleaning up...');
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('🛑 SIGTERM received, cleaning up...');
+  }
   try {
     await global.cleanupPrismaConnections();
   } catch (error) {
     // Ignore errors during forced cleanup
   }
   process.exit(0);
-}); 
+});
+
+// Global teardown function
+global.teardown = async () => {
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('🧹 Running global test teardown...');
+  }
+  await global.cleanupPrismaConnections();
+  if (process.env.JEST_VERBOSE === 'true') {
+    console.log('✅ Global teardown complete');
+  }
+}; 

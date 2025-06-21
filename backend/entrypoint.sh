@@ -12,12 +12,21 @@ npx prisma generate
 echo "Running Prisma migrations..."
 npx prisma migrate deploy
 
-echo "Building TypeScript..."
-npm run build
+# Always ensure roles are seeded correctly
+echo "Seeding roles..."
+npm run seed:roles
 
-echo "Copying email templates..."
+# Always ensure email templates are available (needed for both dev and prod)
+echo "Ensuring email templates are available..."
 mkdir -p /app/dist/email-templates
 cp -r /app/email-templates/* /app/dist/email-templates/
 
-echo "Starting TypeScript backend server..."
-npm run start:ts 
+if [ "$NODE_ENV" = "production" ]; then
+  echo "Building TypeScript for production..."
+  npm run build
+  echo "Starting TypeScript backend server (production)..."
+  npm run start:ts
+else
+  echo "Starting TypeScript backend server (development with live reload)..."
+  npm run dev:ts
+fi 

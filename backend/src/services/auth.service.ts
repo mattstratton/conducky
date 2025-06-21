@@ -117,7 +117,7 @@ export class AuthService {
       
       return { allowed: true, timeRemaining: 0 };
     } catch (error: any) {
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'test') {
         console.error('[Auth] Rate limit check error:', error);
       }
       // On error, allow the request to prevent blocking legitimate users
@@ -356,7 +356,7 @@ export class AuthService {
         }
       };
     } catch (error: any) {
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'test') {
         console.error('[Auth] Forgot password error:', error);
       }
       return {
@@ -424,7 +424,7 @@ export class AuthService {
         }
       };
     } catch (error: any) {
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'test') {
         console.error('[Auth] Validate reset token error:', error);
       }
       return {

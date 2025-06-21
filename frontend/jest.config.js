@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 module.exports = {
   testEnvironment: "jsdom",
   moduleNameMapper: {
@@ -9,7 +10,7 @@ module.exports = {
     // Mock react-markdown and related packages
     "^react-markdown$": "<rootDir>/__mocks__/react-markdown.js",
   },
-  setupFilesAfterEnv: ["@testing-library/jest-dom"],
+  setupFilesAfterEnv: ["@testing-library/jest-dom", "<rootDir>/jest.setup.js"],
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
   },
