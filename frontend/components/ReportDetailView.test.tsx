@@ -75,7 +75,7 @@ describe("ReportDetailView", () => {
       <ReportDetailView
         report={baseReport}
         user={user}
-        userRoles={["Admin"]}
+        userRoles={["Event Admin"]}
         adminMode={true}
         assignmentFields={{ assignedResponderId: "u2", severity: "high", resolution: "done" }}
         setAssignmentFields={setAssignmentFields}
@@ -242,8 +242,8 @@ describe("ReportDetailView", () => {
     render(
       <ReportDetailView
         report={{ ...baseReport, title: "Test Title", reporterId: "u2" }}
-        user={{ id: "admin", name: "Admin", roles: ["Admin"] }}
-        userRoles={["Admin"]}
+        user={{ id: "admin", name: "Admin", roles: ["Event Admin"] }}
+        userRoles={["Event Admin"]}
       />
     );
     expect(screen.getByLabelText('Edit title')).toBeInTheDocument();

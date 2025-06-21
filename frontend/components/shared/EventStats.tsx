@@ -21,7 +21,7 @@ export function EventStats({ eventSlug, userRoles }: EventStatsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const isAdmin = userRoles.includes("Admin") || userRoles.includes("SuperAdmin");
+  const isAdmin = userRoles.includes("Event Admin") || userRoles.includes("SuperAdmin");
   const isResponder = userRoles.includes("Responder");
   const isReporter = userRoles.includes("Reporter");
 

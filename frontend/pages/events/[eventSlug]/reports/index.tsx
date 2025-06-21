@@ -41,9 +41,9 @@ export default function EventReportsPage() {
             return;
           }
           if (data.roles) {
-            // Check if user has responder, admin, superadmin, or global admin role
+            // Check if user has responder, event admin, or superadmin role
             const hasAccess = data.roles.some((role: string) => 
-              ['responder', 'admin'].includes(role.toLowerCase())
+              ['responder', 'event admin', 'superadmin'].includes(role.toLowerCase())
             );
             setAccessDenied(!hasAccess);
           } else {

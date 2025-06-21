@@ -90,10 +90,10 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
 }) => {
   const isSuperAdmin = user && user.roles && user.roles.includes("Global Admin");
   const isResponderOrAbove = userRoles.some((r) =>
-    ["Responder", "Admin", "SuperAdmin", "Global Admin"].includes(r)
+    ["Responder", "Event Admin", "SuperAdmin", "Global Admin"].includes(r)
   );
   const isAdminOrSuperAdmin = userRoles.some((r) =>
-    ["Admin", "SuperAdmin", "Global Admin"].includes(r)
+    ["Event Admin", "SuperAdmin", "Global Admin"].includes(r)
   );
   const canChangeState = isSuperAdmin || isResponderOrAbove;
   const canEditTitle = user && (user.id === report.reporterId || isAdminOrSuperAdmin);

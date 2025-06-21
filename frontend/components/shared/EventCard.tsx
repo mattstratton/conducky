@@ -36,7 +36,7 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const { name, slug, description, roles } = event;
-  const isAdmin = roles.includes("Admin");
+  const isAdmin = roles.includes("Event Admin");
   const isResponder = roles.includes("Responder");
   const isReporter = roles.includes("Reporter");
   

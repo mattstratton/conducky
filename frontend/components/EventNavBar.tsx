@@ -13,7 +13,7 @@ export interface EventNavBarProps {
 }
 
 export function EventNavBar({ eventSlug, eventName, user, userRoles = [], openReportModal }: EventNavBarProps) {
-  const isAdmin = userRoles.includes("Admin");
+  const isAdmin = userRoles.includes("Event Admin");
   const isResponder = userRoles.includes("Responder");
   const isSuperAdmin = userRoles.includes("SuperAdmin");
   const canSeeEventReports = isResponder || isAdmin || isSuperAdmin;
