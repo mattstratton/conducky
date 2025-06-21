@@ -119,7 +119,7 @@ For more information, see the [API Documentation Setup Guide](/developer-docs/ap
   const sidebarContent = `export default [
   {
     type: "doc",
-    id: "conducky-api",
+    id: "api/conducky-api",
     label: "API Reference",
     className: "api-method"
   }

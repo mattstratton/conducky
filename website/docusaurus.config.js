@@ -144,6 +144,11 @@ const config = {
             label: 'Developer Docs',
           },
           {
+            to: '/api',
+            position: 'left',
+            label: 'API Reference',
+          },
+          {
             href: 'https://github.com/mattstratton/conducky',
             label: 'GitHub',
             position: 'right',
@@ -165,12 +170,12 @@ const config = {
                 to: '/admin-guide/intro',
               },
               {
-                label: 'Developer Docs',
+                                label: 'Developer Docs',
                 to: '/developer-docs/intro',
               },
               {
                 label: 'API Reference',
-                to: '/api/conducky-api',
+                to: '/api',
               },
             ],
           },
