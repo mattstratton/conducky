@@ -13,16 +13,16 @@ The Organizations feature introduces a hierarchical structure where Events belon
 
 ## Migration Methods
 
-### Method 1: Automatic Migration (Recommended)
+### Method 1: Schema + Data Migration (Recommended)
 
-The migration runs automatically when you apply Prisma migrations:
+First apply the schema changes, then run the data migration:
 
 ```bash
-# In Docker Compose environment
+# Step 1: Apply schema changes (creates organization tables)
 docker-compose exec backend npx prisma migrate deploy
 
-# Or locally
-cd backend && npx prisma migrate deploy
+# Step 2: Run data migration (migrates existing events)
+docker-compose exec backend npm run migrate:events-to-orgs
 ```
 
 ### Method 2: Manual Migration Script
@@ -112,21 +112,77 @@ SELECT COUNT(*) FROM organizations;
 
 ### Railway Production Environment
 
-1. **Connect to Railway:**
+⚠️ **Important**: Railway deployment requires special care due to potential migration conflicts.
+
+#### Pre-Deployment Checklist
+
+1. **Check Railway database migration state:**
    ```bash
    railway login
    railway link [your-project-id]
+   railway run npx prisma migrate status
    ```
 
-2. **Run migration:**
+2. **If you see failed migrations, resolve them first:**
+   ```bash
+   # Mark any failed organization migrations as resolved
+   railway run npx prisma migrate resolve --applied 20241221000000_migrate_events_to_organizations
+   
+   # Then apply pending migrations
+   railway run npx prisma migrate deploy
+   ```
+
+#### Deployment Steps
+
+1. **Deploy the code changes:**
+   ```bash
+   git push # This deploys to Railway
+   ```
+
+2. **Apply schema migrations:**
+   ```bash
+   railway run npx prisma migrate deploy
+   ```
+
+3. **Run data migration:**
    ```bash
    railway run npm run migrate:events-to-orgs
    ```
 
-3. **Verify in production:**
-   - Login as SuperAdmin
-   - Visit `/admin/organizations`
-   - Confirm all events are listed under organizations
+4. **Verify deployment:**
+   ```bash
+   # Check organizations were created
+   railway run npx prisma studio
+   ```
+
+#### Alternative: Clean Database Approach
+
+If migration issues persist, you can reset Railway's database:
+
+```bash
+# ⚠️ WARNING: This will delete all data
+railway run npx prisma migrate reset --force
+railway run npm run seed
+railway run npm run migrate:events-to-orgs
+```
+
+#### Troubleshooting Railway Issues
+
+**Problem**: "relation 'organizations' does not exist"
+**Solution**: Use proper case-sensitive table names in queries
+
+**Problem**: "Failed migration found"
+**Solution**: 
+```bash
+railway run npx prisma migrate resolve --applied [migration-name]
+```
+
+**Problem**: Migration script fails
+**Solution**: Check Railway logs and run migration manually:
+```bash
+railway logs
+railway run node scripts/migrate-events-to-organizations.js
+```
 
 ## After Migration
 
