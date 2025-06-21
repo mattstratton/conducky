@@ -1,0 +1,63 @@
+---
+id: get-all-events
+title: "Get all events"
+description: "Retrieve a list of all events the user has access to"
+sidebar_label: "Get all events"
+hide_title: true
+hide_table_of_contents: true
+api: eJylVU1v2zAM/SuCzm2cDj3ltKArimIdULQrdihyUGwmUWNbmiQHy4z89z3KduJ8dAu6SyJL5CP1+EjVMqi5l6NXebuiMng5uZAZ+dRpG7Qp5Ug+UXCaViSUyLUPwsyEynNB0VyEBYnKkxML5YVKU/LYM/JCekorp8Ma0DU+vAfauAoLfE82COLIW1PiQI5q+Wk45L/9wA9ttCYSIFNTBizZUlmb61SxZfLm2RxB0gUVildhbQkAyjm1hp8OVPjevpm+URpwYJ2x5IJuktBZz8bj0uUcNjPjCoWYsqpgcEhOJE1Upf5ZkdAZPvRMk5ObC1mqgk4BngKItvDxeTU/1+fl6UFE+83B+Xnu/T0gaD9Og171M54ak5Mqj/x/LAhVd7H0sTZCe4FiOyzzNUQQcfg2QbnwRYWTNGx5zdjgdI4RQEQDwFGZ/Q8Y3LdQrCTkeVsonf8Vj6LFIeBN4y7iqYDxjouI7ghxsnH4Z6qXQRfv5RtRsCHYBkwUVm4AHnTIqTPCzoY3r4dXx/3zUir0m3H6N2Uf6J53ugS5eDU/R9nOgZjOPJKene0WbaOwAyg+2bz7buMs07xUmEwRofPc44xPOs4KqNig5eWc4i0VzyaZKKuT7cTBYFuR83GGVQ5SkYsQ7ChJcpOqfGF8GF0PMbsOs/kChNzYIoo4YuAyfQgPDEQaoChZlS7XWBRHKI/O4DBqoAOZ7AbrMxesqcneeN2NP6u/Upx/DJYas9SstWYusRxKEDnwJ6bac4N3OVWeMsEq4sHWCCYSqsuZiZFaYm/aa4jx4z3QmLMG6WowHBzTA6vYNVu3Sywz4mHfbGGklGkcp6JQJfTTMLn2mORy276cQXubLdJzZa1xXNB9sg+IbvoaImzMP+8d44JoD8Lj1Ivw7f77ESj6ovSmcikNjJsnrZNP2JZpshAI8u+h3FHovZ6HxNS7Jv3os9vWPtCvkNhc6TjcY9Z1K/FXFgZTsH3vWce8X9dc8BeXbza8jSfN8fON5Uo5raZcajzecCCVQY3cFUsoDAVFBpZJX6m8arR3MGFYuduOu7tlLtWRXJdRru2C0bujct3D3ldukwD/coeddKjrphVwrc6+OXrXo71gZ80sTjA0/gDR7il5
+sidebar_class_name: "get api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get all events"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/events"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Retrieve a list of all events the user has access to
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"List of events","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Event unique identifier"},"name":{"type":"string","description":"Event name"},"slug":{"type":"string","description":"Event URL slug"},"description":{"type":"string","description":"Event description"},"isActive":{"type":"boolean","description":"Whether the event is currently active"},"startDate":{"type":"string","format":"date","description":"Event start date"},"endDate":{"type":"string","format":"date","description":"Event end date"},"contactEmail":{"type":"string","format":"email","description":"Contact email for the event"},"createdAt":{"type":"string","format":"date-time","description":"Event creation timestamp"}},"title":"Event"}}}}},"401":{"description":"Unauthorized","content":{"application/json":{"schema":{"type":"object","properties":{"message":{"type":"string","description":"Error message"},"code":{"type":"string","description":"Error code"},"details":{"type":"object","description":"Additional error details"}},"title":"Error"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

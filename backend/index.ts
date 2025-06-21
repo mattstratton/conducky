@@ -34,6 +34,9 @@ import {
 import { testAuthMiddleware } from './src/middleware/auth';
 import { getSessionConfig } from './src/config/session';
 
+// Import Swagger configuration
+import { setupSwagger } from './src/config/swagger';
+
 // Initialize Prisma client (after environment is loaded)
 const prisma = new PrismaClient();
 const app = express();
@@ -125,6 +128,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Passport strategies are configured in ./src/config/passport
+
+// Setup Swagger API documentation (only in development or when explicitly enabled)
+if (process.env.NODE_ENV === 'development' || process.env.ENABLE_SWAGGER === 'true') {
+  setupSwagger(app);
+}
 
 // Basic routes
 app.get('/', async (_req: any, res: any) => {

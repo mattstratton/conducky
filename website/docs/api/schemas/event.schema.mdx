@@ -1,0 +1,33 @@
+---
+id: event
+title: "Event"
+description: ""
+sidebar_label: "Event"
+hide_title: true
+hide_table_of_contents: true
+schema: true
+sample: {"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","name":"string","slug":"string","description":"string","isActive":true,"startDate":"2024-07-29","endDate":"2024-07-29","contactEmail":"user@example.com","createdAt":"2024-07-29T15:51:28.071Z"}
+custom_edit_url: null
+---
+
+import Schema from "@theme/Schema";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Event"}
+>
+</Heading>
+
+
+
+
+
+<Schema
+  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Event unique identifier"},"name":{"type":"string","description":"Event name"},"slug":{"type":"string","description":"Event URL slug"},"description":{"type":"string","description":"Event description"},"isActive":{"type":"boolean","description":"Whether the event is currently active"},"startDate":{"type":"string","format":"date","description":"Event start date"},"endDate":{"type":"string","format":"date","description":"Event end date"},"contactEmail":{"type":"string","format":"email","description":"Contact email for the event"},"createdAt":{"type":"string","format":"date-time","description":"Event creation timestamp"}},"title":"Event"}}
+  schemaType={"response"}
+>
+  
+</Schema>
+            

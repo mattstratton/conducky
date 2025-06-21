@@ -1,0 +1,33 @@
+---
+id: user
+title: "User"
+description: ""
+sidebar_label: "User"
+hide_title: true
+hide_table_of_contents: true
+schema: true
+sample: {"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","email":"user@example.com","firstName":"string","lastName":"string","role":"SUPERADMIN","isActive":true,"createdAt":"2024-07-29T15:51:28.071Z"}
+custom_edit_url: null
+---
+
+import Schema from "@theme/Schema";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"User"}
+>
+</Heading>
+
+
+
+
+
+<Schema
+  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"User unique identifier"},"email":{"type":"string","format":"email","description":"User email address"},"firstName":{"type":"string","description":"User first name"},"lastName":{"type":"string","description":"User last name"},"role":{"type":"string","enum":["SUPERADMIN","ADMIN","RESPONDENT","GUEST"],"description":"User global role"},"isActive":{"type":"boolean","description":"Whether the user account is active"},"createdAt":{"type":"string","format":"date-time","description":"Account creation timestamp"}},"title":"User"}}
+  schemaType={"response"}
+>
+  
+</Schema>
+            

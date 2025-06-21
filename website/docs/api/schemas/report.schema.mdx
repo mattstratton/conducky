@@ -1,0 +1,33 @@
+---
+id: report
+title: "Report"
+description: ""
+sidebar_label: "Report"
+hide_title: true
+hide_table_of_contents: true
+schema: true
+sample: {"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","title":"string","description":"string","type":"CODE_OF_CONDUCT","status":"SUBMITTED","severity":"LOW","incidentAt":"2024-07-29T15:51:28.071Z","location":"string","partiesInvolved":"string","contactPreference":"EMAIL","isAnonymous":true,"eventId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","reporterId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","assignedToId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","createdAt":"2024-07-29T15:51:28.071Z","updatedAt":"2024-07-29T15:51:28.071Z"}
+custom_edit_url: null
+---
+
+import Schema from "@theme/Schema";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Report"}
+>
+</Heading>
+
+
+
+
+
+<Schema
+  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Report unique identifier"},"title":{"type":"string","description":"Report title/summary"},"description":{"type":"string","description":"Detailed report description"},"type":{"type":"string","enum":["CODE_OF_CONDUCT","HARASSMENT","SAFETY","OTHER"],"description":"Type of report"},"status":{"type":"string","enum":["SUBMITTED","UNDER_REVIEW","RESOLVED","CLOSED"],"description":"Current status of the report"},"severity":{"type":"string","enum":["LOW","MEDIUM","HIGH","CRITICAL"],"description":"Severity level of the incident"},"incidentAt":{"type":"string","format":"date-time","description":"When the incident occurred"},"location":{"type":"string","description":"Where the incident occurred"},"partiesInvolved":{"type":"string","description":"Parties involved in the incident"},"contactPreference":{"type":"string","enum":["EMAIL","PHONE","NONE"],"description":"Preferred contact method for the reporter"},"isAnonymous":{"type":"boolean","description":"Whether the report was submitted anonymously"},"eventId":{"type":"string","format":"uuid","description":"Associated event ID"},"reporterId":{"type":"string","format":"uuid","description":"Reporter user ID (null for anonymous)","nullable":true},"assignedToId":{"type":"string","format":"uuid","description":"Assigned respondent user ID","nullable":true},"createdAt":{"type":"string","format":"date-time","description":"Report creation timestamp"},"updatedAt":{"type":"string","format":"date-time","description":"Report last update timestamp"}},"title":"Report"}}
+  schemaType={"response"}
+>
+  
+</Schema>
+            
