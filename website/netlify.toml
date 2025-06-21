@@ -1,0 +1,53 @@
+[build]
+  # Build command for Netlify
+  command = "npm run build"
+  
+  # Directory to publish
+  publish = "build"
+  
+  # Base directory for build
+  base = "website"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
+  
+  # Environment variables for build
+  NODE_ENV = "production"
+
+# Build settings for different contexts
+[context.production]
+  command = "npm run build:production"
+
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirects for SPA behavior (if needed)
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Handle 404s
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404 
