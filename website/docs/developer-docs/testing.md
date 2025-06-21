@@ -676,3 +676,141 @@ The tests use a comprehensive mock data setup including:
 7. **Data Completeness**: All required related data is included in responses
 
 The test suite ensures the cross-event reports feature maintains proper security, performance, and functionality across all supported use cases.
+
+## Organizations Feature Testing
+
+The organizations feature includes basic smoke tests to verify API routes are properly mounted:
+
+### Current Tests
+- **Route Mounting**: Verifies organization endpoints exist and don't return 404
+- **Basic Authentication**: Tests that routes require authentication
+
+### Test Files
+- `backend/tests/integration/organizations.test.js` - Basic endpoint smoke tests
+
+### Running Organization Tests
+```bash
+docker-compose exec backend npm test -- --testPathPattern=organization
+```
+
+### Future Testing Needs
+As the organizations feature develops, additional tests should be added for:
+- Organization CRUD operations
+- Membership management
+- Permission validation
+- Cross-organization data isolation
+- Organization dashboard functionality
+
+## Test Environment
+
+### Backend Test Environment
+- Uses PostgreSQL test database (`conducky_test`)
+- In-memory mocking for Prisma client in some tests
+- Authentication mocking via `x-test-user-id` header
+- Automatic cleanup between tests
+
+### Frontend Test Environment  
+- Jest with React Testing Library
+- Mock implementations for external dependencies
+- Component isolation testing
+
+## Test Data Management
+
+### Backend
+- Tests use either in-memory mocks or test database
+- Each test suite cleans up after itself
+- Seed data available for consistent test scenarios
+
+### Frontend
+- Mock data defined in test files
+- Component props mocked for isolation
+- External API calls mocked
+
+## Coverage Requirements
+
+- **Minimum Coverage**: 70% overall
+- **New Features**: Must include tests before PR approval
+- **Bug Fixes**: Should include regression tests
+- **Critical Paths**: Authentication, authorization, data access should maintain >90% coverage
+
+## CI/CD Integration
+
+Tests run automatically on:
+- Pull request creation/updates
+- Merge to main branch
+- Scheduled nightly runs
+
+## Debugging Tests
+
+### Common Issues
+1. **Database Connection**: Ensure test database is running
+2. **Port Conflicts**: Check if test ports are available
+3. **Mock Issues**: Verify mocks are properly configured
+4. **Async Issues**: Ensure proper async/await usage
+
+### Debug Commands
+```bash
+# Run tests with verbose output
+docker-compose exec backend npm test -- --verbose
+
+# Run specific test with debugging
+docker-compose exec backend npm test -- --testNamePattern="specific test name"
+
+# Check test coverage details
+docker-compose exec backend npm run test:coverage
+```
+
+## Best Practices
+
+### General
+- Write descriptive test names that explain what is being tested
+- Use arrange-act-assert pattern
+- Keep tests isolated and independent
+- Mock external dependencies
+
+### Backend
+- Use proper HTTP status codes in assertions
+- Test both success and error scenarios
+- Validate response structure and data types
+- Test authorization boundaries
+
+### Frontend
+- Test user interactions, not implementation details
+- Use accessible queries (getByRole, getByLabelText)
+- Test error states and loading states
+- Mock network requests consistently
+
+## Manual Testing
+
+For features requiring manual testing, document the test steps in:
+- PR descriptions
+- Feature documentation
+- Testing checklists
+
+### Organizations Feature Manual Testing
+1. **Organization Creation**: Test creating organizations via API
+2. **Membership Management**: Test adding/removing organization members
+3. **Permission Validation**: Verify role-based access controls
+4. **Data Isolation**: Ensure organization data boundaries are respected
+
+## Troubleshooting
+
+### Test Failures
+1. Check test output for specific error messages
+2. Verify test environment setup (database, dependencies)
+3. Ensure proper test data cleanup
+4. Check for timing issues in async tests
+
+### Performance Issues
+1. Monitor test execution time
+2. Identify slow tests and optimize
+3. Use test parallelization when appropriate
+4. Clean up resources properly
+
+## Contributing
+
+When adding new features:
+1. Write tests first (TDD approach recommended)
+2. Ensure tests pass locally before pushing
+3. Update this documentation for new test patterns
+4. Add manual testing steps for complex features
