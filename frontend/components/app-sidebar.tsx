@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import {
   BookOpen,
+  Building2,
   ClipboardList,
   Home,
   Settings2,
@@ -217,6 +218,22 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
           isActive: router.asPath === "/admin/dashboard",
         },
         {
+          title: "Organizations",
+          url: "/admin/organizations",
+          icon: Building2,
+          isActive: router.asPath.startsWith("/admin/organizations"),
+          items: [
+            {
+              title: "All Organizations",
+              url: "/admin/organizations",
+            },
+            {
+              title: "Create Organization",
+              url: "/admin/organizations/new",
+            },
+          ],
+        },
+        {
           title: "Events Management",
           url: "/admin/events",
           icon: UserCog,
@@ -285,6 +302,12 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
           url: `/orgs/${currentOrgSlug}/events`,
           icon: ClipboardList,
           isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/events`),
+        },
+        {
+          title: "Reports Overview",
+          url: `/orgs/${currentOrgSlug}/reports`,
+          icon: BookOpen,
+          isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/reports`),
         },
         {
           title: "Team",

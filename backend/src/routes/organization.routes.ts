@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { OrganizationController } from '../controllers/organization.controller';
 import { requireAuth } from '../middleware/auth';
+import { requireSuperAdmin } from '../utils/rbac';
 
 const router = Router();
 const organizationController = new OrganizationController();
@@ -13,10 +14,10 @@ router.use(requireAuth);
  */
 
 // Create organization (SuperAdmin only)
-router.post('/', organizationController.createOrganization.bind(organizationController));
+router.post('/', requireSuperAdmin(), organizationController.createOrganization.bind(organizationController));
 
 // List all organizations (SuperAdmin only)
-router.get('/', organizationController.listOrganizations.bind(organizationController));
+router.get('/', requireSuperAdmin(), organizationController.listOrganizations.bind(organizationController));
 
 // Get user's organizations
 router.get('/me', organizationController.getUserOrganizations.bind(organizationController));
@@ -31,7 +32,7 @@ router.get('/:organizationId', organizationController.getOrganization.bind(organ
 router.put('/:organizationId', organizationController.updateOrganization.bind(organizationController));
 
 // Delete organization (SuperAdmin only)
-router.delete('/:organizationId', organizationController.deleteOrganization.bind(organizationController));
+router.delete('/:organizationId', requireSuperAdmin(), organizationController.deleteOrganization.bind(organizationController));
 
 /**
  * Organization Membership Routes

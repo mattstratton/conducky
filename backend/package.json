@@ -11,6 +11,7 @@
     "start:ts": "node dist/index.js",
     "seed": "node prisma/seed.js",
     "sample-data": "node prisma/sample-data-seed.js",
+    "migrate:events-to-orgs": "node scripts/migrate-events-to-organizations.js",
     "test": "jest",
     "test:ci": "jest --coverage --reporters=jest-junit",
     "test:coverage": "jest --coverage",
