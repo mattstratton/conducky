@@ -79,31 +79,7 @@ const config = {
         },
       },
     ],
-    [
-      'docusaurus-plugin-react-docgen-typescript',
-      {
-        src: ['../frontend/components/**/*.tsx'],
-        ignore: ['../frontend/components/**/*test.*'],
-        parserOptions: {
-          propFilter: (prop, component) => {
-            if (prop.parent) {
-              return !prop.parent.fileName.includes('@types/react');
-            }
-            return true;
-          },
-        },
-      },
-    ],
-    async function tailwindPlugin(context, options) {
-      return {
-        name: 'docusaurus-tailwindcss',
-        configurePostCss(postcssOptions) {
-          postcssOptions.plugins.push(require('tailwindcss'));
-          postcssOptions.plugins.push(require('autoprefixer'));
-          return postcssOptions;
-        },
-      };
-    },
+
   ],
 
   themes: ["docusaurus-theme-openapi-docs"],
@@ -144,7 +120,8 @@ const config = {
             label: 'Developer Docs',
           },
           {
-            to: '/api',
+            type: 'docSidebar',
+            sidebarId: 'apiSidebar',
             position: 'left',
             label: 'API Reference',
           },

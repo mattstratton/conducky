@@ -4,10 +4,6 @@ const sidebar: SidebarsConfig = {
   apisidebar: [
     {
       type: "doc",
-      id: "api/api-index",
-    },
-    {
-      type: "doc",
       id: "api/conducky-api",
     },
     {
