@@ -206,12 +206,12 @@ function NavigationControls({ user }: NavigationControlsProps) {
         <Search className="h-4 w-4" />
       </Button>
 
-      {/* Help Button */}
+      {/* Help Button - Hidden on mobile since keyboard shortcuts aren't useful on touch devices */}
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setHelpOpen(true)}
-        className="fixed bottom-4 right-16 z-40 shadow-lg bg-background/95 backdrop-blur-sm md:hidden"
+        className="fixed bottom-4 right-16 z-40 shadow-lg bg-background/95 backdrop-blur-sm hidden md:block"
         title="Keyboard Shortcuts (?)"
         aria-label="Show keyboard shortcuts help"
       >
