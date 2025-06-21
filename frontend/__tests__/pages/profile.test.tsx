@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import ProfilePage from "./profile";
-import { UserContext } from "./_app";
+import ProfilePage from "../../pages/profile";
+import { UserContext } from "../../pages/_app";
 import '@testing-library/jest-dom';
 
 // Use the global User type from types.d.ts

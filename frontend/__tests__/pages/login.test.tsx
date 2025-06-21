@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import LoginPage from './login';
-import { UserContext } from './_app';
+import LoginPage from '../../pages/login';
+import { UserContext } from '../../pages/_app';
 import '@testing-library/jest-dom';
 
 // Mock the Next.js router
