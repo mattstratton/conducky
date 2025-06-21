@@ -168,10 +168,10 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
         .then((data) => {
           if (data && Array.isArray(data.organizations)) {
             setOrganizations(
-              data.organizations.map((org: { name: string; slug: string; role?: string }) => ({
+              data.organizations.map((org: { name: string; slug: string; membership?: { role: string } }) => ({
                 name: org.name,
                 slug: org.slug,
-                role: org.role,
+                role: org.membership?.role,
               }))
             );
           }

@@ -16,6 +16,7 @@ interface FormData {
   slug: string;
   description: string;
   website: string;
+  logo?: File | null;
 }
 
 interface FormErrors {
@@ -23,6 +24,7 @@ interface FormErrors {
   slug?: string;
   description?: string;
   website?: string;
+  logo?: string;
   general?: string;
 }
 
@@ -96,6 +98,14 @@ export default function CreateOrganization() {
     
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setFormData(prev => ({ ...prev, logo: file }));
+    if (errors.logo) {
+      setErrors(prev => ({ ...prev, logo: undefined }));
     }
   };
 
@@ -179,11 +189,11 @@ export default function CreateOrganization() {
   // Don't render anything while checking authentication
   if (!authChecked || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Organization</h1>
-            <p className="text-gray-600">Checking authorization...</p>
+            <h1 className="text-3xl font-bold text-foreground">Create Organization</h1>
+            <p className="text-muted-foreground">Checking authorization...</p>
           </div>
         </div>
       </div>
@@ -192,11 +202,11 @@ export default function CreateOrganization() {
 
   if (!user.roles?.includes('SuperAdmin')) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Access Denied</h1>
-            <p className="text-gray-600">You do not have permission to access this page.</p>
+            <h1 className="text-3xl font-bold text-foreground">Access Denied</h1>
+            <p className="text-muted-foreground">You do not have permission to access this page.</p>
           </div>
         </div>
       </div>
@@ -209,7 +219,7 @@ export default function CreateOrganization() {
         <title>Create Organization - Admin - Conducky</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-2xl space-y-6">
           {/* Header */}
           <div className="flex items-center space-x-4">
@@ -220,8 +230,8 @@ export default function CreateOrganization() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create Organization</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Create Organization</h1>
+              <p className="text-muted-foreground">
                 Create a new organization to manage events and teams
               </p>
             </div>
@@ -311,6 +321,29 @@ export default function CreateOrganization() {
                   />
                   {errors.website && (
                     <p className="text-sm text-red-600">{errors.website}</p>
+                  )}
+                </div>
+
+                {/* Logo */}
+                <div className="space-y-2">
+                  <Label htmlFor="logo">Organization Logo</Label>
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className={errors.logo ? 'border-red-500' : ''}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Upload a logo for your organization (optional)
+                  </p>
+                  {errors.logo && (
+                    <p className="text-sm text-red-600">{errors.logo}</p>
+                  )}
+                  {formData.logo && (
+                    <p className="text-sm text-green-600">
+                      Selected: {formData.logo.name}
+                    </p>
                   )}
                 </div>
 

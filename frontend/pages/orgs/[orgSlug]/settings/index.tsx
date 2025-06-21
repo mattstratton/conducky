@@ -165,12 +165,19 @@ export default function OrganizationSettings() {
                 <Input
                   id="slug"
                   value={organization.slug}
-                  onChange={(e) => setOrganization({...organization, slug: e.target.value})}
+                  disabled
                   placeholder="organization-slug"
+                  className="bg-muted cursor-not-allowed"
                 />
-                                 <p className="text-sm text-muted-foreground">
-                   This will be used in your organization&apos;s URL: /orgs/{organization.slug}
-                 </p>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    URL slugs cannot be changed after creation to prevent broken links
+                  </p>
+                  <p className="text-xs text-amber-600 flex items-start gap-1">
+                    <span className="text-amber-500">⚠️</span>
+                    <span>Changing the slug would break all existing URLs, bookmarks, and integrations pointing to your organization</span>
+                  </p>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -196,17 +203,27 @@ export default function OrganizationSettings() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="logo">Logo URL</Label>
-                <Input
-                  id="logo"
-                  type="url"
-                  value={organization.logoUrl || ''}
-                  onChange={(e) => setOrganization({...organization, logoUrl: e.target.value})}
-                  placeholder="https://example.com/logo.png"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Logo should be square and at least 200x200 pixels
-                </p>
+                <Label htmlFor="logo">Organization Logo</Label>
+                <div className="flex items-center space-x-4">
+                  {organization.logoUrl && (
+                    <img 
+                      src={organization.logoUrl} 
+                      alt="Current logo"
+                      className="w-16 h-16 object-contain rounded border bg-white"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="logo"
+                      type="file"
+                      accept="image/*"
+                      className="cursor-pointer"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Upload a new logo (square format recommended, max 5MB)
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

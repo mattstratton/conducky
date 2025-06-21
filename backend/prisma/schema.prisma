@@ -349,6 +349,7 @@ model Organization {
   memberships OrganizationMembership[]
   events      Event[]
   auditLogs   AuditLog[]
+  logo        OrganizationLogo?
 }
 
 model OrganizationMembership {
@@ -363,4 +364,15 @@ model OrganizationMembership {
   createdById    String?
   
   @@unique([organizationId, userId])
+}
+
+model OrganizationLogo {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String       @unique
+  filename       String
+  mimetype       String
+  size           Int
+  data           Bytes
+  createdAt      DateTime     @default(now())
 }

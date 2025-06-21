@@ -216,13 +216,13 @@ export default function AdminOrganizations() {
         <title>Organizations Management - Admin - Conducky</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Organizations Management</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Organizations Management</h1>
+              <p className="text-muted-foreground">
                 Manage all organizations in the system
               </p>
             </div>

@@ -2,9 +2,17 @@ import { Router } from 'express';
 import { OrganizationController } from '../controllers/organization.controller';
 import { requireAuth } from '../middleware/auth';
 import { requireSuperAdmin } from '../utils/rbac';
+import { createUploadMiddleware } from '../utils/upload';
 
 const router = Router();
 const organizationController = new OrganizationController();
+
+// Secure multer setup for logo uploads
+const uploadLogo = createUploadMiddleware({
+  maxSizeMB: 5, // 5MB limit
+  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp']
+});
 
 // All routes require authentication
 router.use(requireAuth);
@@ -56,5 +64,21 @@ router.post('/:organizationId/events', organizationController.createEvent.bind(o
 
 // List organization events
 router.get('/:organizationId/events', organizationController.getEvents.bind(organizationController));
+
+/**
+ * Organization Logo Routes
+ */
+
+// Upload organization logo (Org Admin only)
+router.post('/:organizationId/logo', uploadLogo.single('logo'), organizationController.uploadLogo.bind(organizationController));
+
+// Upload organization logo by slug (Org Admin only)
+router.post('/slug/:orgSlug/logo', uploadLogo.single('logo'), organizationController.uploadLogoBySlug.bind(organizationController));
+
+// Get organization logo
+router.get('/:organizationId/logo', organizationController.getLogo.bind(organizationController));
+
+// Get organization logo by slug
+router.get('/slug/:orgSlug/logo', organizationController.getLogoBySlug.bind(organizationController));
 
 export default router; 

@@ -4,7 +4,6 @@ import Head from 'next/head';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
   FileText, 
   TrendingUp, 
@@ -12,11 +11,8 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Clock, 
-  Users,
   Calendar,
   Download,
-  Search,
-  Filter,
   BarChart3,
   PieChart
 } from 'lucide-react';
@@ -65,14 +61,13 @@ export default function OrganizationReports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState('30d');
-  const [selectedEvent, setSelectedEvent] = useState<string>('all');
 
   useEffect(() => {
     if (orgSlug && user) {
       fetchOrganizationData();
       fetchReportMetrics();
     }
-  }, [orgSlug, user, timeRange, selectedEvent]);
+  }, [orgSlug, user, timeRange]);
 
   const fetchOrganizationData = async () => {
     try {
@@ -158,40 +153,40 @@ export default function OrganizationReports() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'submitted': return 'bg-blue-100 text-blue-800';
-      case 'in_review': return 'bg-yellow-100 text-yellow-800';
-      case 'investigating': return 'bg-orange-100 text-orange-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'submitted': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'in_review': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'investigating': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'closed': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'urgent': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'high': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'urgent': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
   };
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-red-500" />;
-      case 'down': return <TrendingDown className="w-4 h-4 text-green-500" />;
-      case 'stable': return <span className="w-4 h-4 text-gray-500">—</span>;
+      case 'up': return <TrendingUp className="w-4 h-4 text-red-500 dark:text-red-400" />;
+      case 'down': return <TrendingDown className="w-4 h-4 text-green-500 dark:text-green-400" />;
+      case 'stable': return <span className="w-4 h-4 text-gray-500 dark:text-gray-400">—</span>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Organization Reports</h1>
-            <p className="text-gray-600">Loading report analytics...</p>
+            <h1 className="text-3xl font-bold text-foreground">Organization Reports</h1>
+            <p className="text-muted-foreground">Loading report analytics...</p>
           </div>
         </div>
       </div>
@@ -200,13 +195,13 @@ export default function OrganizationReports() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Organization Reports</h1>
+            <h1 className="text-3xl font-bold text-foreground">Organization Reports</h1>
           </div>
-          <div className="border border-red-200 bg-red-50 p-4 rounded-lg">
-            <span className="text-red-800">{error}</span>
+          <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-4 rounded-lg">
+            <span className="text-red-800 dark:text-red-200">{error}</span>
           </div>
         </div>
       </div>
@@ -215,10 +210,10 @@ export default function OrganizationReports() {
 
   if (!organization || !metrics) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Organization not found</h1>
+            <h1 className="text-3xl font-bold text-foreground">Organization not found</h1>
           </div>
         </div>
       </div>
@@ -231,13 +226,13 @@ export default function OrganizationReports() {
         <title>{organization.name} - Reports Overview - Conducky</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Reports Overview</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Reports Overview</h1>
+              <p className="text-muted-foreground">
                 Analytics and insights for {organization.name}
               </p>
             </div>
@@ -425,15 +420,15 @@ export default function OrganizationReports() {
                     <div className="font-medium">{month.month}</div>
                     <div className="flex items-center space-x-6 text-sm">
                       <div className="text-center">
-                        <div className="font-medium text-blue-600">{month.count}</div>
+                        <div className="font-medium text-blue-600 dark:text-blue-400">{month.count}</div>
                         <div className="text-muted-foreground">Submitted</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-medium text-green-600">{month.resolved}</div>
+                        <div className="font-medium text-green-600 dark:text-green-400">{month.resolved}</div>
                         <div className="text-muted-foreground">Resolved</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-medium text-orange-600">{month.count - month.resolved}</div>
+                        <div className="font-medium text-orange-600 dark:text-orange-400">{month.count - month.resolved}</div>
                         <div className="text-muted-foreground">Pending</div>
                       </div>
                     </div>

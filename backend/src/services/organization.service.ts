@@ -1,4 +1,4 @@
-import { PrismaClient, Organization, OrganizationMembership, OrganizationRole } from '@prisma/client';
+import { PrismaClient, Organization, OrganizationMembership, OrganizationRole, OrganizationLogo } from '@prisma/client';
 import { ServiceResult } from '../types';
 
 const prisma = new PrismaClient();
@@ -33,6 +33,13 @@ export interface OrganizationWithMemberships extends Organization {
     events: number;
     memberships: number;
   };
+}
+
+export interface OrganizationLogoData {
+  filename: string;
+  mimetype: string;
+  size: number;
+  data: Buffer;
 }
 
 export class OrganizationService {
@@ -480,6 +487,89 @@ export class OrganizationService {
       return membership.role === requiredRole;
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Upload organization logo
+   */
+  async uploadOrganizationLogo(organizationId: string, logoData: OrganizationLogoData): Promise<ServiceResult<{ organization: any }>> {
+    try {
+      const organization = await prisma.organization.findUnique({ where: { id: organizationId } });
+      if (!organization) {
+        return {
+          success: false,
+          error: 'Organization not found.'
+        };
+      }
+
+      const { filename, mimetype, size, data } = logoData;
+
+      // Remove any existing logo for this organization
+      await prisma.organizationLogo.deleteMany({ where: { organizationId } });
+
+      // Store new logo in DB
+      await prisma.organizationLogo.create({
+        data: {
+          organizationId,
+          filename,
+          mimetype,
+          size,
+          data,
+        },
+      });
+
+      return {
+        success: true,
+        data: { organization }
+      };
+    } catch (error: any) {
+      console.error('Error uploading organization logo:', error);
+      return {
+        success: false,
+        error: 'Failed to upload logo.'
+      };
+    }
+  }
+
+  /**
+   * Get organization logo
+   */
+  async getOrganizationLogo(organizationId: string): Promise<ServiceResult<{ filename: string; mimetype: string; data: Buffer }>> {
+    try {
+      const organization = await prisma.organization.findUnique({ where: { id: organizationId } });
+      if (!organization) {
+        return {
+          success: false,
+          error: 'Organization not found.'
+        };
+      }
+
+      const logo = await prisma.organizationLogo.findUnique({
+        where: { organizationId },
+      });
+
+      if (!logo) {
+        return {
+          success: false,
+          error: 'Logo not found.'
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          filename: logo.filename,
+          mimetype: logo.mimetype,
+          data: Buffer.from(logo.data)
+        }
+      };
+    } catch (error: any) {
+      console.error('Error fetching organization logo:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch logo.'
+      };
     }
   }
 } 

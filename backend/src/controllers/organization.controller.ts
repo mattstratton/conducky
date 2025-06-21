@@ -623,4 +623,206 @@ export class OrganizationController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+  /**
+   * Upload organization logo
+   */
+  async uploadLogo(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+      const logoFile = req.file;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      if (!logoFile) {
+        res.status(400).json({ error: 'No logo file uploaded.' });
+        return;
+      }
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      // Convert Multer File to OrganizationLogo format
+      const logoData = {
+        filename: logoFile.originalname,
+        mimetype: logoFile.mimetype,
+        size: logoFile.size,
+        data: logoFile.buffer
+      };
+
+      const result = await organizationService.uploadOrganizationLogo(organizationId, logoData);
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      // Log audit event
+      await logAudit({
+        eventId: '',
+        userId,
+        action: 'upload_organization_logo',
+        targetType: 'organization',
+        targetId: organizationId,
+      });
+
+      res.json(result.data);
+    } catch (error: any) {
+      console.error('Upload organization logo error:', error);
+      res.status(500).json({ error: 'Failed to upload logo.' });
+    }
+  }
+
+  /**
+   * Upload organization logo by slug
+   */
+  async uploadLogoBySlug(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { orgSlug } = req.params;
+      const logoFile = req.file;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      if (!logoFile) {
+        res.status(400).json({ error: 'No logo file uploaded.' });
+        return;
+      }
+
+      // Get organization by slug
+      const orgResult = await organizationService.getOrganizationBySlug(orgSlug);
+      if (!orgResult.success || !orgResult.data?.organization) {
+        res.status(404).json({ error: 'Organization not found' });
+        return;
+      }
+
+      const organizationId = orgResult.data.organization.id as string;
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      // Convert Multer File to OrganizationLogo format
+      const logoData = {
+        filename: logoFile.originalname,
+        mimetype: logoFile.mimetype,
+        size: logoFile.size,
+        data: logoFile.buffer
+      };
+
+      const result = await organizationService.uploadOrganizationLogo(organizationId, logoData);
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      // Log audit event
+      await logAudit({
+        eventId: '',
+        userId,
+        action: 'upload_organization_logo',
+        targetType: 'organization',
+        targetId: organizationId,
+      });
+
+      res.json(result.data);
+    } catch (error: any) {
+      console.error('Upload organization logo by slug error:', error);
+      res.status(500).json({ error: 'Failed to upload logo.' });
+    }
+  }
+
+  /**
+   * Get organization logo
+   */
+  async getLogo(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+
+      const result = await organizationService.getOrganizationLogo(organizationId);
+
+      if (!result.success) {
+        res.status(404).json({ error: result.error });
+        return;
+      }
+
+      const logo = result.data;
+
+      if (!logo) {
+        res.status(404).json({ error: 'Logo not found.' });
+        return;
+      }
+
+      res.setHeader('Content-Type', logo.mimetype);
+      res.setHeader('Content-Disposition', `inline; filename="${logo.filename}"`);
+      res.send(logo.data);
+    } catch (error: any) {
+      console.error('Get organization logo error:', error);
+      res.status(500).json({ error: 'Failed to get logo.' });
+    }
+  }
+
+  /**
+   * Get organization logo by slug
+   */
+  async getLogoBySlug(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { orgSlug } = req.params;
+
+      // Get organization by slug
+      const orgResult = await organizationService.getOrganizationBySlug(orgSlug);
+      if (!orgResult.success || !orgResult.data?.organization) {
+        res.status(404).json({ error: 'Organization not found' });
+        return;
+      }
+
+      const organizationId = orgResult.data.organization.id as string;
+
+      const result = await organizationService.getOrganizationLogo(organizationId);
+
+      if (!result.success) {
+        res.status(404).json({ error: result.error });
+        return;
+      }
+
+      const logo = result.data;
+
+      if (!logo) {
+        res.status(404).json({ error: 'Logo not found.' });
+        return;
+      }
+
+      res.setHeader('Content-Type', logo.mimetype);
+      res.setHeader('Content-Disposition', `inline; filename="${logo.filename}"`);
+      res.send(logo.data);
+    } catch (error: any) {
+      console.error('Get organization logo by slug error:', error);
+      res.status(500).json({ error: 'Failed to get logo.' });
+    }
+  }
 } 

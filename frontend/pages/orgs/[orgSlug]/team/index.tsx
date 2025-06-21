@@ -34,6 +34,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Organization {
   id: string;
@@ -64,6 +77,9 @@ export default function OrganizationTeam() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
+  const [newRole, setNewRole] = useState<'org_admin' | 'org_viewer'>('org_viewer');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!orgSlug || typeof orgSlug !== 'string') return;
@@ -161,6 +177,50 @@ export default function OrganizationTeam() {
     
     setFilteredMembers(filtered);
   }, [searchTerm, roleFilter, members]);
+
+  const handleEditRole = (member: OrganizationMember) => {
+    setEditingMember(member);
+    setNewRole(member.role);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!editingMember) return;
+    
+    try {
+      // TODO: Implement API call to update member role
+      console.log('Updating role for member:', editingMember.user.id, 'to:', newRole);
+      
+      // Update local state for now
+      setMembers(members.map(member => 
+        member.id === editingMember.id 
+          ? { ...member, role: newRole }
+          : member
+      ));
+      
+      setIsEditDialogOpen(false);
+      setEditingMember(null);
+    } catch (err) {
+      console.error('Error updating member role:', err);
+    }
+  };
+
+  const handleRemoveMember = async (member: OrganizationMember) => {
+    try {
+      // TODO: Implement API call to remove member
+      console.log('Removing member:', member.user.id);
+      
+      // Update local state for now
+      setMembers(members.filter(m => m.id !== member.id));
+    } catch (err) {
+      console.error('Error removing member:', err);
+    }
+  };
+
+  const handleViewProfile = (member: OrganizationMember) => {
+    // For now, just show an alert since user profile pages don't exist yet
+    alert(`User Profile: ${member.user.name}\nEmail: ${member.user.email}\nRole: ${getRoleLabel(member.role)}\nMember since: ${new Date(member.createdAt).toLocaleDateString()}`);
+  };
 
   if (loading) {
     return (
@@ -343,17 +403,42 @@ export default function OrganizationTeam() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditRole(member)}>
                             Edit Role
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/orgs/${orgSlug}/team/${member.user.id}`}>
-                              View Profile
-                            </Link>
+                          <DropdownMenuItem onClick={() => handleViewProfile(member)}>
+                            View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            Remove Member
-                          </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onSelect={(e) => e.preventDefault()}
+                              >
+                                Remove Member
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <div className="flex flex-col space-y-2 text-center sm:text-left">
+                                <AlertDialogTitle>Remove Member</AlertDialogTitle>
+                                <div className="text-sm text-muted-foreground">
+                                  Are you sure you want to remove {member.user.name} from this organization? 
+                                  This action cannot be undone and they will lose access to all organization events.
+                                </div>
+                              </div>
+                              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                                <AlertDialogCancel asChild>
+                                  <Button variant="outline">Cancel</Button>
+                                </AlertDialogCancel>
+                                <Button 
+                                  onClick={() => handleRemoveMember(member)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Remove Member
+                                </Button>
+                              </div>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -436,6 +521,47 @@ export default function OrganizationTeam() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <div className="flex flex-col space-y-2 text-center sm:text-left">
+            <DialogTitle>Edit Member Role</DialogTitle>
+            <DialogDescription>
+              Change the role for {editingMember?.user.name} in this organization.
+            </DialogDescription>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Role</label>
+              <Select value={newRole} onValueChange={(value: 'org_admin' | 'org_viewer') => setNewRole(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="org_admin">Organization Admin</SelectItem>
+                  <SelectItem value="org_viewer">Organization Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {newRole === 'org_admin' ? (
+                <p>Organization Admins can manage organization settings, create events, and view aggregated reports.</p>
+              ) : (
+                <p>Organization Viewers can view organization dashboard and aggregated metrics with read-only access.</p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRole}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 } 

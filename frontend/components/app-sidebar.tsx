@@ -7,7 +7,6 @@ import {
   Settings2,
   Users,
   Shield,
-  UserCog,
   type LucideIcon,
 } from "lucide-react"
 import { useRouter } from "next/router"
@@ -92,6 +91,13 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
       }
     }
   }, [events, selectedEventSlug]);
+
+  // Initialize selected organization to first available organization if none selected
+  useEffect(() => {
+    if (!selectedOrgSlug && organizations.length > 0) {
+      setSelectedOrgSlug(organizations[0].slug);
+    }
+  }, [organizations, selectedOrgSlug]);
 
   // Fetch unread notification count and global roles
   useEffect(() => {
@@ -234,26 +240,6 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
           ],
         },
         {
-          title: "Events Management",
-          url: "/admin/events",
-          icon: UserCog,
-          isActive: router.asPath.startsWith("/admin/events"),
-          items: [
-            {
-              title: "All Events",
-              url: "/admin/events",
-            },
-            {
-              title: "Create Event",
-              url: "/admin/events/new",
-            },
-            {
-              title: "Disabled Events",
-              url: "/admin/events/disabled",
-            },
-          ],
-        },
-        {
           title: "System Settings",
           url: "/admin/system",
           icon: Settings2,
@@ -276,15 +262,22 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
     }
 
     // Organization-specific navigation
-    const currentOrgSlug = isOrgContext ? router.asPath.split('/')[2] : null;
+    let targetOrgSlug = isOrgContext ? router.asPath.split('/')[2] : null;
     
-    if (isOrgContext && currentOrgSlug) {
-      // In organization context
+    if (isOrgContext && targetOrgSlug) {
+      // In organization context with a specific organization
       shouldShowOrgNav = true;
+    } else if (!isOrgContext && selectedOrgSlug && organizations.length > 0) {
+      // On global dashboard - show navigation for the user's selected organization
+      targetOrgSlug = selectedOrgSlug;
+      shouldShowOrgNav = true;
+    }
+    
+    if (shouldShowOrgNav && targetOrgSlug) {
       
-      // Get user's role for the current organization
-      const currentOrg = organizations.find(org => org.slug === currentOrgSlug);
-      const userOrgRole = currentOrg?.role;
+      // Get user's role for the target organization
+      const targetOrg = organizations.find(org => org.slug === targetOrgSlug);
+      const userOrgRole = targetOrg?.role;
       
       // Check role permissions
       const isOrgAdmin = userOrgRole === 'org_admin' || isSuperAdmin;
@@ -293,27 +286,27 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
       orgNavItems = [
         {
           title: "Organization Dashboard",
-          url: `/orgs/${currentOrgSlug}`,
+          url: `/orgs/${targetOrgSlug}`,
           icon: Home,
-          isActive: router.asPath === `/orgs/${currentOrgSlug}`,
+          isActive: router.asPath === `/orgs/${targetOrgSlug}`,
         },
         {
           title: "Events",
-          url: `/orgs/${currentOrgSlug}/events`,
+          url: `/orgs/${targetOrgSlug}/events`,
           icon: ClipboardList,
-          isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/events`),
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/events`),
         },
         {
           title: "Reports Overview",
-          url: `/orgs/${currentOrgSlug}/reports`,
+          url: `/orgs/${targetOrgSlug}/reports`,
           icon: BookOpen,
-          isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/reports`),
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/reports`),
         },
         {
           title: "Team",
-          url: `/orgs/${currentOrgSlug}/team`,
+          url: `/orgs/${targetOrgSlug}/team`,
           icon: Users,
-          isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/team`),
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/team`),
         },
       ];
 
@@ -321,9 +314,9 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
       if (isOrgAdmin) {
         orgNavItems.push({
           title: "Organization Settings",
-          url: `/orgs/${currentOrgSlug}/settings`,
+          url: `/orgs/${targetOrgSlug}/settings`,
           icon: Settings2,
-          isActive: router.asPath.startsWith(`/orgs/${currentOrgSlug}/settings`),
+          isActive: router.asPath.startsWith(`/orgs/${targetOrgSlug}/settings`),
         });
       }
     }
