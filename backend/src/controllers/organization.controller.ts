@@ -69,7 +69,7 @@ export class OrganizationController {
       // Log audit event
       if (result.data?.organization?.id) {
         await logAudit({
-          eventId: '', // No specific event for org creation
+          eventId: undefined, // No specific event for org creation
           userId,
           action: 'create_organization',
           targetType: 'organization',
@@ -208,7 +208,7 @@ export class OrganizationController {
 
       // Log audit event
       await logAudit({
-        eventId: '',
+        eventId: undefined,
         userId,
         action: 'update_organization',
         targetType: 'organization',
