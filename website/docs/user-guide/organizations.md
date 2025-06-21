@@ -259,5 +259,3 @@ Developers can interact with organizations through the API:
 - **Membership Management**: Add, remove, update member roles
 - **Event Management**: Create and manage organization events
 - **Invite Management**: Create and manage invite links
-
-See the [API Documentation](/docs/developer-docs/api-endpoints#organizations) for detailed endpoint information. 
