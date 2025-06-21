@@ -41,7 +41,10 @@ import { setupSwagger } from './src/config/swagger';
 // Initialize Prisma client (after environment is loaded)
 const prisma = new PrismaClient();
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = parseInt(process.env.PORT || '4000', 10);
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  throw new Error(`Invalid PORT value: ${process.env.PORT}`);
+}
 
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
@@ -372,8 +375,9 @@ app.use((req: any, res: any) => {
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  const host = '0.0.0.0'; // Always bind to 0.0.0.0 for container compatibility
+  app.listen(PORT, host, () => {
+    console.log(`Server running on ${host}:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
