@@ -187,7 +187,7 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
 
         return createNotification({
           userId: userRole.userId,
-          type: getNotificationType(type),
+          type: getNotificationType(type) as 'report_submitted' | 'report_assigned' | 'report_status_changed' | 'report_comment_added' | 'event_invitation' | 'event_role_changed' | 'system_announcement',
           priority,
           title,
           message,

@@ -55,9 +55,9 @@ export default function NewReport() {
   }, [eventSlug]);
 
   const handleSuccess = () => {
-    // Navigate to the event dashboard after successful submission
-    // This ensures all users (including reporters) can access the destination
-    router.push(`/events/${eventSlug}/dashboard`);
+    // Navigate to the user's reports page after successful submission
+    // This shows them their newly created report in context
+    router.push(`/events/${eventSlug}/my-reports`);
   };
 
   if (loading) {
