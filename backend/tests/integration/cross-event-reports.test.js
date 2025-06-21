@@ -170,6 +170,15 @@ describe('Cross-Event Reports API Integration Tests', () => {
       expect(response.body.reports[0].state).toBe('submitted');
     });
 
+    it('should filter reports by severity', async () => {
+      const response = await request(app)
+        .get('/api/users/me/reports?severity=high')
+        .expect(200);
+
+      expect(response.body.reports).toHaveLength(1);
+      expect(response.body.reports[0].severity).toBe('high');
+    });
+
     it('should filter reports by event', async () => {
       const response = await request(app)
         .get('/api/users/me/reports?event=devconf-2024')

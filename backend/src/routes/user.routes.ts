@@ -131,6 +131,7 @@ router.get('/me/reports', async (req: any, res: Response): Promise<void> => {
       limit,
       search: req.query.search as string,
       status: req.query.status as string,
+      severity: req.query.severity as string,
       event: req.query.event as string,
       assigned: req.query.assigned as string,
       sort: req.query.sort as string,

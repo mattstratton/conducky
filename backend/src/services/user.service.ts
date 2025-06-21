@@ -59,6 +59,7 @@ export interface UserReportsQuery {
   limit?: number;
   search?: string;
   status?: string;
+  severity?: string;
   event?: string;
   assigned?: string;
   sort?: string;
@@ -320,6 +321,7 @@ export class UserService {
         limit = 20,
         search,
         status,
+        severity,
         event: eventFilter,
         assigned,
         sort = 'createdAt',
@@ -442,6 +444,10 @@ export class UserService {
 
       if (status) {
         filters.push({ state: status });
+      }
+
+      if (severity) {
+        filters.push({ severity });
       }
 
       if (eventFilter) {
