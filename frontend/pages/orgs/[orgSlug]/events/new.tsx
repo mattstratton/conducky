@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Calendar, MapPin, Users, Save } from 'lucide-react';
 import Link from 'next/link';
+import { isValidEmail } from '@/lib/utils';
 
 interface Organization {
   id: string;
@@ -42,6 +43,9 @@ export default function NewEventInOrganization() {
     website: '',
     contactEmail: '',
   });
+
+  // Validation state
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   // Fetch organization data
   useEffect(() => {
@@ -96,11 +100,26 @@ export default function NewEventInOrganization() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validate email field
+    if (field === 'contactEmail') {
+      if (value && !isValidEmail(value)) {
+        setEmailError('Please enter a valid email address');
+      } else {
+        setEmailError(null);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organization) return;
+
+    // Validate email before submitting
+    if (formData.contactEmail && !isValidEmail(formData.contactEmail)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
 
     try {
       setSaving(true);
@@ -329,14 +348,18 @@ export default function NewEventInOrganization() {
                     value={formData.contactEmail}
                     onChange={(e) => handleInputChange('contactEmail', e.target.value)}
                     placeholder="contact@example.com"
+                    className={emailError ? 'border-red-500 focus:border-red-500' : ''}
                   />
+                  {emailError && (
+                    <p className="text-sm text-red-600 mt-1">{emailError}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Submit Button */}
             <div className="flex gap-4">
-              <Button type="submit" disabled={saving || !formData.name || !formData.slug}>
+              <Button type="submit" disabled={saving || !formData.name || !formData.slug || !!emailError}>
                 {saving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-white rounded-full animate-spin mr-2" />

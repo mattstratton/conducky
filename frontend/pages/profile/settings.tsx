@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { UserContext } from '../_app';
 import { Eye, EyeOff, Save, User, Lock, Bell, Shield } from 'lucide-react';
+import { isValidEmail } from '@/lib/utils';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -33,6 +34,7 @@ export default function ProfileSettings() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
@@ -141,6 +143,14 @@ export default function ProfileSettings() {
     e.preventDefault();
     setProfileError('');
     setProfileSuccess('');
+    setEmailError(null);
+
+    // Validate email before submitting
+    if (profileForm.email && !isValidEmail(profileForm.email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
     setProfileLoading(true);
 
     try {
@@ -293,10 +303,23 @@ export default function ProfileSettings() {
                     id="email"
                     type="email"
                     value={profileForm.email}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setProfileForm(prev => ({ ...prev, email: value }));
+                      // Validate email in real-time
+                      if (value && !isValidEmail(value)) {
+                        setEmailError('Please enter a valid email address');
+                      } else {
+                        setEmailError(null);
+                      }
+                    }}
                     placeholder="Enter your email address"
+                    className={emailError ? 'border-red-500 focus:border-red-500' : ''}
                     required
                   />
+                  {emailError && (
+                    <p className="text-sm text-red-600">{emailError}</p>
+                  )}
                 </div>
               </div>
               
@@ -312,7 +335,7 @@ export default function ProfileSettings() {
                 </div>
               )}
               
-              <Button type="submit" disabled={profileLoading} className="flex items-center gap-2">
+              <Button type="submit" disabled={profileLoading || !!emailError} className="flex items-center gap-2">
                 <Save className="h-4 w-4" />
                 {profileLoading ? 'Saving...' : 'Save Profile'}
               </Button>

@@ -21,12 +21,14 @@ export function isValidEmail(email: string): boolean {
 
 /**
  * Sanitizes email for display and mailto links
+ * Removes potentially dangerous characters including script injection vectors
  */
 export function sanitizeEmail(email: string): string {
   if (!email || typeof email !== 'string') {
     return '';
   }
   
-  // Remove any potentially dangerous characters
-  return email.trim().replace(/[<>'"]/g, '');
+  // Remove potentially dangerous characters including control characters and script injection vectors
+  // eslint-disable-next-line no-control-regex
+  return email.trim().replace(/[<>'"&\u0000-\u001f\u007f-\u009f]/g, '');
 }
