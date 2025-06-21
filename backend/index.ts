@@ -211,13 +211,15 @@ app.get('/api/session', async (req: any, res: any) => {
   }
 });
 
+// Public system settings that can be exposed without authentication
+const PUBLIC_SETTINGS = ['showPublicEventList'];
+
 // Public system settings route (only safe settings, no authentication required)
 app.get('/api/system/settings/public', async (_req: any, res: any) => {
   try {
     // Only expose safe, public settings
-    const publicSettings = ['showPublicEventList'];
     const settings = await prisma.systemSetting.findMany({
-      where: { key: { in: publicSettings } }
+      where: { key: { in: PUBLIC_SETTINGS } }
     });
     
     // Convert array to object for easier frontend usage
@@ -228,18 +230,17 @@ app.get('/api/system/settings/public', async (_req: any, res: any) => {
     
     res.json({ settings: settingsObj });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to fetch public system settings', details: err.message });
+    console.error('Error fetching public system settings:', err);
+    res.status(500).json({ error: 'Failed to fetch system settings' });
   }
 });
 
-// Legacy endpoint for backward compatibility - redirects to public endpoint
-// TODO: Remove this after frontend is updated
+// Legacy system settings route (now returns only public settings for backward compatibility)
 app.get('/api/system/settings', async (_req: any, res: any) => {
   try {
-    // Only expose safe, public settings for backward compatibility
-    const publicSettings = ['showPublicEventList'];
+    // Only expose safe, public settings (same as /public endpoint for security)
     const settings = await prisma.systemSetting.findMany({
-      where: { key: { in: publicSettings } }
+      where: { key: { in: PUBLIC_SETTINGS } }
     });
     
     // Convert array to object for easier frontend usage
@@ -250,7 +251,8 @@ app.get('/api/system/settings', async (_req: any, res: any) => {
     
     res.json({ settings: settingsObj });
   } catch (err: any) {
-    res.status(500).json({ error: 'Failed to fetch system settings', details: err.message });
+    console.error('Error fetching system settings:', err);
+    res.status(500).json({ error: 'Failed to fetch system settings' });
   }
 });
 
