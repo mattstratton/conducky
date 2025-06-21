@@ -1,4 +1,4 @@
-import { PrismaClient, Organization, OrganizationMembership, OrganizationRole, OrganizationLogo } from '@prisma/client';
+import { PrismaClient, Organization, OrganizationMembership, OrganizationRole, OrganizationLogo, OrganizationInviteLink } from '@prisma/client';
 import { ServiceResult } from '../types';
 
 const prisma = new PrismaClient();
@@ -569,6 +569,195 @@ export class OrganizationService {
       return {
         success: false,
         error: 'Failed to fetch logo.'
+      };
+    }
+  }
+
+  /**
+   * Create organization invite link
+   */
+  async createInviteLink(
+    organizationId: string,
+    createdByUserId: string,
+    role: OrganizationRole,
+    maxUses?: number,
+    expiresAt?: Date,
+    note?: string
+  ): Promise<ServiceResult<{ inviteLink: OrganizationInviteLink & { url: string } }>> {
+    try {
+      // Generate unique code
+      const code = require('crypto').randomBytes(16).toString('hex');
+      
+      const inviteLink = await prisma.organizationInviteLink.create({
+        data: {
+          organizationId,
+          code,
+          createdByUserId,
+          role,
+          maxUses,
+          expiresAt,
+          note,
+        },
+      });
+
+      const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/org-invite/${code}`;
+
+      return {
+        success: true,
+        data: { 
+          inviteLink: {
+            ...inviteLink,
+            url
+          }
+        },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Failed to create invite link: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Get organization invite links
+   */
+  async getInviteLinks(
+    organizationId: string
+  ): Promise<ServiceResult<{ inviteLinks: (OrganizationInviteLink & { url: string })[] }>> {
+    try {
+      const inviteLinks = await prisma.organizationInviteLink.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const inviteLinksWithUrls = inviteLinks.map(invite => ({
+        ...invite,
+        url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/org-invite/${invite.code}`
+      }));
+
+      return {
+        success: true,
+        data: { inviteLinks: inviteLinksWithUrls },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Failed to get invite links: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Update invite link (disable/enable)
+   */
+  async updateInviteLink(
+    inviteId: string,
+    disabled: boolean
+  ): Promise<ServiceResult<{ inviteLink: OrganizationInviteLink }>> {
+    try {
+      const inviteLink = await prisma.organizationInviteLink.update({
+        where: { id: inviteId },
+        data: { disabled },
+      });
+
+      return {
+        success: true,
+        data: { inviteLink },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Failed to update invite link: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Use invite link to join organization
+   */
+  async useInviteLink(
+    code: string,
+    userId: string
+  ): Promise<ServiceResult<{ organization: Organization; membership: OrganizationMembership }>> {
+    try {
+      const inviteLink = await prisma.organizationInviteLink.findUnique({
+        where: { code },
+        include: { organization: true },
+      });
+
+      if (!inviteLink) {
+        return {
+          success: false,
+          error: 'Invalid invite code',
+        };
+      }
+
+      if (inviteLink.disabled) {
+        return {
+          success: false,
+          error: 'This invite link has been disabled',
+        };
+      }
+
+      if (inviteLink.expiresAt && inviteLink.expiresAt < new Date()) {
+        return {
+          success: false,
+          error: 'This invite link has expired',
+        };
+      }
+
+      if (inviteLink.maxUses && inviteLink.useCount >= inviteLink.maxUses) {
+        return {
+          success: false,
+          error: 'This invite link has reached its maximum usage limit',
+        };
+      }
+
+      // Check if user is already a member
+      const existingMembership = await prisma.organizationMembership.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: inviteLink.organizationId,
+            userId,
+          },
+        },
+      });
+
+      if (existingMembership) {
+        return {
+          success: false,
+          error: 'You are already a member of this organization',
+        };
+      }
+
+      // Create membership and increment use count
+      const [membership] = await prisma.$transaction([
+        prisma.organizationMembership.create({
+          data: {
+            organizationId: inviteLink.organizationId,
+            userId,
+            role: inviteLink.role,
+            createdById: inviteLink.createdByUserId,
+          },
+        }),
+        prisma.organizationInviteLink.update({
+          where: { id: inviteLink.id },
+          data: { useCount: { increment: 1 } },
+        }),
+      ]);
+
+      return {
+        success: true,
+        data: { 
+          organization: inviteLink.organization,
+          membership 
+        },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Failed to use invite link: ${error.message}`,
       };
     }
   }

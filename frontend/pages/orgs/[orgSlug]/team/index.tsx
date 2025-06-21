@@ -108,46 +108,30 @@ export default function OrganizationTeam() {
         const orgData = await orgResponse.json();
         setOrganization(orgData.organization);
         
-        // TODO: Fetch organization members when API is ready
-        // For now, use mock data
-        const mockMembers: OrganizationMember[] = [
-          {
-            id: '1',
-            role: 'org_admin',
-            createdAt: '2024-01-15T00:00:00Z',
-            user: {
-              id: '1',
-              name: 'John Doe',
-              email: 'john@acmeconf.org',
-              avatar: undefined
-            }
-          },
-          {
-            id: '2',
-            role: 'org_viewer',
-            createdAt: '2024-03-10T00:00:00Z',
-            user: {
-              id: '2',
-              name: 'Sarah Chen',
-              email: 'sarah@acmeconf.org',
-              avatar: undefined
-            }
-          },
-          {
-            id: '3',
-            role: 'org_admin',
-            createdAt: '2024-02-20T00:00:00Z',
-            user: {
-              id: '3',
-              name: 'Mike Wilson',
-              email: 'mike@acmeconf.org',
-              avatar: undefined
-            }
+        // Extract members from organization data
+        const organizationMembers: OrganizationMember[] = orgData.organization.memberships?.map((membership: {
+          id: string;
+          role: string;
+          createdAt: string;
+          user: {
+            id: string;
+            name?: string;
+            email: string;
+          };
+        }) => ({
+          id: membership.id,
+          role: membership.role,
+          createdAt: membership.createdAt,
+          user: {
+            id: membership.user.id,
+            name: membership.user.name || membership.user.email,
+            email: membership.user.email,
+            avatar: undefined // TODO: Add avatar support
           }
-        ];
+        })) || [];
         
-        setMembers(mockMembers);
-        setFilteredMembers(mockMembers);
+        setMembers(organizationMembers);
+        setFilteredMembers(organizationMembers);
         
       } catch (err) {
         console.error('Error fetching data:', err);

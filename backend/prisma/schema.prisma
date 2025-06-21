@@ -95,6 +95,7 @@ model User {
   organizationMemberships OrganizationMembership[]
   createdOrganizations Organization[] @relation("OrganizationCreator")
   createdMemberships OrganizationMembership[] @relation("MembershipCreator")
+  createdOrgInvites OrganizationInviteLink[] @relation("OrganizationInviteCreator")
 }
 
 model Event {
@@ -350,6 +351,7 @@ model Organization {
   events      Event[]
   auditLogs   AuditLog[]
   logo        OrganizationLogo?
+  inviteLinks OrganizationInviteLink[]
 }
 
 model OrganizationMembership {
@@ -375,4 +377,20 @@ model OrganizationLogo {
   size           Int
   data           Bytes
   createdAt      DateTime     @default(now())
+}
+
+model OrganizationInviteLink {
+  id               String           @id @default(uuid())
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId   String
+  code             String           @unique
+  createdByUserId  String
+  createdBy        User             @relation("OrganizationInviteCreator", fields: [createdByUserId], references: [id])
+  createdAt        DateTime         @default(now())
+  expiresAt        DateTime?
+  maxUses          Int?
+  useCount         Int              @default(0)
+  disabled         Boolean          @default(false)
+  note             String?
+  role             OrganizationRole
 }

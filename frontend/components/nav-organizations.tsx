@@ -5,12 +5,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Check, ChevronDown, Building2 } from "lucide-react";
 import { useRouter } from "next/router";
@@ -31,12 +25,24 @@ export function NavOrganizations({
   const router = useRouter();
   const { setOpenMobile, isMobile } = useSidebar()
   
+  // Debug logging
+  console.log('[NavOrganizations] Render:', {
+    organizations,
+    collapsed,
+    selectedOrgSlug,
+    routerPath: router.asPath,
+    organizationCount: organizations.length
+  });
+  
   // Determine current organization by matching current path to org slug, or use selectedOrgSlug
   const currentOrg = organizations.find(org => router.asPath.startsWith(`/orgs/${org.slug}`)) 
     || (selectedOrgSlug ? organizations.find(org => org.slug === selectedOrgSlug) : null)
     || organizations[0];
 
+  console.log('[NavOrganizations] Current org:', currentOrg);
+
   const handleOrgClick = async (orgSlug: string) => {
+    console.log('[NavOrganizations] Org clicked:', orgSlug);
     await router.push(`/orgs/${orgSlug}`);
     if (isMobile) {
       setOpenMobile(false);
@@ -48,26 +54,10 @@ export function NavOrganizations({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="flex items-center justify-center w-10 h-10 rounded-full bg-muted hover:bg-accent transition">
-                  <Building2 className="w-6 h-6" />
-                  <span className="sr-only">Switch Organization</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-center">
-                  <p className="font-medium">{currentOrg ? currentOrg.name : "Select Organization"}</p>
-                  {currentOrg?.role && (
-                    <p className="text-xs text-muted-foreground">
-                      {currentOrg.role === 'org_admin' ? 'Organization Admin' : 'Organization Viewer'}
-                    </p>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button className="flex items-center justify-center w-10 h-10 rounded-full bg-muted hover:bg-accent transition">
+            <Building2 className="w-6 h-6" />
+            <span className="sr-only">Switch Organization</span>
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56 p-0">
           {organizations.map(org => (
@@ -77,23 +67,7 @@ export function NavOrganizations({
               onClick={() => handleOrgClick(org.slug)}
             >
               <Building2 className="w-4 h-4" />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="flex-1 truncate text-left">{org.name}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-center">
-                      <p className="font-medium">{org.name}</p>
-                      {org.role && (
-                        <p className="text-xs text-muted-foreground">
-                          {org.role === 'org_admin' ? 'Organization Admin' : 'Organization Viewer'}
-                        </p>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <span className="flex-1 truncate text-left">{org.name}</span>
               {org.role && (
                 <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold">
                   {org.role === 'org_admin' ? 'Admin' : 'Viewer'}
@@ -111,27 +85,11 @@ export function NavOrganizations({
     <div className="px-2 py-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-muted hover:bg-accent transition text-foreground font-medium">
-                  <Building2 className="w-5 h-5" />
-                  <span className="flex-1 truncate text-left">{currentOrg ? currentOrg.name : "Select Organization"}</span>
-                  <ChevronDown className="w-4 h-4 ml-auto opacity-70" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-center">
-                  <p className="font-medium">{currentOrg ? currentOrg.name : "Select Organization"}</p>
-                  {currentOrg?.role && (
-                    <p className="text-xs text-muted-foreground">
-                      {currentOrg.role === 'org_admin' ? 'Organization Admin' : 'Organization Viewer'}
-                    </p>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md bg-muted hover:bg-accent transition text-foreground font-medium">
+            <Building2 className="w-5 h-5" />
+            <span className="flex-1 truncate text-left">{currentOrg ? currentOrg.name : "Select Organization"}</span>
+            <ChevronDown className="w-4 h-4 ml-auto opacity-70" />
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56 p-0">
           {organizations.map(org => (
@@ -141,23 +99,7 @@ export function NavOrganizations({
               onClick={() => handleOrgClick(org.slug)}
             >
               <Building2 className="w-4 h-4" />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="flex-1 truncate text-left">{org.name}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-center">
-                      <p className="font-medium">{org.name}</p>
-                      {org.role && (
-                        <p className="text-xs text-muted-foreground">
-                          {org.role === 'org_admin' ? 'Organization Admin' : 'Organization Viewer'}
-                        </p>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <span className="flex-1 truncate text-left">{org.name}</span>
               {org.role && (
                 <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold">
                   {org.role === 'org_admin' ? 'Admin' : 'Viewer'}

@@ -825,4 +825,157 @@ export class OrganizationController {
       res.status(500).json({ error: 'Failed to get logo.' });
     }
   }
+
+  /**
+   * Create organization invite link (Org Admin only)
+   */
+  async createInviteLink(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+      const { role, maxUses, expiresAt, note } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      const result = await organizationService.createInviteLink(
+        organizationId,
+        userId,
+        role,
+        maxUses ? parseInt(maxUses) : undefined,
+        expiresAt ? new Date(expiresAt) : undefined,
+        note
+      );
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      res.status(201).json(result.data);
+    } catch (error: any) {
+      console.error('Error creating organization invite link:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Get organization invite links (Org Admin only)
+   */
+  async getInviteLinks(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      const result = await organizationService.getInviteLinks(organizationId);
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      res.json({ invites: result.data?.inviteLinks });
+    } catch (error: any) {
+      console.error('Error getting organization invite links:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Update organization invite link (Org Admin only)
+   */
+  async updateInviteLink(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { organizationId, inviteId } = req.params;
+      const { disabled } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // Check if user is org admin
+      const isOrgAdmin = await organizationService.hasOrganizationRole(
+        userId,
+        organizationId,
+        'org_admin'
+      );
+
+      if (!isOrgAdmin) {
+        res.status(403).json({ error: 'Organization admin access required' });
+        return;
+      }
+
+      const result = await organizationService.updateInviteLink(inviteId, disabled);
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      res.json(result.data);
+    } catch (error: any) {
+      console.error('Error updating organization invite link:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Use organization invite link
+   */
+  async useInviteLink(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { code } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const result = await organizationService.useInviteLink(code, userId);
+
+      if (!result.success) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+
+      res.json(result.data);
+    } catch (error: any) {
+      console.error('Error using organization invite link:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 } 

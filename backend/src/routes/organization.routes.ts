@@ -81,4 +81,20 @@ router.get('/:organizationId/logo', organizationController.getLogo.bind(organiza
 // Get organization logo by slug
 router.get('/slug/:orgSlug/logo', organizationController.getLogoBySlug.bind(organizationController));
 
+/**
+ * Organization Invite Routes
+ */
+
+// Create organization invite link (Org Admin only)
+router.post('/:organizationId/invites', organizationController.createInviteLink.bind(organizationController));
+
+// Get organization invite links (Org Admin only)
+router.get('/:organizationId/invites', organizationController.getInviteLinks.bind(organizationController));
+
+// Update organization invite link (Org Admin only)
+router.patch('/:organizationId/invites/:inviteId', organizationController.updateInviteLink.bind(organizationController));
+
+// Use organization invite link (public endpoint)
+router.post('/invite/:code/use', organizationController.useInviteLink.bind(organizationController));
+
 export default router; 
