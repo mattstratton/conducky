@@ -12,9 +12,9 @@ This document describes the main data models used in the system, based on the Pr
 - **id**: UUID, primary key
 - **email**: Unique email address
 - **name**: Optional display name
-- **passwordHash**: Hashed password (nullable for invited users)
+- **passwordHash**: Hashed password (nullable for social login users)
 - **createdAt, updatedAt**: Timestamps
-- **Relations**: userEventRoles, reports, auditLogs, reportComments, evidenceFilesUploaded, assignedReports, avatar, passwordResetTokens, notifications
+- **Relations**: userEventRoles, reports, auditLogs, reportComments, evidenceFilesUploaded, assignedReports, avatar, passwordResetTokens, notifications, socialAccounts, notificationSettings, organizationMemberships, createdOrganizations, createdMemberships, createdOrgInvites
 
 ## Event
 
@@ -27,8 +27,10 @@ This document describes the main data models used in the system, based on the Pr
 - **website**: Optional event website URL
 - **codeOfConduct**: Optional code of conduct text
 - **contactEmail**: Optional contact email
+- **isActive**: Boolean (default: true)
+- **organizationId**: Optional organization reference (nullable for migration compatibility)
 - **createdAt, updatedAt**: Timestamps
-- **Relations**: userEventRoles, reports, auditLogs, inviteLinks, eventLogo, notifications
+- **Relations**: organization, userEventRoles, reports, auditLogs, inviteLinks, eventLogo, notifications
 
 ## Role
 
@@ -111,13 +113,14 @@ This document describes the main data models used in the system, based on the Pr
 ## AuditLog
 
 - **id**: UUID, primary key
-- **eventId**: Event reference
+- **eventId**: Event reference (nullable)
 - **userId**: User reference (nullable)
 - **action**: Action performed
 - **targetType**: Type of target (e.g., User, Report)
 - **targetId**: Target identifier
 - **timestamp**: When the action occurred
-- **Relations**: event, user
+- **organizationId**: Organization reference (nullable)
+- **Relations**: event, user, organization
 
 ## EventInviteLink
 
@@ -201,10 +204,10 @@ This document describes the main data models used in the system, based on the Pr
 
 ### ContactPreference
 
-- `email` - Preferred contact via email (default)
-- `phone` - Preferred contact via phone
-- `in_person` - Preferred contact in person
-- `no_contact` - No contact preferred
+- `email`
+- `phone`
+- `in_person`
+- `no_contact`
 
 ### NotificationType
 
@@ -222,6 +225,113 @@ This document describes the main data models used in the system, based on the Pr
 - `normal`
 - `high`
 - `urgent`
+
+### SocialProvider
+
+- `google`
+- `github`
+
+### OrganizationRole
+
+- `org_admin` - Organization administrator with full permissions
+- `org_viewer` - Organization viewer with read-only access
+
+---
+
+## Organization Models
+
+## Organization
+
+- **id**: UUID, primary key
+- **name**: Organization name
+- **slug**: Unique, URL-safe identifier
+- **description**: Optional organization description
+- **website**: Optional organization website URL
+- **logoUrl**: Optional logo URL
+- **settings**: Optional JSON string for flexible settings
+- **createdAt, updatedAt**: Timestamps
+- **createdById**: User reference (creator)
+- **Relations**: createdBy, memberships, events, auditLogs, logo, inviteLinks
+
+## OrganizationMembership
+
+- **id**: UUID, primary key
+- **organizationId**: Organization reference
+- **userId**: User reference
+- **role**: Organization role enum (org_admin, org_viewer)
+- **createdAt**: Timestamp
+- **createdById**: User reference (who created the membership, nullable)
+- **Unique:** Combination of organizationId and userId
+- **Relations**: organization, user, createdBy
+
+## OrganizationLogo
+
+- **id**: UUID, primary key
+- **organizationId**: Organization reference (unique)
+- **filename**: Original file name
+- **mimetype**: File MIME type
+- **size**: File size (bytes)
+- **data**: File data (BLOB)
+- **createdAt**: Timestamp
+- **Relations**: organization
+
+## OrganizationInviteLink
+
+- **id**: UUID, primary key
+- **organizationId**: Organization reference
+- **code**: Unique invite code
+- **createdByUserId**: User who created the invite
+- **role**: Organization role enum (org_admin, org_viewer)
+- **createdAt**: Timestamp
+- **expiresAt**: Optional expiration
+- **maxUses**: Optional max uses
+- **useCount**: Number of times used (default: 0)
+- **disabled**: Boolean (default: false)
+- **note**: Optional note
+- **Relations**: organization, createdBy
+
+## SocialAccount
+
+- **id**: UUID, primary key
+- **userId**: User reference
+- **provider**: Social provider enum (google, github)
+- **providerId**: User's ID from the OAuth provider
+- **providerEmail**: Email from the OAuth provider (nullable)
+- **providerName**: Name from the OAuth provider (nullable)
+- **profileData**: JSON string for basic profile data (nullable)
+- **createdAt, updatedAt**: Timestamps
+- **Unique:** Combination of provider and providerId, also userId and provider
+- **Relations**: user
+
+## RateLimitAttempt
+
+- **id**: UUID, primary key
+- **key**: Rate limit key (e.g., "reset_attempt_email@example.com")
+- **type**: Type of rate limit (e.g., "password_reset", "login_attempt")
+- **identifier**: The identifier being rate limited (email, IP, etc.)
+- **expiresAt**: Expiration timestamp
+- **createdAt**: Timestamp
+
+## UserNotificationSettings
+
+- **id**: UUID, primary key
+- **userId**: User reference (unique)
+- **reportSubmittedInApp**: Boolean (default: true)
+- **reportSubmittedEmail**: Boolean (default: false)
+- **reportAssignedInApp**: Boolean (default: true)
+- **reportAssignedEmail**: Boolean (default: false)
+- **reportStatusChangedInApp**: Boolean (default: true)
+- **reportStatusChangedEmail**: Boolean (default: false)
+- **reportCommentAddedInApp**: Boolean (default: true)
+- **reportCommentAddedEmail**: Boolean (default: false)
+- **eventInvitationInApp**: Boolean (default: true)
+- **eventInvitationEmail**: Boolean (default: false)
+- **eventRoleChangedInApp**: Boolean (default: true)
+- **eventRoleChangedEmail**: Boolean (default: false)
+- **systemAnnouncementInApp**: Boolean (default: true)
+- **systemAnnouncementEmail**: Boolean (default: false)
+- **createdAt, updatedAt**: Timestamps
+- **Relations**: user
 
 ---
 
