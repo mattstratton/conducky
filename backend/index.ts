@@ -42,6 +42,9 @@ import { setupSwagger } from './src/config/swagger';
 const prisma = new PrismaClient();
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000', 10);
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  throw new Error(`Invalid PORT value: ${process.env.PORT}`);
+}
 
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
