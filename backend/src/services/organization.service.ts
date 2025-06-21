@@ -600,7 +600,7 @@ export class OrganizationService {
         },
       });
 
-      const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/org-invite/${code}`;
+      const url = `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/org-invite/${code}`;
 
       return {
         success: true,
@@ -633,7 +633,7 @@ export class OrganizationService {
 
       const inviteLinksWithUrls = inviteLinks.map(invite => ({
         ...invite,
-        url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/org-invite/${invite.code}`
+        url: `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/org-invite/${invite.code}`
       }));
 
       return {

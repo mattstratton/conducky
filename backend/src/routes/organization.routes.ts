@@ -14,7 +14,14 @@ const uploadLogo = createUploadMiddleware({
   allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp']
 });
 
-// All routes require authentication
+/**
+ * Public Organization Invite Routes (no auth required)
+ */
+
+// Get organization invite details (public endpoint)
+router.get('/invite/:code', organizationController.getInviteDetails.bind(organizationController));
+
+// All other routes require authentication
 router.use(requireAuth);
 
 /**
@@ -94,7 +101,7 @@ router.get('/:organizationId/invites', organizationController.getInviteLinks.bin
 // Update organization invite link (Org Admin only)
 router.patch('/:organizationId/invites/:inviteId', organizationController.updateInviteLink.bind(organizationController));
 
-// Use organization invite link (public endpoint)
+// Use organization invite link (requires auth)
 router.post('/invite/:code/use', organizationController.useInviteLink.bind(organizationController));
 
 export default router; 

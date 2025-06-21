@@ -953,6 +953,71 @@ export class OrganizationController {
   }
 
   /**
+   * Get organization invite details (public endpoint)
+   */
+  async getInviteDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { code } = req.params;
+
+      const prisma = getPrismaClient();
+      
+      // Find the invite link
+      const invite = await prisma.organizationInviteLink.findUnique({
+        where: { code },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              description: true,
+            },
+          },
+        },
+      });
+
+      if (!invite) {
+        res.status(404).json({ error: 'Invite not found' });
+        return;
+      }
+
+      // Check if invite is expired
+      if (invite.expiresAt && invite.expiresAt < new Date()) {
+        res.status(400).json({ error: 'Invite has expired' });
+        return;
+      }
+
+      // Check if invite has reached max uses
+      if (invite.maxUses && invite.useCount >= invite.maxUses) {
+        res.status(400).json({ error: 'Invite has reached maximum uses' });
+        return;
+      }
+
+      // Check if invite is disabled
+      if (invite.disabled) {
+        res.status(400).json({ error: 'Invite is disabled' });
+        return;
+      }
+
+      res.json({
+        invite: {
+          id: invite.id,
+          note: invite.note,
+          expiresAt: invite.expiresAt,
+          useCount: invite.useCount,
+          maxUses: invite.maxUses,
+          disabled: invite.disabled,
+          role: invite.role,
+        },
+        organization: invite.organization,
+      });
+    } catch (error: any) {
+      console.error('Error getting organization invite details:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
    * Use organization invite link
    */
   async useInviteLink(req: AuthenticatedRequest, res: Response): Promise<void> {
