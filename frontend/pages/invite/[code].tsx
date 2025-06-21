@@ -47,12 +47,36 @@ export default function RedeemInvitePage() {
     setLoading(true);
     setError('');
     fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/invites/${code}`)
-      .then(res => res.ok ? res.json() : Promise.reject('Invite not found'))
+      .then(async res => {
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Invite not found');
+        }
+        return res.json();
+      })
       .then(data => {
+        // Check for expiration on the frontend as well
+        if (data.invite.expiresAt && new Date(data.invite.expiresAt) < new Date()) {
+          setError('This invite link has expired.');
+          return;
+        }
+        
+        // Check if disabled
+        if (data.invite.disabled) {
+          setError('This invite link has been disabled.');
+          return;
+        }
+        
+        // Check if max uses reached
+        if (data.invite.maxUses && data.invite.useCount >= data.invite.maxUses) {
+          setError('This invite link has reached its maximum number of uses.');
+          return;
+        }
+        
         setInvite(data.invite);
         setEvent(data.event);
       })
-      .catch(() => setError('Invite link not found or invalid.'))
+      .catch((err) => setError(err.message || 'Invite link not found or invalid.'))
       .finally(() => setLoading(false));
   }, [code]);
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PencilIcon, CheckIcon, XMarkIcon, LinkIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import ReactMarkdown from "react-markdown";
+import { isValidEmail } from "@/lib/utils";
 
 export interface EventMeta {
   name: string;
@@ -44,6 +45,7 @@ export function EventMetaEditor({
   const [editValue, setEditValue] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [showCodeSheet, setShowCodeSheet] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const backendBaseUrl = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || "http://localhost:4000";
   const logoSrc = logoPreview || (logoExists ? `${backendBaseUrl}/api/events/slug/${eventSlug}/logo` : null);
@@ -62,6 +64,13 @@ export function EventMetaEditor({
 
   const saveEdit = async () => {
     if (!editingField) return;
+    
+    // Validate email before saving
+    if (editingField === "contactEmail" && editValue && !isValidEmail(editValue)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    
     if (editingField === "logo" && logoFile) {
       await onMetaSave("logo", logoFile);
     } else {
@@ -70,6 +79,7 @@ export function EventMetaEditor({
     setEditingField(null);
     setEditValue("");
     setLogoFile(null);
+    setEmailError(null);
   };
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -258,11 +268,31 @@ export function EventMetaEditor({
         <div className="flex items-center gap-2">
           <span className="font-medium">Contact Email:</span>
           {editingField === "contactEmail" ? (
-            <>
-              <Input type="email" value={editValue} onChange={e => setEditValue(e.target.value)} className="w-64" placeholder="contact@example.com" />
-              <Button onClick={saveEdit} className="text-green-600" aria-label="Save contact email"><CheckIcon className="h-5 w-5" /></Button>
-              <Button onClick={cancelEdit} className="text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></Button>
-            </>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="email" 
+                  value={editValue} 
+                  onChange={e => {
+                    const value = e.target.value;
+                    setEditValue(value);
+                    // Validate email in real-time
+                    if (value && !isValidEmail(value)) {
+                      setEmailError("Please enter a valid email address");
+                    } else {
+                      setEmailError(null);
+                    }
+                  }} 
+                  className={`w-64 ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
+                  placeholder="contact@example.com" 
+                />
+                <Button onClick={saveEdit} className="text-green-600" aria-label="Save contact email" disabled={!!emailError}><CheckIcon className="h-5 w-5" /></Button>
+                <Button onClick={cancelEdit} className="text-gray-500" aria-label="Cancel edit"><XMarkIcon className="h-5 w-5" /></Button>
+              </div>
+              {emailError && (
+                <p className="text-sm text-red-600">{emailError}</p>
+              )}
+            </div>
           ) : (
             <>
               <span>{event.contactEmail || <span className="italic text-gray-400">(none)</span>}</span>

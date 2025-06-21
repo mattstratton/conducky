@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Building2, AlertCircle } from 'lucide-react';
 import { UserContext } from '../../_app';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 
 interface FormData {
   name: string;
@@ -202,14 +203,10 @@ export default function CreateOrganization() {
 
   if (!user.roles?.includes('SuperAdmin')) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="mx-auto max-w-2xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Access Denied</h1>
-            <p className="text-muted-foreground">You do not have permission to access this page.</p>
-          </div>
-        </div>
-      </div>
+      <AccessDenied 
+        message="You need SuperAdmin privileges to create organizations."
+        showLoginButton={false}
+      />
     );
   }
 

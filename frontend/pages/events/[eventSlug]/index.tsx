@@ -6,6 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Separator } from "../../../components/ui/separator";
+import { isValidEmail, sanitizeEmail } from "../../../lib/utils";
 import { 
   ShieldCheck, 
   MessageSquare, 
@@ -189,14 +190,14 @@ export default function PublicEventPage() {
                   </div>
                 )}
                 
-                {event.contactEmail && (
+                {event.contactEmail && isValidEmail(event.contactEmail) && (
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
                     <a 
-                      href={`mailto:${event.contactEmail}`}
+                      href={`mailto:${sanitizeEmail(event.contactEmail)}`}
                       className="text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      {event.contactEmail}
+                      {sanitizeEmail(event.contactEmail)}
                     </a>
                   </div>
                 )}
@@ -227,9 +228,9 @@ export default function PublicEventPage() {
               </Button>
             )}
             
-            {isAuthenticated && !hasEventAccess && event.contactEmail && (
+            {isAuthenticated && !hasEventAccess && event.contactEmail && isValidEmail(event.contactEmail) && (
               <Button 
-                onClick={() => window.location.href = `mailto:${event.contactEmail}?subject=Request access to ${event.name}`}
+                onClick={() => window.location.href = `mailto:${sanitizeEmail(event.contactEmail)}?subject=Request access to ${event.name}`}
                 variant="outline"
                 className="flex items-center gap-2"
               >
@@ -360,7 +361,7 @@ export default function PublicEventPage() {
                 </Card>
                 
                 {/* Direct Contact */}
-                {event.contactEmail && (
+                {event.contactEmail && isValidEmail(event.contactEmail) && (
                   <Card className="border-orange-200 dark:border-orange-800">
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
@@ -373,7 +374,7 @@ export default function PublicEventPage() {
                             For urgent matters or if you prefer email contact.
                           </p>
                           <Button 
-                            onClick={() => window.location.href = `mailto:${event.contactEmail}?subject=Incident Report for ${event.name}`}
+                            onClick={() => window.location.href = `mailto:${sanitizeEmail(event.contactEmail)}?subject=Incident Report for ${event.name}`}
                             size="sm"
                             variant="outline"
                             className="w-full"

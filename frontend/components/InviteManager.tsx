@@ -9,7 +9,7 @@ interface Invite {
   url: string;
   role: string | { name: string };
   disabled: boolean;
-  uses: number;
+  useCount: number;
   maxUses?: number;
   expiresAt?: string;
   note?: string;
@@ -180,7 +180,7 @@ export function InviteManager({ eventSlug, rolesList }: InviteManagerProps) {
                   </TableCell>
                   <TableCell>{typeof invite.role === "string" ? invite.role : invite.role.name}</TableCell>
                   <TableCell>{invite.disabled ? "Disabled" : "Active"}</TableCell>
-                  <TableCell>{invite.uses}/{invite.maxUses || "∞"}</TableCell>
+                  <TableCell>{invite.useCount}/{invite.maxUses || "∞"}</TableCell>
                   <TableCell>{invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "—"}</TableCell>
                   <TableCell>{invite.note || "—"}</TableCell>
                   <TableCell>
