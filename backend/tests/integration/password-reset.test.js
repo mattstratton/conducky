@@ -411,7 +411,9 @@ describe("Password Reset Integration Tests", () => {
 
     it("should verify rate limiting logic at service level", async () => {
       const AuthService = require('../../src/services/auth.service').AuthService;
-      const authService = new AuthService(require('../../__mocks__/@prisma/client').prismaMock);
+      const { PrismaClient } = require('../../__mocks__/@prisma/client');
+      const prisma = new PrismaClient();
+      const authService = new AuthService(prisma);
 
       // Make 3 attempts
       for (let i = 0; i < 3; i++) {

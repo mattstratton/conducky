@@ -101,7 +101,9 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
     });
 
     if (!report) {
-      console.error('Report not found for notification:', reportId);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Report not found for notification:', reportId);
+      }
       return;
     }
 
@@ -130,22 +132,26 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
         let priority: 'low' | 'normal' | 'high' | 'urgent' = 'normal';
 
         switch (type) {
-          case 'submitted':
+          case 'report_submitted':
+          case 'submitted': // backward compatibility
             title = 'New Report Submitted';
             message = `A new report has been submitted for ${report.event.name}`;
             priority = 'high';
             break;
-          case 'assigned':
+          case 'report_assigned':
+          case 'assigned': // backward compatibility
             title = 'Report Assigned';
             message = `Report #${report.id.substring(0, 8)} has been assigned`;
             priority = 'normal';
             break;
-          case 'status_changed':
+          case 'report_status_changed':
+          case 'status_changed': // backward compatibility
             title = 'Report Status Updated';
             message = `Report #${report.id.substring(0, 8)} status has been updated`;
             priority = 'normal';
             break;
-          case 'comment_added':
+          case 'report_comment_added':
+          case 'comment_added': // backward compatibility
             title = 'New Comment Added';
             message = `A new comment has been added to report #${report.id.substring(0, 8)}`;
             priority = 'normal';
@@ -161,10 +167,10 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
         
         return createNotification({
           userId: userRole.userId,
-          type: type === 'submitted' ? 'report_submitted' : 
-                type === 'assigned' ? 'report_assigned' :
-                type === 'status_changed' ? 'report_status_changed' :
-                type === 'comment_added' ? 'report_comment_added' : 'report_submitted',
+          type: type === 'report_submitted' || type === 'submitted' ? 'report_submitted' : 
+                type === 'report_assigned' || type === 'assigned' ? 'report_assigned' :
+                type === 'report_status_changed' || type === 'status_changed' ? 'report_status_changed' :
+                type === 'report_comment_added' || type === 'comment_added' ? 'report_comment_added' : 'report_submitted',
           priority,
           title,
           message,
@@ -175,9 +181,15 @@ export async function notifyReportEvent(reportId: string, type: string, excludeU
       });
 
     await Promise.all(notifications);
-    console.log(`Created ${notifications.length} notifications for report ${reportId}`);
+    
+    // Only log in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Created ${notifications.length} notifications for report ${reportId}`);
+    }
   } catch (error) {
-    console.error('Failed to notify report event:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Failed to notify report event:', error);
+    }
   }
 }
 

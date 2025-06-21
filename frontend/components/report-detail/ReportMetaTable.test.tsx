@@ -42,7 +42,7 @@ describe('ReportMetaTable', () => {
   it('renders all report metadata fields', () => {
     render(<ReportMetaTable {...defaultProps} />);
 
-    expect(screen.getByText('ID')).toBeInTheDocument();
+    expect(screen.getByText('Report ID')).toBeInTheDocument();
     expect(screen.getByText('report-123')).toBeInTheDocument();
     
     expect(screen.getByText('Type')).toBeInTheDocument();

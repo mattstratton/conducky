@@ -215,7 +215,9 @@ export class EmailService {
       const template = Handlebars.compile(templateSource);
       return template(data);
     } catch (error: any) {
-      console.error('Failed to render email template:', error);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Failed to render email template:', error);
+      }
       throw new Error(`Template rendering failed: ${error.message}`);
     }
   }

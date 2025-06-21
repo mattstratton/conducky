@@ -1,7 +1,32 @@
 const request = require('supertest');
 const app = require('../../index');
+const { inMemoryStore } = require('../../__mocks__/@prisma/client');
 
 describe('Enhanced State Management API', () => {
+  
+  beforeEach(() => {
+    // Reset audit logs with proper timestamps for each test
+    inMemoryStore.auditLogs = [
+      {
+        id: "al1",
+        targetType: "Report",
+        targetId: "r1",
+        action: "State changed from submitted to acknowledged",
+        userId: "1",
+        timestamp: new Date(),
+        user: { name: "Admin", email: "admin@example.com" }
+      },
+      {
+        id: "al2", 
+        targetType: "Report",
+        targetId: "r1",
+        action: "State changed from acknowledged to investigating",
+        userId: "1",
+        timestamp: new Date(Date.now() + 1000), // 1 second later
+        user: { name: "Admin", email: "admin@example.com" }
+      }
+    ];
+  });
   
   describe('PATCH /api/events/:eventId/reports/:reportId/state', () => {
     test('should respond to state change endpoint', async () => {

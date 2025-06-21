@@ -5,32 +5,73 @@ describe('SuperAdmin Organizations Management', () => {
   describe('GET /api/organizations', () => {
     it('should return error status for unauthenticated requests', async () => {
       const response = await request(app)
-        .get('/api/organizations');
+        .get('/api/organizations')
+        .set('x-test-disable-auth', 'true'); // Disable authentication for this test
       
-      // Should return some kind of error (401, 403, or 500)
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      // Should return 401 for unauthenticated requests
+      expect(response.status).toBe(401);
     });
 
     it('should be protected by authentication/authorization', async () => {
-      // This test verifies the endpoint is protected
+      // Test with a non-SuperAdmin user
+      const response = await request(app)
+        .get('/api/organizations')
+        .set('x-test-user-id', '999'); // Non-existent user (not SuperAdmin)
+      
+      // Should return 403 for non-SuperAdmin users
+      expect(response.status).toBe(403);
+    });
+
+    it('should allow SuperAdmin access', async () => {
+      // Test with SuperAdmin user (default user id '1' is SuperAdmin)
       const response = await request(app)
         .get('/api/organizations');
       
-      expect([400, 401, 403, 500]).toContain(response.status);
+      // Should return 200 for SuperAdmin
+      expect(response.status).toBe(200);
     });
   });
 
   describe('POST /api/organizations', () => {
-    it('should return error status for invalid requests', async () => {
+    it('should return error status for unauthenticated requests', async () => {
       const response = await request(app)
         .post('/api/organizations')
+        .set('x-test-disable-auth', 'true') // Disable authentication for this test
         .send({
           name: 'Test Organization',
           slug: 'test-org',
         });
       
-      // Should return some kind of error (400, 401, 403, or 500)
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      // Should return 401 for unauthenticated requests
+      expect(response.status).toBe(401);
+    });
+
+    it('should return error status for non-SuperAdmin users', async () => {
+      const response = await request(app)
+        .post('/api/organizations')
+        .set('x-test-user-id', '999') // Non-existent user (not SuperAdmin)
+        .send({
+          name: 'Test Organization',
+          slug: 'test-org',
+        });
+      
+      // Should return 403 for non-SuperAdmin users
+      expect(response.status).toBe(403);
+    });
+
+    it('should allow SuperAdmin to create organizations', async () => {
+      const response = await request(app)
+        .post('/api/organizations')
+        .send({
+          name: 'Test Organization',
+          slug: 'test-org-new',
+          description: 'A test organization'
+        });
+      
+      // Should return 201 for SuperAdmin with valid data
+      expect(response.status).toBe(201);
+      expect(response.body.organization).toBeDefined();
+      expect(response.body.organization.name).toBe('Test Organization');
     });
   });
 }); 
