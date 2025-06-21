@@ -6,6 +6,13 @@ export interface SanitizeOptions {
   allowImages?: boolean;
 }
 
+// Extended config interface to include HOOKS
+interface ExtendedConfig extends DOMPurify.Config {
+  HOOKS?: {
+    afterSanitizeAttributes?: (node: Element) => void;
+  };
+}
+
 /**
  * Sanitizes HTML content using DOMPurify with configurable options
  * @param content - The HTML content to sanitize
@@ -17,7 +24,7 @@ export function sanitizeHtml(content: string, options: SanitizeOptions = {}): st
     return '';
   }
 
-  const config: DOMPurify.Config = {
+  const config: ExtendedConfig = {
     ALLOWED_TAGS: options.allowMarkdown 
       ? ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
       : ['p', 'br', 'strong', 'em'],
@@ -32,16 +39,79 @@ export function sanitizeHtml(content: string, options: SanitizeOptions = {}): st
 
   if (options.allowLinks) {
     config.ALLOWED_TAGS?.push('a');
-    // Ensure links open in new tab and have security attributes
-    config.ADD_ATTR = ['target', 'rel'];
+    config.ALLOWED_ATTR?.push('target', 'rel');
+    
+    // Use DOMPurify hooks for robust link processing
+    config.HOOKS = {
+      afterSanitizeAttributes: function(node: Element) {
+        if (node.tagName === 'A') {
+          const href = node.getAttribute('href');
+          if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+            // Valid external link - add security attributes
+            node.setAttribute('target', '_blank');
+            node.setAttribute('rel', 'noopener noreferrer nofollow');
+          } else {
+            // Invalid or potentially dangerous link - convert to plain text
+            node.removeAttribute('href');
+            node.removeAttribute('target');
+            node.removeAttribute('rel');
+            // Replace with styled span for invalid links
+            const span = node.ownerDocument?.createElement('span');
+            if (span) {
+              span.className = 'text-gray-500';
+              span.textContent = '[Invalid link]';
+              node.parentNode?.replaceChild(span, node);
+            } else {
+              // Fallback if document is not available
+              node.textContent = '[Invalid link]';
+            }
+          }
+        }
+      }
+    };
   }
 
   if (options.allowImages) {
     config.ALLOWED_TAGS?.push('img');
     config.ALLOWED_ATTR?.push('src', 'alt', 'width', 'height');
+    
+    // Add image processing hook for security
+    if (!config.HOOKS) {
+      config.HOOKS = {};
+    }
+    
+    const originalHook = config.HOOKS.afterSanitizeAttributes;
+    config.HOOKS.afterSanitizeAttributes = function(node: Element) {
+      // Call original link processing hook if it exists
+      if (originalHook) {
+        originalHook.call(this, node);
+      }
+      
+      // Process images
+      if (node.tagName === 'IMG') {
+        const src = node.getAttribute('src');
+        if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
+          // Valid external image - add security attributes
+          node.setAttribute('loading', 'lazy');
+          node.setAttribute('referrerpolicy', 'no-referrer');
+        } else {
+          // Invalid image source - remove the image
+          const span = node.ownerDocument?.createElement('span');
+          if (span) {
+            span.className = 'text-gray-500';
+            span.textContent = '[Invalid image]';
+            node.parentNode?.replaceChild(span, node);
+          } else {
+            node.textContent = '[Invalid image]';
+          }
+        }
+      }
+    };
   }
 
-  return DOMPurify.sanitize(content, config);
+  // Handle TrustedHTML return type
+  const result = DOMPurify.sanitize(content, config);
+  return String(result);
 }
 
 /**
@@ -51,19 +121,10 @@ export function sanitizeHtml(content: string, options: SanitizeOptions = {}): st
  * @returns Sanitized HTML string safe for rendering
  */
 export function sanitizeMarkdown(content: string): string {
-  const sanitized = sanitizeHtml(content, {
+  return sanitizeHtml(content, {
     allowMarkdown: true,
     allowLinks: true,
     allowImages: false // For security, disable images in comments by default
-  });
-
-  // Post-process links to add security attributes
-  return sanitized.replace(/<a\s+href="([^"]*)"([^>]*)>/gi, (match, href, attrs) => {
-    // Only allow http/https links
-    if (!href.startsWith('http://') && !href.startsWith('https://')) {
-      return `<span class="text-gray-500">[Invalid link]</span>`;
-    }
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer"${attrs}>`;
   });
 }
 
@@ -107,9 +168,11 @@ export function sanitizeText(text: string): string {
   }
   
   // Strip all HTML tags and return plain text
-  return DOMPurify.sanitize(text, { 
+  const result = DOMPurify.sanitize(text, { 
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true
-  }).trim();
+  });
+  
+  return String(result).trim();
 } 
