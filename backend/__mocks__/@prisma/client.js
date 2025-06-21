@@ -44,7 +44,7 @@ const inMemoryStore = {
     },
   ],
   reports: [
-    { id: "r1", eventId: "1", state: "submitted" },
+    { id: "r1", eventId: "1", state: "submitted", severity: "low" },
     { 
       id: "1", 
       eventId: "1", 
@@ -53,6 +53,7 @@ const inMemoryStore = {
       title: "Test Report", 
       description: "Test description",
       type: "harassment",
+      severity: "high",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }

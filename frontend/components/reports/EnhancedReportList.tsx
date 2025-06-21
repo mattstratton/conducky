@@ -93,6 +93,7 @@ export function EnhancedReportList({
   const [error, setError] = useState<string>('');
   const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
   const [pinnedReports, setPinnedReports] = useState<Set<string>>(new Set());
+  const [canViewAssignments, setCanViewAssignments] = useState(false);
   
   // Filter and search state
   const [search, setSearch] = useState('');
@@ -157,6 +158,7 @@ export function EnhancedReportList({
       setStats(data.stats || null);
       setTotalPages(data.totalPages || 1);
       setTotalReports(data.total || 0);
+      setCanViewAssignments(data.canViewAssignments || false);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reports');
@@ -193,6 +195,13 @@ export function EnhancedReportList({
   useEffect(() => {
     setCurrentPage(1);
   }, [search, statusFilter, severityFilter, assignedFilter, sortField, sortOrder]);
+
+  // Clear assignment filter if user doesn't have permission to view assignments
+  useEffect(() => {
+    if (!canViewAssignments && assignedFilter !== 'all') {
+      setAssignedFilter('all');
+    }
+  }, [canViewAssignments, assignedFilter]);
 
   // Handle pinning
   const togglePin = (reportId: string) => {
@@ -398,16 +407,18 @@ export function EnhancedReportList({
               </SelectContent>
             </Select>
 
-            <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Assignment" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Reports</SelectItem>
-                <SelectItem value="me">Assigned to Me</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-              </SelectContent>
-            </Select>
+            {canViewAssignments && (
+              <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Assignment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Reports</SelectItem>
+                  <SelectItem value="me">Assigned to Me</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <Button 
               variant="outline" 
@@ -516,7 +527,7 @@ export function EnhancedReportList({
                           </div>
                         </TableHead>
                         <TableHead>Severity</TableHead>
-                        <TableHead>Assigned</TableHead>
+                        {canViewAssignments && <TableHead>Assigned</TableHead>}
                         <TableHead className="cursor-pointer" onClick={() => handleSort('createdAt')}>
                           <div className="flex items-center">
                             Created
@@ -568,13 +579,15 @@ export function EnhancedReportList({
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                            {report.assignedResponder ? (
-                              <span className="text-sm">{report.assignedResponder.name}</span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">Unassigned</span>
-                            )}
-                          </TableCell>
+                          {canViewAssignments && (
+                            <TableCell>
+                              {report.assignedResponder ? (
+                                <span className="text-sm">{report.assignedResponder.name}</span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">Unassigned</span>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
                               {new Date(report.createdAt).toLocaleDateString()}
@@ -629,7 +642,7 @@ export function EnhancedReportList({
                         </div>
                       </TableHead>
                       <TableHead>Severity</TableHead>
-                      <TableHead>Assigned</TableHead>
+                      {canViewAssignments && <TableHead>Assigned</TableHead>}
                       <TableHead className="cursor-pointer" onClick={() => handleSort('createdAt')}>
                         <div className="flex items-center">
                           Created
@@ -645,7 +658,13 @@ export function EnhancedReportList({
                 <TableBody>
                   {regularReportsList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={showBulkActions && showPinning ? 8 : showBulkActions || showPinning ? 7 : 6} className="text-center py-8">
+                      <TableCell colSpan={
+                        (showBulkActions ? 1 : 0) + 
+                        (showPinning ? 1 : 0) + 
+                        5 + // Title, Type, Status, Severity, Created
+                        (canViewAssignments ? 1 : 0) + 
+                        1 // Actions column
+                      } className="text-center py-8">
                         <div className="text-muted-foreground">
                           {search || statusFilter || severityFilter || assignedFilter ? 
                             'No reports match your search criteria.' : 
@@ -703,13 +722,15 @@ export function EnhancedReportList({
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {report.assignedResponder ? (
-                            <span className="text-sm">{report.assignedResponder.name}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Unassigned</span>
-                          )}
-                        </TableCell>
+                        {canViewAssignments && (
+                          <TableCell>
+                            {report.assignedResponder ? (
+                              <span className="text-sm">{report.assignedResponder.name}</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Unassigned</span>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <span className="text-sm text-muted-foreground">
                             {new Date(report.createdAt).toLocaleDateString()}

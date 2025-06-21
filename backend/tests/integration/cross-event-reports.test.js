@@ -112,6 +112,20 @@ describe('Cross-Event Reports API Integration Tests', () => {
         roleId: '3', // Responder role ID
         event: mockEvents[1],
         role: { name: 'Responder' }
+      },
+      {
+        userId: '2',
+        eventId: 'event1',
+        roleId: '4', // Reporter role ID
+        event: mockEvents[0],
+        role: { name: 'Reporter' }
+      },
+      {
+        userId: '3',
+        eventId: 'event1',
+        roleId: '3', // Responder role ID
+        event: mockEvents[0],
+        role: { name: 'Responder' }
       }
     ];
 
@@ -168,6 +182,15 @@ describe('Cross-Event Reports API Integration Tests', () => {
 
       expect(response.body.reports).toHaveLength(1);
       expect(response.body.reports[0].state).toBe('submitted');
+    });
+
+    it('should filter reports by severity', async () => {
+      const response = await request(app)
+        .get('/api/users/me/reports?severity=high')
+        .expect(200);
+
+      expect(response.body.reports).toHaveLength(1);
+      expect(response.body.reports[0].severity).toBe('high');
     });
 
     it('should filter reports by event', async () => {
@@ -308,6 +331,24 @@ describe('Cross-Event Reports API Integration Tests', () => {
       // Check comment count
       expect(report._count).toHaveProperty('comments');
       expect(typeof report._count.comments).toBe('number');
+    });
+
+    it('should return canViewAssignments flag based on user roles', async () => {
+      // Test with user who has responder role (should have assignment permissions)
+      const responderResponse = await request(app)
+        .get('/api/users/me/reports')
+        .set('x-test-user-id', '3') // Responder user
+        .expect(200);
+
+      expect(responderResponse.body.canViewAssignments).toBe(true);
+
+      // Test with user who only has reporter role (should not have assignment permissions)
+      const reporterResponse = await request(app)
+        .get('/api/users/me/reports')
+        .set('x-test-user-id', '2') // Reporter user
+        .expect(200);
+
+      expect(reporterResponse.body.canViewAssignments).toBe(false);
     });
   });
 }); 
