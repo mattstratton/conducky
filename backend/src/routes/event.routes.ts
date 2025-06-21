@@ -815,7 +815,7 @@ router.patch('/:eventId/reports/:reportId/description', requireRole(['Event Admi
     const { eventId, reportId } = req.params;
     const { description } = req.body;
     
-    if (!description) {
+    if (!description || description.trim().length === 0) {
       res.status(400).json({ error: 'Description is required.' });
       return;
     }

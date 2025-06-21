@@ -53,6 +53,7 @@ export interface ReportDetailViewProps {
   }>;
   apiBaseUrl?: string;
   onTitleEdit?: (title: string) => Promise<void>;
+  onReportUpdate?: (updatedReport: any) => void; // New callback for report updates
   [key: string]: any;
 }
 
@@ -86,6 +87,7 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
   stateHistory = [],
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
   onTitleEdit,
+  onReportUpdate,
   ...rest
 }) => {
   const isSuperAdmin = user && user.roles && user.roles.includes("Global Admin");
@@ -226,8 +228,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update location');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update location:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update location. Please try again.';
@@ -250,8 +255,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update contact preference');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update contact preference:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update contact preference. Please try again.';
@@ -274,8 +282,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update incident date');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update incident date:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update incident date. Please try again.';
@@ -298,8 +309,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update parties involved');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update parties involved:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update parties involved. Please try again.';
@@ -322,8 +336,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update description');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update description:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update description. Please try again.';
@@ -346,8 +363,11 @@ export const ReportDetailView: React.FC<ReportDetailViewProps> = ({
                     throw new Error((errorData as { error?: string }).error || 'Failed to update type');
                   }
 
-                  // Refresh the page to show updated data
-                  window.location.reload();
+                  // Update local state with the response data
+                  const responseData = await response.json();
+                  if (onReportUpdate && responseData.report) {
+                    onReportUpdate(responseData.report);
+                  }
                 } catch (error) {
                   console.error('Failed to update type:', error);
                   const errorMessage = error instanceof Error ? error.message : 'Failed to update type. Please try again.';
