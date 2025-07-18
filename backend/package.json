@@ -51,7 +51,7 @@
     "isomorphic-dompurify": "^2.25.0",
     "jsdom": "^26.1.0",
     "morgan": "^1.10.0",
-    "multer": "^2.0.1",
+    "multer": "^2.0.2",
     "nodemailer": "^6.9.7",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
