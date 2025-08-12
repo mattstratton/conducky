@@ -2,8 +2,6 @@ import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { IncidentDetailView } from '../../../../../components/IncidentDetailView';
-import { AssignmentSection } from '@/components/incident-detail/AssignmentSection';
-import IncidentActions from '@/components/incident-detail/IncidentActions';
 
 // Define interfaces
 interface User {
@@ -269,8 +267,11 @@ export default function ReportDetail() {
         throw new Error(errorData.error || 'Failed to update incident state.');
       }
       const data = await res.json();
-      setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
-      if (data.history) {
+      if (data && data.incident) {
+        const inc = data.incident;
+        setIncident(prev => prev ? { ...prev, state: inc.state, assignedResponderId: inc.assignedResponderId ?? prev.assignedResponderId } : null);
+      }
+      if (data && data.history) {
         setStateHistory(prev => [...prev, data.history]);
       }
     } catch (err) {
@@ -294,8 +295,12 @@ export default function ReportDetail() {
           credentials: 'include'
         }
       );
-      let data: any = null;
-      try { data = await res.json(); } catch {}
+      type ReopenResponse = { incident?: { state: string; assignedResponderId?: string }, history?: { id: string; fromState: string; toState: string; changedBy: string; changedAt: string; notes?: string }, error?: string };
+      let data: ReopenResponse | null = null;
+      const text = await res.text();
+      if (text) {
+        try { data = JSON.parse(text) as ReopenResponse; } catch { data = null; }
+      }
       if (!res.ok) {
         const msg =
           res.status === 400 ? (data?.error || 'Invalid reopen request') :
@@ -304,8 +309,10 @@ export default function ReportDetail() {
           data?.error || 'Failed to reopen incident.';
         throw new Error(msg);
       }
-      setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
-      if (data.history) {
+      if (data && data.incident) {
+        setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
+      }
+      if (data && data.history) {
         setStateHistory(prev => [...prev, data.history]);
       }
       return { success: true } as const;

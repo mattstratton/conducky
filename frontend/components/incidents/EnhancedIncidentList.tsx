@@ -295,7 +295,9 @@ export function EnhancedIncidentList({
         if (!res.ok) throw new Error('Unpin failed');
       } else {
         // currently unpinned → request pin
-        const eventId = incidents.find(i => i.id === incidentId)?.eventId || '';
+        type IncidentItem = { id: string; eventId?: string; event?: { id?: string } };
+        const matched = incidents.find((i) => i.id === incidentId) as IncidentItem | undefined;
+        const eventId = matched?.eventId || matched?.event?.id || '';
         const res = await fetch(baseUrl + '/api/users/me/pins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

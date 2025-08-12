@@ -140,7 +140,6 @@ export const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
   loading = false,
   error = "",
   eventSlug,
-  onEnhancedStateChange,
   onReopen,
   onAssignmentChange = () => {},
   onCommentSubmit,
