@@ -251,3 +251,9 @@ The following screenshots would enhance this documentation:
 4. **State-based filtering** - Filtering incidents by current state
 5. **Assignment interface** - Assigning responders when moving to investigating state
 6. **Resolution documentation** - Required fields when marking incidents as resolved 
+
+### Pins (Personal Shortcuts)
+
+- You can pin incidents in lists to keep them at the top.
+- Pins are personal (per user) and sync across your devices when signed in.
+- You can still work offline; pins also cache locally and resync when online. 

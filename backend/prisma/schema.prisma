@@ -87,6 +87,7 @@ model User {
   // Unified role system relations
   userRoles      UserRole[]
   grantedRoles   UserRole[] @relation("RoleGranter")
+  pinnedIncidents UserPinnedIncident[]
 }
 
 model Event {
@@ -110,6 +111,7 @@ model Event {
   eventLogo      EventLogo?
   notifications  Notification[]
   tags           Tag[] // Tagging system
+  pinnedIncidents UserPinnedIncident[]
 }
 
 // Legacy Role and UserEventRole models removed - using unified RBAC system
@@ -138,6 +140,7 @@ model Incident {
   resolution          String?
   notifications Notification[]
   tags        IncidentTag[] // New tagging system
+  pinnedBy    UserPinnedIncident[]
 
   // Database indexes for query performance
   @@index([eventId])                           // Event-based queries
@@ -297,6 +300,22 @@ model Notification {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Per-user pinned incidents
+model UserPinnedIncident {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, incidentId])
+  @@index([userId, eventId])
+  @@index([eventId])
 }
 
 model SocialAccount {

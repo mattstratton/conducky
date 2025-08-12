@@ -107,6 +107,10 @@ See the [Cross-Event Incidents Guide](./cross-event-incidents.md) for details.
 - **System Admin Restrictions**: System Admins cannot access event data without explicit roles
 - **Audit Logging**: Improved tracking of user actions
 
+### 🔖 Per-user Incident Pins
+- Pins are now stored per user and sync across devices.
+- New API endpoints under Users API to list, pin, and unpin incidents.
+
 ## Previous Updates
 
 ### User Profile Management
