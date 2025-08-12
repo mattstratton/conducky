@@ -106,3 +106,16 @@ All endpoints can be tested using:
 - **Development Environment**: Local testing with rate limiting disabled
 - **Postman/Insomnia**: Import the API collection for interactive testing
 - **Automated Tests**: Run the test suite with `npm test` in the backend directory 
+
+## User Pins
+
+- GET `/api/users/me/pins?eventId=EVENT_ID` → `{ incidentIds: string[] }`
+- POST `/api/users/me/pins`
+  - Body: `{ incidentId: string, eventId: string }`
+  - Response: `204 No Content`
+- DELETE `/api/users/me/pins/:incidentId`
+  - Response: `204 No Content`
+
+Notes:
+- Auth required. RBAC: user must be able to view the incident in the event.
+- Idempotent operations; POST upserts, DELETE removes if present. 

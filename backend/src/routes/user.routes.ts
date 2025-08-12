@@ -512,4 +512,82 @@ router.patch('/me/notifications/read-all', requireAuth, async (req: any, res: Re
   }
 });
 
+// Get user pins (optionally scoped by eventId)
+router.get('/me/pins', requireAuth, async (req: any, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    const { eventId } = req.query as { eventId?: string };
+
+    const where: any = { userId };
+    if (eventId) where.eventId = eventId;
+
+    const pins = await prisma.userPinnedIncident.findMany({
+      where,
+      select: { incidentId: true }
+    });
+
+    res.json({ incidentIds: pins.map(p => p.incidentId) });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch pins' });
+  }
+});
+
+// Pin an incident for current user
+router.post('/me/pins', requireAuth, async (req: any, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    const { incidentId, eventId } = req.body as { incidentId?: string; eventId?: string };
+    if (!incidentId || !eventId) {
+      res.status(400).json({ error: 'incidentId and eventId are required' });
+      return;
+    }
+
+    // Validate incident belongs to event
+    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (!incident || String(incident.eventId) !== String(eventId)) {
+      res.status(404).json({ error: 'Incident not found in event' });
+      return;
+    }
+
+    await prisma.userPinnedIncident.upsert({
+      where: { userId_incidentId: { userId, incidentId } },
+      update: { eventId },
+      create: { userId, incidentId, eventId }
+    });
+
+    res.status(204).send();
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to pin incident' });
+  }
+});
+
+// Unpin an incident for current user
+router.delete('/me/pins/:incidentId', requireAuth, async (req: any, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    const { incidentId } = req.params as { incidentId: string };
+    if (!incidentId) {
+      res.status(400).json({ error: 'incidentId is required' });
+      return;
+    }
+
+    await prisma.userPinnedIncident.deleteMany({ where: { userId, incidentId } });
+    res.status(204).send();
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to unpin incident' });
+  }
+});
+
 export default router; 
