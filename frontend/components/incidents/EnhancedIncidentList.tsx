@@ -803,7 +803,17 @@ export function EnhancedIncidentList({
                             </TableCell>
                           )}
                           <TableCell>
-                            <Pin className="h-4 w-4 text-yellow-600" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePin(report.id)}
+                              className="h-8 w-8 p-0"
+                              aria-label="Unpin incident"
+                              title="Unpin"
+                              type="button"
+                            >
+                              <PinOff className="h-4 w-4 text-yellow-600 hover:text-muted-foreground" />
+                            </Button>
                           </TableCell>
                           <TableCell>
                             <Link 
@@ -985,8 +995,14 @@ export function EnhancedIncidentList({
                               size="sm"
                               onClick={() => togglePin(report.id)}
                               className="h-8 w-8 p-0"
+                              aria-label={pinnedIncidents.has(report.id) ? 'Unpin incident' : 'Pin incident'}
+                              title={pinnedIncidents.has(report.id) ? 'Unpin' : 'Pin'}
                             >
-                              <Pin className="h-4 w-4 text-muted-foreground hover:text-yellow-600" />
+                              {pinnedIncidents.has(report.id) ? (
+                                <PinOff className="h-4 w-4 text-yellow-600" />
+                              ) : (
+                                <Pin className="h-4 w-4 text-muted-foreground hover:text-yellow-600" />
+                              )}
                             </Button>
                           </TableCell>
                         )}
@@ -1069,8 +1085,17 @@ export function EnhancedIncidentList({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                               <DropdownMenuItem onClick={() => togglePin(report.id)}>
-                                <Pin className="h-4 w-4 mr-2" />
-                                Pin Report
+                                {pinnedIncidents.has(report.id) ? (
+                                  <>
+                                    <PinOff className="h-4 w-4 mr-2" />
+                                    Unpin Report
+                                  </>
+                                ) : (
+                                  <>
+                                    <Pin className="h-4 w-4 mr-2" />
+                                    Pin Report
+                                  </>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
