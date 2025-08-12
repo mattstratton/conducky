@@ -759,7 +759,7 @@ export class IncidentService {
 
       // Update state and assignment in transaction
       const updated = await this.prisma.$transaction(async (tx) => {
-        // Update the report
+        // Update the incident
         const updatedIncident = await tx.incident.update({
           where: { id: incidentId },
           data: updateData,
@@ -777,7 +777,7 @@ export class IncidentService {
               eventId: eventId,
               userId: userId,
               action: `State changed from ${oldState} to ${state}`,
-              targetType: 'Report',
+              targetType: 'Incident',
               targetId: incidentId,
             }
           });
@@ -792,8 +792,8 @@ export class IncidentService {
               data: {
                 eventId: eventId,
                 userId: userId,
-                action: `Report assigned to ${assignedUserName}`,
-                targetType: 'Report',
+                action: `Incident assigned to ${assignedUserName}`,
+                targetType: 'Incident',
                 targetId: incidentId,
               }
             });
@@ -836,7 +836,7 @@ export class IncidentService {
     try {
       const auditLogs = await this.prisma.auditLog.findMany({
         where: {
-          targetType: 'Report',
+          targetType: 'Incident',
           targetId: incidentId,
           action: {
             contains: 'State changed'

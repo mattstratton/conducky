@@ -873,8 +873,9 @@ export class UserService {
       recentAuditLogs.forEach(log => {
         let message = '';
         switch (log.action) {
+          case 'incident_state_changed':
           case 'report_state_changed':
-            message = `Report status was updated in ${log.event?.name || 'an event'}`;
+            message = `Incident status was updated in ${log.event?.name || 'an event'}`;
             break;
           case 'user_invited':
             message = `You were invited to ${log.event?.name || 'an event'}`;
@@ -882,8 +883,9 @@ export class UserService {
           case 'role_assigned':
             message = `Your role was updated in ${log.event?.name || 'an event'}`;
             break;
+          case 'incident_created':
           case 'report_created':
-            message = `A new report was created in ${log.event?.name || 'an event'}`;
+            message = `A new incident was created in ${log.event?.name || 'an event'}`;
             break;
           default:
             message = `${log.action.replace('_', ' ')} in ${log.event?.name || 'an event'}`;
@@ -894,7 +896,7 @@ export class UserService {
           message: message,
           timestamp: log.timestamp.toISOString(),
           eventSlug: log.event?.slug,
-          incidentId: log.targetType === 'Report' ? log.targetId : undefined
+          incidentId: (log.targetType === 'Incident' || log.targetType === 'Report') ? log.targetId : undefined
         });
       });
 

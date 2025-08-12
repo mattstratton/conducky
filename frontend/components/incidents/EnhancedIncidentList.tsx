@@ -938,7 +938,7 @@ export function EnhancedIncidentList({
                               <DropdownMenuContent>
                                 <DropdownMenuItem onClick={() => togglePin(report.id)}>
                                   <PinOff className="h-4 w-4 mr-2" />
-                                  Unpin Report
+                                  Unpin Incident
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1136,7 +1136,7 @@ export function EnhancedIncidentList({
                                 ) : (
                                   <>
                                     <Pin className="h-4 w-4 mr-2" />
-                                    Pin Report
+                                    Pin Incident
                                   </>
                                 )}
                               </DropdownMenuItem>
@@ -1154,7 +1154,7 @@ export function EnhancedIncidentList({
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalIncidents)} of {totalIncidents} reports
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalIncidents)} of {totalIncidents} incidents
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button

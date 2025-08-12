@@ -42,31 +42,31 @@ const STATE_CONFIGS = {
     label: "Submitted",
     icon: FileText,
     color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    description: "Report has been submitted and is awaiting review"
+    description: "Incident has been submitted and is awaiting review"
   },
   acknowledged: {
     label: "Acknowledged",
     icon: Eye,
     color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-    description: "Report has been acknowledged by the team"
+    description: "Incident has been acknowledged by the team"
   },
   investigating: {
     label: "Investigating",
     icon: Clock,
     color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-    description: "Report is actively being investigated"
+    description: "Incident is actively being investigated"
   },
   resolved: {
     label: "Resolved",
     icon: CheckCircle,
     color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    description: "Report has been resolved"
+    description: "Incident has been resolved"
   },
   closed: {
     label: "Closed",
     icon: XCircle,
     color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-    description: "Report is closed and no further action needed"
+    description: "Incident is closed and no further action needed"
   }
 };
 
@@ -94,7 +94,7 @@ const TRANSITION_REQUIREMENTS: Record<string, TransitionRequirement> = {
   },
   closed: {
     requiresNotes: false,
-    message: "Closing will finalize this report"
+    message: "Closing will finalize this incident"
   }
 };
 
@@ -220,7 +220,7 @@ export function StateManagementSection({
       <div className="flex items-center gap-3">
         <CurrentStateIcon className="h-5 w-5" />
         <div>
-          <h3 className="font-semibold">Report Status</h3>
+          <h3 className="font-semibold">Incident Status</h3>
           <Badge className={currentStateConfig?.color}>
             {currentStateConfig?.label || currentState}
           </Badge>
@@ -517,7 +517,7 @@ export function StateManagementSection({
             <AlertDialogHeader>
               <div className="flex items-center gap-3">
                 <ArrowRight className="h-5 w-5" />
-                <AlertDialogTitle>Reopen Report</AlertDialogTitle>
+                <AlertDialogTitle>Reopen Incident</AlertDialogTitle>
               </div>
             </AlertDialogHeader>
             <div className="space-y-3">

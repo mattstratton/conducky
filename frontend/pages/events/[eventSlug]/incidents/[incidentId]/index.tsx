@@ -123,7 +123,7 @@ export default function ReportDetail() {
     notes?: string;
   }>>([]);
 
-  // Fetch report data
+  // Fetch incident data
   useEffect(() => {
     if (!eventSlug || !incidentId) return;
 
@@ -138,7 +138,7 @@ export default function ReportDetail() {
           if (res.status === 403) {
             throw new Error("You are not authorized to view this incident.");
           } else if (res.status === 404) {
-            throw new Error("Report not found.");
+            throw new Error("Incident not found.");
           } else if (res.status === 401) {
             throw new Error("You must be logged in to view this incident.");
           } else {
@@ -196,7 +196,7 @@ export default function ReportDetail() {
     }
   }, [eventSlug, user]);
 
-  // Fetch comments for this report
+  // Fetch comments for this incident
   useEffect(() => {
     if (!eventSlug || !incidentId) return;
     fetch(
@@ -545,7 +545,7 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
 
   if (loading) return <div>Loading incident...</div>;
   if (fetchError) return <div>Error: {fetchError}</div>;
-  if (!incident) return <div>Report not found.</div>;
+  if (!incident) return <div>Incident not found.</div>;
   if (!user) return <div>User not authenticated.</div>;
 
   return (

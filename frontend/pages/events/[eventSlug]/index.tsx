@@ -266,7 +266,7 @@ export default function PublicEventPage() {
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto">
                   <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="font-semibold">1. Submit Report</h3>
+                <h3 className="font-semibold">1. Submit Incident</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Securely submit your incident report with as much detail as you&apos;re comfortable sharing
                 </p>
@@ -319,7 +319,7 @@ export default function PublicEventPage() {
                           <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold mb-2">Submit Report (Recommended)</h4>
+                          <h4 className="font-semibold mb-2">Submit Incident (Recommended)</h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                             Submit a detailed report through our secure system. You can track progress and receive updates.
                           </p>
@@ -328,7 +328,7 @@ export default function PublicEventPage() {
                             size="sm"
                             className="w-full"
                           >
-                            Submit Report
+                            Submit Incident
                           </Button>
                         </div>
                       </div>

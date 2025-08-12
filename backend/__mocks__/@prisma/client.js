@@ -10,11 +10,11 @@ const inMemoryStore = {
     { id: "4", name: "Reporter" },
   ],
   // Unified RBAC tables
-  unifiedRoles: [
+   unifiedRoles: [
     { id: "1", name: "system_admin", description: "System Administrator", level: 100 },
     { id: "2", name: "event_admin", description: "Event Administrator", level: 80 },
     { id: "3", name: "responder", description: "Incident Responder", level: 60 },
-    { id: "4", name: "reporter", description: "Report Creator", level: 40 },
+     { id: "4", name: "reporter", description: "Incident Reporter", level: 40 },
     { id: "5", name: "org_admin", description: "Organization Administrator", level: 90 },
     { id: "6", name: "org_viewer", description: "Organization Viewer", level: 30 },
   ],
@@ -113,11 +113,11 @@ const inMemoryStore = {
       updatedAt: new Date().toISOString()
     }
   ],
-  auditLogs: [
+   auditLogs: [
     // Example state change log for report r1 (for existing tests)
     {
       id: "al0",
-      targetType: "Report",
+      targetType: "Incident",
       targetId: "r1",
       action: "State changed from submitted to acknowledged",
       userId: "1",
@@ -127,7 +127,7 @@ const inMemoryStore = {
     // Example state change log for report 1 (for new tests)
     {
       id: "al1",
-      targetType: "Report",
+      targetType: "Incident",
       targetId: "1",
       action: "State changed from submitted to acknowledged",
       userId: "1",
