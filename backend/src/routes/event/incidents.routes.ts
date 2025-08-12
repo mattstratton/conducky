@@ -560,6 +560,70 @@ router.patch('/:incidentId/state', requireRole(['responder', 'event_admin', 'sys
     }
 });
 
+// Reopen incident
+router.patch('/:incidentId/reopen', requireEventRole(['responder', 'event_admin']), async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { eventId, incidentId, slug } = req.params;
+        interface ReopenBody { notes?: string; assignedToUserId?: string }
+        const { notes, assignedToUserId } = req.body as ReopenBody;
+        const user = req.user as UserResponse;
+
+        if (!notes || typeof notes !== 'string' || notes.trim().length === 0) {
+            res.status(400).json({ error: 'Notes are required to reopen an incident.' });
+            return;
+        }
+
+        let currentEventId = eventId;
+        if (slug) {
+            const eventIdFromSlug = await eventService.getEventIdBySlug(slug);
+            if (!eventIdFromSlug) {
+                res.status(404).json({ error: 'Event not found.' });
+                return;
+            }
+            currentEventId = eventIdFromSlug;
+        }
+
+        // Fetch incident to validate current state and access
+        const incidentResult = await incidentService.getIncidentById(incidentId);
+        if (!incidentResult.success || !incidentResult.data) {
+            res.status(404).json({ error: 'Incident not found.' });
+            return;
+        }
+        const incident = incidentResult.data.incident as { eventId: string; state: string; assignedResponderId?: string | null };
+        const incidentEventId = String(incident.eventId);
+        const normalizedEventId = String(currentEventId);
+        if (incidentEventId !== normalizedEventId) {
+            res.status(404).json({ error: 'Incident not found for this event.' });
+            return;
+        }
+
+        const canEditResult = await incidentService.checkIncidentEditAccess(user.id, incidentId, currentEventId);
+        if (!canEditResult.success || !canEditResult.data?.canEdit) {
+            res.status(403).json({ error: canEditResult.error || 'You are not authorized to reopen this incident.' });
+            return;
+        }
+
+        if (!['resolved', 'closed'].includes(incident.state)) {
+            res.status(400).json({ error: 'Only resolved or closed incidents can be reopened.' });
+            return;
+        }
+
+        // Branching: if assignedToUserId provided, go to investigating (requires assignment handled by service rules)
+        // otherwise go to acknowledged
+        const targetState = assignedToUserId ? 'investigating' : 'acknowledged';
+
+        const result = await incidentService.updateIncidentState(currentEventId, incidentId, targetState, user.id, notes, assignedToUserId);
+
+        if (result.success) {
+            res.json(result.data);
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (error: any) {
+        logger().error('Reopen incident error:', error);
+        res.status(500).json({ error: 'Failed to reopen incident.' });
+    }
+});
 
 // Update incident description
 router.patch('/:incidentId/description', requireRole(['reporter', 'responder', 'event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {

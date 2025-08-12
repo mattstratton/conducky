@@ -267,12 +267,62 @@ export default function ReportDetail() {
         throw new Error(errorData.error || 'Failed to update incident state.');
       }
       const data = await res.json();
-      setIncident(prev => prev ? { ...prev, state: data.incident.state } : null);
-      if (data.history) {
-        setStateHistory(prev => [...prev, data.history]);
+      if (data && data.incident) {
+        const inc = data.incident;
+        setIncident(prev => prev ? { ...prev, state: inc.state, assignedResponderId: inc.assignedResponderId ?? prev.assignedResponderId } : null);
+      }
+      if (data && data.history) {
+        const historyEntry = data.history;
+        setStateHistory(prev => [...prev, historyEntry]);
       }
     } catch (err) {
       setStateChangeError(err instanceof Error ? err.message : 'State change failed');
+    } finally {
+      setIsStateChanging(false);
+    }
+  };
+
+  const handleReopen = async (notes: string, assignedToUserId?: string) => {
+    if (!eventSlug || !incidentId) return { success: false, error: 'Missing IDs' } as const;
+    setIsStateChanging(true);
+    setStateChangeError(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/events/slug/${eventSlug}/incidents/${incidentId}/reopen`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes, assignedToUserId }),
+          credentials: 'include'
+        }
+      );
+      type ReopenResponse = { incident?: { state: string; assignedResponderId?: string }, history?: { id: string; fromState: string; toState: string; changedBy: string; changedAt: string; notes?: string }, error?: string };
+      let data: ReopenResponse | null = null;
+      const text = await res.text();
+      if (text) {
+        try { data = JSON.parse(text) as ReopenResponse; } catch { data = null; }
+      }
+      if (!res.ok) {
+        const msg =
+          res.status === 400 ? (data?.error || 'Invalid reopen request') :
+          res.status === 403 ? 'You do not have permission to reopen this incident.' :
+          res.status === 404 ? 'Incident or event not found.' :
+          data?.error || 'Failed to reopen incident.';
+        throw new Error(msg);
+      }
+      if (data && data.incident) {
+        const updated = data.incident;
+        setIncident(prev => prev ? { ...prev, state: updated.state, assignedResponderId: updated.assignedResponderId ?? prev.assignedResponderId } : null);
+      }
+      if (data && data.history) {
+        const historyEntry = data.history;
+        setStateHistory(prev => [...prev, historyEntry]);
+      }
+      return { success: true } as const;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to reopen incident.';
+      setStateChangeError(msg);
+      return { success: false, error: msg } as const;
     } finally {
       setIsStateChanging(false);
     }
@@ -499,37 +549,47 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
   if (!user) return <div>User not authenticated.</div>;
 
   return (
-    <IncidentDetailView
-      incident={incident}
-      user={user as User}
-      userRoles={userRoles}
-      comments={comments}
-      relatedFiles={relatedFiles}
-      onCommentSubmit={handleCommentSubmit}
-      onEditSave={handleEditSave}
-      onDeleteConfirm={handleDeleteConfirm}
-      onStateChange={handleStateChange}
-      isStateChanging={isStateChanging}
-      stateChangeError={stateChangeError}
-      onAssignmentChange={handleAssignmentChange}
-      assignmentFields={assignmentFields}
-      setAssignmentFields={setAssignmentFields}
-      eventUsers={eventUsers}
-      assignmentLoading={assignmentLoading}
-      assignmentError={assignmentError}
-      assignmentSuccess={assignmentSuccess}
-      onTitleEdit={handleTitleEdit}
-      onDescriptionEdit={handleDescriptionEdit}
-      onRelatedFileUpload={handleRelatedFileUpload}
-      onRelatedFileDelete={handleRelatedFileDelete}
-      newRelatedFiles={newRelatedFiles}
-      setNewRelatedFiles={setNewRelatedFiles}
-      relatedFileUploadMsg={relatedFileUploadMsg}
-      uploadingRelatedFile={uploadingRelatedFile}
-      isResponderOrAbove={isResponderOrAbove}
-      apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
-      stateHistory={stateHistory}
-      eventSlug={eventSlug}
-    />
+    <>
+      <IncidentDetailView
+        incident={incident}
+        user={user as User}
+        userRoles={userRoles}
+        comments={comments}
+        relatedFiles={relatedFiles}
+        onCommentSubmit={handleCommentSubmit}
+        onEditSave={handleEditSave}
+        onDeleteConfirm={handleDeleteConfirm}
+        onStateChange={handleStateChange}
+        onReopen={handleReopen}
+        isStateChanging={isStateChanging}
+        stateChangeError={stateChangeError}
+        onAssignmentChange={handleAssignmentChange}
+        assignmentFields={assignmentFields}
+        setAssignmentFields={setAssignmentFields}
+        eventUsers={eventUsers}
+        assignmentLoading={assignmentLoading}
+        assignmentError={assignmentError}
+        assignmentSuccess={assignmentSuccess}
+        onTitleEdit={handleTitleEdit}
+        onDescriptionEdit={handleDescriptionEdit}
+        onRelatedFileUpload={handleRelatedFileUpload}
+        onRelatedFileDelete={handleRelatedFileDelete}
+        newRelatedFiles={newRelatedFiles}
+        setNewRelatedFiles={setNewRelatedFiles}
+        relatedFileUploadMsg={relatedFileUploadMsg}
+        uploadingRelatedFile={uploadingRelatedFile}
+        isResponderOrAbove={isResponderOrAbove}
+        apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
+        stateHistory={stateHistory}
+        eventSlug={eventSlug}
+        // Provide reopen handler down to StateManagementSection via IncidentDetailView
+        onIncidentUpdate={(updated: Partial<Incident>) =>
+          setIncident((prev: Incident | null): Incident | null =>
+            prev ? { ...prev, ...updated } : prev
+          )
+        }
+      />
+      {/* Reopen is now integrated inside StateManagementSection actions */}
+    </>
   );
 }

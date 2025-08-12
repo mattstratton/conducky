@@ -145,6 +145,7 @@ const inMemoryStore = {
   systemSettings: [
     { id: "1", key: "showPublicEventList", value: "false" }
   ],
+  userPinnedIncidents: [],
   relatedFiles: [
     {
       id: "e1",
@@ -299,6 +300,51 @@ class PrismaClient {
         }
         return null;
       }),
+    };
+    this.userPinnedIncident = {
+      findMany: jest.fn(({ where, select }) => {
+        let pins = [...inMemoryStore.userPinnedIncidents];
+        if (where) {
+          if (where.userId) pins = pins.filter(p => p.userId === where.userId);
+          if (where.eventId) pins = pins.filter(p => p.eventId === where.eventId);
+        }
+        if (select && select.incidentId) {
+          return pins.map(p => ({ incidentId: p.incidentId }));
+        }
+        return pins;
+      }),
+      upsert: jest.fn(({ where, update, create }) => {
+        const idx = inMemoryStore.userPinnedIncidents.findIndex(p => p.userId === where.userId_incidentId.userId && p.incidentId === where.userId_incidentId.incidentId);
+        if (idx !== -1) {
+          inMemoryStore.userPinnedIncidents[idx] = { ...inMemoryStore.userPinnedIncidents[idx], ...update };
+          return inMemoryStore.userPinnedIncidents[idx];
+        }
+        const newPin = { id: `pin${inMemoryStore.userPinnedIncidents.length + 1}`, createdAt: new Date().toISOString(), ...create };
+        inMemoryStore.userPinnedIncidents.push(newPin);
+        return newPin;
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.userPinnedIncidents.length;
+        inMemoryStore.userPinnedIncidents = inMemoryStore.userPinnedIncidents.filter(p => !(p.userId === where.userId && p.incidentId === where.incidentId));
+        return { count: before - inMemoryStore.userPinnedIncidents.length };
+      }),
+      groupBy: jest.fn(({ by, where, _count }) => {
+        if (by && by[0] === 'type') {
+          const buckets = {};
+          inMemoryStore.notifications.filter(n => !where || n.userId === where.userId).forEach(n => {
+            buckets[n.type] = (buckets[n.type] || 0) + 1;
+          });
+          return Object.keys(buckets).map(type => ({ type, _count: { type: buckets[type] } }));
+        }
+        if (by && by[0] === 'priority') {
+          const buckets = {};
+          inMemoryStore.notifications.filter(n => !where || n.userId === where.userId).forEach(n => {
+            buckets[n.priority] = (buckets[n.priority] || 0) + 1;
+          });
+          return Object.keys(buckets).map(priority => ({ priority, _count: { priority: buckets[priority] } }));
+        }
+        return [];
+      })
     };
     this.userEventRole = {
       findMany: jest.fn(({ where, include }) => {

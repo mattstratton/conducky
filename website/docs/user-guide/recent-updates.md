@@ -4,6 +4,16 @@ sidebar_position: 2
 
 # Recent Updates
 
+## August 2025
+
+### ♻️ Reopen Incidents (New Feature)
+
+- Added a dedicated Reopen action to the Incident detail State & Assignment section
+- Notes are required; optional assignment determines target state:
+  - With assignee → moves to Investigating
+  - Without assignee → moves to Acknowledged
+- Available to Responder, Event Admin, and System Admin roles
+
 ## December 2024
 
 ### 💬 Enhanced Comment System (New Features)
@@ -96,6 +106,10 @@ See the [Cross-Event Incidents Guide](./cross-event-incidents.md) for details.
 - **Event Data Isolation**: Enhanced multi-tenancy security
 - **System Admin Restrictions**: System Admins cannot access event data without explicit roles
 - **Audit Logging**: Improved tracking of user actions
+
+### 🔖 Per-user Incident Pins
+- Pins are now stored per user and sync across devices.
+- New API endpoints under Users API to list, pin, and unpin incidents.
 
 ## Previous Updates
 

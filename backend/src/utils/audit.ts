@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import logger from '../config/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '../config/database';
 
 /**
  * Parameters for logging an audit event

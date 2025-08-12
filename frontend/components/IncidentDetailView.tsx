@@ -103,6 +103,7 @@ export interface IncidentDetailViewProps {
   onDeleteConfirm?: (comment: Comment) => Promise<void>;
   onEditSave?: (comment: Comment, body?: string, visibility?: string, isMarkdown?: boolean) => Promise<{ success: boolean; error?: string }>;
   onStateChange?: (newState: string, notes?: string, assignedToUserId?: string) => Promise<void>;
+  onReopen?: (notes: string, assignedToUserId?: string) => Promise<{ success: boolean; error?: string }>;
   onDescriptionEdit?: (newDescription: string) => Promise<void>;
   onRelatedFileUpload?: (files: File[]) => void;
   onRelatedFileDelete?: (file: RelatedFile) => void;
@@ -139,7 +140,7 @@ export const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
   loading = false,
   error = "",
   eventSlug,
-  onEnhancedStateChange,
+  onReopen,
   onAssignmentChange = () => {},
   onCommentSubmit,
   onCommentEdit,
@@ -153,7 +154,8 @@ export const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
   apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
   onTitleEdit,
   onIncidentUpdate,
-  onTagsEdit
+  onTagsEdit,
+  onStateChange
 }) => {
   const isSystemAdmin = user && user.roles && user.roles.includes("system_admin");
   const isResponderOrAbove = userRoles.some((r) =>
@@ -429,11 +431,12 @@ export const IncidentDetailView: React.FC<IncidentDetailViewProps> = ({
             <StateManagementSection
               currentState={incident.state}
               allowedTransitions={getAllowedTransitions(incident.state)}
-              onStateChange={onEnhancedStateChange || (() => {})}
+              onStateChange={onStateChange || (() => {})}
               canChangeState={canChangeState}
               stateHistory={stateHistory}
               eventUsers={eventUsers}
               assignedResponderId={assignmentFields.assignedResponderId}
+              onReopen={onReopen}
             />
             <AssignmentSection
               assignmentFields={assignmentFields}

@@ -219,20 +219,35 @@ export function EnhancedIncidentList({
     }
   };
 
-  // Load pinned reports from localStorage
+  // Hydrate pinned from server for authenticated users; fallback to localStorage if unauthenticated
   useEffect(() => {
-    const key = eventSlug ? `pinned_reports_${eventSlug}` : 'pinned_reports_global';
-    const stored = localStorage.getItem(key);
-    if (stored) {
+    const hydrate = async () => {
       try {
-        setPinnedIncidents(new Set(JSON.parse(stored)));
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const url = new URL(baseUrl + '/api/users/me/pins');
+        if (eventSlug) url.searchParams.set('eventId', String(eventSlug));
+        const res = await fetch(url.toString(), { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.incidentIds)) {
+            setPinnedIncidents(new Set<string>(data.incidentIds));
+            return;
+          }
+        }
+        // Fallback to localStorage if not authed or error
+        const key = eventSlug ? `pinned_reports_${eventSlug}` : 'pinned_reports_global';
+        const stored = localStorage.getItem(key);
+        if (stored) setPinnedIncidents(new Set(JSON.parse(stored)));
       } catch {
-        // Ignore invalid JSON
+        const key = eventSlug ? `pinned_reports_${eventSlug}` : 'pinned_reports_global';
+        const stored = localStorage.getItem(key);
+        if (stored) setPinnedIncidents(new Set(JSON.parse(stored)));
       }
-    }
+    };
+    hydrate();
   }, [eventSlug]);
 
-  // Save pinned reports to localStorage
+  // Persist to localStorage for quick UX and offline support
   useEffect(() => {
     const key = eventSlug ? `pinned_reports_${eventSlug}` : 'pinned_reports_global';
     localStorage.setItem(key, JSON.stringify(Array.from(pinnedIncidents)));
@@ -261,16 +276,44 @@ export function EnhancedIncidentList({
   }, [canViewAssignments, assignedFilter]);
 
   // Handle pinning
-  const togglePin = (incidentId: string) => {
+  const togglePin = async (incidentId: string) => {
+    // optimistic update
     setPinnedIncidents(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(incidentId)) {
-        newSet.delete(incidentId);
-      } else {
-        newSet.add(incidentId);
-      }
-      return newSet;
+      const next = new Set(prev);
+      if (next.has(incidentId)) next.delete(incidentId); else next.add(incidentId);
+      return next;
     });
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const isPinned = pinnedIncidents.has(incidentId);
+      if (isPinned) {
+        // currently pinned → request unpin
+        const res = await fetch(baseUrl + `/api/users/me/pins/${incidentId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Unpin failed');
+      } else {
+        // currently unpinned → request pin
+        type IncidentItem = { id: string; eventId?: string; event?: { id?: string } };
+        const matched = incidents.find((i) => i.id === incidentId) as IncidentItem | undefined;
+        const eventId = matched?.eventId || matched?.event?.id || '';
+        const res = await fetch(baseUrl + '/api/users/me/pins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ incidentId, eventId })
+        });
+        if (!res.ok) throw new Error('Pin failed');
+      }
+    } catch {
+      // rollback on error
+      setPinnedIncidents(prev => {
+        const next = new Set(prev);
+        if (next.has(incidentId)) next.delete(incidentId); else next.add(incidentId);
+        return next;
+      });
+    }
   };
 
   // Handle selection
@@ -803,7 +846,17 @@ export function EnhancedIncidentList({
                             </TableCell>
                           )}
                           <TableCell>
-                            <Pin className="h-4 w-4 text-yellow-600" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePin(report.id)}
+                              className="h-8 w-8 p-0"
+                              aria-label="Unpin incident"
+                              title="Unpin"
+                              type="button"
+                            >
+                              <PinOff className="h-4 w-4 text-yellow-600 hover:text-muted-foreground" />
+                            </Button>
                           </TableCell>
                           <TableCell>
                             <Link 
@@ -985,8 +1038,14 @@ export function EnhancedIncidentList({
                               size="sm"
                               onClick={() => togglePin(report.id)}
                               className="h-8 w-8 p-0"
+                              aria-label={pinnedIncidents.has(report.id) ? 'Unpin incident' : 'Pin incident'}
+                              title={pinnedIncidents.has(report.id) ? 'Unpin' : 'Pin'}
                             >
-                              <Pin className="h-4 w-4 text-muted-foreground hover:text-yellow-600" />
+                              {pinnedIncidents.has(report.id) ? (
+                                <PinOff className="h-4 w-4 text-yellow-600" />
+                              ) : (
+                                <Pin className="h-4 w-4 text-muted-foreground hover:text-yellow-600" />
+                              )}
                             </Button>
                           </TableCell>
                         )}
@@ -1069,8 +1128,17 @@ export function EnhancedIncidentList({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                               <DropdownMenuItem onClick={() => togglePin(report.id)}>
-                                <Pin className="h-4 w-4 mr-2" />
-                                Pin Report
+                                {pinnedIncidents.has(report.id) ? (
+                                  <>
+                                    <PinOff className="h-4 w-4 mr-2" />
+                                    Unpin Report
+                                  </>
+                                ) : (
+                                  <>
+                                    <Pin className="h-4 w-4 mr-2" />
+                                    Pin Report
+                                  </>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
