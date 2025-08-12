@@ -272,7 +272,8 @@ export default function ReportDetail() {
         setIncident(prev => prev ? { ...prev, state: inc.state, assignedResponderId: inc.assignedResponderId ?? prev.assignedResponderId } : null);
       }
       if (data && data.history) {
-        setStateHistory(prev => [...prev, data.history]);
+        const historyEntry = data.history;
+        setStateHistory(prev => [...prev, historyEntry]);
       }
     } catch (err) {
       setStateChangeError(err instanceof Error ? err.message : 'State change failed');
@@ -310,10 +311,12 @@ export default function ReportDetail() {
         throw new Error(msg);
       }
       if (data && data.incident) {
-        setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
+        const updated = data.incident;
+        setIncident(prev => prev ? { ...prev, state: updated.state, assignedResponderId: updated.assignedResponderId ?? prev.assignedResponderId } : null);
       }
       if (data && data.history) {
-        setStateHistory(prev => [...prev, data.history]);
+        const historyEntry = data.history;
+        setStateHistory(prev => [...prev, historyEntry]);
       }
       return { success: true } as const;
     } catch (e) {
@@ -580,7 +583,11 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
         stateHistory={stateHistory}
         eventSlug={eventSlug}
         // Provide reopen handler down to StateManagementSection via IncidentDetailView
-        onIncidentUpdate={(updated) => setIncident(prev => prev ? { ...prev, ...updated } : updated)}
+        onIncidentUpdate={(updated: Partial<Incident>) =>
+          setIncident((prev: Incident | null): Incident | null =>
+            prev ? { ...prev, ...updated } : prev
+          )
+        }
       />
       {/* Reopen is now integrated inside StateManagementSection actions */}
     </>

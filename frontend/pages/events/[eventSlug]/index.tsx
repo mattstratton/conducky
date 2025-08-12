@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { SecureMarkdown } from "@/components/ui/secure-markdown";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -448,7 +449,11 @@ export default function PublicEventPage() {
                   <li>• Event organizers will send you an invite link</li>
                   <li>• Check your email for an invitation from this event</li>
                   <li>• Contact the event organizers if you need access</li>
-                  {!isAuthenticated && <li>• <a href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Create an account</a> if you don&apos;t have one</li>}
+                  {!isAuthenticated && (
+                    <li>
+                      • <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Create an account</Link> if you don&apos;t have one
+                    </li>
+                  )}
                 </ul>
               </div>
               
