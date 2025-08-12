@@ -52,10 +52,14 @@ export interface AuditLogResponse {
   };
 }
 
-function parseOptionalDate(input?: string) {
+function parseOptionalDate(input?: string, asEndOfDay = false) {
   if (!input) return undefined;
   const d = new Date(input.toString());
-  return isNaN(d.getTime()) ? undefined : d;
+  if (isNaN(d.getTime())) return undefined;
+  if (asEndOfDay && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    d.setHours(23, 59, 59, 999);
+  }
+  return d;
 }
 
 /**
@@ -96,7 +100,7 @@ export const getEventAuditLogs = [
       if (userId) whereClause.userId = userId;
 
       const start = parseOptionalDate(startDate);
-      const endDt = parseOptionalDate(endDate);
+      const endDt = parseOptionalDate(endDate, true);
       if (start || endDt) {
         whereClause.timestamp = {};
         if (start) whereClause.timestamp.gte = start;
@@ -189,7 +193,7 @@ export const getOrganizationAuditLogs = [
       if (userId) additionalFilters.userId = userId;
 
       const start = parseOptionalDate(startDate);
-      const endDt = parseOptionalDate(endDate);
+      const endDt = parseOptionalDate(endDate, true);
       if (start || endDt) {
         additionalFilters.timestamp = {};
         if (start) additionalFilters.timestamp.gte = start;
@@ -282,7 +286,7 @@ export const getSystemAuditLogs = [
       }
 
       const start = parseOptionalDate(startDate);
-      const endDt = parseOptionalDate(endDate);
+      const endDt = parseOptionalDate(endDate, true);
       if (start || endDt) {
         whereClause.timestamp = {};
         if (start) whereClause.timestamp.gte = start;
