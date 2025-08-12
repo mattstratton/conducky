@@ -4,6 +4,16 @@ sidebar_position: 2
 
 # Recent Updates
 
+## August 2025
+
+### ♻️ Reopen Incidents (New Feature)
+
+- Added a dedicated Reopen action to the Incident detail State & Assignment section
+- Notes are required; optional assignment determines target state:
+  - With assignee → moves to Investigating
+  - Without assignee → moves to Acknowledged
+- Available to Responder, Event Admin, and System Admin roles
+
 ## December 2024
 
 ### 💬 Enhanced Comment System (New Features)

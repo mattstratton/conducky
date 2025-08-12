@@ -33,6 +33,8 @@ interface StateManagementSectionProps {
   severity?: string;
   canEditSeverity?: boolean;
   onSeverityChange?: (severity: string) => void;
+  // New: Reopen handler
+  onReopen?: (notes: string, assignedToUserId?: string) => Promise<{ success: boolean; error?: string }> | void;
 }
 
 const STATE_CONFIGS = {
@@ -110,12 +112,20 @@ export function StateManagementSection({
   // Severity editing props
   severity = "",
   canEditSeverity = false,
-  onSeverityChange
+  onSeverityChange,
+  onReopen
 }: StateManagementSectionProps) {
   const [selectedTransition, setSelectedTransition] = useState<string>("");
   const [transitionNotes, setTransitionNotes] = useState<string>("");
   const [selectedAssignee, setSelectedAssignee] = useState<string>(assignedResponderId);
   const [showDialog, setShowDialog] = useState<boolean>(false);
+
+  // Reopen modal state
+  const [showReopenDialog, setShowReopenDialog] = useState<boolean>(false);
+  const [reopenNotes, setReopenNotes] = useState<string>("");
+  const [reopenAssignee, setReopenAssignee] = useState<string>("");
+  const [reopenSubmitting, setReopenSubmitting] = useState<boolean>(false);
+  const [reopenError, setReopenError] = useState<string>("");
   
   // Severity editing state
   const [editingSeverity, setEditingSeverity] = useState<boolean>(false);
@@ -172,6 +182,36 @@ export function StateManagementSection({
   const handleSeverityCancel = () => {
     setLocalSeverity(severity);
     setEditingSeverity(false);
+  };
+
+  const canShowReopen = canChangeState && (currentState === 'resolved' || currentState === 'closed');
+
+  const submitReopen = async () => {
+    if (!onReopen) {
+      setShowReopenDialog(false);
+      return;
+    }
+    if (!reopenNotes.trim()) {
+      setReopenError('Notes are required to reopen an incident.');
+      return;
+    }
+    setReopenSubmitting(true);
+    setReopenError("");
+    try {
+      const result = await onReopen(reopenNotes, reopenAssignee || undefined);
+      if (result && !result.success) {
+        setReopenError(result.error || 'Failed to reopen incident.');
+        setReopenSubmitting(false);
+        return;
+      }
+      setShowReopenDialog(false);
+      setReopenNotes("");
+      setReopenAssignee("");
+    } catch (e) {
+      setReopenError(e instanceof Error ? e.message : 'Failed to reopen incident.');
+    } finally {
+      setReopenSubmitting(false);
+    }
   };
 
   return (
@@ -304,7 +344,7 @@ export function StateManagementSection({
       </Card>
 
       {/* Available Actions */}
-      {canChangeState && allowedTransitions.length > 0 && (
+      {(canChangeState && (allowedTransitions.length > 0 || canShowReopen)) && (
         <Card className="p-4">
           <h4 className="font-medium mb-3">Available Actions</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -337,6 +377,28 @@ export function StateManagementSection({
                 </Button>
               );
             })}
+
+            {/* Reopen Action, shown when state is resolved or closed */}
+            {canShowReopen && (
+              <Button
+                key="reopen"
+                variant="outline"
+                className="h-auto min-h-[120px] p-4 flex flex-col items-start gap-2 text-left whitespace-normal border-blue-300 hover:bg-blue-50"
+                onClick={() => setShowReopenDialog(true)}
+                disabled={loading}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <ArrowRight className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium">Reopen</span>
+                </div>
+                <p className="text-xs text-muted-foreground text-left leading-relaxed break-words whitespace-normal w-full">
+                  Reopen this report with required notes. Optionally assign to a responder to move directly into investigation.
+                </p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-auto pt-2">
+                  <FileText size={12} />
+                </div>
+              </Button>
+            )}
           </div>
         </Card>
       )}
@@ -400,49 +462,39 @@ export function StateManagementSection({
                 <AlertDialogTitle>Change Status to {getStateConfig(selectedTransition)?.label}</AlertDialogTitle>
               </div>
             </AlertDialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {requirements?.message}
-              </p>
-              
+            <div className="space-y-3">
               {requirements?.requiresNotes && (
                 <div>
-                  <label htmlFor="transitionNotes" className="block text-sm font-medium text-foreground mb-1">Notes</label>
+                  <label className="block text-sm font-medium mb-1">Notes</label>
                   <textarea
-                    id="transitionNotes"
+                    className="w-full border rounded p-2 min-h-[100px]"
+                    placeholder="Add notes explaining this change..."
                     value={transitionNotes}
                     onChange={(e) => setTransitionNotes(e.target.value)}
-                    className="w-full border p-2 rounded bg-background text-foreground"
-                    placeholder={requirements.requiresNotes ? 'Required' : 'Optional'}
                   />
+                  {!transitionNotes.trim() && (
+                    <div className="text-xs text-muted-foreground mt-1">Notes are required for this transition.</div>
+                  )}
                 </div>
               )}
-              
               {requirements?.requiresAssignment && (
                 <div>
-                  <label htmlFor="assignee" className="block text-sm font-medium text-foreground mb-1">Assign Responder</label>
+                  <label className="block text-sm font-medium mb-1">Assign to</label>
                   <select
-                    id="assignee"
+                    className="w-full border rounded p-2"
                     value={selectedAssignee}
                     onChange={(e) => setSelectedAssignee(e.target.value)}
-                    className="w-full border p-2 rounded bg-background text-foreground"
                   >
                     <option value="">Select a responder...</option>
-                    {eventUsers
-                      .filter(user => user.roles?.some((role: string) => 
-                        ['responder', 'event admin'].includes(role.toLowerCase())
-                      ))
-                      .map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name || user.email}
-                        </option>
-                      ))}
+                    {eventUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                    ))}
                   </select>
                 </div>
               )}
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowDialog(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmTransition}
                 disabled={
@@ -451,7 +503,55 @@ export function StateManagementSection({
                   (requirements?.requiresAssignment && !selectedAssignee)
                 }
               >
-                {loading ? 'Processing...' : `Change to ${getStateConfig(selectedTransition)?.label}`}
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Reopen Dialog */}
+      {canShowReopen && (
+        <AlertDialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
+          <AlertDialogContent className="max-w-lg">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <ArrowRight className="h-5 w-5" />
+                <AlertDialogTitle>Reopen Report</AlertDialogTitle>
+              </div>
+            </AlertDialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Notes (required)</label>
+                <textarea
+                  className="w-full border rounded p-2 min-h-[100px]"
+                  placeholder="Explain why this report is being reopened..."
+                  value={reopenNotes}
+                  onChange={(e) => setReopenNotes(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Assign to (optional)</label>
+                <select
+                  className="w-full border rounded p-2"
+                  value={reopenAssignee}
+                  onChange={(e) => setReopenAssignee(e.target.value)}
+                >
+                  <option value="">No assignee</option>
+                  {eventUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">If assigned, the report will move to Investigating; otherwise it will move to Acknowledged.</p>
+              </div>
+              {reopenError && (
+                <div className="text-destructive text-sm">{reopenError}</div>
+              )}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={reopenSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={submitReopen} disabled={reopenSubmitting || !reopenNotes.trim()}>
+                {reopenSubmitting ? 'Reopening...' : 'Reopen'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -459,4 +559,6 @@ export function StateManagementSection({
       )}
     </div>
   );
-} 
+}
+
+export default StateManagementSection; 

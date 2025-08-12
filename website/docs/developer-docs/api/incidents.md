@@ -34,7 +34,21 @@ Incident endpoints handle the core functionality of incident reporting, manageme
 
 - **PATCH** `/api/events/:eventId/incidents/:incidentId/state`
 - **Role:** Admin, SystemAdmin, or Responder
-- **Body:** `{ state }` (or `{ status }` for compatibility)
+- **Body:** `{ state, notes?, assignedToUserId? }`
+  - Valid states: `submitted`, `acknowledged`, `investigating`, `resolved`, `closed`
+  - Requirements:
+    - `investigating`: requires `notes` and `assignedToUserId`
+    - `resolved`: requires `notes`
+- **Response:** `{ incident }`
+
+### Reopen Report (Resolved/Closed)
+
+- **PATCH** `/api/events/:eventId/incidents/:incidentId/reopen`
+- **Role:** Responder, Admin, or SystemAdmin
+- **Body:** `{ notes: string, assignedToUserId?: string }`
+  - Behavior:
+    - If `assignedToUserId` provided, incident transitions to `investigating`
+    - If not provided, incident transitions to `acknowledged`
 - **Response:** `{ incident }`
 
 ### Update Report Title
@@ -106,6 +120,11 @@ Incidents follow a defined state workflow:
 - **`investigating`** - Active investigation in progress (requires assignment)
 - **`resolved`** - Investigation complete, resolution documented
 - **`closed`** - Final state, incident fully processed
+
+Additional rules:
+- Changing to `investigating` requires notes and assignment
+- Changing to `resolved` requires notes
+- Reopen from `resolved`/`closed` requires notes; optional assignment determines target state
 
 ## 🔒 Permission Requirements
 

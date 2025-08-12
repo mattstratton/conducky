@@ -116,6 +116,19 @@ graph TD
 - **Event Administrators**: Reopen if new information emerges
 - **System**: Maintain for audit and reporting purposes
 
+### Reopen (from Resolved/Closed)
+
+When new information emerges, authorized team members can reopen an incident:
+
+- **Where**: Incident detail page → State & Assignment section → Reopen
+- **Who**: Responder, Event Admin, or System Admin
+- **Requirements**:
+  - Notes are required explaining why the incident is being reopened
+  - Assignment is optional
+- **Behavior**:
+  - If an assignee is selected, the incident transitions to `Investigating`
+  - If no assignee is selected, the incident transitions to `Acknowledged`
+
 ## State Transition Rules
 
 ### Automatic Transitions
