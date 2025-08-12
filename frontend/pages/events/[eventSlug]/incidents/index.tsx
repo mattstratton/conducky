@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import { Card } from "../../../../components/ui/card";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 import { UserContext } from "../../../_app";
 import { EnhancedIncidentList } from "../../../../components/incidents/EnhancedIncidentList";
 import { useLogger } from "../../../../hooks/useLogger";
@@ -71,10 +72,11 @@ export default function EventIncidentsPage() {
 
   if (!user) {
     return (
-      <Card className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
-        <h2 className="text-2xl font-bold mb-6">Event Incidents</h2>
-        <div className="text-gray-500 dark:text-gray-400">You must be logged in to view incidents.</div>
-      </Card>
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view incidents for this event."
+        loginRedirectPath={router.asPath as string}
+      />
     );
   }
 
@@ -89,12 +91,11 @@ export default function EventIncidentsPage() {
 
   if (accessDenied) {
     return (
-      <Card className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
-        <h2 className="text-2xl font-bold mb-6">Access Denied</h2>
-        <div className="text-gray-500 dark:text-gray-400">
-          You don&apos;t have permission to view all event reports. Only Responders and Admins can access this page.
-        </div>
-      </Card>
+      <AccessDenied
+        title="Access Denied"
+        message="You don’t have permission to view all event incidents. Only Responders and Admins can access this page."
+        showLoginButton={false}
+      />
     );
   }
 

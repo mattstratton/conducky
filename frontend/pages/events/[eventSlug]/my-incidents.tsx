@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/router";
 import { Card } from "../../../components/ui/card";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 import { UserContext } from "../../_app";
 import { EnhancedIncidentList } from "../../../components/incidents/EnhancedIncidentList";
 
@@ -43,10 +44,11 @@ export default function MyEventIncidentsPage() {
 
   if (!user) {
     return (
-      <Card className="max-w-7xl mx-auto p-4 sm:p-8 mt-8">
-        <h2 className="text-2xl font-bold mb-6">My Incidents</h2>
-        <div className="text-gray-500 dark:text-gray-400">You must be logged in to view your incidents.</div>
-      </Card>
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view your incidents for this event."
+        loginRedirectPath={router.asPath as string}
+      />
     );
   }
 

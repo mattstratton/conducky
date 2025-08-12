@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { AccessDenied } from '@/components/shared/AccessDenied';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,11 +191,10 @@ export default function ProfileEvents() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background py-8 px-4 transition-colors duration-200">
-        <Card className="w-full max-w-4xl mx-auto p-4 sm:p-8">
-          <p className="text-center text-muted-foreground">You must be logged in to view your events.</p>
-        </Card>
-      </div>
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view your events."
+      />
     );
   }
 

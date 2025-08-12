@@ -3,6 +3,28 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProfilePage from "../../pages/profile";
 import { UserContext } from "../../pages/_app";
 import '@testing-library/jest-dom';
+import Link from "next/link";
+
+// Mock next/router for components that use useRouter (e.g., AccessDenied)
+const mockRouter = {
+  asPath: '/profile',
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+  pathname: '/profile',
+  query: {},
+  route: '/profile',
+  basePath: '',
+  isLocaleDomain: false,
+  events: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
+  isFallback: false,
+  isPreview: false,
+  isReady: true,
+};
+
+jest.mock('next/router', () => ({
+  useRouter: () => mockRouter,
+}));
 
 // Use the global User type from types.d.ts
 const mockUser: User = {
@@ -24,6 +46,19 @@ describe("ProfilePage", () => {
   
   afterEach(() => {
     jest.resetAllMocks();
+  });
+
+  it("shows login link when unauthenticated", () => {
+    render(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      <UserContext.Provider value={{ user: null, setUser } as any}>
+        <ProfilePage />
+      </UserContext.Provider>,
+    );
+    const loginLink = screen.getByRole('link', { name: /sign in to continue/i });
+    expect(loginLink).toHaveAttribute('href');
+    // Should include /login?next=
+    expect(loginLink.getAttribute('href') || '').toMatch(/^\/login\?next=/);
   });
 
   it("renders avatar and user info", () => {
