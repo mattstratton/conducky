@@ -62,7 +62,7 @@ function Login() {
     const checkOAuthProviders = async () => {
       try {
         const response = await fetch(
-          (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/admin/oauth-providers'
+          (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/oauth-providers'
         );
         if (response.ok) {
           const data = await response.json();

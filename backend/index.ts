@@ -55,7 +55,8 @@ import {
   configRoutes,
   organizationRoutes,
   auditRoutes,
-  logsRoutes
+  logsRoutes,
+  oauthRoutes
 } from './src/routes';
 import tagRoutes from './src/routes/tag.routes';
 
@@ -196,6 +197,7 @@ app.use('/api/organizations', organizationRoutes); // Organization management ro
 app.use('/api/audit', auditRoutes); // Audit log routes
 app.use('/api/tags', tagRoutes); // Tag management routes
 app.use('/api', logsRoutes); // Frontend logging endpoint
+app.use('/api', oauthRoutes); // Public OAuth providers endpoint
 
 // Download related file (was evidence file)
 // This route is not behind /api/events/:eventId/incidents/:incidentId to avoid deep nesting
