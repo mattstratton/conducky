@@ -23,7 +23,7 @@ export function EventActions({ eventSlug, userRoles }: EventActionsProps) {
         <Button asChild className="flex items-center gap-2 h-12" size="lg">
           <Link href={`/events/${eventSlug}/incidents/new`}>
             <Plus className="h-4 w-4" />
-            Submit Report
+            Submit Incident
           </Link>
         </Button>
 

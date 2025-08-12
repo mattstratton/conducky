@@ -148,7 +148,7 @@ export default function GlobalDashboard() {
                   <Link href={`/events/${userEvents[0].slug}/incidents/new`}>
                     <Button size="lg" className="w-full sm:w-auto flex items-center gap-2">
                       <Plus className="h-5 w-5" />
-                      Submit Report for {userEvents[0].name}
+                      Submit Incident for {userEvents[0].name}
                     </Button>
                   </Link>
                 ) : (

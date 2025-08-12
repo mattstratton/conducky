@@ -157,7 +157,7 @@ export default function EventDashboard() {
             </p>
             <div className="flex gap-4">
               <Link href={`/events/${eventSlug}/incidents/new`}>
-                <Button>Submit New Report</Button>
+                <Button>Submit New Incident</Button>
               </Link>
               <Link href={`/events/${eventSlug}/incidents`}>
                 <Button variant="outline">View My Incidents</Button>
