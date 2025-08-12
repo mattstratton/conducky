@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database';
 import { requireRole } from '../middleware/rbac';
 import logger from '../config/logger';
-
-const prisma = new PrismaClient();
 
 export interface AuditLogQuery {
   page?: number;
@@ -46,6 +44,22 @@ export interface AuditLogResponse {
     total: number;
     totalPages: number;
   };
+  context?: {
+    eventId?: string;
+    eventExists?: boolean;
+    organizationId?: string;
+    organizationExists?: boolean;
+  };
+}
+
+function parseOptionalDate(input?: string, asEndOfDay = false) {
+  if (!input) return undefined;
+  const d = new Date(input.toString());
+  if (isNaN(d.getTime())) return undefined;
+  if (asEndOfDay && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    d.setHours(23, 59, 59, 999);
+  }
+  return d;
 }
 
 /**
@@ -68,76 +82,48 @@ export const getEventAuditLogs = [
         sortOrder = 'desc'
       } = req.query as AuditLogQuery;
 
+      // Strict existence check
+      const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+
       // Validate pagination
       const pageNum = Math.max(1, parseInt(page.toString()));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit.toString())));
       const offset = (pageNum - 1) * limitNum;
 
       // Build where clause
-      const whereClause: any = {
-        eventId: eventId
-      };
+      const whereClause: any = { eventId };
+      if (action) whereClause.action = action;
+      if (targetType) whereClause.targetType = targetType;
+      if (userId) whereClause.userId = userId;
 
-      if (action) {
-        whereClause.action = action;
-      }
-
-      if (targetType) {
-        whereClause.targetType = targetType;
-      }
-
-      if (userId) {
-        whereClause.userId = userId;
-      }
-
-      if (startDate || endDate) {
+      const start = parseOptionalDate(startDate);
+      const endDt = parseOptionalDate(endDate, true);
+      if (start || endDt) {
         whereClause.timestamp = {};
-        if (startDate) {
-          whereClause.timestamp.gte = new Date(startDate.toString());
-        }
-        if (endDate) {
-          whereClause.timestamp.lte = new Date(endDate.toString());
-        }
+        if (start) whereClause.timestamp.gte = start;
+        if (endDt) whereClause.timestamp.lte = endDt;
       }
 
       // Build order clause
       const orderBy: any = {};
-      if (sortBy === 'timestamp') {
-        orderBy.timestamp = sortOrder;
-      } else if (sortBy === 'action') {
-        orderBy.action = sortOrder;
-      } else if (sortBy === 'targetType') {
-        orderBy.targetType = sortOrder;
-      }
+      if (sortBy === 'timestamp') orderBy.timestamp = sortOrder;
+      else if (sortBy === 'action') orderBy.action = sortOrder;
+      else if (sortBy === 'targetType') orderBy.targetType = sortOrder;
 
-      // Get total count
-      const total = await prisma.auditLog.count({
-        where: whereClause
-      });
-
-      // Get audit logs
+      const total = await prisma.auditLog.count({ where: whereClause });
       const logs = await prisma.auditLog.findMany({
         where: whereClause,
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          event: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
-            }
-          }
+          user: { select: { id: true, name: true, email: true } },
+          event: { select: { id: true, name: true, slug: true } }
         },
         orderBy,
-          skip: offset,
-          take: limitNum
-        });
+        skip: offset,
+        take: limitNum
+      });
 
       const response: AuditLogResponse = {
         logs: logs.map(log => ({
@@ -152,12 +138,7 @@ export const getEventAuditLogs = [
           user: log.user,
           event: log.event
         })),
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
       };
 
       res.json(response);
@@ -188,101 +169,61 @@ export const getOrganizationAuditLogs = [
         sortOrder = 'desc'
       } = req.query as AuditLogQuery;
 
+      // Strict existence check
+      const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } });
+      if (!org) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
+
       // Validate pagination
       const pageNum = Math.max(1, parseInt(page.toString()));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit.toString())));
-      const offset = (pageNum - 1) * limitNum;      // Build where clause to include both organization-level and event-level logs
+      const offset = (pageNum - 1) * limitNum;
+
       // First, get all events for this organization
       const organizationEvents = await prisma.event.findMany({
-        where: { organizationId: organizationId },
+        where: { organizationId },
         select: { id: true }
       });
-      
       const eventIds = organizationEvents.map(event => event.id);
-      
-      // Build additional filters
+
       const additionalFilters: any = {};
-      
-      if (action) {
-        additionalFilters.action = action;
-      }
+      if (action) additionalFilters.action = action;
+      if (targetType) additionalFilters.targetType = targetType;
+      if (userId) additionalFilters.userId = userId;
 
-      if (targetType) {
-        additionalFilters.targetType = targetType;
-      }
-
-      if (userId) {
-        additionalFilters.userId = userId;
-      }
-
-      if (startDate || endDate) {
+      const start = parseOptionalDate(startDate);
+      const endDt = parseOptionalDate(endDate, true);
+      if (start || endDt) {
         additionalFilters.timestamp = {};
-        if (startDate) {
-          additionalFilters.timestamp.gte = new Date(startDate.toString());
-        }
-        if (endDate) {
-          additionalFilters.timestamp.lte = new Date(endDate.toString());
-        }
+        if (start) additionalFilters.timestamp.gte = start;
+        if (endDt) additionalFilters.timestamp.lte = endDt;
       }
-      
-      // Query for logs that are either:
-      // 1. Organization-level logs (organizationId matches, eventId is null)
-      // 2. Event-level logs (eventId matches any event in this organization)
+
+      let orConditions: any[] = [{ organizationId, eventId: null }];
+      if (eventIds.length > 0) {
+        orConditions.push({ eventId: { in: eventIds } });
+      }
       const whereClause: any = {
         AND: [
-          {
-            OR: [
-              {
-                organizationId: organizationId,
-                eventId: null // Organization-level logs
-              },
-              eventIds.length > 0 ? {
-                eventId: { in: eventIds } // Event-level logs
-              } : null
-            ].filter(Boolean) // Remove null values
-          },
+          { OR: orConditions },
           additionalFilters
         ]
       };
 
-      // Build order clause
-      const orderBy: any = {};
-      if (sortBy === 'timestamp') {
-        orderBy.timestamp = sortOrder;
-      } else if (sortBy === 'action') {
-        orderBy.action = sortOrder;
-      } else if (sortBy === 'targetType') {
-        orderBy.targetType = sortOrder;
-      }
-
-      // Get total count
-      const total = await prisma.auditLog.count({
-        where: whereClause
-      });
-
-      // Get audit logs
+      const total = await prisma.auditLog.count({ where: whereClause });
       const logs = await prisma.auditLog.findMany({
         where: whereClause,
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          event: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
-            }
-          }
+          user: { select: { id: true, name: true, email: true } },
+          event: { select: { id: true, name: true, slug: true } }
         },
-        orderBy,
+        orderBy: sortBy === 'timestamp' ? { timestamp: sortOrder } : sortBy === 'action' ? { action: sortOrder } : { targetType: sortOrder },
         skip: offset,
         take: limitNum
-      });      const response: AuditLogResponse = {
+      });
+
+      const response: AuditLogResponse = {
         logs: logs.map(log => ({
           id: log.id,
           action: log.action,
@@ -293,14 +234,9 @@ export const getOrganizationAuditLogs = [
           organizationId: log.organizationId,
           eventId: log.eventId,
           user: log.user,
-          event: log.event
+          event: log.eventId ? log.event : null
         })),
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
       };
 
       res.json(response);
@@ -324,96 +260,52 @@ export const getSystemAuditLogs = [
         action,
         targetType,
         userId,
-        organizationId,
-        eventId,
         startDate,
         endDate,
         sortBy = 'timestamp',
         sortOrder = 'desc'
-      } = req.query as AuditLogQuery & { organizationId?: string; eventId?: string };
+      } = req.query as AuditLogQuery;
 
-      // Validate pagination
       const pageNum = Math.max(1, parseInt(page.toString()));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit.toString())));
       const offset = (pageNum - 1) * limitNum;
 
-      // Build where clause
       const whereClause: any = {};
+      if (action) whereClause.action = action;
+      if (targetType) whereClause.targetType = targetType;
+      if (userId) whereClause.userId = userId;
 
-      if (action) {
-        whereClause.action = action;
+      // Optional filters to scope system logs per tests
+      const orgFilter = (req.query as any).organizationId as string | undefined;
+      const eventFilter = (req.query as any).eventId as string | undefined;
+      if (orgFilter) {
+        whereClause.organizationId = orgFilter;
+      }
+      if (eventFilter) {
+        whereClause.eventId = eventFilter;
       }
 
-      if (targetType) {
-        whereClause.targetType = targetType;
-      }
-
-      if (userId) {
-        whereClause.userId = userId;
-      }
-
-      if (organizationId) {
-        whereClause.organizationId = organizationId;
-      }
-
-      if (eventId) {
-        whereClause.eventId = eventId;
-      }
-
-      if (startDate || endDate) {
+      const start = parseOptionalDate(startDate);
+      const endDt = parseOptionalDate(endDate, true);
+      if (start || endDt) {
         whereClause.timestamp = {};
-        if (startDate) {
-          whereClause.timestamp.gte = new Date(startDate.toString());
-        }
-        if (endDate) {
-          whereClause.timestamp.lte = new Date(endDate.toString());
-        }
+        if (start) whereClause.timestamp.gte = start;
+        if (endDt) whereClause.timestamp.lte = endDt;
       }
 
-      // Build order clause
-      const orderBy: any = {};
-      if (sortBy === 'timestamp') {
-        orderBy.timestamp = sortOrder;
-      } else if (sortBy === 'action') {
-        orderBy.action = sortOrder;
-      } else if (sortBy === 'targetType') {
-        orderBy.targetType = sortOrder;
-      }
-
-      // Get total count
-      const total = await prisma.auditLog.count({
-        where: whereClause
-      });
-
-      // Get audit logs
+      const total = await prisma.auditLog.count({ where: whereClause });
       const logs = await prisma.auditLog.findMany({
         where: whereClause,
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          event: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
-            }
-          },
-          organization: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
+          user: { select: { id: true, name: true, email: true } },
+          event: { select: { id: true, name: true, slug: true } }
         },
-        orderBy,
+        orderBy: sortBy === 'timestamp' ? { timestamp: sortOrder } : sortBy === 'action' ? { action: sortOrder } : { targetType: sortOrder },
         skip: offset,
         take: limitNum
-      });      const response = {
+      });
+
+      const response: AuditLogResponse = {
         logs: logs.map(log => ({
           id: log.id,
           action: log.action,
@@ -424,15 +316,9 @@ export const getSystemAuditLogs = [
           organizationId: log.organizationId,
           eventId: log.eventId,
           user: log.user,
-          event: log.event,
-          organization: log.organization
+          event: log.event
         })),
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum)
-        }
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
       };
 
       res.json(response);

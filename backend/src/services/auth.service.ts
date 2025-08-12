@@ -253,7 +253,7 @@ export class AuthService {
       if (!passwordValidation.isValid) {
         const errorMessage = passwordValidation.feedback.length > 0 
           ? passwordValidation.feedback.join('; ')
-          : "Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.";
+          : "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be at least 8 characters long.";
         return {
           success: false,
           error: errorMessage

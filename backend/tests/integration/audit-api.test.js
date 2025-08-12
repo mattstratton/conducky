@@ -8,14 +8,32 @@ const app = require('../../index');
 const { inMemoryStore } = require('@prisma/client');
 
 beforeEach(() => {
-  // Reset the inMemoryStore for test isolation
-  inMemoryStore.events.length = 1;
-  inMemoryStore.roles.length = 3;
-  inMemoryStore.users.length = 1;
-  inMemoryStore.userEventRoles.length = 1;
-  inMemoryStore.incidents.length = 1;
+  // Reset stores
+  inMemoryStore.roles.length = 0;
+  inMemoryStore.users.length = 0;
+  inMemoryStore.userEventRoles.length = 0;
+  inMemoryStore.incidents.length = 0;
   inMemoryStore.auditLogs.length = 0;
-  inMemoryStore.organizations.length = 1;
+
+  // Seed organizations and events to satisfy strict 404 checks
+  inMemoryStore.organizations = [
+    {
+      id: 'org1',
+      name: 'Test Organization',
+      slug: 'org1',
+      description: 'Org for audit tests'
+    }
+  ];
+
+  inMemoryStore.events = [
+    {
+      id: 'event1',
+      name: 'Event One',
+      slug: 'event1',
+      organizationId: 'org1',
+      description: 'Event for audit tests'
+    }
+  ];
   
   // Set up unified roles for testing
   inMemoryStore.unifiedRoles = [
@@ -25,7 +43,12 @@ beforeEach(() => {
     { id: 'responder', name: 'responder', description: 'Responder', level: 70 }
   ];
   
-  // Set up user roles for testing - give user1 system_admin role
+  // Seed a user and grant roles for access
+  inMemoryStore.users = [
+    { id: 'user1', email: 'user1@example.com', name: 'User One' },
+    { id: 'user2', email: 'user2@example.com', name: 'User Two' }
+  ];
+
   inMemoryStore.userRoles = [
     {
       id: 'user_role_1',
@@ -193,6 +216,13 @@ describe('Audit API - Event Audit Logs', () => {
       .set('x-test-user-id', 'user2') // User without access
       .expect(403);
   });
+
+  test('GET /api/audit/events/:eventId/audit - should return 404 for non-existent event ID', async () => {
+    await request(app)
+      .get('/api/audit/events/nonexistent/audit')
+      .set('x-test-user-id', 'user1')
+      .expect(404);
+  });
 });
 
 describe('Audit API - Organization Audit Logs', () => {
@@ -240,6 +270,13 @@ describe('Audit API - Organization Audit Logs', () => {
       .get('/api/audit/organizations/org1/audit')
       .set('x-test-disable-auth', 'true')
       .expect(401);
+  });
+
+  test('GET /api/audit/organizations/:organizationId/audit - should return 404 for non-existent organization ID', async () => {
+    await request(app)
+      .get('/api/audit/organizations/nonexistent/audit')
+      .set('x-test-user-id', 'user1')
+      .expect(404);
   });
 });
 
@@ -400,26 +437,5 @@ describe('Audit API - Error Handling', () => {
 
     // Should still return results, ignoring invalid date
     expect(response.body).toHaveProperty('logs');
-  });
-
-  test('should handle non-existent event ID', async () => {
-    const response = await request(app)
-      .get('/api/audit/events/nonexistent/audit')
-      .set('x-test-user-id', 'user1')
-      .expect(200);
-
-    expect(response.body.logs).toHaveLength(0);
-    expect(response.body.pagination.total).toBe(0);
-  });
-  test('should handle non-existent organization ID', async () => {
-    const response = await request(app)
-      .get('/api/audit/organizations/nonexistent/audit')
-      .set('x-test-user-id', 'user1')
-      .expect(200);
-
-    // Since the in-memory store doesn't filter by organization for non-existent orgs,
-    // we'll just check that we get a response
-    expect(response.body).toHaveProperty('logs');
-    expect(response.body).toHaveProperty('pagination');
   });
 });
