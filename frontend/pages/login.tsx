@@ -13,7 +13,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { Github } from "lucide-react";
+import { Github, Eye, EyeOff } from "lucide-react";
 import { logger } from "@/lib/logger";
 
 // Define User interface
@@ -50,6 +50,7 @@ interface InviteResponse extends ApiResponse {
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [oauthProviders, setOauthProviders] = useState({ google: false, github: false });
@@ -207,7 +208,28 @@ function Login() {
             </div>
             <div className="grid gap-2">
               <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
             </div>
             {error && <div className="text-destructive text-sm font-semibold text-center">{error}</div>}
             <Button type="submit" className="w-full">Sign in</Button>
