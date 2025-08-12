@@ -1,4 +1,5 @@
 import React, { useContext, useRef, useState } from "react";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { UserContext } from "./_app";
 import { useLogger } from "@/hooks/useLogger";
@@ -31,9 +32,10 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="p-8 text-center">
-        You must be logged in to view your profile.
-      </div>
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view your profile."
+      />
     );
   }
 

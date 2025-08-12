@@ -1,4 +1,5 @@
 import React from "react";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { IncidentDetailView } from '../../../../../components/IncidentDetailView';
@@ -140,7 +141,7 @@ export default function ReportDetail() {
           } else if (res.status === 404) {
             throw new Error("Incident not found.");
           } else if (res.status === 401) {
-            throw new Error("You must be logged in to view this incident.");
+            throw new Error("AUTH_REQUIRED");
           } else {
             throw new Error(`Failed to fetch incident: ${res.status}`);
           }
@@ -544,9 +545,24 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
 
 
   if (loading) return <div>Loading incident...</div>;
+  if (fetchError === "AUTH_REQUIRED") {
+    return (
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view this incident."
+      />
+    );
+  }
   if (fetchError) return <div>Error: {fetchError}</div>;
   if (!incident) return <div>Incident not found.</div>;
-  if (!user) return <div>User not authenticated.</div>;
+  if (!user) {
+    return (
+      <AccessDenied
+        title="Please Log In"
+        message="You need to log in to view this incident."
+      />
+    );
+  }
 
   return (
     <>

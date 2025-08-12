@@ -81,7 +81,7 @@ export default function EventTagsPage() {
             <div className="text-center">
               <p className="text-muted-foreground mb-4">You must be logged in to access tag management.</p>
               <Button asChild>
-                <Link href="/auth/login">Login</Link>
+                <Link href={`/login?next=${encodeURIComponent(router.asPath || '')}`}>Login</Link>
               </Button>
             </div>
           </CardContent>

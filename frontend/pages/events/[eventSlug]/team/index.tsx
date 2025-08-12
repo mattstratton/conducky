@@ -303,7 +303,7 @@ export default function EventTeam() {
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (user === null && !loading) {
-      router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+      router.push(`/login?next=${encodeURIComponent(router.asPath)}`);
     }
   }, [user, loading, router]);
 
