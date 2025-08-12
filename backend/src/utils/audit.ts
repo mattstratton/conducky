@@ -9,9 +9,9 @@ export interface AuditLogParams {
   eventId?: string | null;
   /** The user performing the action (optional for anonymous actions) */
   userId?: string | null;
-  /** The action performed (e.g., 'report_created', 'user_assigned') */
+  /** The action performed (e.g., 'incident_created', 'user_assigned') */
   action: string;
-  /** The type of entity affected (e.g., 'Report', 'User', 'Event') */
+  /** The type of entity affected (e.g., 'Incident', 'User', 'Event') */
   targetType: string;
   /** The ID of the entity affected */
   targetId: string;
@@ -24,9 +24,13 @@ export interface AuditLogParams {
  * @throws Error if required fields are missing
  */
 export async function logAudit(params: AuditLogParams): Promise<any> {
-  const { eventId, userId, action, targetType, targetId } = params;
+  const { eventId, userId, action, targetId } = params;
+  // Normalize targetType: ensure 'Incident' is used instead of legacy 'Report'
+  const normalizedTargetType = (params.targetType === 'Report' || params.targetType === 'report')
+    ? 'Incident'
+    : params.targetType;
 
-  if (!action || !targetType || !targetId) {
+  if (!action || !normalizedTargetType || !targetId) {
     throw new Error('Missing required fields: action, targetType, and targetId are required');
   }
 
@@ -35,7 +39,7 @@ export async function logAudit(params: AuditLogParams): Promise<any> {
       eventId: eventId || undefined,
       userId: userId ?? null,
       action,
-      targetType,
+      targetType: normalizedTargetType,
       targetId,
     },
   });
