@@ -66,7 +66,7 @@ const STATE_CONFIGS = {
     label: "Closed",
     icon: XCircle,
     color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-    description: "Report is closed and no further action needed"
+    description: "Incident is closed and no further action needed"
   }
 };
 
@@ -94,7 +94,7 @@ const TRANSITION_REQUIREMENTS: Record<string, TransitionRequirement> = {
   },
   closed: {
     requiresNotes: false,
-    message: "Closing will finalize this report"
+    message: "Closing will finalize this incident"
   }
 };
 
