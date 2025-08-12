@@ -163,7 +163,7 @@ export function EventCard({ event }: EventCardProps) {
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
                 <Link href={`/events/${slug}/incidents/new`} className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
-                  Submit Report
+                  Submit Incident
                 </Link>
               </Button>
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
@@ -192,7 +192,7 @@ export function EventCard({ event }: EventCardProps) {
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
                 <Link href={`/events/${slug}/incidents/new`} className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
-                  Submit Report
+                  Submit Incident
                 </Link>
               </Button>
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
@@ -217,7 +217,7 @@ export function EventCard({ event }: EventCardProps) {
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
                 <Link href={`/events/${slug}/incidents/new`} className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
-                  Submit Report
+                  Submit Incident
                 </Link>
               </Button>
               <Button asChild size="sm" variant="outline" className="w-full justify-start">
