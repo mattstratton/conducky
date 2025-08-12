@@ -545,24 +545,31 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
 
 
   if (loading) return <div>Loading incident...</div>;
-  if (fetchError === "AUTH_REQUIRED") {
+  if (fetchError === "AUTH_REQUIRED" || !user) {
     return (
       <AccessDenied
         title="Please Log In"
         message="You need to log in to view this incident."
+        loginRedirectPath={router.asPath}
       />
     );
   }
-  if (fetchError) return <div>Error: {fetchError}</div>;
+  if (fetchError === "Incident not found.") {
+    return <div>Incident not found.</div>;
+  }
+  if (fetchError === "You are not authorized to view this incident.") {
+    return (
+      <AccessDenied
+        title="Access Denied"
+        message="You don’t have permission to view this incident."
+        showLoginButton={false}
+      />
+    );
+  }
+  if (fetchError) {
+    return <div>Unexpected error loading incident.</div>;
+  }
   if (!incident) return <div>Incident not found.</div>;
-  if (!user) {
-    return (
-      <AccessDenied
-        title="Please Log In"
-        message="You need to log in to view this incident."
-      />
-    );
-  }
 
   return (
     <>

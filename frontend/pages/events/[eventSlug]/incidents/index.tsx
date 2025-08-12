@@ -75,6 +75,7 @@ export default function EventIncidentsPage() {
       <AccessDenied
         title="Please Log In"
         message="You need to log in to view incidents for this event."
+        loginRedirectPath={router.asPath as string}
       />
     );
   }
