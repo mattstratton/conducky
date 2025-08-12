@@ -1,3 +1,6 @@
+-- Ensure gen_random_uuid() is available on fresh databases
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Insert default unified roles needed for system functionality
 -- This ensures roles exist before any user registration attempts
 
