@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import logger from '../config/logger';
+import prisma from '../config/database';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /api/oauth-providers
@@ -27,9 +26,9 @@ router.get('/oauth-providers', async (_req: Request, res: Response) => {
     settings.forEach(setting => {
       try {
         const config = JSON.parse(setting.value);
-        if (setting.key === 'googleOAuth' && config.enabled && config.clientId && config.clientSecret) {
+        if (setting.key === 'googleOAuth' && Boolean(config?.enabled) && Boolean(config?.clientId)) {
           providers.google = true;
-        } else if (setting.key === 'githubOAuth' && config.enabled && config.clientId && config.clientSecret) {
+        } else if (setting.key === 'githubOAuth' && Boolean(config?.enabled) && Boolean(config?.clientId)) {
           providers.github = true;
         }
       } catch (parseError) {
@@ -40,7 +39,8 @@ router.get('/oauth-providers', async (_req: Request, res: Response) => {
     res.json({ providers });
   } catch (error) {
     logger().error('Error checking OAuth providers:', error);
-    res.status(500).json({ error: 'Failed to check OAuth providers' });
+    // Return safe defaults to keep login UI functional
+    res.json({ providers: { google: false, github: false } });
   }
 });
 
