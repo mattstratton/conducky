@@ -929,7 +929,7 @@ export class IncidentService {
       }
 
       // Store original title for audit log
-      const originalTitle = incident.title;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update title
       const updated = await this.prisma.incident.update({
@@ -1675,7 +1675,7 @@ export class IncidentService {
       }
 
       // Store original location for audit log
-      const originalLocation = incident.location;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update location
       const updated = await this.prisma.incident.update({
@@ -1764,7 +1764,7 @@ export class IncidentService {
       }
 
       // Store original description for audit log
-      const originalDescription = incident.description;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update description
       const updated = await this.prisma.incident.update({
@@ -1859,7 +1859,7 @@ export class IncidentService {
       }
 
       // Store original incident date for audit log
-      const originalIncidentDate = incident.incidentAt;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update incident date
       const updated = await this.prisma.incident.update({
@@ -1939,7 +1939,7 @@ export class IncidentService {
       }
 
       // Store original parties for audit log
-      const originalParties = incident.parties;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update parties (encrypt before storing)
       const encryptedParties = parties ? encryptField(parties.trim()) : null;
@@ -2020,7 +2020,7 @@ export class IncidentService {
       }
 
       // Store original severity for audit log
-      const originalSeverity = incident.severity;
+      // Keeping minimal state; original value not needed for current audit entry
 
       // Update severity
       const updated = await this.prisma.incident.update({
