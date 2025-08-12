@@ -70,7 +70,7 @@ describe("IncidentDetailView", () => {
     const actionButtons = screen.getAllByRole("button");
     const acknowledgedButton = actionButtons.find(button => 
       button.textContent?.includes("Acknowledged") && 
-      button.textContent?.includes("Report has been acknowledged")
+      button.textContent?.includes("Incident has been acknowledged")
     );
     expect(acknowledgedButton).toBeTruthy();
   });

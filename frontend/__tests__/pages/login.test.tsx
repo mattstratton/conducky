@@ -22,7 +22,8 @@ describe('Login page', () => {
       </UserContext.Provider>
     );
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    // Be specific to the input to avoid matching the toggle button's aria-label
+    expect(screen.getByLabelText(/^password$/i, { selector: 'input' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 }); 

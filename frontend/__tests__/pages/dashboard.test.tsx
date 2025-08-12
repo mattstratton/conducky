@@ -138,14 +138,14 @@ const renderWithContext = (user: MockUser | null, sessionLoading = false) => {
   );
 };
 
-describe('GlobalDashboard Submit Report Feature', () => {
+describe('GlobalDashboard Submit Incident Feature', () => {
   beforeEach(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = jest.fn();
     jest.clearAllMocks();
   });
 
-  it('shows prominent submit report CTA for single event user', async () => {
+  it('shows prominent submit incident CTA for single event user', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ((global as any).fetch).mockResolvedValueOnce({
       ok: true,
@@ -157,11 +157,11 @@ describe('GlobalDashboard Submit Report Feature', () => {
     await waitFor(() => {
       expect(screen.getByText('Need to Report an Incident?')).toBeInTheDocument();
       expect(screen.getByText('Submit an incident quickly and securely')).toBeInTheDocument();
-      expect(screen.getByText('Submit Report for Test Event')).toBeInTheDocument();
+      expect(screen.getByText('Submit Incident for Test Event')).toBeInTheDocument();
     });
 
     // Check that the button links to the correct URL
-    const submitButton = screen.getByRole('link', { name: /Submit Report for Test Event/i });
+    const submitButton = screen.getByRole('link', { name: /Submit Incident for Test Event/i });
     expect(submitButton).toHaveAttribute('href', '/events/test-event/incidents/new');
   });
 
