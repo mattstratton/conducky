@@ -10,6 +10,7 @@ import organizationRoutes from './organization.routes';
 import auditRoutes from './audit.routes';
 import logsRoutes from './logs.routes';
 import logger from '../config/logger';
+import oauthRoutes from './oauth.routes';
 
 export {
   authRoutes,
@@ -22,5 +23,6 @@ export {
   configRoutes,
   organizationRoutes,
   auditRoutes,
-  logsRoutes
+  logsRoutes,
+  oauthRoutes
 };
