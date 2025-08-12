@@ -561,11 +561,12 @@ router.patch('/:incidentId/state', requireRole(['responder', 'event_admin', 'sys
 });
 
 // Reopen incident
-router.patch('/:incidentId/reopen', requireRole(['responder', 'event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.patch('/:incidentId/reopen', requireEventRole(['responder', 'event_admin']), async (req: Request, res: Response): Promise<void> => {
     try {
         const { eventId, incidentId, slug } = req.params;
-        const { notes, assignedToUserId } = req.body as { notes?: string; assignedToUserId?: string };
-        const user = req.user as any;
+        interface ReopenBody { notes?: string; assignedToUserId?: string }
+        const { notes, assignedToUserId } = req.body as ReopenBody;
+        const user = req.user as UserResponse;
 
         if (!notes || typeof notes !== 'string' || notes.trim().length === 0) {
             res.status(400).json({ error: 'Notes are required to reopen an incident.' });
@@ -588,8 +589,10 @@ router.patch('/:incidentId/reopen', requireRole(['responder', 'event_admin', 'sy
             res.status(404).json({ error: 'Incident not found.' });
             return;
         }
-        const incident = incidentResult.data.incident as any;
-        if (incident.eventId !== currentEventId) {
+        const incident = incidentResult.data.incident as { eventId: string; state: string; assignedResponderId?: string | null };
+        const incidentEventId = String(incident.eventId);
+        const normalizedEventId = String(currentEventId);
+        if (incidentEventId !== normalizedEventId) {
             res.status(404).json({ error: 'Incident not found for this event.' });
             return;
         }

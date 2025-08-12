@@ -495,7 +495,16 @@ export function StateManagementSection({
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmTransition} disabled={loading}>Confirm</AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleConfirmTransition}
+                disabled={
+                  loading ||
+                  (requirements?.requiresNotes && !transitionNotes.trim()) ||
+                  (requirements?.requiresAssignment && !selectedAssignee)
+                }
+              >
+                Confirm
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -528,7 +537,7 @@ export function StateManagementSection({
                   value={reopenAssignee}
                   onChange={(e) => setReopenAssignee(e.target.value)}
                 >
-                  <option value="">Keep current assignment</option>
+                  <option value="">No assignee</option>
                   {eventUsers.map(u => (
                     <option key={u.id} value={u.id}>{u.name || u.email}</option>
                   ))}
@@ -541,7 +550,7 @@ export function StateManagementSection({
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={reopenSubmitting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={submitReopen} disabled={reopenSubmitting}>
+              <AlertDialogAction onClick={submitReopen} disabled={reopenSubmitting || !reopenNotes.trim()}>
                 {reopenSubmitting ? 'Reopening...' : 'Reopen'}
               </AlertDialogAction>
             </AlertDialogFooter>

@@ -89,7 +89,7 @@ describe('Enhanced State Management API', () => {
         .expect(200);
 
       const response = await request(app)
-        .patch('/api/events/1/incidents/r1/reopen')
+        .patch('/api/events/slug/event1/incidents/r1/reopen')
         .send({ notes: 'Reopening for further review' })
         .expect(200);
 
@@ -105,7 +105,7 @@ describe('Enhanced State Management API', () => {
         .expect(200);
 
       const response = await request(app)
-        .patch('/api/events/1/incidents/r1/reopen')
+        .patch('/api/events/slug/event1/incidents/r1/reopen')
         .send({ notes: 'Reopening and assigning', assignedToUserId: '1' })
         .expect(200);
 
@@ -115,7 +115,7 @@ describe('Enhanced State Management API', () => {
 
     it('should require notes when reopening', async () => {
       const response = await request(app)
-        .patch('/api/events/1/incidents/r1/reopen')
+        .patch('/api/events/slug/event1/incidents/r1/reopen')
         .send({})
         .expect(400);
 
@@ -125,7 +125,7 @@ describe('Enhanced State Management API', () => {
     it('should forbid reporter from reopening', async () => {
       // user id 2 as reporter without elevated roles
       await request(app)
-        .patch('/api/events/1/incidents/r1/reopen')
+        .patch('/api/events/slug/event1/incidents/r1/reopen')
         .set('x-test-user-id', '2')
         .send({ notes: 'Please reopen' })
         .expect(403);
@@ -139,7 +139,7 @@ describe('Enhanced State Management API', () => {
         .expect(200);
 
       await request(app)
-        .patch('/api/events/1/incidents/r1/reopen')
+        .patch('/api/events/slug/event1/incidents/r1/reopen')
         .send({ notes: 'Try to reopen from acknowledged' })
         .expect(400);
     });

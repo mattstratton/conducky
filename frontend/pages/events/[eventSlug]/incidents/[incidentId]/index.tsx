@@ -294,11 +294,20 @@ export default function ReportDetail() {
           credentials: 'include'
         }
       );
-      const data = await res.json();
+      let data: any = null;
+      try { data = await res.json(); } catch {}
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to reopen incident.');
+        const msg =
+          res.status === 400 ? (data?.error || 'Invalid reopen request') :
+          res.status === 403 ? 'You do not have permission to reopen this incident.' :
+          res.status === 404 ? 'Incident or event not found.' :
+          data?.error || 'Failed to reopen incident.';
+        throw new Error(msg);
       }
       setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
+      if (data.history) {
+        setStateHistory(prev => [...prev, data.history]);
+      }
       return { success: true } as const;
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to reopen incident.';
