@@ -25,12 +25,21 @@ export interface AuditLogParams {
  */
 export async function logAudit(params: AuditLogParams): Promise<any> {
   const { eventId, userId, action, targetId } = params;
-  // Normalize targetType: ensure 'Incident' is used instead of legacy 'Report'
-  const normalizedTargetType = (params.targetType === 'Report' || params.targetType === 'report')
+
+  // Normalize targetType: map any legacy 'report' casing to 'Incident'
+  const normalizedTargetType = params.targetType && params.targetType.toLowerCase() === 'report'
     ? 'Incident'
     : params.targetType;
 
-  if (!action || !normalizedTargetType || !targetId) {
+  // Normalize legacy action names to incident_* variants
+  const actionMap: Record<string, string> = {
+    report_created: 'incident_created',
+    report_state_changed: 'incident_state_changed',
+    report_assigned: 'incident_assigned',
+  };
+  const normalizedAction = actionMap[action] || action;
+
+  if (!normalizedAction || !normalizedTargetType || !targetId) {
     throw new Error('Missing required fields: action, targetType, and targetId are required');
   }
 
@@ -38,9 +47,9 @@ export async function logAudit(params: AuditLogParams): Promise<any> {
     data: {
       eventId: eventId || undefined,
       userId: userId ?? null,
-      action,
+      action: normalizedAction,
       targetType: normalizedTargetType,
       targetId,
     },
   });
-} 
+}
