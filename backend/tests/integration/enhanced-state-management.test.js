@@ -80,6 +80,71 @@ describe('Enhanced State Management API', () => {
     });
   });
 
+  describe('Reopen Incident Endpoint', () => {
+    it('should reopen a closed incident to acknowledged when no assignee and notes provided', async () => {
+      // Ensure r1 exists and set it to closed first (SuperAdmin user default)
+      await request(app)
+        .patch('/api/events/1/incidents/r1/state')
+        .send({ state: 'closed', notes: 'Closing for test' })
+        .expect(200);
+
+      const response = await request(app)
+        .patch('/api/events/1/incidents/r1/reopen')
+        .send({ notes: 'Reopening for further review' })
+        .expect(200);
+
+      expect(response.body.incident).toBeDefined();
+      expect(response.body.incident.state).toBe('acknowledged');
+    });
+
+    it('should reopen a resolved incident to investigating when assignee provided and notes provided', async () => {
+      // Set r1 to resolved first
+      await request(app)
+        .patch('/api/events/1/incidents/r1/state')
+        .send({ state: 'resolved', notes: 'Resolving initially' })
+        .expect(200);
+
+      const response = await request(app)
+        .patch('/api/events/1/incidents/r1/reopen')
+        .send({ notes: 'Reopening and assigning', assignedToUserId: '1' })
+        .expect(200);
+
+      expect(response.body.incident.state).toBe('investigating');
+      expect(response.body.incident.assignedResponderId).toBe('1');
+    });
+
+    it('should require notes when reopening', async () => {
+      const response = await request(app)
+        .patch('/api/events/1/incidents/r1/reopen')
+        .send({})
+        .expect(400);
+
+      expect(response.body.error).toMatch(/Notes are required/i);
+    });
+
+    it('should forbid reporter from reopening', async () => {
+      // user id 2 as reporter without elevated roles
+      await request(app)
+        .patch('/api/events/1/incidents/r1/reopen')
+        .set('x-test-user-id', '2')
+        .send({ notes: 'Please reopen' })
+        .expect(403);
+    });
+
+    it('should only allow reopen from resolved or closed', async () => {
+      // Set to acknowledged first
+      await request(app)
+        .patch('/api/events/1/incidents/r1/state')
+        .send({ state: 'acknowledged', notes: 'Acknowledging for test' })
+        .expect(200);
+
+      await request(app)
+        .patch('/api/events/1/incidents/r1/reopen')
+        .send({ notes: 'Try to reopen from acknowledged' })
+        .expect(400);
+    });
+  });
+
   describe('API Validation', () => {
     test('should validate required fields for state change', async () => {
       const res = await request(app)

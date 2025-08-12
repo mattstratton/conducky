@@ -2,6 +2,8 @@ import React from "react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { IncidentDetailView } from '../../../../../components/IncidentDetailView';
+import { AssignmentSection } from '@/components/incident-detail/AssignmentSection';
+import IncidentActions from '@/components/incident-detail/IncidentActions';
 
 // Define interfaces
 interface User {
@@ -267,12 +269,41 @@ export default function ReportDetail() {
         throw new Error(errorData.error || 'Failed to update incident state.');
       }
       const data = await res.json();
-      setIncident(prev => prev ? { ...prev, state: data.incident.state } : null);
+      setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
       if (data.history) {
         setStateHistory(prev => [...prev, data.history]);
       }
     } catch (err) {
       setStateChangeError(err instanceof Error ? err.message : 'State change failed');
+    } finally {
+      setIsStateChanging(false);
+    }
+  };
+
+  const handleReopen = async (notes: string, assignedToUserId?: string) => {
+    if (!eventSlug || !incidentId) return { success: false, error: 'Missing IDs' } as const;
+    setIsStateChanging(true);
+    setStateChangeError(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/events/slug/${eventSlug}/incidents/${incidentId}/reopen`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes, assignedToUserId }),
+          credentials: 'include'
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to reopen incident.');
+      }
+      setIncident(prev => prev ? { ...prev, state: data.incident.state, assignedResponderId: data.incident.assignedResponderId ?? prev.assignedResponderId } : null);
+      return { success: true } as const;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to reopen incident.';
+      setStateChangeError(msg);
+      return { success: false, error: msg } as const;
     } finally {
       setIsStateChanging(false);
     }
@@ -499,37 +530,43 @@ const handleDescriptionEdit = async (newDescription: string): Promise<void> => {
   if (!user) return <div>User not authenticated.</div>;
 
   return (
-    <IncidentDetailView
-      incident={incident}
-      user={user as User}
-      userRoles={userRoles}
-      comments={comments}
-      relatedFiles={relatedFiles}
-      onCommentSubmit={handleCommentSubmit}
-      onEditSave={handleEditSave}
-      onDeleteConfirm={handleDeleteConfirm}
-      onStateChange={handleStateChange}
-      isStateChanging={isStateChanging}
-      stateChangeError={stateChangeError}
-      onAssignmentChange={handleAssignmentChange}
-      assignmentFields={assignmentFields}
-      setAssignmentFields={setAssignmentFields}
-      eventUsers={eventUsers}
-      assignmentLoading={assignmentLoading}
-      assignmentError={assignmentError}
-      assignmentSuccess={assignmentSuccess}
-      onTitleEdit={handleTitleEdit}
-      onDescriptionEdit={handleDescriptionEdit}
-      onRelatedFileUpload={handleRelatedFileUpload}
-      onRelatedFileDelete={handleRelatedFileDelete}
-      newRelatedFiles={newRelatedFiles}
-      setNewRelatedFiles={setNewRelatedFiles}
-      relatedFileUploadMsg={relatedFileUploadMsg}
-      uploadingRelatedFile={uploadingRelatedFile}
-      isResponderOrAbove={isResponderOrAbove}
-      apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
-      stateHistory={stateHistory}
-      eventSlug={eventSlug}
-    />
+    <>
+      <IncidentDetailView
+        incident={incident}
+        user={user as User}
+        userRoles={userRoles}
+        comments={comments}
+        relatedFiles={relatedFiles}
+        onCommentSubmit={handleCommentSubmit}
+        onEditSave={handleEditSave}
+        onDeleteConfirm={handleDeleteConfirm}
+        onStateChange={handleStateChange}
+        onReopen={handleReopen}
+        isStateChanging={isStateChanging}
+        stateChangeError={stateChangeError}
+        onAssignmentChange={handleAssignmentChange}
+        assignmentFields={assignmentFields}
+        setAssignmentFields={setAssignmentFields}
+        eventUsers={eventUsers}
+        assignmentLoading={assignmentLoading}
+        assignmentError={assignmentError}
+        assignmentSuccess={assignmentSuccess}
+        onTitleEdit={handleTitleEdit}
+        onDescriptionEdit={handleDescriptionEdit}
+        onRelatedFileUpload={handleRelatedFileUpload}
+        onRelatedFileDelete={handleRelatedFileDelete}
+        newRelatedFiles={newRelatedFiles}
+        setNewRelatedFiles={setNewRelatedFiles}
+        relatedFileUploadMsg={relatedFileUploadMsg}
+        uploadingRelatedFile={uploadingRelatedFile}
+        isResponderOrAbove={isResponderOrAbove}
+        apiBaseUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}
+        stateHistory={stateHistory}
+        eventSlug={eventSlug}
+        // Provide reopen handler down to StateManagementSection via IncidentDetailView
+        onIncidentUpdate={(updated) => setIncident(prev => prev ? { ...prev, ...updated } : updated)}
+      />
+      {/* Reopen is now integrated inside StateManagementSection actions */}
+    </>
   );
 }
