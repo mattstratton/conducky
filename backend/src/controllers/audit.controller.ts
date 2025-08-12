@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../config/database';
+import { prisma } from '../config/database';
 import { requireRole } from '../middleware/rbac';
 import logger from '../config/logger';
 
@@ -44,6 +44,12 @@ export interface AuditLogResponse {
     total: number;
     totalPages: number;
   };
+  context?: {
+    eventId?: string;
+    eventExists?: boolean;
+    organizationId?: string;
+    organizationExists?: boolean;
+  };
 }
 
 function parseOptionalDate(input?: string) {
@@ -72,8 +78,11 @@ export const getEventAuditLogs = [
         sortOrder = 'desc'
       } = req.query as AuditLogQuery;
 
-      // Validate event exists (skip strict validation to allow empty results when not found)
-      // no-op: we do not enforce existence here
+      // Strict existence check
+      const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
 
       // Validate pagination
       const pageNum = Math.max(1, parseInt(page.toString()));
@@ -156,8 +165,11 @@ export const getOrganizationAuditLogs = [
         sortOrder = 'desc'
       } = req.query as AuditLogQuery;
 
-      // Validate organization exists (skip strict validation to allow empty results when not found)
-      // no-op
+      // Strict existence check
+      const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } });
+      if (!org) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
 
       // Validate pagination
       const pageNum = Math.max(1, parseInt(page.toString()));
@@ -200,6 +212,7 @@ export const getOrganizationAuditLogs = [
         where: whereClause,
         include: {
           user: { select: { id: true, name: true, email: true } },
+          event: { select: { id: true, name: true, slug: true } }
         },
         orderBy: sortBy === 'timestamp' ? { timestamp: sortOrder } : sortBy === 'action' ? { action: sortOrder } : { targetType: sortOrder },
         skip: offset,
@@ -217,7 +230,7 @@ export const getOrganizationAuditLogs = [
           organizationId: log.organizationId,
           eventId: log.eventId,
           user: log.user,
-          event: null
+          event: log.eventId ? log.event : null
         })),
         pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
       };
