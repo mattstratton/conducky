@@ -106,21 +106,21 @@ export class OrganizationService {
         },
       });
 
-      // Determine if creator is a System Admin. If so, do NOT auto-grant org_admin.
-      // Instead, create a single-use org_admin invitation link to share.
+      // Determine if creator is a System Admin via unified RBAC role check.
+      // If so, do NOT auto-grant org_admin. Instead, create a single-use org_admin invite to share.
       let generatedInvite: (OrganizationInviteLink & { url: string }) | undefined;
-      const isSystemAdmin = await (this.rbacService as any).isSystemAdmin
-        ? await (this.rbacService as any).isSystemAdmin(createdById)
-        : false;
+      const isSystemAdmin = await this.rbacService.hasRole(createdById, ['system_admin'], 'system');
       if (isSystemAdmin) {
         // Create a one-time org_admin invite valid for 7 days using existing helper
         try {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7);
           const inviteResult = await this.createInviteLink(
             organization.id,
             createdById,
             'org_admin',
             1,
-            (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })(),
+            expiresAt,
             'Initial Org Admin invite'
           );
           if (inviteResult.success && inviteResult.data?.inviteLink) {

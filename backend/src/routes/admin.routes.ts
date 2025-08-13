@@ -315,6 +315,12 @@ router.get('/organizations/:organizationId/initial-invite', requireSystemAdmin()
       return;
     }
 
+    // Ensure invite is not expired
+    if (invite.expiresAt && invite.expiresAt.getTime() <= Date.now()) {
+      res.status(404).json({ error: 'No unused initial admin invite found' });
+      return;
+    }
+
     const url = `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/org-invite/${invite.code}`;
     res.json({
       invite: {
@@ -328,8 +334,8 @@ router.get('/organizations/:organizationId/initial-invite', requireSystemAdmin()
       }
     });
   } catch (error: any) {
-    logger().error('Error fetching initial org admin invite:', error);
-    res.status(500).json({ error: 'Failed to fetch initial invite' });
+    logger().error('Error fetching initial org admin invite', { err: error?.message, stack: error?.stack });
+    res.status(500).json({ error: 'Internal server error', code: 'ORG_INITIAL_INVITE_FETCH_FAILED' });
   }
 });
 

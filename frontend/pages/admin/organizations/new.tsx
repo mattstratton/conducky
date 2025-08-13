@@ -277,7 +277,12 @@ export default function CreateOrganization() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-sm">No invite link was generated. If you created the organization as a non-system user, you may already be an Org Admin and can invite others from the organization settings.</p>
+                    <p className="text-sm">
+                      No invite link was generated. If you created the organization as a non-system user, you may already be an Org Admin and can invite others from the organization settings.
+                    </p>
+                    <p className="text-sm text-amber-600">
+                      If you are a System Admin, you can retrieve the initial admin invite later from the Organizations page using “Copy Admin Invite” (only if it has not been used).
+                    </p>
                     <Button onClick={() => router.push('/admin/organizations')}>Back to Organizations</Button>
                   </div>
                 )}
