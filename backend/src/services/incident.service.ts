@@ -757,10 +757,10 @@ export class IncidentService {
       const isResolvedLike = ['resolved', 'closed'].includes(state);
       const isLeavingSubmitted = incident.state === 'submitted' && state !== 'submitted';
       const isReopening = ['resolved', 'closed'].includes(incident.state) && !isResolvedLike;
-      if (isLeavingSubmitted) {
+      if (isLeavingSubmitted && !(incident as any).firstResponseAt) {
         updateData.firstResponseAt = now;
       }
-      if (isResolvedLike) {
+      if (isResolvedLike && !(incident as any).resolvedAt) {
         updateData.resolvedAt = now;
       }
       if (isReopening) {

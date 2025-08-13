@@ -66,15 +66,17 @@ export default function OrganizationIncidents() {
 
   useEffect(() => {
     if (orgSlug && user) {
+      setError(null);
       fetchOrganizationData();
     }
   }, [orgSlug, user]);
 
   useEffect(() => {
-    if (organization && user) {
+    if (organization?.id && user) {
+      setError(null);
       fetchReportMetrics();
     }
-  }, [organization, user, timeRange]);
+  }, [organization?.id, user, timeRange]);
   const fetchOrganizationData = async () => {
     try {
       const response = await fetch(

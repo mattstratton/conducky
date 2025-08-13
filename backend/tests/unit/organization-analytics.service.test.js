@@ -14,16 +14,16 @@ describe('OrganizationAnalyticsService (unit)', () => {
           .mockResolvedValueOnce(1),
         findMany: jest
           .fn()
-          // resolvedIncidents (createdAt/updatedAt)
+          // resolvedIncidents (createdAt/resolvedAt)
           .mockResolvedValueOnce([
-            { createdAt: new Date('2025-01-01T00:00:00Z'), updatedAt: new Date('2025-01-02T00:00:00Z') }, // 24h
-            { createdAt: new Date('2025-01-01T00:00:00Z'), updatedAt: new Date('2025-01-01T12:00:00Z') }, // 12h
+            { createdAt: new Date('2025-01-01T00:00:00Z'), resolvedAt: new Date('2025-01-02T00:00:00Z') }, // 24h
+            { createdAt: new Date('2025-01-01T00:00:00Z'), resolvedAt: new Date('2025-01-01T12:00:00Z') }, // 12h
           ])
-          // incidentsForTrends (createdAt/state)
+          // incidentsForTrends (createdAt/resolvedAt)
           .mockResolvedValueOnce([
-            { createdAt: new Date('2025-01-01T10:00:00Z'), state: 'submitted' },
-            { createdAt: new Date('2025-01-15T10:00:00Z'), state: 'resolved' },
-            { createdAt: new Date('2025-02-01T10:00:00Z'), state: 'submitted' },
+            { createdAt: new Date('2025-01-01T10:00:00Z'), resolvedAt: null },
+            { createdAt: new Date('2025-01-15T10:00:00Z'), resolvedAt: new Date('2025-02-03T10:00:00Z') },
+            { createdAt: new Date('2025-02-01T10:00:00Z'), resolvedAt: null },
           ])
           // recent (include event/assigned)
           .mockResolvedValueOnce([

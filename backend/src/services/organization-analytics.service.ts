@@ -48,8 +48,8 @@ export interface OrganizationEventsSummaryResponse {
 export class OrganizationAnalyticsService {
   private prisma: PrismaClient;
 
-  constructor(prisma?: PrismaClient) {
-    this.prisma = prisma ?? new PrismaClient();
+  constructor(prisma: PrismaClient) {
+    this.prisma = prisma;
   }
 
   async getOrganizationAnalytics(filters: OrganizationAnalyticsFilters): Promise<OrganizationAnalyticsResponse> {
@@ -137,24 +137,35 @@ export class OrganizationAnalyticsService {
       return { eventName: event?.name || 'Event', eventSlug: event?.slug || '', count: row._count.eventId };
     });
 
-    // Monthly trends (client-side bucketing)
+    // Monthly trends: count submissions by createdAt month; resolved by resolvedAt month
     const incidentsForTrends = await this.prisma.incident.findMany({
       where: incidentWhere,
       select: { createdAt: true, resolvedAt: true }
     });
-    const trendsMap: Record<string, { count: number; resolved: number }> = {};
+    const createdCounts: Record<string, number> = {};
+    const resolvedCounts: Record<string, number> = {};
     incidentsForTrends.forEach((i) => {
-      if (!i.createdAt) return;
-      const createdAtDate = new Date(i.createdAt as any);
-      if (isNaN(createdAtDate.getTime())) return;
-      const monthKey = `${createdAtDate.getUTCFullYear()}-${String(createdAtDate.getUTCMonth() + 1).padStart(2, '0')}`;
-      if (!trendsMap[monthKey]) trendsMap[monthKey] = { count: 0, resolved: 0 };
-      trendsMap[monthKey].count += 1;
-      if (i.resolvedAt) trendsMap[monthKey].resolved += 1;
+      if (i.createdAt) {
+        const d = new Date(i.createdAt as any);
+        if (!isNaN(d.getTime())) {
+          const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+          createdCounts[key] = (createdCounts[key] || 0) + 1;
+        }
+      }
+      if ((i as any).resolvedAt) {
+        const rd = new Date((i as any).resolvedAt as any);
+        if (!isNaN(rd.getTime())) {
+          const rkey = `${rd.getUTCFullYear()}-${String(rd.getUTCMonth() + 1).padStart(2, '0')}`;
+          resolvedCounts[rkey] = (resolvedCounts[rkey] || 0) + 1;
+        }
+      }
     });
-    const monthlyTrends = Object.entries(trendsMap)
-      .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([month, v]) => ({ month, count: v.count, resolved: v.resolved }));
+    const allMonths = Array.from(new Set([...Object.keys(createdCounts), ...Object.keys(resolvedCounts)])).sort();
+    const monthlyTrends = allMonths.map((month) => ({
+      month,
+      count: createdCounts[month] || 0,
+      resolved: resolvedCounts[month] || 0
+    }));
 
     // Recent reports (last 10)
     const recent = await this.prisma.incident.findMany({
@@ -225,7 +236,11 @@ export class OrganizationAnalyticsService {
     };
   }
 
-  async exportOrganizationIncidentsCsv(filters: OrganizationAnalyticsFilters, baseUrl: string): Promise<{ filename: string; contentType: string; body: string }> {
+  async exportOrganizationIncidentsCsv(
+    filters: OrganizationAnalyticsFilters,
+    baseUrl: string,
+    options?: { redaction?: 'admin' | 'strict'; userId?: string; organizationId?: string }
+  ): Promise<{ filename: string; contentType: string; body: string }> {
     const { organizationId, timeRange = '30d', eventId, status, severity } = filters;
     const { startDate, endDate } = this.getDateRange(timeRange);
     const where: any = { event: { organizationId } };
@@ -240,22 +255,50 @@ export class OrganizationAnalyticsService {
       orderBy: { createdAt: 'desc' },
       take: 1000
     });
+    // Audit log export action
+    if (options?.userId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            eventId: null,
+            organizationId: options.organizationId || null,
+            userId: options.userId,
+            action: 'export_organization_incidents',
+            targetType: 'organization',
+            targetId: options.organizationId || filters.organizationId,
+          }
+        });
+      } catch {
+        // ignore audit failures
+      }
+    }
 
+    const redaction = options?.redaction || 'strict';
     const header = 'ID,Title,Status,Severity,Event,Reporter,Assigned,Created,Description,URL\n';
+    const neutralize = (val: string): string => {
+      const s = (val || '').replace(/[\r\n]+/g, ' ').replace(/"/g, '""');
+      return /^[=+\-@]/.test(s) ? `'${s}` : s;
+    };
+    const mask = (s: string) => (redaction === 'admin' ? s : 'Redacted');
+
     const rows = incidents.map((i) => {
       const url = `${baseUrl}/events/${i.event?.slug || ''}/incidents/${i.id}`;
       const createdDate = i.createdAt ? new Date(i.createdAt as any) : null;
       const createdStr = createdDate && !isNaN(createdDate.getTime()) ? createdDate.toISOString().split('T')[0] : '';
+      const reporterName = i.reporter?.name ? mask(i.reporter.name) : '';
+      const assignedName = i.assignedResponder?.name ? mask(i.assignedResponder.name) : '';
+      const description = redaction === 'admin' ? neutralize(i.description || '') : 'Redacted';
+
       const fields = [
         i.id,
-        `"${(i.title || '').replace(/"/g, '""')}"`,
+        `"${neutralize(i.title || '')}"`,
         i.state,
         i.severity || '',
         i.event?.name || '',
-        i.reporter?.name || '',
-        i.assignedResponder?.name || '',
+        reporterName,
+        assignedName,
         createdStr,
-        `"${(i.description || '').replace(/"/g, '""')}"`,
+        `"${description}"`,
         url
       ];
       return fields.join(',');
@@ -266,7 +309,11 @@ export class OrganizationAnalyticsService {
     return { filename, contentType: 'text/csv; charset=utf-8', body: csv };
   }
 
-  async exportOrganizationIncidentsPdfText(filters: OrganizationAnalyticsFilters, baseUrl: string): Promise<{ filename: string; contentType: string; body: string }> {
+  async exportOrganizationIncidentsPdfText(
+    filters: OrganizationAnalyticsFilters,
+    baseUrl: string,
+    options?: { redaction?: 'admin' | 'strict'; userId?: string; organizationId?: string }
+  ): Promise<{ filename: string; contentType: string; body: string }> {
     const { organizationId, timeRange = '30d', eventId, status, severity } = filters;
     const { startDate, endDate } = this.getDateRange(timeRange);
     const where: any = { event: { organizationId } };
@@ -282,6 +329,7 @@ export class OrganizationAnalyticsService {
       take: 1000
     });
 
+    const redaction = options?.redaction || 'strict';
     let content = `Organization Incidents Export\n`;
     content += `Generated on: ${new Date().toLocaleDateString()}\n\n`;
     incidents.forEach((i) => {
@@ -294,6 +342,12 @@ export class OrganizationAnalyticsService {
       content += `Event: ${i.event?.name || ''}\n`;
       content += `Created: ${createdStr}\n`;
       content += `URL: ${baseUrl}/events/${i.event?.slug || ''}/incidents/${i.id}\n`;
+      if (redaction === 'admin') {
+        const desc = (i as any).description ? String((i as any).description).replace(/[\r\n]+/g, ' ') : '';
+        content += `Description: ${desc}\n`;
+      } else {
+        content += `Description: Redacted\n`;
+      }
       content += `\n---\n\n`;
     });
 
