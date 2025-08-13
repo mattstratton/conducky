@@ -56,7 +56,7 @@ interface Organization {
 export default function OrganizationIncidents() {
   const router = useRouter();
   const { user } = useContext(UserContext);
-  const { error: logError, info: logInfo } = useLogger();
+  const { error: logError } = useLogger();
   const { orgSlug } = router.query;
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
@@ -67,9 +67,14 @@ export default function OrganizationIncidents() {
   useEffect(() => {
     if (orgSlug && user) {
       fetchOrganizationData();
+    }
+  }, [orgSlug, user]);
+
+  useEffect(() => {
+    if (organization && user) {
       fetchReportMetrics();
     }
-  }, [orgSlug, user, timeRange]);
+  }, [organization, user, timeRange]);
   const fetchOrganizationData = async () => {
     try {
       const response = await fetch(
@@ -104,46 +109,75 @@ export default function OrganizationIncidents() {
     }
   };
 
+  interface AnalyticsApiResponse {
+    metrics: {
+      totalReports: number;
+      pendingReports: number;
+      avgResolutionTime: number;
+      escalatedReports: number;
+    };
+    byStatus: Array<{ status: string; count: number; percentage: number }>;
+    bySeverity: Array<{ severity: string; count: number; percentage: number }>;
+    byEvent: Array<{ eventName: string; eventSlug: string; count: number }>;
+    monthlyTrends: Array<{ month: string; count: number; resolved: number }>;
+    recentReports?: Array<{
+      id: string;
+      title: string;
+      status: string;
+      severity: string | null;
+      eventName: string;
+      submittedAt: string;
+      assignedTo?: string;
+    }>;
+  }
+
   const fetchReportMetrics = async () => {
     try {
       setLoading(true);
-      
-      // TODO: Replace with actual API call when backend endpoint is ready
-      // For now, use mock data that demonstrates the functionality
-      const mockMetrics: ReportMetrics = {
-        totalIncidents: 147,
-        reportsByStatus: {
-          'submitted': 23,
-          'in_review': 18,
-          'investigating': 12,
-          'resolved': 78,
-          'closed': 16,
-        },
-        reportsBySeverity: {
-          'low': 45,
-          'medium': 67,
-          'high': 28,
-          'urgent': 7,
-        },
-        reportsByEvent: [
-          { eventName: 'DevConf Berlin 2025', eventSlug: 'devconf-berlin-2025', count: 45, trend: 'up' },
-          { eventName: 'PyCon Portland 2025', eventSlug: 'pycon-portland-2025', count: 32, trend: 'stable' },
-          { eventName: 'JSConf Austin 2025', eventSlug: 'jsconf-austin-2025', count: 28, trend: 'down' },
-          { eventName: 'ReactConf NYC 2024', eventSlug: 'reactconf-nyc-2024', count: 42, trend: 'stable' },
-        ],
-        monthlyTrends: [
-          { month: 'Oct 2024', count: 23, resolved: 18 },
-          { month: 'Nov 2024', count: 31, resolved: 25 },
-          { month: 'Dec 2024', count: 28, resolved: 22 },
-          { month: 'Jan 2025', count: 35, resolved: 28 },
-          { month: 'Feb 2025', count: 30, resolved: 27 },
-        ],
-        averageResolutionTime: 4.2,
-        pendingIncidents: 53,
-        escalatedIncidents: 7,
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const response = await fetch(
+        `${baseUrl}/api/organizations/${organization?.id}/reports/analytics?timeRange=${encodeURIComponent(timeRange)}`,
+        { credentials: 'include' }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch analytics (${response.status})`);
+      }
+
+      const data = (await response.json()) as AnalyticsApiResponse;
+
+      const statusMap: Record<string, number> = {};
+      data.byStatus.forEach((s) => { statusMap[s.status] = s.count; });
+
+      const severityMap: Record<string, number> = {};
+      data.bySeverity.forEach((s) => { severityMap[s.severity] = s.count; });
+
+      const eventsTransformed = data.byEvent.map((e) => ({
+        eventName: e.eventName,
+        eventSlug: e.eventSlug,
+        count: e.count,
+        trend: 'stable' as const
+      }));
+
+      const monthlyTransformed = data.monthlyTrends.map((m) => ({
+        month: m.month,
+        count: m.count,
+        resolved: m.resolved
+      }));
+
+      const transformed: ReportMetrics = {
+        totalIncidents: data.metrics.totalReports,
+        pendingIncidents: data.metrics.pendingReports,
+        averageResolutionTime: Math.round((data.metrics.avgResolutionTime / 24) * 10) / 10,
+        escalatedIncidents: data.metrics.escalatedReports,
+        reportsByStatus: statusMap,
+        reportsBySeverity: severityMap,
+        reportsByEvent: eventsTransformed,
+        monthlyTrends: monthlyTransformed
       };
 
-      setMetrics(mockMetrics);    } catch (err) {
+      setMetrics(transformed);
+    } catch (err) {
       logError('Error fetching report metrics', { orgSlug: Array.isArray(orgSlug) ? orgSlug[0] : orgSlug }, err as Error);
       setError('Failed to load report metrics');
     } finally {
@@ -152,9 +186,10 @@ export default function OrganizationIncidents() {
   };
   const handleExport = async (format: 'csv' | 'pdf') => {
     try {
-      // TODO: Implement actual export functionality
-      logInfo(`Exporting reports as ${format} for organization`, { orgSlug: Array.isArray(orgSlug) ? orgSlug[0] : orgSlug, format });
-      // This would call an API endpoint to generate and download the export
+      if (!organization) return;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const url = `${baseUrl}/api/organizations/${organization.id}/reports/export?format=${format}&timeRange=${encodeURIComponent(timeRange)}`;
+      window.location.href = url;
     } catch (err) {
       logError('Export failed', { orgSlug: Array.isArray(orgSlug) ? orgSlug[0] : orgSlug, format }, err as Error);
     }

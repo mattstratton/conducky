@@ -1,0 +1,72 @@
+---
+id: get-organization-events-summary
+title: "Get organization events summary"
+description: "Returns count of events, active events, and per-event report counts and team sizes."
+sidebar_label: "Get organization events summary"
+hide_title: true
+hide_table_of_contents: true
+api: eJy1VE1v2zAM/SuCThuQxunaXXxasY+iG7YVbYcdihxUmUmE2JJLScFSw/99pOUkTt3utksiWo8U+fjIRga19DK/lz9xqax5UsE46+V8IgvwGk3NtszlDYSI1gvtog3CLQRswAY/EUoHs4GDaQtRA550tkCoHYbk5Lu7AKoS3jyBn8qJ9KAjmrClBBoyvKfHLmJYkT1vKYdaoaogAPoOYTiTWtH9RFq6IMsN0r4q6DvCYzQIhcwDRqAn9AoqJfNGhm3NHj6gsUtCLhxWKtCXGE0hW34PwddUPnjGv5vN+O+Yh9tYVQq3VBnzAYXwUWtKfBHLcivbiTyfnY69frggFNVFnBitAmXXIc/GyIsumijAmh3qfIwaNktYCr4ghjv4+5eSvrJEoVWl8IAbQAGIDqniiSRyV464kksIcpK4zWWmapMNmfVZc0x0m6WGZz7x0fWSY6dGRSwpzCqEOs+y0mlVrpwP+dmMyHmurE8UqXR1xXpJMaiOYQhPMSihqXa2iHq9pUM1inKNji47PnZB5gd93bIIUlcfQCFgEtleE/yM7LXCdgLRl3T4slPK1993TPKRUvdBKMdvwEx0MtXOrQ0chErZW9Bh6jutMWjhOmcTSr7/2FcnLq6vyIupTJWdTmfT2aheQlHTUezdTuhYAE9m+hSEsdoUzGqlrFpCInjrAzB7lE6g0eUM+gT3kW5jzVNLoOMePOOfpsrwtU/wD0fXVGBpNNAoDV74fnU3CupqArmIGqaksKx38hljmaaadEP5D6JcAu2fof6TEsVBiUdMNV2phPhvS6xvf4A/IatLRd1v+yqbfqDuWRuEPBopsvPR9koZsBT7akjEPDoco2kelIdfWLYtf36MgLw46bhRaNQDy4hmrzCezzTUC1V6+Acdb276XflWvFbGTtqWed2oMrJFxzUJfbR82/lwo1x+5m6r0YysuxnpD5zwi28Mx2X3HP/yanjRoWnS/BE5O3y6etVjBarohjyhueB527Z/AQ/QcRo=
+sidebar_class_name: "get api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+hide_send_button: true
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get organization events summary"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/organizations/{organizationId}/events/summary"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns count of events, active events, and per-event report counts and team sizes.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"organizationId","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Summary returned successfully"},"401":{"description":"Not authenticated"},"403":{"description":"Access denied"},"404":{"description":"Organization not found"},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

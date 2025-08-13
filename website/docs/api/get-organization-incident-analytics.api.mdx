@@ -1,0 +1,72 @@
+---
+id: get-organization-incident-analytics
+title: "Get organization incident analytics"
+description: "Returns metrics, distributions, monthly trends, and recent reports for all incidents within the organization's events."
+sidebar_label: "Get organization incident analytics"
+hide_title: true
+hide_table_of_contents: true
+api: eJzFVkuP2zYQ/isEL00B1/J200N96qJpArdoG2y26CHwgZbGFmGKVPjYrSrov2eGkizJLzhtgV5sjTic+eabl2ruxc7x5Uf+u90JLf8WXhrt+HrGM3CplSXJfMkfwQerHSvAW5m6Gcukw6dNiPozVhjtc1Uxb0FnKAudMQspaI9/pbHesa2xTCjFpE5lhgeOvUifS818DsyM3H/lGDyTwpzPuIM0WOkrxFij4BwqPASfo7xuEGYprEBQYF3UkAS2FHg+4xoPUBqbXmX43sKnIC1kfOltAHSR5lAIvqy5r0q6QZHpHWoi5EJ4fBOCzHhzTMqYM7Z6gwodgE8BbDUg8LKAR6F3wK85Ax0KysT9gkB+H3/vyAqS1iZkK4IiNKRxAuYJnTBLXlqmtVCVx1RdRBU5joT8YwLeSoXMD76YN0wwh3cVtDm86N154YO7iRAXNoX0HgiqSPfavCjIdlGU+hmclztMQbxiwRn1HI9SZRw+rC+B3lSHSmQEBi5DxUhiCd4CVpkXlArIJMoznssdlSK6R36EuhFO75AKHEMqscXAkddvFwv6m1p4ONCfmqIMSBRzIU2xV7ZBqYrS9npxd3rvN+OZwFZCl4iN+I2a92c8RGsMwcle6/Wp1qQdNBrfmqCj+nfnYK80xo3QMVyL8TKw1ljeNMSezw22J9+B57O2nZc8EaVMxs3sknra203SzZpkqH6aIGS+HQ/BKrSUe18uk0QZzEhunF/eL5Cf48S8wSwoUxZtRshGrJDBhEMbiGmeGp2FdF/hQ3Fi5b01eBgp6Y2sh6n2geqpTe0GhAXbjrZDeZGbvuxIbpXwTfvwtm/Pn/98Ip4n8/FgBDH+AlXsFpRSY/YShupG9BpSP3fU4A0pbU28LL2i8x+76NjD+xXeIirbyO7mi/niJF7UivPncO0bfMxwwG+7V36o8wLTtIOW4Mp5IPYQjhepJwQdwIOlD6Gk7KLSNAdH/GODSjp2rfoPk2MMUElcSw5GHn5dPZ0YNSUqmWBTmGORJd0ll5Au0VRi3SD+kZV34CdrbIhzXI0TtuoYLo3J/3HDdlXi4S+flEpgkTQdGXXXeh+phFBz0nwoL8+s1oiEBvUhZix3ajIyU9cb4eAPq5qGXrdzlvoSYxUbRSt5K5SDKzRdXHMXAtlj5U838LNQgfRiN9/u+IZddxXCsG7/HYDTvXXV7WHP/odeh314zfGgNbhek2Al+f7CvL967L7avmbHn10XYPTTT08g9PCOSrdZj/fOu59oIIiTMbqPY7R7IPxnfYwnau+Ofon4sxfquh3R2BW9fnt08UYOIot7oNWmgNdN03wGmK4TCg==
+sidebar_class_name: "get api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+hide_send_button: true
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get organization incident analytics"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/organizations/{organizationId}/reports/analytics"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns metrics, distributions, monthly trends, and recent reports for all incidents within the organization's events.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"organizationId","required":true,"schema":{"type":"string","format":"uuid"},"description":"Organization ID"},{"in":"query","name":"timeRange","schema":{"type":"string","enum":["30d","90d","1y","all"],"default":"30d"},"description":"Time range for analytics"},{"in":"query","name":"eventId","schema":{"type":"string","format":"uuid"},"description":"Filter analytics to a single event"},{"in":"query","name":"status","schema":{"type":"string","enum":["submitted","acknowledged","investigating","resolved","closed"]},"description":"Filter by incident state"},{"in":"query","name":"severity","schema":{"type":"string","enum":["low","medium","high","critical"]},"description":"Filter by incident severity"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Analytics computed successfully"},"401":{"description":"Not authenticated"},"403":{"description":"Access denied"},"404":{"description":"Organization not found"},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

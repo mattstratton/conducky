@@ -471,6 +471,14 @@ async function main() {
   ];
 
   for (const incidentData of sampleIncidents) {
+    const timeline = {};
+    const now = new Date();
+    if (incidentData.state && incidentData.state !== 'submitted') {
+      timeline.firstResponseAt = now;
+    }
+    if (['resolved', 'closed'].includes(incidentData.state)) {
+      timeline.resolvedAt = now;
+    }
     const incident = await prisma.incident.create({
       data: {
         title: incidentData.title,
@@ -483,6 +491,7 @@ async function main() {
         eventId: eventRecords[incidentData.eventSlug].id,
         reporterId: userRecords[incidentData.reporterName].id,
         assignedResponderId: userRecords[incidentData.responderName].id,
+        ...timeline,
       },
     });
 
@@ -498,7 +507,7 @@ async function main() {
 
     console.log(`📝 Incident created: ${incidentData.title} with tags: ${incidentData.tags.join(', ')}`);
 
-    // Add some comments to incidents
+    // Add some comments to incidents and create simple state history
     const comments = [
       {
         body: 'Initial report received and acknowledged. Starting investigation.',
@@ -520,6 +529,34 @@ async function main() {
           incidentId: incident.id,
           authorId: userRecords[commentData.authorName].id,
         },
+      });
+    }
+    // Seed a basic state history chain
+    const transitions = [];
+    if (incidentData.state === 'submitted') {
+      transitions.push({ from: null, to: 'submitted' });
+    } else {
+      transitions.push({ from: null, to: 'submitted' });
+      transitions.push({ from: 'submitted', to: 'acknowledged' });
+      if (incidentData.state === 'investigating' || incidentData.state === 'resolved' || incidentData.state === 'closed') {
+        transitions.push({ from: 'acknowledged', to: 'investigating' });
+      }
+      if (incidentData.state === 'resolved' || incidentData.state === 'closed') {
+        transitions.push({ from: 'investigating', to: 'resolved' });
+      }
+      if (incidentData.state === 'closed') {
+        transitions.push({ from: 'resolved', to: 'closed' });
+      }
+    }
+    for (const t of transitions) {
+      await prisma.incidentStateHistory.create({
+        data: {
+          incidentId: incident.id,
+          fromState: t.from,
+          toState: t.to,
+          changedById: userRecords[incidentData.responderName].id,
+          changedAt: new Date(),
+        }
       });
     }
     console.log(`💬 Comments added to incident: ${incidentData.title}`);

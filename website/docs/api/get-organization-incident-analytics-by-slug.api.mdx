@@ -1,0 +1,72 @@
+---
+id: get-organization-incident-analytics-by-slug
+title: "Get organization incident analytics by slug"
+description: "Same as organization analytics but referenced by organization slug."
+sidebar_label: "Get organization incident analytics by slug"
+hide_title: true
+hide_table_of_contents: true
+api: eJytVUuP2zYQ/isCTy3gWt5ueqhPWaRtsC3aBNkUPQQ+0NJYJkyRCh+bqoL+e74R5Yf8CPbQi80RP877m+lEkJUXy0/inaukUf/JoKzxYjUTJfnCqYZlsRRPsqZM+syewDJppG6DKny2jiFztCFHpqAyW7dToNexmouZ8FREp0ILgx0E73H5EMMW8qqHzUY62Ank/IBQbLmRuJ8JgwtIUPsEZfjg6HNUjkqxDC4SdBdbqqVYdiK0DUN9cMpUoj8P5d25Z4CMtj5Hcu3RWFA1fZCmInFb/UyQiTVn8H5RQvp5+L1jLVLrlMiNjDrgCSP6W8bomUx4LL9pamNdLVlTjOobqnyQIfoXOe3julYhENuVxc7YL5rKahCVeSYfVIVEmZRwb/XzcFVo63FY3fYA0QyFfokP2n6BVFOpIM/EVlVccFQMrSU1W1kN1ht0JnnW9ONiwX/Tuj4curGwdRMRU+ZjUaDLNlHrlhvh1eLu8t1fNmQSTYj0wx6nYkDeX7EwaMtKMmqPenWJmvSXgfKNjWaA/3TN7UeDfofrmSeHpGXknHVcW2QkbC36W1QUxCwRYSly2aj8lF0+5ybOu5Eafe6osS74/EDPgXmsPNEqOg092xCaZZ5rixxvrQ/L+wWyc06WX1BIbZsayRkdHNhyVOGhAx7NC2vKWOxaHOoLLe+dxWUi3KhkdZwGT9whqbBrko5cGgmHhmEz+0ZiOYHwJR1+25Pi938+cpYnc+WgBD7+Qe3Q1pAKa3eKjv0K7w0VYe4TrQDa2OGxCprv34zRZQ/vH/GKU5kiu5sv5ouLeIFC1V12ePYDjiVldjN+CpkyhSo5qzXKVFFKcOsDcfbgTpBFYA9GBw+anmLD1QVoWoOz/INyiq99gr+eXCNArQoCm04s/Pn48UKpbQCy0RU0R3fl4yOfM5bT1KBv4P+JlrcUpqP/EOfJsmjT2D3LWjeEDej/tm7G0gf6N+SNlqh8P0bYjWz6xH0B5IRP3GvJv+XpuhlIxWPyQCv0MDOH1XTdWnr62+m+589pHDLZSuXlWvOa2kjtsad26MLpanmWOrKfA7Nu4I/b4SXowwJ4Efg4q4/wFQtOMf56GDdL992HcTF/n11u2hs12XPUTJzYO7gvQr86HYpvf+V+lRcs3w0sHw/s+lXlp4Tf2+FfztPVB12XJgjqu8enq5svtiTLYUwlNEeKVdZ/BQuFOX4=
+sidebar_class_name: "get api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+hide_send_button: true
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get organization incident analytics by slug"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/organizations/slug/{orgSlug}/reports/analytics"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Same as organization analytics but referenced by organization slug.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"orgSlug","required":true,"schema":{"type":"string"},"description":"Organization slug"},{"in":"query","name":"timeRange","schema":{"type":"string","enum":["30d","90d","1y","all"],"default":"30d"}},{"in":"query","name":"eventId","schema":{"type":"string","format":"uuid"}},{"in":"query","name":"status","schema":{"type":"string","enum":["submitted","acknowledged","investigating","resolved","closed"]}},{"in":"query","name":"severity","schema":{"type":"string","enum":["low","medium","high","critical"]}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Analytics computed successfully"},"401":{"description":"Not authenticated"},"403":{"description":"Access denied"},"404":{"description":"Organization not found"},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

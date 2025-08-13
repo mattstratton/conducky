@@ -182,3 +182,29 @@ Organization endpoints handle multi-tenant organization management, membership, 
 - **Authentication:** Required
 - **Response:** `{ message, organization, role }`
 - **Description:** Accept an organization invite and join the organization. 
+
+## 📊 Organization Analytics
+
+### Get Organization Analytics
+
+- **GET** `/api/organizations/:organizationId/reports/analytics`
+- **Authentication:** Required (org member)
+- **Query Parameters:** `timeRange=30d|90d|1y|all` (default `30d`), `eventId?`, `status?`, `severity?`
+- **Response:** `{ metrics, byStatus, bySeverity, byEvent, monthlyTrends, recentReports }`
+
+### Get Organization Analytics by Slug
+
+- **GET** `/api/organizations/slug/:orgSlug/reports/analytics`
+- Same as above, referenced by slug.
+
+### Get Organization Events Summary
+
+- **GET** `/api/organizations/:organizationId/events/summary`
+- **Authentication:** Required (org member)
+- **Response:** `{ totalEvents, activeEvents, events: [{ id, name, slug, isActive, reportCount, teamSize }] }`
+
+### Export Organization Incidents
+
+- **GET** `/api/organizations/:organizationId/reports/export?format=csv|pdf&timeRange=...&eventId?&status?&severity?`
+- **Authentication:** Required (org member)
+- Returns `text/csv` for CSV or `text/plain` for PDF-text.
