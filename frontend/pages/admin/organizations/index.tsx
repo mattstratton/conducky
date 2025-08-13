@@ -14,17 +14,11 @@ import {
   Calendar, 
   FileText, 
   ExternalLink,
-  Settings,
-  MoreVertical,
-  Filter
+  Filter,
+  Copy
 } from 'lucide-react';
 import { UserContext } from '../../_app';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+// System Admins should not have org-level actions from this page; no dropdown menu
 
 interface Organization {
   id: string;
@@ -131,6 +125,33 @@ export default function AdminOrganizations() {
 
   const getOrgAdmins = (org: Organization) => {
     return org.memberships.filter(m => m.role === 'org_admin');
+  };
+
+  const [copyingOrgId, setCopyingOrgId] = useState<string | null>(null);
+  const handleCopyInitialInvite = async (orgId: string) => {
+    try {
+      setCopyingOrgId(orgId);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/admin/organizations/${orgId}/initial-invite`, {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const msg = res.status === 404 ? 'No unused initial admin invite' : 'Failed to fetch invite';
+        alert(msg);
+        return;
+      }
+      const data = await res.json();
+      const url = data?.invite?.url as string | undefined;
+      if (url) {
+        await navigator.clipboard.writeText(url);
+        alert('Invite link copied to clipboard');
+      } else {
+        alert('Invite not available');
+      }
+    } catch {
+      alert('Could not copy invite link');
+    } finally {
+      setCopyingOrgId(null);
+    }
   };
 
   // Don't render anything while checking authentication
@@ -286,7 +307,7 @@ export default function AdminOrganizations() {
               <Input
                 placeholder="Search organizations..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
                 className="pl-10"
               />
             </div>
@@ -349,27 +370,7 @@ export default function AdminOrganizations() {
                           </CardDescription>
                         </div>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/orgs/${org.slug}`}>
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              View Organization
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/organizations/${org.id}/edit`}>
-                              <Settings className="w-4 h-4 mr-2" />
-                              Edit Settings
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {/* No per-organization actions for System Admins on this page */}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {org.description && (
@@ -401,6 +402,7 @@ export default function AdminOrganizations() {
                             {org._count.memberships} members
                           </div>
                         </div>
+                        <div className="flex items-center space-x-2"></div>
                       </div>
 
                       {/* Organization Admins */}
@@ -419,7 +421,21 @@ export default function AdminOrganizations() {
                               </div>
                             ))
                           ) : (
-                            <span className="text-xs text-muted-foreground">No admins assigned</span>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-muted-foreground">No admins assigned</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="w-full sm:w-auto"
+                                onClick={() => handleCopyInitialInvite(org.id)}
+                                disabled={copyingOrgId === org.id}
+                                title="Copy initial org admin invite (only if unused)"
+                              >
+                                <Copy className="w-4 h-4 mr-2" />
+                                {copyingOrgId === org.id ? 'Copying…' : 'Copy Admin Invite'}
+                              </Button>
+                            </div>
                           )}
                           {orgAdmins.length > 2 && (
                             <span className="text-xs text-muted-foreground">

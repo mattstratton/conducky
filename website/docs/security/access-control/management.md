@@ -163,8 +163,8 @@ Monitor for unusual access patterns:
 
 ### New Event Setup
 
-1. **System Admin** creates event
-2. **System Admin** creates admin invite link
+1. **System Admin** creates event (system-level operation)
+2. **Event Organizer** accepts invite → becomes **Event Admin** (System Admins should not view event data unless granted roles)
 3. **Event Organizer** accepts invite → becomes **Event Admin**
 4. **Event Admin** invites response team → become **Responders**
 5. **Event goes live** → **Reporters** can submit incidents
@@ -172,7 +172,7 @@ Monitor for unusual access patterns:
 ### Organization Onboarding  
 
 1. **System Admin** creates organization
-2. **System Admin** assigns **Organization Admin** role
+2. System returns a single-use `org_admin` invite link; System Admin shares this link instead of being added to the org
 3. **Organization Admin** creates events within organization
 4. **Organization Admin** automatically becomes **Event Admin** for org events
 5. **Organization Admin** invites team members as needed

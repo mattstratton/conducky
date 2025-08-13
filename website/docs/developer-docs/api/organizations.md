@@ -13,8 +13,8 @@ Organization endpoints handle multi-tenant organization management, membership, 
 - **POST** `/api/organizations`
 - **Role:** SystemAdmin only
 - **Body:** `{ name, slug, description?, website? }`
-- **Response:** `{ message, organization }`
-- **Description:** Creates a new organization. Only SystemAdmins can create organizations.
+- **Response:** `{ organization, inviteLink? }`
+- **Description:** Creates a new organization. Only SystemAdmins can create organizations. If created by a SystemAdmin, an initial, single-use `org_admin` invite link is also returned in `inviteLink` for sharing with the first Organization Admin. The creator is not added as a member.
 
 ### List All Organizations
 
@@ -160,6 +160,13 @@ Organization endpoints handle multi-tenant organization management, membership, 
 - **Body:** `{ role, expiresAt?, maxUses?, note? }`
 - **Response:** `{ message, invite }`
 - **Description:** Create a new invite link for an organization.
+
+### Admin: Retrieve Unused Initial Admin Invite
+
+- **GET** `/api/admin/organizations/:organizationId/initial-invite`
+- **Role:** SystemAdmin only
+- **Response:** `{ invite: { id, code, role, url, expiresAt?, maxUses?, useCount } }`
+- **Description:** Returns the single-use, unused `org_admin` invite created at organization creation (if it exists). Useful if the link was not copied initially.
 
 ### Get Organization Invite Links
 

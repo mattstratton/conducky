@@ -139,6 +139,10 @@ backend/
 4. **Mock External Dependencies**: Use mocks for databases, APIs, and services
 5. **Descriptive Names**: Test names should clearly describe what is being tested
 6. **Arrange-Act-Assert**: Structure tests with clear setup, execution, and verification
+7. **RBAC Regressions**: When changing roles/permissions, add tests that assert:
+   - System Admins cannot access org/event data without scoped roles
+   - UI hides org/event actions for users lacking scoped roles
+   - Invites and membership flows reflect the intended access model
 
 ## 🚨 Common Issues & Solutions
 

@@ -42,6 +42,9 @@ export default function CreateOrganization() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [creationComplete, setCreationComplete] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Check authentication and System Admin status
   React.useEffect(() => {
@@ -177,14 +180,28 @@ export default function CreateOrganization() {
         return;
       }
 
-      // Redirect to the new organization's admin view
-      router.push(`/admin/organizations`);
+      // Parse the response and surface the invite link in-page for copy UX
+      const data = await response.json().catch(() => ({}));
+      const urlFromApi = (data?.inviteLink?.url as string) || null;
+      setInviteUrl(urlFromApi);
+      setCreationComplete(true);
       
     } catch (error) {
       console.error('Error creating organization:', error);
       setErrors({ general: 'Network error. Please check your connection and try again.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   };
 
@@ -208,6 +225,67 @@ export default function CreateOrganization() {
         message="You need system admin privileges to create organizations."
         showLoginButton={false}
       />
+    );
+  }
+
+  // Success screen with copyable invite link (if present)
+  if (creationComplete) {
+    return (
+      <>
+        <Head>
+          <title>Organization Created - Admin - Conducky</title>
+        </Head>
+        <div className="min-h-screen bg-background p-6">
+          <div className="mx-auto max-w-2xl space-y-6">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/admin/organizations">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Organizations
+                </Link>
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Organization Created</h1>
+                <p className="text-muted-foreground">Share the invite link below with the first Organization Admin</p>
+              </div>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>First Org Admin Invitation</CardTitle>
+                <CardDescription>
+                  This invite allows the initial Org Admin to join and then manage members. Keep it secure.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {inviteUrl ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="inviteUrl">Invite Link</Label>
+                      <div className="flex items-center gap-2">
+                        <Input id="inviteUrl" value={inviteUrl} readOnly className="flex-1" />
+                        <Button type="button" onClick={handleCopy}>{copied ? 'Copied!' : 'Copy'}</Button>
+                      </div>
+                      <div className="text-xs text-muted-foreground">Tip: Use Copy to share. The link may expire after a limited time or uses.</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button asChild variant="outline">
+                        <a href={inviteUrl} target="_blank" rel="noopener noreferrer">Open Invite</a>
+                      </Button>
+                      <Button variant="secondary" onClick={() => router.push('/admin/organizations')}>Done</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm">No invite link was generated. If you created the organization as a non-system user, you may already be an Org Admin and can invite others from the organization settings.</p>
+                    <Button onClick={() => router.push('/admin/organizations')}>Back to Organizations</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -364,8 +442,8 @@ export default function CreateOrganization() {
               <CardTitle className="text-lg">What happens next?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>• The organization will be created with you as the initial admin</p>
-              <p>• You can then invite other users to join as admins or viewers</p>
+              <p>• If you are a System Admin, you will receive an invite link to share with the first Org Admin</p>
+              <p>• Org Admins can then invite other users to join as admins or viewers</p>
               <p>• Organization admins can create events and manage team members</p>
               <p>• All events created within the organization will be linked to it</p>
             </CardContent>

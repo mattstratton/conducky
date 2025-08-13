@@ -22,7 +22,7 @@ interface Organization {
 export default function OrganizationInviteUsersPage() {
   const router = useRouter();
   const { orgSlug } = router.query as { orgSlug?: string };
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [userOrgRole, setUserOrgRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +39,11 @@ export default function OrganizationInviteUsersPage() {
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/session`,
           { credentials: 'include' }
         );
-        let userData = null;
+        let userData: { user?: User } | null = null;
         if (userRes.ok) {
           userData = await userRes.json();
-          setUser(userData?.user || null);
+          const currentUserLocal = userData?.user || null;
+          setUser(currentUserLocal);
         } else if (userRes.status === 401) {
           setError('Please log in to access this page');
           return;
@@ -61,7 +62,7 @@ export default function OrganizationInviteUsersPage() {
           setOrganization(orgData.organization);
           
           // Check user's organization role
-          const currentUser = userData?.user;
+          const currentUser = userData?.user || null;
           if (currentUser && orgData.organization?.memberships) {
             const userMembership = orgData.organization.memberships.find(
               (m: { user: { id: string } }) => m.user.id === currentUser.id
@@ -89,12 +90,6 @@ export default function OrganizationInviteUsersPage() {
     fetchData();
   }, [orgSlug]);
 
-  function hasGlobalRole(role: string): boolean {
-    if (!user || !user.roles) return false;
-    return user.roles.includes(role);
-  }
-
-  const isSystemAdmin = hasGlobalRole("system_admin");
   const isOrgAdmin = userOrgRole === "org_admin";
 
   if (loading) {
@@ -132,8 +127,8 @@ export default function OrganizationInviteUsersPage() {
     );
   }
 
-  // Only allow System Admins or Organization Admins to access invite page
-  if (!isSystemAdmin && !isOrgAdmin) {
+  // Only allow Organization Admins to access invite page
+  if (!isOrgAdmin) {
     return (
       <div className="min-h-screen bg-background py-8 px-4">
         <div className="w-full max-w-6xl mx-auto">

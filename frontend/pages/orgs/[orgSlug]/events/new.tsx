@@ -29,6 +29,7 @@ export default function NewEventInOrganization() {
   const { orgSlug } = router.query;
   
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [userOrgRole, setUserOrgRole] = useState<'org_admin' | 'org_viewer' | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,21 @@ export default function NewEventInOrganization() {
 
         const data = await response.json();
         setOrganization(data.organization);
+        // Determine current user's org role from memberships
+        try {
+          const sessionRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/session`,
+            { credentials: 'include' }
+          );
+          if (sessionRes.ok) {
+            const session = await sessionRes.json();
+            const currentUserId = session?.user?.id;
+            const membership = (data.organization?.memberships as Array<{ user?: { id?: string }, role?: 'org_admin' | 'org_viewer' }> | undefined)?.find((m) => m.user?.id === currentUserId);
+            setUserOrgRole((membership?.role as 'org_admin' | 'org_viewer') || null);
+          }
+        } catch {
+          // ignore session read failure; UI will default to blocked if role unknown
+        }
       } catch (err) {
         console.error('Error fetching organization:', err);
         setError('Failed to load organization');
@@ -185,6 +201,21 @@ export default function NewEventInOrganization() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Organization
             </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Prevent access if not org_admin
+  if (!error && organization && userOrgRole !== 'org_admin') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">You must be an organization admin to create events.</p>
+          <Link href={`/orgs/${orgSlug}`}>
+            <Button variant="outline">Back to Organization</Button>
           </Link>
         </div>
       </div>

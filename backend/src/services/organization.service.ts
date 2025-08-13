@@ -85,7 +85,7 @@ export class OrganizationService {
   async createOrganization(
     data: CreateOrganizationData,
     createdById: string
-  ): Promise<ServiceResult<{ organization: Organization }>> {
+  ): Promise<ServiceResult<{ organization: Organization; inviteLink?: OrganizationInviteLink & { url: string } }>> {
     try {
       // Check if slug already exists
       const existingOrg = await prisma.organization.findUnique({
@@ -106,14 +106,40 @@ export class OrganizationService {
         },
       });
 
-      // Automatically add creator as org admin using unified RBAC
-      await this.rbacService.grantRole(
-        createdById,
-        'org_admin',
-        'organization',
-        organization.id,
-        createdById
-      );
+      // Determine if creator is a System Admin. If so, do NOT auto-grant org_admin.
+      // Instead, create a single-use org_admin invitation link to share.
+      let generatedInvite: (OrganizationInviteLink & { url: string }) | undefined;
+      const isSystemAdmin = await (this.rbacService as any).isSystemAdmin
+        ? await (this.rbacService as any).isSystemAdmin(createdById)
+        : false;
+      if (isSystemAdmin) {
+        // Create a one-time org_admin invite valid for 7 days using existing helper
+        try {
+          const inviteResult = await this.createInviteLink(
+            organization.id,
+            createdById,
+            'org_admin',
+            1,
+            (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })(),
+            'Initial Org Admin invite'
+          );
+          if (inviteResult.success && inviteResult.data?.inviteLink) {
+            generatedInvite = inviteResult.data.inviteLink;
+          }
+        } catch (e) {
+          // Do not fail org creation if invite creation fails
+          logger().warn('Organization created but failed to generate initial org_admin invite', { error: (e as Error)?.message });
+        }
+      } else {
+        // For non-system flows (future), grant org_admin to the creator
+        await this.rbacService.grantRole(
+          createdById,
+          'org_admin',
+          'organization',
+          organization.id,
+          createdById
+        );
+      }
 
       // Log organization creation
       await logAudit({
@@ -125,7 +151,7 @@ export class OrganizationService {
 
       return {
         success: true,
-        data: { organization },
+        data: { organization, ...(generatedInvite ? { inviteLink: generatedInvite } : {}) },
       };
     } catch (error: any) {
       return {
@@ -642,44 +668,7 @@ export class OrganizationService {
     userId: string
   ): Promise<ServiceResult<{ organizations: (Organization & { membership: OrganizationMembership })[] }>> {
     try {
-      // Check if user is System Admin
-      const userRoles = await prisma.userRole.findMany({
-        where: { 
-          userId,
-          scopeType: 'system'
-        },
-        include: {
-          role: true
-        }
-      });
-      
-      const isSystemAdmin = userRoles.some(ur => ur.role.name === 'system_admin');
-      
-      if (isSystemAdmin) {
-        // System Admins get access to all organizations
-        const allOrganizations = await prisma.organization.findMany({
-          orderBy: { name: 'asc' }
-        });
-        
-        const organizationsWithMembership = allOrganizations.map(org => ({
-          ...org,
-          membership: {
-            id: `system-admin-${org.id}`, // Synthetic membership ID
-            organizationId: org.id,
-            userId,
-            role: 'org_admin' as const, // System Admins get org_admin access
-            createdAt: new Date(),
-            createdById: userId,
-          },
-        }));
-        
-        return {
-          success: true,
-          data: { organizations: organizationsWithMembership },
-        };
-      }
-      
-      // For non-System Admins, get explicit organization roles
+      // Get organizations based on explicit org roles only (no implicit System Admin access)
       const userOrgRoles = await this.rbacService.getUserRoles(userId, 'organization');
       
       if (userOrgRoles.length === 0) {
