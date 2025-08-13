@@ -73,20 +73,34 @@ This document describes the main data models used in the system, based on the Pr
 - **id**: UUID, primary key
 - **eventId**: Event reference
 - **reporterId**: User reference (nullable for anonymous)
-- **type**: Report type enum (harassment, safety, other)
+- (type removed; replaced by tags)
 - **title**: Report title (required, max 70 chars)
 - **description**: Report details
 - **state**: Report state enum (submitted, acknowledged, investigating, resolved, closed)
 - **incidentAt**: Optional date/time of the incident
 - **parties**: Optional string listing parties involved (comma-separated or freeform)
 - **location**: Optional string describing where the incident occurred
-- **contactPreference**: Contact preference enum (email, phone, in_person, no_contact) with default 'email'
+- (contactPreference removed)
 - **assignedResponderId**: string (nullable, UUID) — the user ID of the assigned responder (if any)
 - **assignedResponder**: User (nullable) — the assigned responder user object (if any)
 - **severity**: enum (`low`, `medium`, `high`, `critical`, nullable) — severity/priority of the incident 
 - **resolution**: string (optional) — freeform text describing the resolution of the incident 
+- **firstResponseAt**: Timestamp when state first left `submitted` (nullable)
+- **resolvedAt**: Timestamp when incident was resolved/closed (nullable)
+- **escalatedAt**: Timestamp when incident was escalated (nullable)
+- **reopenedAt**: Timestamp when incident was reopened (nullable)
 - **createdAt, updatedAt**: Timestamps
 - **Relations**: comments, relatedFiles, notifications
+
+## IncidentStateHistory
+
+- **id**: UUID, primary key
+- **incidentId**: Incident reference
+- **fromState**: Previous state (nullable)
+- **toState**: New state (required)
+- **changedById**: User reference who changed the state (nullable)
+- **notes**: Optional notes for the transition
+- **changedAt**: Timestamp of the transition
 
 ## IncidentComment
 

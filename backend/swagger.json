@@ -132,71 +132,53 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "Report unique identifier"
+            "description": "Incident unique identifier"
           },
           "title": {
             "type": "string",
-            "description": "Report title/summary"
+            "description": "Incident title/summary"
           },
           "description": {
             "type": "string",
-            "description": "Detailed report description"
+            "description": "Detailed incident description"
           },
-          "type": {
+          "state": {
             "type": "string",
             "enum": [
-              "CODE_OF_CONDUCT",
-              "HARASSMENT",
-              "SAFETY",
-              "OTHER"
+              "submitted",
+              "acknowledged",
+              "investigating",
+              "resolved",
+              "closed"
             ],
-            "description": "Type of report"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "SUBMITTED",
-              "UNDER_REVIEW",
-              "RESOLVED",
-              "CLOSED"
-            ],
-            "description": "Current status of the report"
+            "description": "Current state of the incident"
           },
           "severity": {
             "type": "string",
             "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
+              "low",
+              "medium",
+              "high",
+              "critical"
             ],
+            "nullable": true,
             "description": "Severity level of the incident"
           },
           "incidentAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true,
             "description": "When the incident occurred"
           },
           "location": {
             "type": "string",
+            "nullable": true,
             "description": "Where the incident occurred"
           },
-          "partiesInvolved": {
+          "parties": {
             "type": "string",
+            "nullable": true,
             "description": "Parties involved in the incident"
-          },
-          "contactPreference": {
-            "type": "string",
-            "enum": [
-              "EMAIL",
-              "PHONE",
-              "NONE"
-            ],
-            "description": "Preferred contact method for the reporter"
-          },
-          "isAnonymous": {
-            "type": "boolean",
-            "description": "Whether the report was submitted anonymously"
           },
           "eventId": {
             "type": "string",
@@ -206,24 +188,53 @@
           "reporterId": {
             "type": "string",
             "format": "uuid",
-            "description": "Reporter user ID (null for anonymous)",
-            "nullable": true
+            "nullable": true,
+            "description": "Reporter user ID (null for anonymous)"
           },
-          "assignedToId": {
+          "assignedResponderId": {
             "type": "string",
             "format": "uuid",
-            "description": "Assigned respondent user ID",
-            "nullable": true
+            "nullable": true,
+            "description": "Assigned responder user ID"
+          },
+          "resolution": {
+            "type": "string",
+            "nullable": true,
+            "description": "Resolution notes"
+          },
+          "firstResponseAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the incident first left submitted"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the incident was resolved"
+          },
+          "escalatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the incident was escalated"
+          },
+          "reopenedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the incident was reopened"
           },
           "createdAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Report creation timestamp"
+            "description": "Creation timestamp"
           },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Report last update timestamp"
+            "description": "Last update timestamp"
           }
         }
       },
@@ -837,6 +848,341 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/organizations/{organizationId}/reports/analytics": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get organization incident analytics",
+        "description": "Returns metrics, distributions, monthly trends, and recent reports for all incidents within the organization's events.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "in": "query",
+            "name": "timeRange",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "30d",
+                "90d",
+                "1y",
+                "all"
+              ],
+              "default": "30d"
+            },
+            "description": "Time range for analytics"
+          },
+          {
+            "in": "query",
+            "name": "eventId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Filter analytics to a single event"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submitted",
+                "acknowledged",
+                "investigating",
+                "resolved",
+                "closed"
+              ]
+            },
+            "description": "Filter by incident state"
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            },
+            "description": "Filter by incident severity"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics computed successfully"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/organizations/slug/{orgSlug}/reports/analytics": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get organization incident analytics by slug",
+        "description": "Same as organization analytics but referenced by organization slug.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orgSlug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization slug"
+          },
+          {
+            "in": "query",
+            "name": "timeRange",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "30d",
+                "90d",
+                "1y",
+                "all"
+              ],
+              "default": "30d"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submitted",
+                "acknowledged",
+                "investigating",
+                "resolved",
+                "closed"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics computed successfully"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/organizations/{organizationId}/events/summary": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get organization events summary",
+        "description": "Returns count of events, active events, and per-event report counts and team sizes.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary returned successfully"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/organizations/{organizationId}/reports/export": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Export organization incidents",
+        "description": "Export incidents for the organization as CSV or text-based PDF. Limited to 1000 incidents per request.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "pdf"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "timeRange",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "30d",
+                "90d",
+                "1y",
+                "all"
+              ],
+              "default": "30d"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submitted",
+                "acknowledged",
+                "investigating",
+                "resolved",
+                "closed"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export generated successfully"
+          },
+          "400": {
+            "description": "Invalid format"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }

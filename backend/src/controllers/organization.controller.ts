@@ -28,6 +28,151 @@ const unifiedRBAC = new UnifiedRBACService(prisma);
 
 export class OrganizationController {
   /**
+   * Organization analytics overview (by ID)
+   */
+  async getOrganizationAnalytics(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.params.organizationId;
+      const { timeRange, eventId, status, severity } = req.query as any;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const hasAccess = await unifiedRBAC.hasOrgRole(userId, organizationId);
+      if (!hasAccess) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+
+      const { OrganizationAnalyticsService } = await import('../services/organization-analytics.service');
+      const service = new OrganizationAnalyticsService(prisma);
+      const result = await service.getOrganizationAnalytics({
+        organizationId,
+        timeRange: timeRange as any,
+        eventId: eventId as string | undefined,
+        status: status as any,
+        severity: severity as any
+      });
+      res.json(result);
+    } catch (error: any) {
+      logger().error('Error getting organization analytics:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Organization analytics by slug
+   */
+  async getOrganizationAnalyticsBySlug(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { orgSlug } = req.params;
+      const { timeRange, eventId, status, severity } = req.query as any;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const org = await organizationService.getOrganizationBySlug(orgSlug);
+      const organization = org.data?.organization;
+      if (!org.success || !organization) {
+        res.status(404).json({ error: 'Organization not found' });
+        return;
+      }
+
+      const hasAccess = await unifiedRBAC.hasOrgRole(userId, organization.id as string);
+      if (!hasAccess) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+
+      const { OrganizationAnalyticsService } = await import('../services/organization-analytics.service');
+      const service = new OrganizationAnalyticsService(prisma);
+      const result = await service.getOrganizationAnalytics({
+        organizationId: organization.id as string,
+        timeRange: timeRange as any,
+        eventId: eventId as string | undefined,
+        status: status as any,
+        severity: severity as any
+      });
+      res.json(result);
+    } catch (error: any) {
+      logger().error('Error getting organization analytics by slug:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Organization events summary
+   */
+  async getOrganizationEventsSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { organizationId } = req.params;
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+      const hasAccess = await unifiedRBAC.hasOrgRole(userId, organizationId);
+      if (!hasAccess) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+      const { OrganizationAnalyticsService } = await import('../services/organization-analytics.service');
+      const service = new OrganizationAnalyticsService(prisma);
+      const result = await service.getOrganizationEventsSummary(organizationId);
+      res.json(result);
+    } catch (error: any) {
+      logger().error('Error getting organization events summary:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Organization incidents export (CSV or PDF-text)
+   */
+  async exportOrganizationIncidents(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { organizationId, format } = { ...req.params, ...req.query } as any;
+      const { timeRange, eventId, status, severity } = req.query as any;
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+      const hasAccess = await unifiedRBAC.hasOrgRole(userId, organizationId);
+      if (!hasAccess) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+      if (!format || !['csv', 'pdf'].includes(String(format))) {
+        res.status(400).json({ error: 'Invalid format. Must be csv or pdf.' });
+        return;
+      }
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const { OrganizationAnalyticsService } = await import('../services/organization-analytics.service');
+      const service = new OrganizationAnalyticsService(prisma);
+      if (format === 'csv') {
+        const out = await service.exportOrganizationIncidentsCsv({ organizationId, timeRange, eventId, status, severity } as any, baseUrl);
+        res.setHeader('Content-Type', out.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${out.filename}"`);
+        res.send(out.body);
+        return;
+      }
+      const out = await service.exportOrganizationIncidentsPdfText({ organizationId, timeRange, eventId, status, severity } as any, baseUrl);
+      res.setHeader('Content-Type', out.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${out.filename}"`);
+      res.send(out.body);
+    } catch (error: any) {
+      logger().error('Error exporting organization incidents:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+  /**
    * Create a new organization (System Admin only)
    */
   async createOrganization(req: AuthenticatedRequest, res: Response): Promise<void> {

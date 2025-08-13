@@ -346,6 +346,205 @@ router.get('/me', organizationController.getUserOrganizations.bind(organizationC
  */
 router.get('/slug/:orgSlug', organizationController.getOrganizationBySlug.bind(organizationController));
 
+// Organization analytics
+/**
+ * @swagger
+ * /api/organizations/{organizationId}/reports/analytics:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Get organization incident analytics
+ *     description: Returns metrics, distributions, monthly trends, and recent reports for all incidents within the organization's events.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: organizationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Organization ID
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [30d, 90d, 1y, all]
+ *           default: 30d
+ *         description: Time range for analytics
+ *       - in: query
+ *         name: eventId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter analytics to a single event
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [submitted, acknowledged, investigating, resolved, closed]
+ *         description: Filter by incident state
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high, critical]
+ *         description: Filter by incident severity
+ *     responses:
+ *       200:
+ *         description: Analytics computed successfully
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:organizationId/reports/analytics', organizationController.getOrganizationAnalytics.bind(organizationController));
+
+/**
+ * @swagger
+ * /api/organizations/slug/{orgSlug}/reports/analytics:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Get organization incident analytics by slug
+ *     description: Same as organization analytics but referenced by organization slug.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orgSlug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Organization slug
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [30d, 90d, 1y, all]
+ *           default: 30d
+ *       - in: query
+ *         name: eventId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [submitted, acknowledged, investigating, resolved, closed]
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high, critical]
+ *     responses:
+ *       200:
+ *         description: Analytics computed successfully
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/slug/:orgSlug/reports/analytics', organizationController.getOrganizationAnalyticsBySlug.bind(organizationController));
+
+// Organization events summary
+/**
+ * @swagger
+ * /api/organizations/{organizationId}/events/summary:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Get organization events summary
+ *     description: Returns count of events, active events, and per-event report counts and team sizes.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: organizationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Summary returned successfully
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:organizationId/events/summary', organizationController.getOrganizationEventsSummary.bind(organizationController));
+
+// Organization exports
+/**
+ * @swagger
+ * /api/organizations/{organizationId}/reports/export:
+ *   get:
+ *     tags: [Organizations]
+ *     summary: Export organization incidents
+ *     description: Export incidents for the organization as CSV or text-based PDF. Limited to 1000 incidents per request.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: organizationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: format
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [csv, pdf]
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [30d, 90d, 1y, all]
+ *           default: 30d
+ *       - in: query
+ *         name: eventId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [submitted, acknowledged, investigating, resolved, closed]
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high, critical]
+ *     responses:
+ *       200:
+ *         description: Export generated successfully
+ *       400:
+ *         description: Invalid format
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Organization not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:organizationId/reports/export', organizationController.exportOrganizationIncidents.bind(organizationController));
+
 /**
  * @swagger
  * /api/organizations/{organizationId}:

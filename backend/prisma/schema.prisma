@@ -88,6 +88,8 @@ model User {
   userRoles      UserRole[]
   grantedRoles   UserRole[] @relation("RoleGranter")
   pinnedIncidents UserPinnedIncident[]
+  // Back-reference for incident state changes
+  incidentStateChanges IncidentStateHistory[] @relation("UserIncidentStateChanges")
 }
 
 model Event {
@@ -132,6 +134,11 @@ model Incident {
   // contactPreference field removed entirely
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // New timeline fields for precise analytics
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  escalatedAt     DateTime?
+  reopenedAt      DateTime?
   comments    IncidentComment[]
   relatedFiles RelatedFile[]
   assignedResponderId String?
@@ -141,6 +148,7 @@ model Incident {
   notifications Notification[]
   tags        IncidentTag[] // New tagging system
   pinnedBy    UserPinnedIncident[]
+  stateHistory IncidentStateHistory[]
 
   // Database indexes for query performance
   @@index([eventId])                           // Event-based queries
@@ -181,6 +189,21 @@ model IncidentTag {
   @@unique([incidentId, tagId])
   @@index([incidentId])
   @@index([tagId])
+}
+
+// Tracks every state transition for analytics and auditing
+model IncidentStateHistory {
+  id          String        @id @default(uuid())
+  incident    Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  incidentId  String
+  fromState   IncidentState?
+  toState     IncidentState
+  changedBy   User?         @relation("UserIncidentStateChanges", fields: [changedById], references: [id])
+  changedById String?
+  notes       String?
+  changedAt   DateTime      @default(now())
+
+  @@index([incidentId, changedAt])
 }
 
 model AuditLog {

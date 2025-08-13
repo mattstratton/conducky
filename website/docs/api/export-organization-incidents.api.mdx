@@ -1,0 +1,72 @@
+---
+id: export-organization-incidents
+title: "Export organization incidents"
+description: "Export incidents for the organization as CSV or text-based PDF. Limited to 1000 incidents per request."
+sidebar_label: "Export organization incidents"
+hide_title: true
+hide_table_of_contents: true
+api: eJy9VU2P2zYQ/SsETy3gWN5seqhPXeQLm34tsml7CHzgSmOZMEWqJOXEEfTf+4aSbXntDVy0yMXWkI8zw+F7M62Mqgxy/lH+7ktl9RcVtbNBLiayoJB7XbMt5/L159r5KLTNdUE2BrF0XsQVCTc6J1QQL+//FLxFn+OzBxWoEHev3kzFL7rSEUZ04mo2m40c1eSFp78bCnEqJzJQ3ngdt8iphREC/N40cQV70SGtWnlVUSQfEkJzcrXC/kRabMAaZ3RbYJ29a0+FnEffEELkK6qUnLcybms+EaLXtgQSl6pUxErT6EJ23WQIgOz89hBhgP0bz2Sbisuchw2suljKxZPuo67ovbIlyUs8Xs/4jj+m3yv2oozp32+pGsOXYcSTwWiDV0hl+s9lCVHFJlyUdGgewAcQgvPN19Z9MlSUydR2AyroEu+XjngKzmzSVm4cCPWVygXcJpHnkhyM+wSrokLDnsiVLplE4HzUuTIcZZGi1xAEBfb0fDbjv7PKKMmSV0zx0OQ5eLtsjNnKbiJfnDt1azfK6EIMpU2wq1PYby4KBfbjjZAU1yshr0+RNymogKb0DvXiFDVWubBwvnSNTfAfzmcJoVllRCCPygry3nkmAMoWVw68lyWxEJIC5zJTtc7G+gtZeyzHLvPE9QoZpbolxbPvXs6NN3CzirGeZ5lxeIeVC3F+PUNxHrekV3hs4+oKtRnyk8yLg4sAH0homjtbNPl6i4/qxMudd9hM9dg5WRy60D2zqH/8B1KefN+K9qTiMDuysd2DsNJ/vNkJ591fH7jIR/1s7wQ5/kzbRH1YuXNrTQdOI3tLeZyGXnoALV06rKPh/ZfD7cTN3S1OcSn7m11NZ9PZyX2BSr17f+wZPgv08eWwdGjyolJWldQXeBsicfWQTlR55AyGBPee7pt6eNLjN3hUf8hS83bo4T8dbeOCRucExY0i/Hr74cSpqwFyjc9pCoZlw6GQMZbLVIM3yH/kZRDq0cDaj6HHdWrTRbHzLWffwAc+n9VGgQ7dcO12UNhHJguQRxqDPT8z9JLMuN690MBq1hL7aFvO7g9vuo6X+ybK8it0UA+G59lSmUBfqcl374fR9714KvE1OD2aleh3DYOSSE8C9eDx5LsEfxhel6D38+ki8GGUHOALNrxm/P9fr103sEcxd/k8euBuMW7Cb1+zQNRJW1mntjJ8cMJnY4w7zC4c/3J1zh5o275lgT47fL/15IkVqSL1xR7NF8Z87f4BQl6PgA==
+sidebar_class_name: "get api-method"
+info_path: api/conducky-api
+custom_edit_url: null
+hide_send_button: true
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Export organization incidents"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/organizations/{organizationId}/reports/export"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Export incidents for the organization as CSV or text-based PDF. Limited to 1000 incidents per request.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"organizationId","required":true,"schema":{"type":"string","format":"uuid"}},{"in":"query","name":"format","required":true,"schema":{"type":"string","enum":["csv","pdf"]}},{"in":"query","name":"timeRange","schema":{"type":"string","enum":["30d","90d","1y","all"],"default":"30d"}},{"in":"query","name":"eventId","schema":{"type":"string","format":"uuid"}},{"in":"query","name":"status","schema":{"type":"string","enum":["submitted","acknowledged","investigating","resolved","closed"]}},{"in":"query","name":"severity","schema":{"type":"string","enum":["low","medium","high","critical"]}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Export generated successfully"},"400":{"description":"Invalid format"},"401":{"description":"Not authenticated"},"403":{"description":"Access denied"},"404":{"description":"Organization not found"},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

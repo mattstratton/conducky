@@ -54,6 +54,30 @@ const sidebar: SidebarsConfig = {
         },
         {
           type: "doc",
+          id: "api/get-organization-incident-analytics",
+          label: "Get organization incident analytics",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "api/get-organization-incident-analytics-by-slug",
+          label: "Get organization incident analytics by slug",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "api/get-organization-events-summary",
+          label: "Get organization events summary",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "api/export-organization-incidents",
+          label: "Export organization incidents",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
           id: "api/get-organization-by-id",
           label: "Get organization by ID",
           className: "api-method get",

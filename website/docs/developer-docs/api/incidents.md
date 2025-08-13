@@ -6,6 +6,11 @@ sidebar_position: 5
 
 Incident endpoints handle the core functionality of incident reporting, management, and tracking. Incidents can be accessed through event ID or event slug routes.
 
+Analytics timeline fields:
+- `firstResponseAt` is set when state first leaves `submitted`.
+- `resolvedAt` is set when moving to `resolved`/`closed` and cleared on reopen.
+- `escalatedAt` and `reopenedAt` record escalations and reopen actions.
+
 ## 📋 Incident Management by Event ID
 
 ### Create Report

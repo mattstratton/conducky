@@ -753,6 +753,21 @@ export class IncidentService {
 
       // Prepare update data (Prisma type conflicts require any for now)
       const updateData: any = { state };
+      const now = new Date();
+      const isResolvedLike = ['resolved', 'closed'].includes(state);
+      const isLeavingSubmitted = incident.state === 'submitted' && state !== 'submitted';
+      const isReopening = ['resolved', 'closed'].includes(incident.state) && !isResolvedLike;
+      if (isLeavingSubmitted && !(incident as any).firstResponseAt) {
+        updateData.firstResponseAt = now;
+      }
+      if (isResolvedLike && !(incident as any).resolvedAt) {
+        updateData.resolvedAt = now;
+      }
+      if (isReopening) {
+        updateData.reopenedAt = now;
+        // Clear resolvedAt on reopen so analytics don't count it as resolved
+        updateData.resolvedAt = null;
+      }
       if (assignedToUserId !== undefined && assignedToUserId !== null && assignedToUserId !== '') {
         updateData.assignedResponderId = assignedToUserId;
       }
@@ -769,6 +784,20 @@ export class IncidentService {
             relatedFiles: true
           }
         });
+
+        // Record state transition history
+        if ((tx as any).incidentStateHistory && typeof (tx as any).incidentStateHistory.create === 'function') {
+          await (tx as any).incidentStateHistory.create({
+            data: {
+              incidentId,
+              fromState: oldState as any,
+              toState: state as any,
+              changedById: userId || null,
+              notes: notes || null,
+              changedAt: now
+            }
+          });
+        }
 
         // Create audit log entry for state change
         if (userId) {

@@ -124,83 +124,33 @@ module.exports = {
       Report: {
         type: 'object',
         properties: {
-          id: {
+          id: { type: 'string', format: 'uuid', description: 'Incident unique identifier' },
+          title: { type: 'string', description: 'Incident title/summary' },
+          description: { type: 'string', description: 'Detailed incident description' },
+          state: {
             type: 'string',
-            format: 'uuid',
-            description: 'Report unique identifier',
-          },
-          title: {
-            type: 'string',
-            description: 'Report title/summary',
-          },
-          description: {
-            type: 'string',
-            description: 'Detailed report description',
-          },
-          type: {
-            type: 'string',
-            enum: ['CODE_OF_CONDUCT', 'HARASSMENT', 'SAFETY', 'OTHER'],
-            description: 'Type of report',
-          },
-          status: {
-            type: 'string',
-            enum: ['SUBMITTED', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED'],
-            description: 'Current status of the report',
+            enum: ['submitted', 'acknowledged', 'investigating', 'resolved', 'closed'],
+            description: 'Current state of the incident',
           },
           severity: {
             type: 'string',
-            enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+            enum: ['low', 'medium', 'high', 'critical'],
+            nullable: true,
             description: 'Severity level of the incident',
           },
-          incidentAt: {
-            type: 'string',
-            format: 'date-time',
-            description: 'When the incident occurred',
-          },
-          location: {
-            type: 'string',
-            description: 'Where the incident occurred',
-          },
-          partiesInvolved: {
-            type: 'string',
-            description: 'Parties involved in the incident',
-          },
-          contactPreference: {
-            type: 'string',
-            enum: ['EMAIL', 'PHONE', 'NONE'],
-            description: 'Preferred contact method for the reporter',
-          },
-          isAnonymous: {
-            type: 'boolean',
-            description: 'Whether the report was submitted anonymously',
-          },
-          eventId: {
-            type: 'string',
-            format: 'uuid',
-            description: 'Associated event ID',
-          },
-          reporterId: {
-            type: 'string',
-            format: 'uuid',
-            description: 'Reporter user ID (null for anonymous)',
-            nullable: true,
-          },
-          assignedToId: {
-            type: 'string',
-            format: 'uuid',
-            description: 'Assigned respondent user ID',
-            nullable: true,
-          },
-          createdAt: {
-            type: 'string',
-            format: 'date-time',
-            description: 'Report creation timestamp',
-          },
-          updatedAt: {
-            type: 'string',
-            format: 'date-time',
-            description: 'Report last update timestamp',
-          },
+          incidentAt: { type: 'string', format: 'date-time', nullable: true, description: 'When the incident occurred' },
+          location: { type: 'string', nullable: true, description: 'Where the incident occurred' },
+          parties: { type: 'string', nullable: true, description: 'Parties involved in the incident' },
+          eventId: { type: 'string', format: 'uuid', description: 'Associated event ID' },
+          reporterId: { type: 'string', format: 'uuid', nullable: true, description: 'Reporter user ID (null for anonymous)' },
+          assignedResponderId: { type: 'string', format: 'uuid', nullable: true, description: 'Assigned responder user ID' },
+          resolution: { type: 'string', nullable: true, description: 'Resolution notes' },
+          firstResponseAt: { type: 'string', format: 'date-time', nullable: true, description: 'When the incident first left submitted' },
+          resolvedAt: { type: 'string', format: 'date-time', nullable: true, description: 'When the incident was resolved' },
+          escalatedAt: { type: 'string', format: 'date-time', nullable: true, description: 'When the incident was escalated' },
+          reopenedAt: { type: 'string', format: 'date-time', nullable: true, description: 'When the incident was reopened' },
+          createdAt: { type: 'string', format: 'date-time', description: 'Creation timestamp' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'Last update timestamp' },
         },
       },
               Organization: {
