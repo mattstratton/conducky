@@ -52,7 +52,8 @@ export function AppBreadcrumbs({ eventName, className }: AppBreadcrumbsProps) {
       if (pathname.includes('/settings')) {
         breadcrumbs.push({ label: 'Settings' });
       } else if (pathname.includes('/backups')) {
-        breadcrumbs.push({ label: 'Backups' });
+        // Backups route removed (Issue #331)
+        // No breadcrumb for backups
       } else if (pathname.includes('/logs')) {
         breadcrumbs.push({ label: 'Logs' });
       }

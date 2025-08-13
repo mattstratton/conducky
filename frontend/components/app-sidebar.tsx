@@ -257,10 +257,6 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
               url: "/admin/system/audit",
             },
             {
-              title: "Backups",
-              url: "/admin/system/backups",
-            },
-            {
               title: "Logs",
               url: "/admin/system/logs",
             },
