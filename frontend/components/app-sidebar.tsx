@@ -283,8 +283,8 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
       const targetOrg = organizations.find(org => org.slug === targetOrgSlug);
       const userOrgRole = targetOrg?.role;
       
-      // Check role permissions
-      const isOrgAdmin = userOrgRole === 'org_admin' || isSystemAdmin;
+      // Check role permissions (System Admin alone should not grant org-level UI access)
+      const isOrgAdmin = userOrgRole === 'org_admin';
       
       // Base navigation items (available to all org members)
       orgNavItems = [
@@ -361,7 +361,7 @@ export function AppSidebar({ user, events, organizations, globalRoles, ...props 
         const userEventRole = targetEvent?.role;
         
         // Check role permissions (using unified role names)
-        const isEventAdmin = userEventRole === 'event_admin' || isSystemAdmin;
+        const isEventAdmin = userEventRole === 'event_admin';
         const isEventResponder = userEventRole === 'responder' || isEventAdmin;
 
         // Base navigation items (available to all roles)

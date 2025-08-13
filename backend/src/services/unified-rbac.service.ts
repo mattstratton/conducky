@@ -139,12 +139,6 @@ export class UnifiedRBACService {
     organizationId: string,
     roleNames: string[] = ['org_admin', 'org_viewer']
   ): Promise<boolean> {
-    // System admins have access to all organizations
-    const isSystemAdmin = await this.isSystemAdmin(userId);
-    if (isSystemAdmin) {
-      return true;
-    }
-
     return this.hasRole(userId, roleNames, 'organization', organizationId);
   }
 

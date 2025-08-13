@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth, AuthUser } from '../middleware/auth';
-import { requireSystemAdmin } from '../utils/rbac';
+import { requireSystemAdmin, requireRole } from '../utils/rbac';
 import { PrismaClient } from '@prisma/client';
 import { reinitializeOAuthStrategies } from '../config/passport';
 import logger, { 
@@ -283,6 +283,63 @@ router.get('/events/stats', requireSystemAdmin(), async (req: Request, res: Resp
 });
 
 /**
+ * GET /api/admin/organizations/:organizationId/initial-invite
+ * Return the single-use org_admin invite link for an organization, only if it exists and has never been used.
+ * System Admin only. This allows re-copying the initial admin invite created at org creation.
+ */
+router.get('/organizations/:organizationId/initial-invite', requireSystemAdmin(), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { organizationId } = req.params;
+
+    // Verify organization exists
+    const org = await prisma.organization.findUnique({ where: { id: organizationId } });
+    if (!org) {
+      res.status(404).json({ error: 'Organization not found' });
+      return;
+    }
+
+    // Find the initial org_admin invite that is single-use and unused
+    const invite = await prisma.organizationInviteLink.findFirst({
+      where: {
+        organizationId,
+        role: 'org_admin',
+        maxUses: 1,
+        useCount: 0,
+        disabled: false,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!invite) {
+      res.status(404).json({ error: 'No unused initial admin invite found' });
+      return;
+    }
+
+    // Ensure invite is not expired
+    if (invite.expiresAt && invite.expiresAt.getTime() <= Date.now()) {
+      res.status(404).json({ error: 'No unused initial admin invite found' });
+      return;
+    }
+
+    const url = `${process.env.FRONTEND_BASE_URL || 'http://localhost:3000'}/org-invite/${invite.code}`;
+    res.json({
+      invite: {
+        id: invite.id,
+        code: invite.code,
+        role: invite.role,
+        expiresAt: invite.expiresAt,
+        maxUses: invite.maxUses,
+        useCount: invite.useCount,
+        url,
+      }
+    });
+  } catch (error: any) {
+    logger().error('Error fetching initial org admin invite', { err: error?.message, stack: error?.stack });
+    res.status(500).json({ error: 'Internal server error', code: 'ORG_INITIAL_INVITE_FETCH_FAILED' });
+  }
+});
+
+/**
  * GET /api/admin/system/settings
  * Get all system settings (System Admin only)
  */
@@ -503,7 +560,10 @@ router.get('/events/:eventId', requireSystemAdmin(), async (req: Request, res: R
  * GET /api/admin/events/:eventId/invites
  * Get event invite links (System Admin only)
  */
-router.get('/events/:eventId/invites', requireSystemAdmin(), async (req: Request, res: Response): Promise<void> => {
+// Event invites should be managed by event admins, not system admins
+router.get('/events/:eventId/invites', requireRole(['event_admin']), async (req: Request, res: Response): Promise<void> => {
+  // NOTE: This admin route will be retired in favor of event-scoped routes.
+  // Keeping behavior for now but no longer bypassing event RBAC via System Admin.
   try {
     const { eventId } = req.params;
 
@@ -555,7 +615,9 @@ router.get('/events/:eventId/invites', requireSystemAdmin(), async (req: Request
  * POST /api/admin/events/:eventId/invites
  * Create event invite link (System Admin only)
  */
-router.post('/events/:eventId/invites', requireSystemAdmin(), async (req: Request, res: Response): Promise<void> => {
+router.post('/events/:eventId/invites', requireRole(['event_admin']), async (req: Request, res: Response): Promise<void> => {
+  // NOTE: This admin route will be retired in favor of event-scoped routes.
+  // Keeping behavior for now but no longer bypassing event RBAC via System Admin.
   try {
     const { eventId } = req.params;
     const { email, role } = req.body;

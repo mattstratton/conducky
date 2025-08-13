@@ -53,7 +53,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // Get my roles for an event
-router.get('/my-roles', requireRole(['reporter', 'responder', 'event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/my-roles', requireRole(['reporter', 'responder', 'event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const user = req.user as any;
@@ -82,7 +82,7 @@ router.get('/my-roles', requireRole(['reporter', 'responder', 'event_admin', 'sy
 });
 
 // Get event stats
-router.get('/stats', requireRole(['responder', 'event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/stats', requireRole(['responder', 'event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const user = req.user as any;
@@ -111,7 +111,7 @@ router.get('/stats', requireRole(['responder', 'event_admin', 'system_admin']), 
 });
 
 // Get event card stats
-router.get('/cardstats', requireRole(['reporter', 'responder', 'event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/cardstats', requireRole(['reporter', 'responder', 'event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     const user = req.user as any;
@@ -140,7 +140,7 @@ router.get('/cardstats', requireRole(['reporter', 'responder', 'event_admin', 's
 });
 
 // Get event members
-router.get('/members', requireRole(['event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/members', requireRole(['event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const result = await eventService.getEventUsers(eventId);
@@ -156,7 +156,7 @@ router.get('/members', requireRole(['event_admin', 'system_admin']), async (req:
 });
 
 // Invite a user to an event
-router.post('/invites', requireRole(['event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.post('/invites', requireRole(['event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const { email, role, note, maxUses, expiresAt } = req.body;
@@ -190,7 +190,7 @@ router.post('/invites', requireRole(['event_admin', 'system_admin']), async (req
 });
 
 // Get event invites
-router.get('/invites', requireRole(['event_admin', 'system_admin']), async (req: Request, res: Response): Promise<void> => {
+router.get('/invites', requireRole(['event_admin']), async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventId } = req.params;
     const result = await inviteService.getEventInvites(eventId);
@@ -206,7 +206,7 @@ router.get('/invites', requireRole(['event_admin', 'system_admin']), async (req:
 });
 
 // Update event details
-router.patch('/', requireRole(['event_admin', 'system_admin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
+router.patch('/', requireRole(['event_admin']), uploadLogo.single('logo'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
     if (!slug) {

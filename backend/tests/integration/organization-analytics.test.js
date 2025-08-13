@@ -18,7 +18,20 @@ describe('Organization Analytics API', () => {
       .expect(201)
       .then(res => { orgId = res.body.organization.id; });
 
-    // Create event in org as org_admin (promote admin to org_admin implicitly on create)
+    // Grant org_admin to the System Admin for this org (no longer implicit)
+    const { inMemoryStore } = require('../../__mocks__/@prisma/client');
+    const orgAdminRole = inMemoryStore.unifiedRoles.find(r => r.name === 'org_admin');
+    inMemoryStore.userRoles.push({
+      id: `ur-${Date.now()}`,
+      userId: adminId,
+      roleId: orgAdminRole.id,
+      scopeType: 'organization',
+      scopeId: orgId,
+      grantedAt: new Date(),
+      role: { id: orgAdminRole.id, name: 'org_admin' },
+    });
+
+    // Create event in org as org_admin
     await request(app)
       .post(`/api/organizations/${orgId}/events`)
       .set('x-test-user-id', adminId)

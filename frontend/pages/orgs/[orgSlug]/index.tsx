@@ -16,10 +16,10 @@ import {
   Calendar, 
   Users, 
   ClipboardList, 
-  Plus, 
-  Settings, 
   ExternalLink,
-  Activity
+  Activity,
+  Settings,
+  Plus
 } from 'lucide-react';
 
 interface Organization {
@@ -64,6 +64,7 @@ export default function OrganizationDashboard() {
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userOrgRole, setUserOrgRole] = useState<'org_admin' | 'org_viewer' | null>(null);
 
   useEffect(() => {
     if (!orgSlug || typeof orgSlug !== 'string') return;
@@ -91,6 +92,25 @@ export default function OrganizationDashboard() {
         
         const orgData = await orgResponse.json();
         setOrganization(orgData.organization);
+        // Determine current user's org membership/role from memberships array
+        try {
+          const sessionRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/session`,
+            { credentials: 'include' }
+          );
+          if (sessionRes.ok) {
+            const session = await sessionRes.json();
+            const currentUserId = session?.user?.id;
+            const membership = (orgData.organization?.memberships as Array<{ user?: { id?: string }, role?: 'org_admin' | 'org_viewer' }> | undefined)?.find((m) => m.user?.id === currentUserId);
+            if (membership?.role === 'org_admin' || membership?.role === 'org_viewer') {
+              setUserOrgRole(membership.role);
+            } else {
+              setUserOrgRole(null);
+            }
+          }
+        } catch {
+          // ignore session read failure; UI will default to minimal
+        }
         
         // Fetch organization events from API
         const eventsResponse = await fetch(
@@ -211,12 +231,15 @@ export default function OrganizationDashboard() {
               )}
             </div>
           </div>
-          <Button asChild>
-            <Link href={`/orgs/${orgSlug}/settings`}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Link>
-          </Button>
+          {/* Only org_admins see Settings button */}
+          {userOrgRole === 'org_admin' && (
+            <Button asChild>
+              <Link href={`/orgs/${orgSlug}/settings`}>
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
+          )}
         </div>
 
         {/* Overview Cards */}
@@ -342,33 +365,38 @@ export default function OrganizationDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Button asChild className="h-auto p-4 flex-col">
-                <Link href={`/orgs/${orgSlug}/events/new`}>
-                  <Plus className="w-6 h-6 mb-2" />
-                  Create Event
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="h-auto p-4 flex-col">
-                <Link href={`/orgs/${orgSlug}/team`}>
-                  <Users className="w-6 h-6 mb-2" />
-                  Manage Team
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="h-auto p-4 flex-col">
-                <Link href={`/orgs/${orgSlug}/incidents`}>
-                  <ClipboardList className="w-6 h-6 mb-2" />
-                  View Incidents
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="h-auto p-4 flex-col">
-                <Link href={`/orgs/${orgSlug}/settings`}>
-                  <Settings className="w-6 h-6 mb-2" />
-                  Settings
-                </Link>
-              </Button>
+              {userOrgRole === 'org_admin' && (
+                <Button asChild className="h-auto p-4 flex-col">
+                  <Link href={`/orgs/${orgSlug}/events/new`}>
+                    <Plus className="w-6 h-6 mb-2" />
+                    Create Event
+                  </Link>
+                </Button>
+              )}
+              {userOrgRole === 'org_admin' && (
+                <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                  <Link href={`/orgs/${orgSlug}/team`}>
+                    <Users className="w-6 h-6 mb-2" />
+                    Manage Team
+                  </Link>
+                </Button>
+              )}
+              {userOrgRole && (
+                <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                  <Link href={`/orgs/${orgSlug}/incidents`}>
+                    <ClipboardList className="w-6 h-6 mb-2" />
+                    View Incidents
+                  </Link>
+                </Button>
+              )}
+              {userOrgRole === 'org_admin' && (
+                <Button asChild variant="outline" className="h-auto p-4 flex-col">
+                  <Link href={`/orgs/${orgSlug}/settings`}>
+                    <Settings className="w-6 h-6 mb-2" />
+                    Settings
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
