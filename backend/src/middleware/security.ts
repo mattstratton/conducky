@@ -239,9 +239,11 @@ export const inputSecurityCheck = (req: Request, res: Response, next: NextFuncti
       const sqlPatterns = [
         // SQL keywords (case insensitive)
         /\b(union|select|insert|update|delete|drop|create|alter|exec|execute|declare|cast|convert|having|group\s+by|order\s+by|limit|offset)\b/gi,
-        // Note: do NOT flag common characters like @, %, and - that appear in emails/encodings
-        // Keep only clearly dangerous combinators for generic patterns
-        /('|\"|;|--|\|\||&&)/g,
+        // Context-aware combinators and comment/termination patterns to reduce false positives
+        /('|")/g,                          // quotes
+        /(;)(?!\w)/g,                      // semicolon not followed by a word char
+        /--(?=\s|$)/g,                      // double dash followed by space or end
+        /(\|\||&&)/g,                      // boolean combinators
         
         // SQL functions commonly used in attacks
         /\b(concat|substring|ascii|char|chr|length|len|mid|left|right|replace|reverse|upper|lower|ltrim|rtrim|trim)\s*\(/gi,

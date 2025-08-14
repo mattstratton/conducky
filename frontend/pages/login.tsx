@@ -160,21 +160,22 @@ function Login() {
           const code = nextUrl.split('/org-invite/')[1]?.split('/')[0];
           if (code) {
             try {
+              const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
               // Redeem org invite
-              const redeemRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/organizations/invite/${code}/use`, {
+              const redeemRes = await fetch(`${apiBase}/api/organizations/invite/${code}/use`, {
                 method: 'POST',
                 credentials: 'include',
               });
               if (redeemRes.ok) {
-                const redeemData = await redeemRes.json();
+                const redeemData: { organization?: { slug?: string } } = await redeemRes.json();
                 const orgSlug = redeemData?.organization?.slug;
                 if (orgSlug) {
                   router.push(`/orgs/${orgSlug}`);
                   return;
                 }
-              } else {
-                // If redemption fails (e.g., already a member), fetch invite details to get org slug
-                const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/organizations/invite/${code}`);
+              } else if (redeemRes.status === 409) {
+                // Already a member, fetch details for redirect
+                const inviteRes = await fetch(`${apiBase}/api/organizations/invite/${code}`, { credentials: 'include' });
                 if (inviteRes.ok) {
                   const inviteData = await inviteRes.json() as { organization?: { slug?: string } };
                   const orgSlug = inviteData.organization?.slug;
@@ -183,6 +184,12 @@ function Login() {
                     return;
                   }
                 }
+              } else if (redeemRes.status === 404) {
+                logger.warn('Organization invite not found', { code, status: 404 });
+              } else if (redeemRes.status === 403) {
+                logger.warn('Access denied for org invite', { code, status: 403 });
+              } else {
+                logger.warn('Unexpected org invite redemption error', { code, status: redeemRes.status });
               }
             } catch (error) {
               logger.warn('Error redeeming org invite during login', {
@@ -192,7 +199,9 @@ function Login() {
             }
           }
         }
-        router.push(nextUrl);
+        // Safe redirect fallback after handling invite flows
+        const safeNext = typeof nextUrl === 'string' && nextUrl.startsWith('/') ? nextUrl : '/dashboard';
+        router.push(safeNext);
       } else {
         let errMsg = 'Login failed';
         try {
