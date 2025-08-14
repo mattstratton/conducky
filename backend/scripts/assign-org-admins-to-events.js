@@ -65,6 +65,7 @@ async function main() {
               grantedAt: new Date()
             }
           });
+          // Optional: write audit log entry if desired (skipped if no audit model context here)
         }
         totalAssignments += 1;
       }

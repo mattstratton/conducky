@@ -161,7 +161,7 @@ export default function NewEventInOrganization() {
         throw new Error(errorData.error || 'Failed to create event');
       }
 
-      const result = await response.json();
+      await response.json();
       toast({
         title: 'Event created',
         description: 'All current organization admins were added as Event Admins for this event.',
