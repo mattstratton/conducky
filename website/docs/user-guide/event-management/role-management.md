@@ -175,8 +175,7 @@ All role changes are tracked in the audit log:
 
 Some role changes happen automatically:
 
-- **Event creation**: Creator automatically gets Event Admin role
-- **Organization events**: Organization Admin gets Event Admin role
+- **Event creation**: All current Organization Admins are explicitly added as Event Admins for the new event (including the creator)
 - **User removal**: All roles removed when user leaves event
 - **Event deactivation**: Roles preserved but access suspended
 

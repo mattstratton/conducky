@@ -34,12 +34,12 @@
   - [x] Idempotent and safe to re-run.
   - [ ] Writes audit logs for assignments; outputs a summary. (skipped per decision)
   - [x] Provide npm script to run inside Docker: `docker compose exec backend npm run backfill:org-admins-to-event-admins`.
-  - [ ] Document how and when to run it (dev/staging/prod).
+  - [x] Document how and when to run it (dev/staging/prod).
 
 #### Seeds and fixtures
 - [x] Update any seeds that currently rely on implicit inheritance to explicitly assign roles:
   - [x] `backend/prisma/org-seed.js`: ensure all Org Admins are assigned `event_admin` for seeded events (not just the first admin).
-  - [ ] `backend/prisma/sample-data-seed.js` (unified roles) to reflect explicit event assignment where relevant.
+  - [x] `backend/prisma/sample-data-seed.js` (unified roles) to reflect explicit event assignment where relevant.
 
 #### Tests
 - [ ] Backend integration tests adjustments/additions:
@@ -56,11 +56,11 @@
   - [x] No permission logic changes needed on client; server enforces RBAC.
 
 #### Documentation
-- [ ] Update role inheritance docs to remove org-admin→event-admin implicit inheritance:
-  - [ ] `website/docs/admin-guide/roles-permissions.md`: remove/replace statement that Org Admins automatically inherit Event Admin permissions.
-  - [ ] `website/docs/user-guide/event-management/overview.md`: adjust “Who Can Manage Events → Organization Admins” to clarify explicit assignment on creation and no implicit access otherwise.
-  - [ ] If an env flag is added for a phased rollout, document it under developer/security docs and default behavior.
-- [ ] Document backfill script usage in `website/docs/developer-docs/testing.md` and/or admin/deployment docs, including safety notes.
+- [x] Update role inheritance docs to remove org-admin→event-admin implicit inheritance:
+  - [x] `website/docs/admin-guide/roles-permissions.md`: remove/replace statement that Org Admins automatically inherit Event Admin permissions.
+  - [x] `website/docs/user-guide/event-management/overview.md`: adjust “Who Can Manage Events → Organization Admins” to clarify explicit assignment on creation and no implicit access otherwise.
+  - [ ] If an env flag is added for a phased rollout, document it under developer/security docs and default behavior. (not applicable — clean removal)
+- [x] Document backfill script usage in `website/docs/developer-docs/testing/overview.md` and/or admin/deployment docs, including safety notes.
 
 #### Observability & Audit
 - [x] Ensure audit logging for auto-assignments on creation.

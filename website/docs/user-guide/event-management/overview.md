@@ -13,7 +13,7 @@ Conducky supports flexible event creation through multiple pathways depending on
 ### Organization-Based Events
 
 1. **Organization Admin creates event** within their organization
-2. **Event inherits organization context** and admin automatically gets event admin role
+2. **Event inherits organization context** and all current org admins are explicitly added as Event Admins for that event
 3. **Event Admin configures detailed settings** (contact info, dates, CoC, etc.)
 4. **Event becomes active** once fully configured
 5. **Event Admin manages** ongoing operations (users, reports, settings)
@@ -68,8 +68,9 @@ System Admins do **not** automatically have access to event data. They must be e
 - **Handle ongoing operations** for their events
 
 ### Organization Admins
+
 - **Create events** within their organization
-- **Automatically receive** Event Admin role for created events
+- **Are explicitly added** as Event Admins for created events (no implicit access to existing events)
 - **Manage organization-scoped** event settings
 
 ## Event Lifecycle
@@ -108,4 +109,4 @@ Events provide strong isolation between different organizations and conferences:
 - **Audit logging**: All event management actions are tracked for security
 - **Secure invitations**: Invite links use secure tokens with expiration and usage limits
 
-This ensures that each event operates independently while maintaining system security. 
+This ensures that each event operates independently while maintaining system security.
