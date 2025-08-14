@@ -155,6 +155,43 @@ function Login() {
             }
           }
         }
+        // Organization invite flow
+        if (nextUrl && nextUrl.startsWith('/org-invite/')) {
+          const code = nextUrl.split('/org-invite/')[1]?.split('/')[0];
+          if (code) {
+            try {
+              // Redeem org invite
+              const redeemRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/organizations/invite/${code}/use`, {
+                method: 'POST',
+                credentials: 'include',
+              });
+              if (redeemRes.ok) {
+                const redeemData = await redeemRes.json();
+                const orgSlug = redeemData?.organization?.slug;
+                if (orgSlug) {
+                  router.push(`/orgs/${orgSlug}`);
+                  return;
+                }
+              } else {
+                // If redemption fails (e.g., already a member), fetch invite details to get org slug
+                const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/organizations/invite/${code}`);
+                if (inviteRes.ok) {
+                  const inviteData: any = await inviteRes.json();
+                  const orgSlug = inviteData?.organization?.slug;
+                  if (orgSlug) {
+                    router.push(`/orgs/${orgSlug}`);
+                    return;
+                  }
+                }
+              }
+            } catch (error) {
+              logger.warn('Error redeeming org invite during login', {
+                error: error instanceof Error ? error.message : String(error),
+                context: 'login_org_invite_redemption'
+              });
+            }
+          }
+        }
         router.push(nextUrl);
       } else {
         let errMsg = 'Login failed';

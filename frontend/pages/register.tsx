@@ -182,7 +182,8 @@ export default function Register() {
         // Registration successful
         const { next } = router.query;
         
-        if (next && typeof next === 'string' && next.startsWith('/invite/')) {
+        // Preserve invite redemption flow for both event invites and org invites
+        if (next && typeof next === 'string' && (next.startsWith('/invite/') || next.startsWith('/org-invite/'))) {
           // User came from an invite link - redirect back to complete invite redemption
           router.push(`/login?message=${encodeURIComponent('Registration successful! Please log in to join the event.')}&next=${encodeURIComponent(next)}`);
         } else {
