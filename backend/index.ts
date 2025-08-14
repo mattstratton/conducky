@@ -117,8 +117,9 @@ app.use(requestSizeLimit);
 // Add input security checks to all routes
 app.use(inputSecurityCheck);
 
-// Add general rate limiting to all routes
-app.use(generalRateLimit);
+// Remove global general rate limit to avoid throttling normal navigation.
+// Rate limiting is applied at sensitive routes (auth, report creation, uploads, etc.).
+// app.use(generalRateLimit);
 
 // HTTP request logging with Morgan
 if (process.env.NODE_ENV === 'development') {
