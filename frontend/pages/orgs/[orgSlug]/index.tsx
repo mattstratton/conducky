@@ -9,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -65,6 +67,7 @@ export default function OrganizationDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userOrgRole, setUserOrgRole] = useState<'org_admin' | 'org_viewer' | null>(null);
+  const [showAccessInfo, setShowAccessInfo] = useState<boolean>(false);
 
   useEffect(() => {
     if (!orgSlug || typeof orgSlug !== 'string') return;
@@ -158,6 +161,21 @@ export default function OrganizationDashboard() {
     fetchOrganizationData();
   }, [orgSlug]);
 
+  // Access info banner persistence
+  useEffect(() => {
+    if (!organization) return;
+    const key = `orgAccessInfo:${organization.id}`;
+    const stored = localStorage.getItem(key);
+    setShowAccessInfo(stored !== 'dismissed');
+  }, [organization]);
+
+  const dismissAccessInfo = () => {
+    if (!organization) return;
+    const key = `orgAccessInfo:${organization.id}`;
+    localStorage.setItem(key, 'dismissed');
+    setShowAccessInfo(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -200,6 +218,24 @@ export default function OrganizationDashboard() {
       </Head>
       
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {showAccessInfo && (
+          <Alert className="relative pr-12">
+            <Info className="w-5 h-5" />
+            <div>
+              <AlertTitle>About organization access</AlertTitle>
+              <AlertDescription>
+                Organization Admins don’t automatically see event data. When you create a new event, all current Org Admins are added as Event Admins for that event. For existing events, add yourself (or be added) as an Event Admin.
+              </AlertDescription>
+            </div>
+            <button
+              aria-label="Dismiss"
+              className="absolute right-3 top-3 text-sm text-muted-foreground hover:underline"
+              onClick={dismissAccessInfo}
+            >
+              Don’t show again
+            </button>
+          </Alert>
+        )}
         {/* Organization Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">

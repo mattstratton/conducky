@@ -52,7 +52,7 @@
 #### Frontend UX/Copy
 - [x] Clarify in UI where relevant that Org Admins do not automatically have access to event data; they must be explicitly added as Event Admins.
   - [x] Add small helper text to `org` events list and/or event creation success toast/modal: “All current organization admins were added as Event Admins for this event.”
-  - [ ] Consider a tooltip/info callout on organization dashboards about access model.
+  - [x] Consider a tooltip/info callout on organization dashboards about access model.
   - [x] No permission logic changes needed on client; server enforces RBAC.
 
 #### Documentation
