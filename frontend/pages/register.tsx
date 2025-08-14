@@ -85,10 +85,16 @@ export default function Register() {
         const response = await fetch(
           (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/oauth-providers'
         );
-        if (response.ok) {
-          const data = await response.json();
-          setOauthProviders(data.providers);
+        if (!response.ok) {
+          // Non-OK response: keep defaults (no providers)
+          return;
         }
+        const data = await response.json().catch(() => null);
+        // Validate shape defensively
+        const providers = data && typeof data === 'object' ? (data as any).providers : undefined;
+        const google = providers && typeof providers.google === 'boolean' ? providers.google : false;
+        const github = providers && typeof providers.github === 'boolean' ? providers.github : false;
+        setOauthProviders({ google, github });
       } catch {
         // ignore; default is no providers
       }
