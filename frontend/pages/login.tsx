@@ -169,7 +169,6 @@ function Login() {
                 credentials: 'include',
               });
               if (redeemRes.ok) {
-              if (redeemRes.ok) {
                 const redeemData: { organization?: { slug?: string } } = await redeemRes.json();
                 const orgSlug = redeemData?.organization?.slug;
                 if (orgSlug) {
