@@ -67,8 +67,7 @@
 - [ ] Add log lines for the RBAC check path to help diagnose access decisions (ensure no sensitive data in logs).
 
 ### Rollout Strategy
-- Preferred: Direct switch to explicit assignment with a backfill, since tests currently all pass and RBAC is unified.
-- Optional safety: Introduce `RBAC_ORG_INHERITS_EVENT` feature flag defaulting to `false`. In emergency, set `true` to temporarily restore old behavior.
+- Clean removal: Switch to explicit assignment (remove org-admin inheritance entirely) with a backfill to preserve current access where intended.
 - Validate in staging by running the backfill and smoke testing access patterns for Org Admins vs Event Admins.
 
 ### Risks and Mitigations
@@ -84,8 +83,19 @@
 - Documentation updated to reflect explicit assignment model.
 - All tests pass (`npm run test:all` in Docker).
 
-### Open Questions (for review)
-- Should adding/removing an Org Admin automatically sync event roles for existing events? Or should this remain a manual/administrative action for now?
-- Do we want the feature flag for inheritance as a temporary safety valve, or proceed with a clean removal?
+### Clarification: Auto-sync question
+When someone becomes an Org Admin (or is removed), should their event roles on all existing events in that organization be automatically granted (or revoked)? This plan opts not to auto-sync to avoid unexpected access changes across many events.
+
+### Decisions
+- Do not auto-sync Org Admin membership changes to existing events. Provide admin tooling later for on-demand "sync org admins to selected events" if needed.
+- Proceed with clean removal (no feature flag). Backfill script will be provided and safe to run multiple times.
+
+### Backfill Execution Notes
+- Development/Local (Docker):
+  - `docker compose exec backend npm run backfill:org-admins-to-event-admins -- --dry-run`
+  - `docker compose exec backend npm run backfill:org-admins-to-event-admins`
+- Production: Run as a one-off job with `DATABASE_URL` pointing to production and include a dry-run first.
+  - Example (one-off runner): `DATABASE_URL=postgres://... npm run backfill:org-admins-to-event-admins -- --dry-run`
+  - Then run without `--dry-run` after review. Ensure audit logs are enabled to record assignments.
 
 
