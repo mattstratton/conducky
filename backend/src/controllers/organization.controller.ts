@@ -635,13 +635,33 @@ export class OrganizationController {
         },
       });
 
-      // TEMPORARY: Use old system to assign event admin role
-      // First, find or create the Event Admin role
-      // Assign the creator as event admin using unified RBAC
+      // Assign Event Admin role to all current org admins (including creator if applicable)
       try {
-        await unifiedRBAC.grantRole(userId, 'event_admin', 'event', event.id);
+        const orgAdmins = await (prisma as any).userRole.findMany({
+          where: {
+            scopeType: 'organization',
+            scopeId: organizationId,
+            role: { name: 'org_admin' }
+          },
+          select: { userId: true }
+        });
+
+        const uniqueUserIds = Array.from(new Set([userId, ...orgAdmins.map((r: any) => r.userId)].filter(Boolean)));
+
+        for (const adminUserId of uniqueUserIds) {
+          const granted = await unifiedRBAC.grantRole(adminUserId as string, 'event_admin', 'event', event.id, userId);
+          if (granted) {
+            await logAudit({
+              eventId: event.id,
+              userId,
+              action: 'grant_event_admin_on_event_creation',
+              targetType: 'event_role',
+              targetId: `${event.id}:${adminUserId}:event_admin`,
+            });
+          }
+        }
       } catch (error) {
-        logger().warn('Failed to assign event admin role via unified RBAC:', error);
+        logger().warn('Failed to assign event admin roles to org admins on event creation:', error);
       }
 
       // Log audit event

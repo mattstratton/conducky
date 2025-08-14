@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
@@ -179,12 +180,21 @@ export default function OrganizationEvents() {
               Manage events in {organization.name}
             </p>
           </div>
-          <Button asChild>
-            <Link href={`/orgs/${orgSlug}/events/new`}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Event
-            </Link>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild>
+                  <Link href={`/orgs/${orgSlug}/events/new`}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Event
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Creates an event and adds all current Org Admins as Event Admins. No automatic access to existing events.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Search and Filters */}

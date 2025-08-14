@@ -106,93 +106,119 @@ async function main() {
     console.log(`✅ Organization created: ${org.name} (${org.slug})`);
   }
 
-  // Create organization memberships
-  console.log('👔 Creating organization memberships...');
-  
+  // Create organization memberships (unified roles)
+  console.log('👔 Creating organization memberships (unified roles)...');
+
+  const orgRole = await prisma.unifiedRole.findUnique({ where: { name: 'org_admin' } });
+  const viewerRole = await prisma.unifiedRole.findUnique({ where: { name: 'org_viewer' } });
+  if (!orgRole || !viewerRole) {
+    throw new Error('Unified roles org_admin/org_viewer not found. Run roles seed first.');
+  }
+
   // Tech Conference Organization memberships
   const techOrg = createdOrgs[0];
-  await prisma.organizationMembership.upsert({
+  await prisma.userRole.upsert({
     where: {
-      organizationId_userId: {
-        organizationId: techOrg.id,
-        userId: createdUsers[0].id, // Sarah Johnson
-      },
+      user_role_unique: {
+        userId: createdUsers[0].id,
+        roleId: orgRole.id,
+        scopeType: 'organization',
+        scopeId: techOrg.id,
+      }
     },
     update: {},
     create: {
-      organizationId: techOrg.id,
       userId: createdUsers[0].id,
-      role: 'org_admin',
-      createdById: superUser.id,
-    },
+      roleId: orgRole.id,
+      scopeType: 'organization',
+      scopeId: techOrg.id,
+      grantedById: superUser.id,
+      grantedAt: new Date(),
+    }
   });
 
-  await prisma.organizationMembership.upsert({
+  await prisma.userRole.upsert({
     where: {
-      organizationId_userId: {
-        organizationId: techOrg.id,
-        userId: createdUsers[3].id, // Emma Davis
-      },
+      user_role_unique: {
+        userId: createdUsers[3].id,
+        roleId: viewerRole.id,
+        scopeType: 'organization',
+        scopeId: techOrg.id,
+      }
     },
     update: {},
     create: {
-      organizationId: techOrg.id,
       userId: createdUsers[3].id,
-      role: 'org_viewer',
-      createdById: superUser.id,
-    },
+      roleId: viewerRole.id,
+      scopeType: 'organization',
+      scopeId: techOrg.id,
+      grantedById: superUser.id,
+      grantedAt: new Date(),
+    }
   });
 
   // Community Events Hub memberships
   const communityOrg = createdOrgs[1];
-  await prisma.organizationMembership.upsert({
+  await prisma.userRole.upsert({
     where: {
-      organizationId_userId: {
-        organizationId: communityOrg.id,
-        userId: createdUsers[1].id, // Mike Chen
-      },
+      user_role_unique: {
+        userId: createdUsers[1].id,
+        roleId: orgRole.id,
+        scopeType: 'organization',
+        scopeId: communityOrg.id,
+      }
     },
     update: {},
     create: {
-      organizationId: communityOrg.id,
       userId: createdUsers[1].id,
-      role: 'org_admin',
-      createdById: superUser.id,
-    },
+      roleId: orgRole.id,
+      scopeType: 'organization',
+      scopeId: communityOrg.id,
+      grantedById: superUser.id,
+      grantedAt: new Date(),
+    }
   });
 
-  await prisma.organizationMembership.upsert({
+  await prisma.userRole.upsert({
     where: {
-      organizationId_userId: {
-        organizationId: communityOrg.id,
-        userId: createdUsers[4].id, // John Smith
-      },
+      user_role_unique: {
+        userId: createdUsers[4].id,
+        roleId: viewerRole.id,
+        scopeType: 'organization',
+        scopeId: communityOrg.id,
+      }
     },
     update: {},
     create: {
-      organizationId: communityOrg.id,
       userId: createdUsers[4].id,
-      role: 'org_viewer',
-      createdById: superUser.id,
-    },
+      roleId: viewerRole.id,
+      scopeType: 'organization',
+      scopeId: communityOrg.id,
+      grantedById: superUser.id,
+      grantedAt: new Date(),
+    }
   });
 
   // Professional Development Network memberships
   const profDevOrg = createdOrgs[2];
-  await prisma.organizationMembership.upsert({
+  await prisma.userRole.upsert({
     where: {
-      organizationId_userId: {
-        organizationId: profDevOrg.id,
-        userId: createdUsers[2].id, // Alex Rodriguez
-      },
+      user_role_unique: {
+        userId: createdUsers[2].id,
+        roleId: orgRole.id,
+        scopeType: 'organization',
+        scopeId: profDevOrg.id,
+      }
     },
     update: {},
     create: {
-      organizationId: profDevOrg.id,
       userId: createdUsers[2].id,
-      role: 'org_admin',
-      createdById: superUser.id,
-    },
+      roleId: orgRole.id,
+      scopeType: 'organization',
+      scopeId: profDevOrg.id,
+      grantedById: superUser.id,
+      grantedAt: new Date(),
+    }
   });
 
   // Create some events for these organizations
@@ -250,33 +276,39 @@ async function main() {
     });
     console.log(`✅ Event created: ${event.name} (${event.slug})`);
 
-    // Add event roles for organization admins
-    const orgAdmin = await prisma.organizationMembership.findFirst({
+    // Add event roles for all organization admins (unified roles)
+    const orgAdminUsers = await prisma.userRole.findMany({
       where: {
-        organizationId: eventData.organizationId,
-        role: 'org_admin'
+        scopeType: 'organization',
+        scopeId: eventData.organizationId,
+        role: { name: 'org_admin' },
       },
-      include: { user: true }
+      select: { userId: true }
     });
 
-    if (orgAdmin) {
-      const eventAdminRole = await prisma.role.findUnique({ where: { name: 'Event Admin' } });
-      await prisma.userEventRole.upsert({
-        where: {
-          userId_eventId_roleId: {
-            userId: orgAdmin.userId,
-            eventId: event.id,
-            roleId: eventAdminRole.id,
+    if (orgAdminUsers && orgAdminUsers.length > 0) {
+      const eventAdminRole = await prisma.unifiedRole.findUnique({ where: { name: 'event_admin' } });
+      for (const { userId } of orgAdminUsers) {
+        await prisma.userRole.upsert({
+          where: {
+            user_role_unique: {
+              userId,
+              roleId: eventAdminRole.id,
+              scopeType: 'event',
+              scopeId: event.id,
+            },
           },
-        },
-        update: {},
-        create: {
-          userId: orgAdmin.userId,
-          eventId: event.id,
-          roleId: eventAdminRole.id,
-        },
-      });
-      console.log(`✅ Event admin role assigned to ${orgAdmin.user.name} for ${event.name}`);
+          update: {},
+          create: {
+            userId,
+            roleId: eventAdminRole.id,
+            scopeType: 'event',
+            scopeId: event.id,
+            grantedAt: new Date(),
+          },
+        });
+        console.log(`✅ Event admin role assigned to ${userId} for ${event.name}`);
+      }
     }
   }
 

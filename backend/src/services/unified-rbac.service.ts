@@ -143,16 +143,15 @@ export class UnifiedRBACService {
   }
 
   /**
-   * Check if user has event role (with role inheritance) - Optimized version
-   * This method implements the core role inheritance logic:
-   * - System admins have access to all events (but need explicit event roles for data access)
-   * - Organization admins inherit event admin permissions for their organization's events
-   * - Direct event roles are checked for specific event access
+   * Check if user has event role (explicit roles only)
+   * Rules:
+   * - System admins are allowed
+   * - Direct event roles are required for event access (no org-admin inheritance)
    * 
    * @param userId - The user ID to check permissions for
    * @param eventId - The event ID to check permissions against
    * @param roleNames - Array of roles that satisfy the permission check (defaults to event_admin, responder, reporter)
-   * @returns Promise<boolean> - True if user has required event permissions through any inheritance path
+   * @returns Promise<boolean> - True if user has required event permissions
    */
   async hasEventRole(
     userId: string,
@@ -160,18 +159,8 @@ export class UnifiedRBACService {
     roleNames: string[] = ['event_admin', 'responder', 'reporter']
   ): Promise<boolean> {
     try {
-  
-      
-      // Optimized: Use cached user roles and fetch event data in parallel
-      const [userRoles, event] = await Promise.all([
-        // Get cached user roles for performance
-        this.getCachedUserRoles(userId),
-        // Get event with organization data
-        (this.prisma as any).event.findUnique({
-          where: { id: eventId },
-          select: { organizationId: true }
-        })
-      ]);
+      // Optimized: Use cached user roles
+      const userRoles = await this.getCachedUserRoles(userId);
 
       
 
@@ -199,22 +188,7 @@ export class UnifiedRBACService {
         return true;
       }
 
-      // Check organization admin role inheritance (from cached roles)
-      if (event?.organizationId) {
-        const hasOrgAdminRole = userRoles.some((ur: UserRoleWithDetails) => 
-          ur.scopeType === 'organization' && 
-          ur.scopeId === event.organizationId && 
-          ur.role.name === 'org_admin'
-        );
-        
-
-        
-        if (hasOrgAdminRole) {
-          return true;
-        }
-      }
-      
-      
+      // No organization-admin inheritance: explicit event roles are required
       return false;
     } catch (error) {
       // Remove this line entirely

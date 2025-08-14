@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Calendar, MapPin, Users, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 import { isValidEmail } from '@/lib/utils';
 
 
@@ -27,6 +28,7 @@ interface Organization {
 export default function NewEventInOrganization() {
   const router = useRouter();
   const { orgSlug } = router.query;
+  const { toast } = useToast();
   
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [userOrgRole, setUserOrgRole] = useState<'org_admin' | 'org_viewer' | null>(null);
@@ -159,8 +161,11 @@ export default function NewEventInOrganization() {
         throw new Error(errorData.error || 'Failed to create event');
       }
 
-      const result = await response.json();
-      console.log('Event created:', result);
+      await response.json();
+      toast({
+        title: 'Event created',
+        description: 'All current organization admins were added as Event Admins for this event.',
+      });
       
       // Navigate to the organization events list
       router.push(`/orgs/${orgSlug}/events`);
@@ -245,6 +250,9 @@ export default function NewEventInOrganization() {
             </h1>
             <p className="text-gray-600">
               Create a new event in <span className="font-semibold">{organization?.name}</span>
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Note: All current organization admins will be added as Event Admins for this event.
             </p>
           </div>
 

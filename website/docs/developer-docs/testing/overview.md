@@ -44,6 +44,20 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
+## 🔄 RBAC Backfill (Org Admins → Event Admins)
+
+When switching to explicit event roles (no org-admin inheritance), run the backfill to grant `event_admin` to current Org Admins on existing events.
+
+- Local (Docker):
+  - Dry-run: `docker compose exec backend npm run backfill:org-admins-to-event-admins:dry-run`
+  - Apply: `docker compose exec backend npm run backfill:org-admins-to-event-admins`
+
+- Production: run as a one-off with a proper `DATABASE_URL`, start with a dry-run first.
+  - Example: `DATABASE_URL=postgres://... npm run backfill:org-admins-to-event-admins -- --dry-run`
+  - Then run without `--dry-run` after review.
+
+This script is idempotent and safe to re-run.
+
 ### Run Tests with Coverage
 ```bash
 # Backend coverage

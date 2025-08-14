@@ -6,9 +6,9 @@ sidebar_position: 2
 
 Conducky uses a unified Role-Based Access Control (RBAC) system that provides granular permissions across system, organization, and event scopes. This system ensures security while enabling flexible management of users and access.
 
-## Role Hierarchy and Inheritance
+## Role Hierarchy
 
-The unified RBAC system operates on three scopes with role inheritance:
+The unified RBAC system operates on three scopes:
 
 ### System Scope
 
@@ -22,7 +22,8 @@ The unified RBAC system operates on three scopes with role inheritance:
 
 - **Organization Admin**: Full administrative control within their organization
   - Can create and manage events within their organization
-  - Inherits event admin permissions for all events in their organization
+  - Does not automatically have access to event data
+  - When creating a new event, all current Org Admins are explicitly added as Event Admins for that event
   - Can manage organization members and settings
   - Can invite users to the organization
 - **Organization Viewer**: Read-only access to organization information
@@ -45,14 +46,12 @@ The unified RBAC system operates on three scopes with role inheritance:
   - Can view and comment on their own reports
   - Can view public updates on their reports
 
-## Role Inheritance Rules
+## Access Rules
 
-The system implements intelligent role inheritance to simplify management:
-
-1. **System Admins** have full system access but need explicit event roles to access event data
-2. **Organization Admins** automatically inherit event admin permissions for all events in their organization
-3. **Organization Viewers** have read-only access to their organization's events
-4. **Event roles** are specific to individual events unless inherited from organization level
+1. **System Admins** have system-level capabilities but need explicit event roles to access event data
+2. **Organization Admins** do not inherit event permissions; they must be explicitly assigned Event Admin on each event (automatically assigned on creation only)
+3. **Organization Viewers** have read-only access to organization details and event list
+4. **Event roles** are specific to individual events
 
 ## Permission Matrix
 
@@ -77,25 +76,25 @@ The system implements intelligent role inheritance to simplify management:
 
 *System Admins need explicit organization roles to access organization data
 
-### Event-Level Permissions
+### Event-Level Permissions (explicit roles only)
 
-| Action | System Admin* | Org Admin** | Org Viewer** | Event Admin | Responder | Reporter |
+| Action | System Admin* | Org Admin | Org Viewer | Event Admin | Responder | Reporter |
 |--------|---------------|-------------|--------------|-------------|-----------|----------|
-| View All Reports | ❌ | ✅ | ✅ | ✅ | ✅*** | ❌ |
-| Create Reports | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Edit Any Report | ❌ | ✅ | ❌ | ✅ | ✅*** | ❌ |
-| Delete Reports | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Assign Reports | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Change Report Status | ❌ | ✅ | ❌ | ✅ | ✅*** | ❌ |
-| View Reporter Details | ❌ | ✅ | ❌ | ✅ | ✅*** | ❌ |
-| Manage Event Settings | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Manage Event Users | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Create Invite Links | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Add Internal Comments | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| View Internal Comments | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| View All Reports | ❌ | ❌ | ❌ | ✅ | ✅*** | ❌ |
+| Create Reports | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Edit Any Report | ❌ | ❌ | ❌ | ✅ | ✅*** | ❌ |
+| Delete Reports | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Assign Reports | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Change Report Status | ❌ | ❌ | ❌ | ✅ | ✅*** | ❌ |
+| View Reporter Details | ❌ | ❌ | ❌ | ✅ | ✅*** | ❌ |
+| Manage Event Settings | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Manage Event Users | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Create Invite Links | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Add Internal Comments | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| View Internal Comments | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
 
 *System Admins need explicit event roles to access event data  
-**Organization Admins inherit Event Admin permissions for their organization's events  
+**Organization Admins do not inherit Event Admin permissions; explicit assignment is required (automatically assigned on event creation only).  
 ***Responders can only access reports assigned to them or public reports
 
 ## Special Permission Rules

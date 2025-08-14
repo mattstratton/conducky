@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "backfill:org-admins-to-event-admins": "node scripts/assign-org-admins-to-events.js",
+    "backfill:org-admins-to-event-admins:dry-run": "node scripts/assign-org-admins-to-events.js --dry-run",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "dev": "nodemon index.js",

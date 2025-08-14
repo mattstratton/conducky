@@ -332,7 +332,7 @@ async function main() {
     }
 
     // Assign roles for this event
-    // Event Admins
+    // Event Admins (explicit per event)
     for (const adminName of event.adminUsers) {
       await prisma.userRole.upsert({
         where: {
@@ -346,6 +346,32 @@ async function main() {
         update: {},
         create: { 
           userId: userRecords[adminName].id, 
+          roleId: roleMap['event_admin'].id,
+          scopeType: 'event',
+          scopeId: eventRecords[event.slug].id,
+          grantedAt: new Date()
+        },
+      });
+    }
+
+    // Also ensure current organization admins receive event_admin for seeded events
+    const orgAdminMemberships = await prisma.organizationMembership.findMany({
+      where: { organizationId: eventRecords[event.slug].organizationId, role: 'org_admin' },
+      select: { userId: true }
+    });
+    for (const m of orgAdminMemberships) {
+      await prisma.userRole.upsert({
+        where: {
+          user_role_unique: {
+            userId: m.userId,
+            roleId: roleMap['event_admin'].id,
+            scopeType: 'event',
+            scopeId: eventRecords[event.slug].id
+          }
+        },
+        update: {},
+        create: { 
+          userId: m.userId, 
           roleId: roleMap['event_admin'].id,
           scopeType: 'event',
           scopeId: eventRecords[event.slug].id,
