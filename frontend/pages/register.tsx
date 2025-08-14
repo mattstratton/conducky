@@ -89,9 +89,11 @@ export default function Register() {
           // Non-OK response: keep defaults (no providers)
           return;
         }
-        const data = await response.json().catch(() => null);
+        const data: unknown = await response.json().catch(() => null);
         // Validate shape defensively
-        const providers = data && typeof data === 'object' ? (data as any).providers : undefined;
+        const providers = (data && typeof data === 'object' && 'providers' in (data as Record<string, unknown>)
+          ? (data as { providers?: { google?: unknown; github?: unknown } }).providers
+          : undefined);
         const google = providers && typeof providers.google === 'boolean' ? providers.google : false;
         const github = providers && typeof providers.github === 'boolean' ? providers.github : false;
         setOauthProviders({ google, github });
