@@ -16,24 +16,24 @@
 ### Implementation Plan (Checklist)
 
 #### Backend: RBAC behavior
-- [ ] Update `backend/src/services/unified-rbac.service.ts`:
-  - [ ] Remove org-admin implicit inheritance from `hasEventRole` (or gate it behind an env flag defaulting to disabled, e.g., `RBAC_ORG_INHERITS_EVENT=false`).
+- [x] Update `backend/src/services/unified-rbac.service.ts`:
+  - [x] Remove org-admin implicit inheritance from `hasEventRole` (or gate it behind an env flag defaulting to disabled, e.g., `RBAC_ORG_INHERITS_EVENT=false`).
   - [ ] Ensure performance remains acceptable using cached roles; preserve system admin logic and direct event role checks.
   - [ ] Unit tests for `hasEventRole` covering: direct event role; system admin; org admin without explicit event role (should be denied); error paths.
 
 #### Backend: Event creation path
-- [ ] Modify `backend/src/controllers/organization.controller.ts#createEvent`:
-  - [ ] After creating the event, fetch all current Org Admins for the `organizationId` from unified roles.
-  - [ ] Grant `event_admin` on the newly created event to each Org Admin (including the creator if applicable), using `unifiedRBAC.grantRole(...)`.
-  - [ ] Audit log each granted role association with a clear action (e.g., `grant_event_admin_on_event_creation`).
-  - [ ] Integration test: When an Org Admin creates an event, all Org Admins for that organization become `event_admin` for the event.
+- [x] Modify `backend/src/controllers/organization.controller.ts#createEvent`:
+  - [x] After creating the event, fetch all current Org Admins for the `organizationId` from unified roles.
+  - [x] Grant `event_admin` on the newly created event to each Org Admin (including the creator if applicable), using `unifiedRBAC.grantRole(...)`.
+  - [x] Audit log each granted role association with a clear action (e.g., `grant_event_admin_on_event_creation`).
+  - [x] Integration test: When an Org Admin creates an event, all Org Admins for that organization become `event_admin` for the event.
 
 #### Data migration / Backfill
-- [ ] Add a one-time script `backend/scripts/assign-org-admins-to-events.ts`:
-  - [ ] For each organization → for each event → enumerate current org admins and grant `event_admin` if missing.
-  - [ ] Idempotent and safe to re-run.
+- [x] Add a one-time script `backend/scripts/assign-org-admins-to-events.js`:
+  - [x] For each organization → for each event → enumerate current org admins and grant `event_admin` if missing.
+  - [x] Idempotent and safe to re-run.
   - [ ] Writes audit logs for assignments; outputs a summary.
-  - [ ] Provide npm script to run inside Docker: `docker compose exec backend npm run backfill:org-admins-to-event-admins`.
+  - [x] Provide npm script to run inside Docker: `docker compose exec backend npm run backfill:org-admins-to-event-admins`.
   - [ ] Document how and when to run it (dev/staging/prod).
 
 #### Seeds and fixtures
@@ -45,15 +45,15 @@
 - [ ] Backend integration tests adjustments/additions:
   - [ ] Update tests that previously assumed org-admin inheritance to event access.
   - [ ] Add tests verifying Org Admin without explicit event role cannot access event data.
-  - [ ] Verify event creation grants `event_admin` to all Org Admins.
-  - [ ] Ensure existing RBAC tests for Reporter/Responder/Event Admin/System Admin continue to pass.
-- [ ] Frontend tests should continue to pass; adjust any that assume inheritance if present.
+  - [x] Verify event creation grants `event_admin` to all Org Admins.
+  - [x] Ensure existing RBAC tests for Reporter/Responder/Event Admin/System Admin continue to pass.
+- [x] Frontend tests should continue to pass; adjust any that assume inheritance if present.
 
 #### Frontend UX/Copy
-- [ ] Clarify in UI where relevant that Org Admins do not automatically have access to event data; they must be explicitly added as Event Admins.
-  - [ ] Add small helper text to `org` events list and/or event creation success toast/modal: “All current organization admins were added as Event Admins for this event.”
+- [x] Clarify in UI where relevant that Org Admins do not automatically have access to event data; they must be explicitly added as Event Admins.
+  - [x] Add small helper text to `org` events list and/or event creation success toast/modal: “All current organization admins were added as Event Admins for this event.”
   - [ ] Consider a tooltip/info callout on organization dashboards about access model.
-  - [ ] No permission logic changes needed on client; server enforces RBAC.
+  - [x] No permission logic changes needed on client; server enforces RBAC.
 
 #### Documentation
 - [ ] Update role inheritance docs to remove org-admin→event-admin implicit inheritance:
@@ -63,7 +63,7 @@
 - [ ] Document backfill script usage in `website/docs/developer-docs/testing.md` and/or admin/deployment docs, including safety notes.
 
 #### Observability & Audit
-- [ ] Ensure audit logging for auto-assignments on creation and backfill runs.
+- [x] Ensure audit logging for auto-assignments on creation and backfill runs.
 - [ ] Add log lines for the RBAC check path to help diagnose access decisions (ensure no sensitive data in logs).
 
 ### Rollout Strategy

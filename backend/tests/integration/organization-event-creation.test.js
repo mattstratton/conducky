@@ -145,4 +145,55 @@ describe('Organization Event Creation Bug Fix', () => {
       }
     }
   });
+
+  test('should automatically assign all current org admins as event admins when an event is created', async () => {
+    // Arrange: add a second org admin to the same organization
+    const secondAdmin = {
+      id: 'second-admin-user',
+      email: 'secondadmin@test.com',
+      name: 'Second Admin User',
+      passwordHash: 'hashedpassword'
+    };
+    inMemoryStore.users.push(secondAdmin);
+
+    const orgAdminUnifiedRole = inMemoryStore.unifiedRoles.find(r => r.name === 'org_admin');
+    expect(orgAdminUnifiedRole).toBeTruthy();
+    inMemoryStore.userRoles.push({
+      id: 'test-user-role-2',
+      userId: secondAdmin.id,
+      roleId: orgAdminUnifiedRole.id,
+      scopeType: 'organization',
+      scopeId: testOrganization.id,
+      grantedAt: new Date(),
+      role: { id: orgAdminUnifiedRole.id, name: 'org_admin' },
+      user: { id: secondAdmin.id, email: secondAdmin.email, name: secondAdmin.name }
+    });
+
+    // Act: create a new event as the original org admin
+    const response = await request(app)
+      .post(`/api/organizations/${testOrganization.id}/events`)
+      .set('x-test-user-id', testUser.id)
+      .send({
+        name: 'Multi Admin Event',
+        slug: 'multi-admin-event'
+      })
+      .expect(201);
+
+    const createdEventId = response.body?.event?.id;
+    expect(createdEventId).toBeTruthy();
+
+    // Assert: both org admins should have event_admin unified role for this event
+    const eventAdminUnifiedRole = inMemoryStore.unifiedRoles.find(r => r.name === 'event_admin');
+    expect(eventAdminUnifiedRole).toBeTruthy();
+
+    const hasCreatorAssignment = !!inMemoryStore.userRoles.find(ur =>
+      ur.userId === testUser.id && ur.scopeType === 'event' && ur.scopeId === createdEventId && ur.roleId === eventAdminUnifiedRole.id
+    );
+    const hasSecondAdminAssignment = !!inMemoryStore.userRoles.find(ur =>
+      ur.userId === secondAdmin.id && ur.scopeType === 'event' && ur.scopeId === createdEventId && ur.roleId === eventAdminUnifiedRole.id
+    );
+
+    expect(hasCreatorAssignment).toBe(true);
+    expect(hasSecondAdminAssignment).toBe(true);
+  });
 }); 
