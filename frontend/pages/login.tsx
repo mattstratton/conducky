@@ -176,8 +176,8 @@ function Login() {
                 // If redemption fails (e.g., already a member), fetch invite details to get org slug
                 const inviteRes = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + `/api/organizations/invite/${code}`);
                 if (inviteRes.ok) {
-                  const inviteData: any = await inviteRes.json();
-                  const orgSlug = inviteData?.organization?.slug;
+                  const inviteData = await inviteRes.json() as { organization?: { slug?: string } };
+                  const orgSlug = inviteData.organization?.slug;
                   if (orgSlug) {
                     router.push(`/orgs/${orgSlug}`);
                     return;
