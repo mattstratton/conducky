@@ -158,7 +158,9 @@ function Login() {
         // Organization invite flow
         if (nextUrl && nextUrl.startsWith('/org-invite/')) {
           const code = nextUrl.split('/org-invite/')[1]?.split('/')[0];
-          if (code) {
+          // Only allow codes that match a safe pattern (e.g., UUID or alphanumeric with dashes/underscores)
+          const codePattern = /^[a-zA-Z0-9_-]{6,64}$/;
+          if (code && codePattern.test(code)) {
             try {
               const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
               // Redeem org invite
@@ -166,6 +168,7 @@ function Login() {
                 method: 'POST',
                 credentials: 'include',
               });
+              if (redeemRes.ok) {
               if (redeemRes.ok) {
                 const redeemData: { organization?: { slug?: string } } = await redeemRes.json();
                 const orgSlug = redeemData?.organization?.slug;
