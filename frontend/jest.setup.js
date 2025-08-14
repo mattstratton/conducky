@@ -5,6 +5,22 @@ import 'whatwg-fetch';
 // Mock fetch for tests that don't need real network calls
 global.fetch = jest.fn();
 
+// Polyfill ResizeObserver for tests (used by Radix UI components)
+class ResizeObserver {
+  callback;
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof global.ResizeObserver === 'undefined') {
+  // @ts-ignore
+  global.ResizeObserver = ResizeObserver;
+}
+
 // Suppress specific console warnings during tests while preserving errors
 const originalWarn = console.warn;
 const originalError = console.error;
