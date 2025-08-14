@@ -101,6 +101,9 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+// CORS should be applied as early as possible so that even rejected requests include CORS headers
+app.use(cors(corsSecurityOptions));
+
 // CRITICAL SECURITY: Add comprehensive security headers
 // Replace basic helmet configuration with comprehensive security middleware
 app.use(securityHeaders);
@@ -138,8 +141,7 @@ if (process.env.NODE_ENV === 'test') {
   app.use(testAuthMiddleware);
 }
 
-// CORS middleware with comprehensive security configuration
-app.use(cors(corsSecurityOptions));
+// (CORS already applied above)
 
 // Body parsing middleware
 app.use(express.json());
