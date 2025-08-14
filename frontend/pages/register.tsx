@@ -89,7 +89,7 @@ export default function Register() {
           const data = await response.json();
           setOauthProviders(data.providers);
         }
-      } catch (_) {
+      } catch {
         // ignore; default is no providers
       }
     };
