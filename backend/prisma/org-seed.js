@@ -250,8 +250,8 @@ async function main() {
     });
     console.log(`✅ Event created: ${event.name} (${event.slug})`);
 
-    // Add event roles for organization admins
-    const orgAdmin = await prisma.organizationMembership.findFirst({
+    // Add event roles for all organization admins
+    const orgAdmins = await prisma.organizationMembership.findMany({
       where: {
         organizationId: eventData.organizationId,
         role: 'org_admin'
@@ -259,24 +259,26 @@ async function main() {
       include: { user: true }
     });
 
-    if (orgAdmin) {
+    if (orgAdmins && orgAdmins.length > 0) {
       const eventAdminRole = await prisma.role.findUnique({ where: { name: 'Event Admin' } });
-      await prisma.userEventRole.upsert({
-        where: {
-          userId_eventId_roleId: {
-            userId: orgAdmin.userId,
+      for (const membership of orgAdmins) {
+        await prisma.userEventRole.upsert({
+          where: {
+            userId_eventId_roleId: {
+              userId: membership.userId,
+              eventId: event.id,
+              roleId: eventAdminRole.id,
+            },
+          },
+          update: {},
+          create: {
+            userId: membership.userId,
             eventId: event.id,
             roleId: eventAdminRole.id,
           },
-        },
-        update: {},
-        create: {
-          userId: orgAdmin.userId,
-          eventId: event.id,
-          roleId: eventAdminRole.id,
-        },
-      });
-      console.log(`✅ Event admin role assigned to ${orgAdmin.user.name} for ${event.name}`);
+        });
+        console.log(`✅ Event admin role assigned to ${membership.user?.name || membership.userId} for ${event.name}`);
+      }
     }
   }
 

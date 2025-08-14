@@ -19,7 +19,7 @@
 - [x] Update `backend/src/services/unified-rbac.service.ts`:
   - [x] Remove org-admin implicit inheritance from `hasEventRole` (or gate it behind an env flag defaulting to disabled, e.g., `RBAC_ORG_INHERITS_EVENT=false`).
   - [ ] Ensure performance remains acceptable using cached roles; preserve system admin logic and direct event role checks.
-  - [ ] Unit tests for `hasEventRole` covering: direct event role; system admin; org admin without explicit event role (should be denied); error paths.
+  - [x] Unit tests for `hasEventRole` covering: direct event role; system admin; org admin without explicit event role (should be denied); error paths.
 
 #### Backend: Event creation path
 - [x] Modify `backend/src/controllers/organization.controller.ts#createEvent`:
@@ -32,13 +32,13 @@
 - [x] Add a one-time script `backend/scripts/assign-org-admins-to-events.js`:
   - [x] For each organization → for each event → enumerate current org admins and grant `event_admin` if missing.
   - [x] Idempotent and safe to re-run.
-  - [ ] Writes audit logs for assignments; outputs a summary.
+  - [ ] Writes audit logs for assignments; outputs a summary. (skipped per decision)
   - [x] Provide npm script to run inside Docker: `docker compose exec backend npm run backfill:org-admins-to-event-admins`.
   - [ ] Document how and when to run it (dev/staging/prod).
 
 #### Seeds and fixtures
-- [ ] Update any seeds that currently rely on implicit inheritance to explicitly assign roles:
-  - [ ] `backend/prisma/org-seed.js`: ensure all Org Admins are assigned `event_admin` for seeded events (not just the first admin).
+- [x] Update any seeds that currently rely on implicit inheritance to explicitly assign roles:
+  - [x] `backend/prisma/org-seed.js`: ensure all Org Admins are assigned `event_admin` for seeded events (not just the first admin).
   - [ ] `backend/prisma/sample-data-seed.js` (unified roles) to reflect explicit event assignment where relevant.
 
 #### Tests
@@ -63,7 +63,8 @@
 - [ ] Document backfill script usage in `website/docs/developer-docs/testing.md` and/or admin/deployment docs, including safety notes.
 
 #### Observability & Audit
-- [x] Ensure audit logging for auto-assignments on creation and backfill runs.
+- [x] Ensure audit logging for auto-assignments on creation.
+- [ ] Ensure audit logging for backfill runs. (skipped per decision)
 - [ ] Add log lines for the RBAC check path to help diagnose access decisions (ensure no sensitive data in logs).
 
 ### Rollout Strategy
