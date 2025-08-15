@@ -75,7 +75,7 @@ If you manage events and their safety teams:
 
 ### Organization Administrators (Org Admins)
 If you manage multiple events within an organization:
-- **Start with**: [Quick Start](./quick-start) → [Event Management](./event-management/overview) → [Organization Management](../orgs/overview)
+- **Start with**: [Quick Start](./quick-start) → [Event Management](./event-management/overview) → [Organization Management](./organizations)
 - **Key sections**: Multi-Event Management, Organization Settings, Cross-Event Analytics
 - **Your role**: Oversee multiple events, manage organization-wide policies, coordinate between events
 
