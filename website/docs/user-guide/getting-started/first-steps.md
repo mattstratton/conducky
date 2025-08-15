@@ -58,12 +58,42 @@ After logging into Conducky, you'll be directed to your appropriate starting poi
 
 **What you'll see:**
 - Global dashboard with system administration options
-- Access to create new events
+- Access to create new organizations and events
 - System-wide management features
 
 **Screenshot needed:** *System admin dashboard showing admin navigation and system overview*
 
 **Important note:** System Admins need explicit event roles to access event data!
+
+### Organization Admins
+
+**What you'll see:**
+- Global dashboard with organization management options
+- Access to create and manage events within your organization
+- Cross-event coordination features
+
+**Screenshot needed:** *Organization admin dashboard showing organization overview and event management*
+
+**What you can do:**
+- Create and configure events within your organization
+- Set organization-wide policies and standards
+- Coordinate between multiple events
+- Manage cross-event user roles and permissions
+
+### Organization Viewers
+
+**What you'll see:**
+- Global dashboard with cross-event overview
+- Read-only access to multiple events within your organization
+- Organization-wide analytics and reporting
+
+**Screenshot needed:** *Organization viewer dashboard showing cross-event insights and read-only access*
+
+**What you can do:**
+- Monitor incidents across all organization events
+- View cross-event trends and patterns
+- Access organization-wide analytics
+- Provide oversight and reporting (read-only)
 
 ---
 

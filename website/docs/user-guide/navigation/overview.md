@@ -29,6 +29,7 @@ Your personal multi-event overview where you can:
 - Access cross-event reports and notifications
 - Manage your profile and settings
 - Switch between events
+- Access organization-level features (if applicable)
 
 #### 2. **Event Context** (`/events/[eventSlug]/`)
 
@@ -39,13 +40,22 @@ Event-specific functionality when working within a particular event:
 - Event settings (admin only)
 - Event-specific navigation adapts to your role
 
-#### 3. **System Admin Context** (`/admin/`)
+#### 3. **Organization Context** (`/orgs/[orgSlug]/`)
+
+Organization-level functionality for managing multiple events:
+
+- Organization dashboard and overview
+- Cross-event management and coordination
+- Organization settings and policies
+- Multi-event analytics and reporting
+
+#### 4. **System Admin Context** (`/admin/`)
 
 System-level management for System Admins only:
 
-- Manage all events in the installation
+- Manage all organizations and events in the installation
 - System settings and configuration
-- User management across events
+- User management across organizations and events
 - No access to event data without explicit event roles
 
 ### Context-Aware Sidebar
@@ -53,6 +63,7 @@ System-level management for System Admins only:
 The sidebar navigation automatically adapts based on your current context and role:
 
 - **Global Navigation**: Home, All Reports, Notifications always visible
+- **Organization Section**: Shows when you belong to organizations, with organization-level navigation
 - **Event Section**: Shows when you belong to events, with event-specific navigation
 - **System Admin Section**: Only visible to System Admins, provides system management access
 - **User Menu**: Profile, settings, and logout options
@@ -82,6 +93,7 @@ The sidebar navigation automatically adapts based on your current context and ro
 This guide is organized into focused sections:
 
 - **[Role-Based Navigation](./role-based-navigation)** - How navigation changes by user role
+- **[Organization Navigation](./organization-navigation)** - Managing organizations and cross-event features
 - **[Event Switching](./event-switching)** - Managing multiple events
 - **[URL Structure](./url-structure)** - Understanding Conducky's URL patterns
 - **[Mobile Navigation](./mobile-navigation)** - Mobile-specific features

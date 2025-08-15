@@ -73,6 +73,18 @@ If you manage events and their safety teams:
 - **Key sections**: Invite Links, Team Management, Public Event Pages
 - **Your role**: Set up events, manage teams, oversee incident response processes
 
+### Organization Administrators (Org Admins)
+If you manage multiple events within an organization:
+- **Start with**: [Quick Start](./quick-start) → [Event Management](./event-management/overview) → [Organization Management](../orgs/overview)
+- **Key sections**: Multi-Event Management, Organization Settings, Cross-Event Analytics
+- **Your role**: Oversee multiple events, manage organization-wide policies, coordinate between events
+
+### Organization Viewers (Org Viewers)
+If you need read-only access to multiple events within an organization:
+- **Start with**: [Quick Start](./quick-start) → [Navigation](./navigation/overview) → [Cross-Event Incidents](./cross-event-incidents)
+- **Key sections**: Multi-Event Dashboard, Cross-Event Reporting, Organization Overview
+- **Your role**: Monitor multiple events, view cross-event trends, provide oversight
+
 ### System Users (Multi-Event)
 If you participate in multiple events with different roles:
 - **Start with**: [Navigation](./navigation/overview) → [Cross-Event Incidents](./cross-event-incidents)
@@ -83,12 +95,14 @@ If you participate in multiple events with different roles:
 
 Understanding your role helps you focus on the most relevant documentation:
 
-| Role | Can Submit Incidents | Can View All Incidents | Can Manage Users | Can Configure Events |
-|------|-------------------|---------------------|------------------|---------------------|
-| **Reporter** | ✅ | ❌ (own only) | ❌ | ❌ |
-| **Responder** | ✅ | ✅ | ❌ | ❌ |
-| **Event Admin** | ✅ | ✅ | ✅ | ✅ |
-| **System Admin** | ✅* | ✅* | ✅* | ✅ |
+| Role | Can Submit Incidents | Can View All Incidents | Can Manage Users | Can Configure Events | Can Manage Organizations |
+|------|-------------------|---------------------|------------------|---------------------|--------------------------|
+| **Reporter** | ✅ | ❌ (own only) | ❌ | ❌ | ❌ |
+| **Responder** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Event Admin** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Org Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Org Viewer** | ❌ | ✅ (read-only) | ❌ | ❌ | ❌ |
+| **System Admin** | ✅* | ✅* | ✅* | ✅ | ✅ |
 
 *System Admins need explicit event roles to access event data
 

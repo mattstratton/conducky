@@ -82,11 +82,11 @@ If you work with multiple events, see:
 
 ---
 
-## Mobile-First Design
+## Mobile-Friendly Features
 
-Conducky is designed with mobile users as the primary focus:
+Conducky is designed to work seamlessly on all devices, with special attention to mobile usability:
 
-**📱 Why Mobile-First?**
+**📱 Why Mobile-Friendly?**
 - Most incident reports happen on mobile devices
 - Response teams often work from phones and tablets
 - Quick access is crucial during events

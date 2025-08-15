@@ -47,7 +47,7 @@ As a Reporter, your main responsibility is submitting incident reports when need
 
 **Screenshot needed:** *Reporter dashboard showing quick access to report submission*
 
-### Essential Skills to Develop
+### Getting Started with Reporting
 
 **Report Submission:**
 - **Know the process**: Practice with test reports if allowed
@@ -91,7 +91,7 @@ As a Responder, you're part of the incident response team with access to all rep
 
 **Screenshot needed:** *Responder interface showing report management and team communication*
 
-### Essential Skills to Develop
+### Getting Started with Response
 
 **Report Management:**
 - **State transitions**: When to move reports from submitted → investigating → resolved → closed
