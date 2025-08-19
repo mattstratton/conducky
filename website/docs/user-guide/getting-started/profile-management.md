@@ -20,8 +20,6 @@ Your profile settings are accessible from the user menu in the top-right corner 
 - **Name**: Display name shown to other users
 - **Email**: Login email and contact address
 - **Avatar**: Profile picture (if supported)
-- **Timezone**: For proper timestamp display
-- **Language**: Interface language preference
 
 **Screenshot needed:** *Profile information form showing editable fields*
 
@@ -29,9 +27,7 @@ Your profile settings are accessible from the user menu in the top-right corner 
 
 **Security settings:**
 - **Password**: Change your login password
-- **Login activity**: View recent login sessions
 - **Account status**: See if your account is active
-- **Data export**: Request your personal data (if implemented)
 
 ---
 
@@ -42,33 +38,15 @@ Configure how and when you receive notifications:
 ### Global Notification Settings
 
 **Email notifications:**
-- **Frequency**: Immediate, hourly, daily digest, or disabled
-- **Types**: New reports, comments, assignments, announcements
-- **Quiet hours**: Set times when you don't want notifications
-- **Emergency override**: Always receive urgent notifications
+- **Types**: New reports, comments, assignments, invitations, role changes, system announcements
+- **Per-type control**: Enable/disable email notifications for each notification type
 
-**Screenshot needed:** *Notification preferences page showing email settings and frequency options*
+**Screenshot needed:** *Notification preferences page showing email settings and type options*
 
-### Event-Specific Notifications
-
-**Per-event customization:**
-- Different notification rules for different events
-- Role-based defaults (Admins get more notifications)
-- Event priority settings (some events more important than others)
-- Mobile push notification preferences
-
-**Example scenarios:**
-- **High-priority event**: Immediate email + push for all activity
-- **Low-priority event**: Daily digest only
-- **Volunteer event**: Only urgent notifications during quiet hours
-
-### Mobile Notifications
-
-**Push notification settings:**
-- **Enable/disable** push notifications
-- **Notification types**: Which events trigger push notifications
-- **Sound settings**: Different sounds for different priority levels
-- **Badge counts**: Show unread notification counts
+### In-App Notifications
+- **Real-time updates**: Receive notifications in the app for all activity
+- **Notification center**: Access all notifications from the dashboard
+- **Read/unread status**: Track what you've seen
 
 ---
 

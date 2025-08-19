@@ -23,7 +23,7 @@ Visit `/register` to create a new account when setting up a new Conducky instanc
 5. **Next steps**: Subsequent users need invitations to access functionality
 
 :::tip First User Benefits
-As the first user, you become a System Admin with full system access. You can create events, manage system settings, and invite other users.
+As the first user, you become a System Admin with full system access. You can create organizations, manage system settings, and invite other users. You'll be guided through initial system setup to get your Conducky instance ready for use.
 :::
 
 **Screenshot needed:** *Registration form showing email, name, and password fields with requirements*

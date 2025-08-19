@@ -15,23 +15,26 @@ Get up and running with Conducky quickly! This guide helps you understand the ba
 2. Create an account or log in if you already have one
 3. Accept the invitation to join the event
 
-**If you're starting fresh:**
+**If you're starting fresh (first time setup):**
 1. Visit your organization's Conducky instance (check with your admin for the URL)
 2. Click "Register" to create a new account
 3. The first account automatically becomes a System Admin
+4. You'll be redirected to complete initial system setup
 
 ### Step 2: Understand Your Dashboard (1 minute)
 
 After logging in, you'll see your **Global Dashboard**:
 
-- **No events yet?** You'll see instructions for joining events
+- **No events yet?** You'll see instructions for joining events or creating organizations
 - **Single event user?** Quick access to that event
 - **Multiple events?** Cards showing all your events with quick stats
+- **Organization member?** Access to organization-level features and cross-event management
 
 **Key areas to notice:**
 - **User menu** (top right): Access your profile and settings
 - **Navigation** (left sidebar): Changes based on your current context
 - **Event cards**: Click to enter an event's workspace
+- **Organization section**: Access organization-wide features (if applicable)
 
 ### Step 3: Join Your First Event (1 minute)
 
@@ -40,8 +43,15 @@ After logging in, you'll see your **Global Dashboard**:
 2. Enter the invite code in the "Join Event" section
 3. Confirm your participation
 
-**If you're a System Admin creating events:**
-1. Click "Create Event" from the admin dashboard
+**If you're a System Admin setting up the system:**
+1. First, create an organization to group related events
+2. Click "Create Organization" from the admin dashboard
+3. Fill in organization details (name, description, contact information)
+4. Create events within the organization
+5. Add yourself as an Event Admin or Org Admin as needed
+
+**If you're an Org Admin:**
+1. Click "Create Event" from your organization dashboard
 2. Fill in event details (name, slug, dates)
 3. Add yourself as an Event Admin
 4. Start inviting team members
@@ -83,7 +93,7 @@ Once in an event, explore the key features:
 
 ## 🎯 What's Your Role?
 
-### Incidenter (Event Attendee)
+### Reporter (Event Attendee)
 **You can:**
 - Submit incident reports
 - View and track your own incidents
@@ -122,8 +132,37 @@ Once in an event, explore the key features:
 3. Monitor incidents → Ensure proper response
 4. Review and improve → After-event analysis
 
+### Organization Admin (Multi-Event Manager)
+**You can:**
+- Everything Event Admins can do, plus:
+- Manage multiple events within an organization
+- Set organization-wide policies and standards
+- Coordinate between events
+- Access cross-event analytics and reporting
+- Manage organization-level user roles
+
+**Your workflow:**
+1. Set up organization → Create and configure events
+2. Establish standards → Set policies across all events
+3. Coordinate teams → Ensure consistent response processes
+4. Monitor performance → Track metrics across all events
+
+### Organization Viewer (Multi-Event Observer)
+**You can:**
+- View incidents across all events in the organization
+- Access cross-event analytics and trends
+- Monitor organization-wide performance
+- Provide oversight and reporting
+
+**Your workflow:**
+1. Monitor activity → Track incidents across all events
+2. Analyze trends → Identify patterns and issues
+3. Report findings → Provide insights to leadership
+4. Support improvement → Suggest process enhancements
+
 ### System Admin (System Administrator)
 **You can:**
+- Create and manage organizations
 - Create and manage events
 - System-wide configuration
 - User management across all events
@@ -150,6 +189,12 @@ Incidents flow through these states:
 - Belong to multiple events with different roles
 - Switch between events using the event cards
 - Cross-event incident view for responders working multiple events
+
+### Organization Management
+- **Organization structure**: Group related events under organizations
+- **Cross-event coordination**: Manage policies and standards across events
+- **Organization roles**: Org Admins and Org Viewers for multi-event oversight
+- **Unified reporting**: Analytics and insights across all organization events
 
 ---
 

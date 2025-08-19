@@ -21,6 +21,10 @@ Conducky uses a comprehensive role-based access control system with two types of
 - **Responder**: Report management and team coordination within an event
 - **Reporter**: Basic report submission and viewing within an event
 
+### Organization-Level Roles
+- **Organization Admin**: Management of multiple events within an organization
+- **Organization Viewer**: Read-only access to multiple events within an organization
+
 :::info Multi-Role Support
 You can have different roles in different events. For example, you might be an Event Admin for one conference and a Reporter for another.
 :::
@@ -159,29 +163,33 @@ You can have different roles in different events. For example, you might be an E
 
 Here's a detailed breakdown of what each role can do:
 
-| Action | Reporter | Responder | Event Admin | System Admin* |
-|--------|----------|-----------|-------------|-------------|
+| Action | Reporter | Responder | Event Admin | Org Admin | Org Viewer | System Admin* |
+|--------|----------|-----------|-------------|-----------|------------|-------------|
 | **Reports** |
-| Submit reports | ✅ | ✅ | ✅ | ❌** |
-| View own reports | ✅ | ✅ | ✅ | ❌** |
-| View all reports | ❌ | ✅ | ✅ | ❌** |
-| Change report states | ❌ | ✅ | ✅ | ❌** |
-| Assign reports | ❌ | ✅ | ✅ | ❌** |
-| Add internal comments | ❌ | ✅ | ✅ | ❌** |
-| Add external comments | ✅ | ✅ | ✅ | ❌** |
+| Submit reports | ✅ | ✅ | ✅ | ✅ | ❌ | ❌** |
+| View own reports | ✅ | ✅ | ✅ | ✅ | ❌ | ❌** |
+| View all reports | ❌ | ✅ | ✅ | ✅ | ✅ | ❌** |
+| Change report states | ❌ | ✅ | ✅ | ✅ | ❌ | ❌** |
+| Assign reports | ❌ | ✅ | ✅ | ✅ | ❌ | ❌** |
+| Add internal comments | ❌ | ✅ | ✅ | ✅ | ❌ | ❌** |
+| Add external comments | ✅ | ✅ | ✅ | ✅ | ❌ | ❌** |
 | **Team Management** |
-| View team roster | ❌ | ✅ | ✅ | ❌** |
-| Invite users | ❌ | ❌ | ✅ | ❌** |
-| Change user roles | ❌ | ❌ | ✅ | ❌** |
-| Remove users | ❌ | ❌ | ✅ | ❌** |
+| View team roster | ❌ | ✅ | ✅ | ✅ | ✅ | ❌** |
+| Invite users | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
+| Change user roles | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
+| Remove users | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
 | **Event Management** |
-| Modify event settings | ❌ | ❌ | ✅ | ❌** |
-| Upload event branding | ❌ | ❌ | ✅ | ❌** |
-| Configure Code of Conduct | ❌ | ❌ | ✅ | ❌** |
+| Modify event settings | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
+| Upload event branding | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
+| Configure Code of Conduct | ❌ | ❌ | ✅ | ✅ | ❌ | ❌** |
+| **Organization Management** |
+| Create events | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Manage organization settings | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Cross-event coordination | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | **System Administration** |
-| Create events | ❌ | ❌ | ❌ | ✅ |
-| System configuration | ❌ | ❌ | ❌ | ✅ |
-| Global user management | ❌ | ❌ | ❌ | ✅ |
+| Create organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| System configuration | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Global user management | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 *System Admins need explicit event roles to access event data  
 **Requires specific event role assignment
@@ -215,6 +223,18 @@ Roles in Conducky are assigned based on functional needs and responsibilities, n
 - Event organizers and coordinators
 - Lead safety officers
 - Those responsible for team management
+
+**Organization Admin role** is assigned to:
+- Multi-event coordinators
+- Organization safety directors
+- Those responsible for coordinating multiple events
+- Regional or national event managers
+
+**Organization Viewer role** is assigned to:
+- Oversight committees
+- Compliance officers
+- External auditors
+- Those who need read-only access to multiple events
 
 **System Admin role** is assigned to:
 - Technical administrators

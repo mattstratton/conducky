@@ -93,9 +93,9 @@ Your privacy and security are our top priorities:
 
 For more information, see our [Security Overview](../security/overview.md).
 
-## 📱 Mobile-First Design
+## 📱 Mobile-Friendly Features
 
-Conducky is designed with mobile users in mind, since most incident reporting happens on mobile devices.
+Conducky is designed to work seamlessly on all devices, with special attention to mobile usability since most incident reporting happens on mobile devices.
 
 ### Mobile Features:
 - **Touch-optimized interface** - Easy to use on phones and tablets
