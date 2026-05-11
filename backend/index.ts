@@ -1,4 +1,5 @@
 // Load environment variables first, especially for test environment
+// comment to kcik off pr
 if (process.env.NODE_ENV === 'test') {
   try {
     require('dotenv').config({ path: '.env.test', override: true });
