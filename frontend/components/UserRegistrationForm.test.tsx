@@ -26,7 +26,7 @@ describe("UserRegistrationForm", () => {
     expect(screen.getByRole("button", { name: /register/i })).toBeInTheDocument();
   });
 
-  it("shows error for invalid email", async () => {
+  it("shows error for invalid email and announces it to assistive technology", async () => {
     const { container } = render(<UserRegistrationForm {...baseProps} />);
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test User" } });
     fireEvent.blur(screen.getByLabelText(/name/i));
@@ -39,8 +39,8 @@ describe("UserRegistrationForm", () => {
     const form = container.querySelector("form");
     if (!form) throw new Error("Form element not found");
     fireEvent.submit(form);
-    const errors = await screen.findAllByText(/please enter a valid email address/i);
-    expect(errors.length).toBeGreaterThan(0);
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(/please enter a valid email address/i);
   });
 
   it("shows error for password mismatch", async () => {
@@ -56,6 +56,14 @@ describe("UserRegistrationForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /register/i }));
     const errors = await screen.findAllByText(/passwords do not match/i);
     expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("announces server errors and success messages", () => {
+    const { rerender } = render(<UserRegistrationForm {...baseProps} error="Registration failed" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/registration failed/i);
+
+    rerender(<UserRegistrationForm {...baseProps} error="" success="Registration complete" />);
+    expect(screen.getByRole("status")).toHaveTextContent(/registration complete/i);
   });
 
   it("calls onSubmit with valid data", async () => {
