@@ -146,6 +146,7 @@ const FormMessage = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : children
+  const role = error ? "alert" : props.role
 
   if (!body) {
     return null
@@ -157,6 +158,7 @@ const FormMessage = React.forwardRef<
       id={formMessageId}
       className={cn("text-[0.8rem] font-medium text-destructive", className)}
       {...props}
+      role={role}
     >
       {body}
     </p>

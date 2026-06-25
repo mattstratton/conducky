@@ -141,8 +141,16 @@ export const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
             </FormItem>
           )}
         />
-        {error && <div className="text-red-600 mt-2">{error}</div>}
-        {success && <div className="text-green-700 font-semibold mt-2">{success}</div>}
+        {error && (
+          <div className="text-red-600 mt-2" role="alert">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="text-green-700 font-semibold mt-2" role="status">
+            {success}
+          </div>
+        )}
         <Button
           type="submit"
           disabled={
