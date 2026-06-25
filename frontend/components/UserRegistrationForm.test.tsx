@@ -39,8 +39,8 @@ describe("UserRegistrationForm", () => {
     const form = container.querySelector("form");
     if (!form) throw new Error("Form element not found");
     fireEvent.submit(form);
-    const error = await screen.findByRole("alert");
-    expect(error).toHaveTextContent(/please enter a valid email address/i);
+    const error = await screen.findByText(/please enter a valid email address/i);
+    expect(error).toHaveAttribute("role", "alert");
   });
 
   it("shows error for password mismatch", async () => {
