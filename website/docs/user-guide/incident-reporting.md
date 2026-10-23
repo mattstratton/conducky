@@ -35,7 +35,7 @@ There are several ways to submit an incident report:
 
 ### Step 1: Basic Information
 
-The form lists the event's Code of Conduct team above the fields. Those people can see every incident submitted to the event, including its full details, so submit only if you are comfortable with them reading it.
+The form lists the event's Code of Conduct team above the fields. The team can see every incident submitted to the event, including its full details, so submit only if you are comfortable with them reading it.
 
 **Incident Title** (Required)
 - Provide a concise summary in 10-70 characters

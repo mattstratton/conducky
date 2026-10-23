@@ -132,7 +132,7 @@ describe("IncidentForm", () => {
     expect(screen.getByText("Description *")).toBeInTheDocument();
 
     // Privacy copy: who sees the incident, and that the title is not encrypted
-    expect(screen.getByText(/can see every incident submitted to this event/i)).toBeInTheDocument();
+    expect(screen.getByText(/team can see every incident submitted to this event/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Incident Title/)).toHaveAccessibleDescription(/title is not encrypted/i);
     
     // Check for urgency (should be visible to responders, without * since it's optional)

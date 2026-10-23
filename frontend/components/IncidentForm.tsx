@@ -270,7 +270,7 @@ const IncidentFormComponent: React.FC<IncidentFormProps> = ({ eventSlug, eventNa
         <>
           <CoCTeamList eventSlug={eventSlug} />
           <p className="mt-2 text-sm text-muted-foreground">
-            The people listed above can see every incident submitted to this event, including its
+            The Code of Conduct team can see every incident submitted to this event, including its
             full details. Only submit an incident if you are comfortable with them reading it.
           </p>
         </>
