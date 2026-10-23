@@ -7,9 +7,9 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 ## Steps
 
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
-- [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (branch `chore/agent-setup-and-docs-cleanup`, uncommitted)
-- [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (same branch)
-- [~] 4. Dep debt. **PR A (in review)**: pin `latest`, in-range security updates, frontend build fix, dependabot config. **Follow-ups, each its own PR, in this order:** (a) Docker images to Node 24, then lift the two holds; (b) nodemailer 6 → 10; (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x; (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only)
+- [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
+- [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. **PR B (this branch, `chore/node-24-images`):** Docker images to Node 24. **Remaining, each its own PR, in this order:** (b) nodemailer 6 → 10; (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -20,7 +20,10 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 ## Known problems still open (from initial review, 2026-10-22)
 
-- **Docker images run `node:18-alpine`** (both Dockerfiles; EOL Apr 2025), while CI and the docs say Node 24. Found when a newer jsdom crashed the container with `ERR_REQUIRE_ESM`. Fix = step 4 follow-up (a). RTD builds on Node 20 (EOL Apr 2026), Netlify on 18; both want a bump when the website moves to Docusaurus 3.10 (needs Node 20+; 3.10 also needs `@docusaurus/faster` because of `future.v4`)
+- ~~Docker images ran `node:18-alpine`~~ fixed in PR B. Still on old Node: RTD builds on Node 20 (EOL Apr 2026) and Netlify on 18; both want a bump when the website moves to Docusaurus 3.10 (needs Node 20+; 3.10 also needs `@docusaurus/faster` because of `future.v4`)
+- **Unexplained intermittent test failure** (seen once, 2026-10-23, Node 24): `tests/integration/logs-api.test.js › should accept valid frontend log` got `404` on `POST /api/logs` in the first host-run `npm run test:all` right after `docker compose restart backend`. Not reproduced in 7 later full runs (4 in-container, 3 host) or 3 isolated runs of the suite. `index.ts` mounts `/api` routes synchronously, so it isn't an obvious startup race. Also observed: the dev backend's nodemon restarts while tests run (likely jest writing `backend/ctrf/ctrf-report.json`, which nodemon watches; unverified), which makes `/health` return 000 mid-run. If it recurs, capture `--runInBand` output and whether the dev stack was restarting
+- `npm run test:all` runs jest **on the host** against the bind-mounted `node_modules` (not in the container as CLAUDE.md's command list implies). Works while Linux-built native modules aren't loaded by the tests; fragile
+- Many tracked files have **CRLF line endings** (Dockerfiles, docker-compose.yml, ...). `sed '...$'` anchors silently fail on them; match without `$`, and keep the CRLFs so diffs stay one line
 - Remaining prod vulns after PR A: backend `nodemailer` (fix only in v10); frontend `jspdf` (critical, fix only in v4), plus Tailwind 3 build-tool chain (braces/micromatch/chokidar/fast-glob) and Next's bundled postcss (fix only in Next 16). Website: 91 total / 20 critical, all build-time Docusaurus tooling (static site, no runtime exposure)
 - ~70 open issues, stale/duplicated (step 5)
 - Backend CI needs repo secrets, so fork PRs can't run backend tests
@@ -39,7 +42,18 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
 
-## Step 4 log, PR A (2026-10-23): branch `chore/dependency-debt`
+## Step 4 log, PR B (2026-10-23): branch `chore/node-24-images`
+
+- `backend/Dockerfile` and `frontend/Dockerfile`: `node:18-alpine` -> `node:24-alpine` (matches CI and docs). The Docker publish workflow builds from these, so published images move to Node 24 too.
+- **Host `node_modules` is bind-mounted into the containers** (`./backend:/app`), so it keeps whatever Node installed it. After a Node/Dockerfile change, delete `backend/node_modules` and `frontend/node_modules` before `docker compose up --build` (now noted in CLAUDE.md). The DB volume is not involved.
+- Verified on Node 24.22.1: bcrypt, sharp and Prisma client load; backend 42/42 suites (365 tests), type-check clean; frontend 20/20 (134), same 19 old test-fixture `tsc` errors; production `next build` 51/51 pages; both healthy. `frontend/package-lock.json` lost 4 orphaned entries (ajv, fast-uri, json-schema-traverse, require-from-string) when Node 24's npm re-resolved; no version changes.
+- **`isomorphic-dompurify` hold NOT lifted** (reason corrected). The Node-18 reason is gone (the app runs fine on Node 24 with the latest 4.6.0), but Jest (CommonJS) can't load jsdom 27+'s ESM-only deps (`@exodus/bytes`, `parse5` 8, `entities` 8, probably more): 28 of 42 suites fail even with a transform allowlist for the first one. The held 2.26.x has no open advisories, so lifting buys nothing and would add a brittle Jest allowlist plus a 2.x -> 4.x major. Revisit if the backend tests move to ESM/vitest. Dependabot `ignore` comment updated.
+- **Prisma hold is unrelated to Node** (it's the `Bytes` typing change in 6.11+), so it stays until follow-up (d).
+- Fixed `scripts/guard-bash.sh` again: the `down -v` check matched `-v` anywhere later in the command (`... | grep -v ...`). Now limited to the `docker compose down ...` segment. Added `scripts/guard-bash.test.sh` (19 cases; run it after touching the guard).
+
+Superseded dependabot PRs (verified against lockfiles after PR A; not yet closed, waiting on dependabot to self-close): #456 qs, #451 lodash, #444 validator, #442 express, #439 body-parser, #438 js-yaml, #400 form-data, #393 multer (backend), #445 validator (frontend). Obsolete or wrong target: #452 Next 16 (15.5.28 has the fixes), #453 jspdf 4.1.0 (needs >= 4.2.1), #441 nodemailer 7.0.11 (advisories need 10.x). Website PRs (#455 #454 #450 #443 #440 #434 #394) belong to follow-up (e).
+
+## Step 4 log, PR A (2026-10-23): merged as #461, branch `chore/dependency-debt`
 
 Production-dependency audit (`npm audit --omit=dev`), main -> this branch: **backend 18 vulns (2 critical, 10 high) -> 1 (0 critical, 1 high: nodemailer)**; **frontend 23 (2 crit, 16 high) -> 11 (1 crit: jspdf, 6 high)**.
 

@@ -12,8 +12,9 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      # Held until the Docker images move off Node 18: 2.27+ pulls jsdom 27 (ESM-only deps,
-      # needs Node 20+; breaks the app on Node 18 and Jest). See docs/revival-plan.md.
+      # Held: 2.27+ pulls jsdom 27+, whose ESM-only deps (@exodus/bytes, parse5 8, entities 8)
+      # break Jest (CommonJS). The app itself runs fine on Node 24. 2.26.x has no open advisories.
+      # Revisit when the backend tests move to ESM/vitest. See docs/revival-plan.md.
       - dependency-name: isomorphic-dompurify
         versions: [">=2.27.0"]
       # Prisma CLI and client must move together and need code changes (Bytes typing);
