@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. **PR B (this branch, `chore/node-24-images`):** Docker images to Node 24. **Remaining, each its own PR, in this order:** (b) nodemailer 6 → 10; (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. **PR C (this branch, `chore/nodemailer-10`):** nodemailer 6 → 10. **Remaining, each its own PR, in this order:** (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -44,7 +44,17 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
 
-## Step 4 log, PR B (2026-10-23): branch `chore/node-24-images`
+## Step 4 log, PR C (2026-10-23): branch `chore/nodemailer-10`
+
+nodemailer `^6.9.7` (locked 6.10.1) -> `^10.2.1`; `@types/nodemailer` removed (v10 ships its own types). **Backend prod audit: 0 vulnerabilities** (18 at the start of step 4).
+
+- Usage is one file, `backend/src/utils/email.ts` (`createTransport` for smtp / sendgrid-over-smtp / console `streamTransport`, `verify()`, `sendMail()`). No code depends on error codes, so v8's `NoAuth` -> `ENOAUTH` rename is irrelevant. v7 (SES SDK change) and v9 (TLS validation when fetching *remote content* such as attachment URLs, OAuth2 token endpoints, proxies) don't apply: the app uses none of those. v10 needs Node 20+ (images are on 24).
+- **No existing test did a real SMTP send** (`email-security.test.js` covers template paths; password-reset tests use the console path). Verified by hand with a throwaway Mailpit SMTP sink and a temporary script (deleted, not committed), baseline on 6.10.1 vs after on 10.2.1, identical: SMTP with auth `verify()` + `sendMail` through `EmailService.sendPasswordReset` and `sendEmail` (sink received both, `Reply-To` correct, reset link present in text and HTML); console mode; `streamTransport` returns a Buffer; unreachable SMTP falls back to console.
+- Verified: backend 42/42 suites (365 tests), type-check clean (with and without `@types/nodemailer`), build clean, `/health` 200 after restart.
+- **Not verified:** STARTTLS / port-465 TLS and real SendGrid auth (no credentials or TLS-enabled sink). SMTP TLS behavior isn't in the v7-v10 breaking-change notes, but if email breaks for a deployed instance, check this first.
+- Supersedes dependabot #441 (nodemailer 7.0.11, too low to fix the advisories).
+
+## Step 4 log, PR B (2026-10-23): merged as #477, branch `chore/node-24-images`
 
 - `backend/Dockerfile` and `frontend/Dockerfile`: `node:18-alpine` -> `node:24-alpine` (matches CI and docs). The Docker publish workflow builds from these, so published images move to Node 24 too.
 - **Host `node_modules` is bind-mounted into the containers** (`./backend:/app`), so it keeps whatever Node installed it. After a Node/Dockerfile change, delete `backend/node_modules` and `frontend/node_modules` before `docker compose up --build` (now noted in CLAUDE.md). The DB volume is not involved.
