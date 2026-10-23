@@ -9,12 +9,12 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. PR F (#488, merged): Prisma 6 → 7.10.1. **PR G (this branch, `chore/docusaurus-3-10`):** website: Docusaurus 3.8.1 → 3.10.2 + OpenAPI plugins 4 → 5 + Node 22 on Netlify/RTD. **Remaining:** (g) Tailwind 3 → 4 (optional, build-time chain only); then remove the TEMPORARY dependabot major-ignore. Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. PR F (#488, merged): Prisma 6 → 7.10.1. PR G (#489, merged): website: Docusaurus 3.8.1 → 3.10.2 + OpenAPI plugins 4 → 5 + Node 22 on Netlify/RTD. **PR H (this branch, `chore/dependabot-allow-majors`):** removes the TEMPORARY dependabot major-ignore. **Remaining:** check the first Read the Docs build on Node 22 (builds on push to `main`); decide on the superseded dependabot PRs (see log); (g) Tailwind 3 → 4 (optional, build-time chain only; dependabot will now offer it). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
 
-- **TEMPORARY: dependabot ignores semver-major in all three npm blocks** (`.github/dependabot.yml`). Turning on version updates opened 15 PRs at once (#462-#476), many risky majors (eslint 10, babel 8, `@types/node` 26, dotenv 18, ...). **Remove those three ignore entries once step 4's follow-ups (nodemailer, jspdf, Prisma, website) are done**, so majors come back as individual PRs reviewed one at a time. Don't leave this on: majors carry security fixes.
+- **DONE (PR H): the TEMPORARY dependabot ignore of semver-major was removed** from all three npm blocks, now that nodemailer, jspdf, Prisma, Node 24 and Docusaurus are upgraded by hand. Majors now come back as individual PRs, reviewed one at a time (monthly, `open-pull-requests-limit: 5` per block). Permanent holds that remain in `.github/dependabot.yml`: backend `isomorphic-dompurify >= 2.27.0` (Jest vs ESM-only jsdom 27+ deps) and website `@docusaurus/*` (all packages must share one exact version, bump together by hand).
 
 - **Docs hosting is intentional, keep both.** conducky.com (Netlify, `website/netlify.toml`) is the homepage + docs; Read the Docs (`.readthedocs.yaml`) builds the same Docusaurus site on every push to `main` (151 builds, latest = HEAD). Only nit: Netlify pins Node 18, RTD pins Node 20.
 - **One branch for steps 2+3**, one PR. Steps 4 and 5 get their own.
@@ -44,6 +44,10 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 4 log, PR H (2026-10-23): branch `chore/dependabot-allow-majors`
+
+Removed the three `dependency-name: "*"` / `semver-major` ignore entries (and the frontend block's now-empty `ignore:` key) from `.github/dependabot.yml`. YAML validated; remaining ignores are backend `isomorphic-dompurify >=2.27.0` and website `@docusaurus/*`. Expect the next monthly run to open a few major-version PRs (Tailwind 4, eslint, `@types/node`, etc.); each is its own PR and gets the same test + build + restart check as today's. Updates are on a monthly schedule; the repo's Insights > Dependency graph > Dependabot page has a "Check for updates" button to trigger a run sooner.
 
 ## Step 4 log, PR G (2026-10-23): branch `chore/docusaurus-3-10`
 
