@@ -1,0 +1,1 @@
+{"parameters":[{"in":"path","name":"code","required":true,"schema":{"type":"string"},"description":"The unique invite code","example":"abc123def456"}]}

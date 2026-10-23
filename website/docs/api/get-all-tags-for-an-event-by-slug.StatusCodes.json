@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Successfully retrieved tags"},"403":{"description":"Forbidden - No access to event"},"404":{"description":"Event not found"},"500":{"description":"Internal server error"}}}

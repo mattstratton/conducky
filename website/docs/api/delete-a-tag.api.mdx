@@ -5,7 +5,7 @@ description: "Delete a tag"
 sidebar_label: "Delete a tag"
 hide_title: true
 hide_table_of_contents: true
-api: eJx1VMlu2zAQ/RWCpxZQLKdJLzo1qF3AXYCgcdFD4ANNjmwiFKlwMWoI+vfOiIprR+mJy+zvPbLjUewCrx75mtZNwVvhRQMRPN12XFte4V3c84JbNOAJI1YKjx6ek/ageBV9goIHuYdG8Krj8diSY4he2x3vC64gSK/bqB2lw1JsteD9hnKE1tkAgcI+zOe0TJ0VGOxIsZCkhBDqZMyR0t7+L0AHpi1LAZiwiklhrYtsCy+JcuzNNPaL81utFFh2xVY2pLrWUoONrAXf6BDQK+Tg27cLU53aJTuU+PhWeyuL2FphWAB/AM/Ae+d5PwFpMbTKBEO4EWykZO8Qap5H4EUmpeKlaHVJJJbdQEyPppw6E5i8Qa99jG1VlsZJYfYuxOpmPr/m05oHMK5taOKcA8c4TxEwB9abSWdVkk9H3DSTLPfeoZEOpyQb6kkmr+NxaAoJJyzvEo3wuDm3P5CKsh62IDz47HQSFbXBR7HROTvhTd4gg42IeP/195o4uKh0SoIzfIMjBg3yls49afgncJzOgoyzoNVAjLa1G4J1NGT/PE7P7u5XGEVQ58mvZ/PZfIIHeqEmPDuFXeFWAXP1eBVRrFIrQr0RVuwgE3AMEQhdbCcKGamDscFTpofUts5HdLrk6BU/+Cw1mUN2/3RhxgGNloCP8KzCj9V6ktS16OSSlzBzfleOQaEkX4KpRV1h/2dZXmn4ApYTFxH+xLI1Aqnox5LdKO5HIgoDhz+qwH9m+HlQLCRhMnfdVgT45U3f0/VzAk8Cw+1BeC22RBfKTelAe3w+tTABJp0Qwgg5NvPu5/ipvWfjL1W83eeLkCyp6CBMohNun1BWL19kv+nPHu5i+X25XiJSfwFbBtjM
+api: eJx1VEtv2zAM/isCTxugxunaXXxa0QeQPYBizbBDkIMi0YlQW3JFKVhg+L8PtNwsqbuTJZH8+Pg+s4OotgTlCpb8XUtoVVANRgz82oF1UEKr4g4kONUglByxMCAh4EuyAQ2UMSSUQHqHjYKyg3ho2ZFisG4LvQSDpINto/UMt1RbsbiDfs0Y1HpHSBz2aT7nz9TZYI0RjaCkNRJVqa4PDHv9vwBLwjqRCIVyRmjlnI9ig69AOfZqGvvgw8Yag05ciIWjVFVWW3RRtBgaS2S9oxx8/X5izlP55IYUn98rb+EiBqdqQRj2GASG4AP0kyHdDaUKJaLagoQG484bKCG3ADKTUkKhWlswiUU3ENODhAydCUyhhhJ2MbZlUdReq3rnKZZX8/klTHPusfZtwx1nDOjlKQSVBeebae9M0s+HmfbNBOUxeJM0X44ga65Jp2DjYSiKcJjlTeIWVutT+xOrKOthgypgyE5HUXEZMIqN79kJ5Hh48KFREUr4+nvJHJxlOoKo1n7DA8gsb+39s8V/AtfeOdRxRtYMxFhX+SHYxprtt2P34uZxARJ41Lnzy9l8Np/M4+ZxISofxDHsQtx6g8JX41MU1mlreOqNcmqLmYADReTpau+i0pErGAs8Ij2ltvUhgnzD0Rt+sFGWzZTdv5yZewm11egITzL8WCwnoL5FRz4FjTMftsUYRAX78phaT7FR7gTljYbPxnLkIuKfWLS1so5LGVJ2o7hXTBTIvKMklHnzrCWwhNncdRtF+CvUfc/PLwkDC2wtYa+CVRuma9WBscRnA2WlasJJJTxhdKyaDz/HpfZRjFtKvl/nq5Acq2iv6sQ3kPCMh+OK7Nf9yY97d//9fnkPff8XWwbYzA==
 sidebar_class_name: "delete api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,24 @@ Delete a tag
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
 <ParamsDetails
-  parameters={[{"in":"path","name":"tagId","required":true,"schema":{"type":"string"},"description":"Tag ID"}]}
+  {...require("./delete-a-tag.ParamsDetails.json")}
 >
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={undefined}
+  {...require("./delete-a-tag.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"200":{"description":"Tag deleted successfully"},"400":{"description":"Tag is in use and cannot be deleted"},"403":{"description":"Forbidden - Insufficient permissions"},"404":{"description":"Tag not found"},"500":{"description":"Internal server error"}}}
+  {...require("./delete-a-tag.StatusCodes.json")}
 >
   
 </StatusCodes>

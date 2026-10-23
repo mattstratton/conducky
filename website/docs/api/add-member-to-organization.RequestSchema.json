@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["userId","role"],"properties":{"userId":{"type":"string","format":"uuid","description":"User ID to add as member"},"role":{"type":"string","enum":["org_admin","org_viewer"],"description":"Role to assign to the member"}}}}}}}

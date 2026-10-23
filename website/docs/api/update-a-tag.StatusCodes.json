@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Tag updated successfully"},"400":{"description":"Validation error"},"403":{"description":"Forbidden - Insufficient permissions"},"404":{"description":"Tag not found"},"500":{"description":"Internal server error"}}}

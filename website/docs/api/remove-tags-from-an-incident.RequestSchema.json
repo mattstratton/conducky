@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["tagIds"],"properties":{"tagIds":{"type":"array","items":{"type":"string"},"description":"Array of tag IDs to remove"}}}}}}}

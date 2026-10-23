@@ -25,8 +25,7 @@ import Heading from "@theme/Heading";
 
 
 <Schema
-  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Organization unique identifier"},"name":{"type":"string","description":"Organization name"},"slug":{"type":"string","description":"Organization URL slug"},"description":{"type":"string","description":"Organization description"},"website":{"type":"string","format":"uri","description":"Organization website URL","nullable":true},"isActive":{"type":"boolean","description":"Whether the organization is currently active"},"createdAt":{"type":"string","format":"date-time","description":"Organization creation timestamp"},"updatedAt":{"type":"string","format":"date-time","description":"Organization last update timestamp"}},"title":"Organization"}}
-  schemaType={"response"}
+  {...require("./organization.Schema.json")}
 >
   
 </Schema>

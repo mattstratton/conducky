@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Log received successfully"},"400":{"description":"Invalid log data"},"500":{"description":"Internal server error"}}}

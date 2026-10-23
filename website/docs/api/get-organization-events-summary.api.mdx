@@ -5,7 +5,7 @@ description: "Returns count of events, active events, and per-event report count
 sidebar_label: "Get organization events summary"
 hide_title: true
 hide_table_of_contents: true
-api: eJy1VE1v2zAM/SuCThuQxunaXXxasY+iG7YVbYcdihxUmUmE2JJLScFSw/99pOUkTt3utksiWo8U+fjIRga19DK/lz9xqax5UsE46+V8IgvwGk3NtszlDYSI1gvtog3CLQRswAY/EUoHs4GDaQtRA550tkCoHYbk5Lu7AKoS3jyBn8qJ9KAjmrClBBoyvKfHLmJYkT1vKYdaoaogAPoOYTiTWtH9RFq6IMsN0r4q6DvCYzQIhcwDRqAn9AoqJfNGhm3NHj6gsUtCLhxWKtCXGE0hW34PwddUPnjGv5vN+O+Yh9tYVQq3VBnzAYXwUWtKfBHLcivbiTyfnY69frggFNVFnBitAmXXIc/GyIsumijAmh3qfIwaNktYCr4ghjv4+5eSvrJEoVWl8IAbQAGIDqniiSRyV464kksIcpK4zWWmapMNmfVZc0x0m6WGZz7x0fWSY6dGRSwpzCqEOs+y0mlVrpwP+dmMyHmurE8UqXR1xXpJMaiOYQhPMSihqXa2iHq9pUM1inKNji47PnZB5gd93bIIUlcfQCFgEtleE/yM7LXCdgLRl3T4slPK1993TPKRUvdBKMdvwEx0MtXOrQ0chErZW9Bh6jutMWjhOmcTSr7/2FcnLq6vyIupTJWdTmfT2aheQlHTUezdTuhYAE9m+hSEsdoUzGqlrFpCInjrAzB7lE6g0eUM+gT3kW5jzVNLoOMePOOfpsrwtU/wD0fXVGBpNNAoDV74fnU3CupqArmIGqaksKx38hljmaaadEP5D6JcAu2fof6TEsVBiUdMNV2phPhvS6xvf4A/IatLRd1v+yqbfqDuWRuEPBopsvPR9koZsBT7akjEPDoco2kelIdfWLYtf36MgLw46bhRaNQDy4hmrzCezzTUC1V6+Acdb276XflWvFbGTtqWed2oMrJFxzUJfbR82/lwo1x+5m6r0YysuxnpD5zwi28Mx2X3HP/yanjRoWnS/BE5O3y6etVjBarohjyhueB527Z/AQ/QcRo=
+api: eJy1VMGO2zgM/RWBp11AjTNt9+JTB922SIu2g84UPQQ5aGQmEcaWXJEKNjX87wtaTsYZT/e2l0S0Hiny8ZEdsNkRlGv4GnfGu1+GXfAEGw0Vko2uFRtK+IacoidlQ/KswlbhAT2TVsayO+Cj6SvVYnwx2CpiGyJnJxruGE2jyP1CWoAGQpui4yOU6w4IiVzw14n3UK43/UZDa6JpkDHSgHCSSWt4Dxq8aRBKCJO0VxVoiPgzuYgVlBwTaiC7x8ZA2QEfW/Egjs7vQMM2xMYwlJCSq6CX9yJSGzwhCf7lcil/lzzcpqYx8ajiwAdWipK1SLRNdX2EXsPr5dXc60tgZRLv0bOzhrHKyFdz5PUQTVXo3Qn1eo6aNkv5wGobkh/gfz2X9MozRm9qRRgPGBXGGCL0vYYGeR8qKGGHDDpzW0JhWldMmaWiuyS6L3LDC8p8DL2U2LlRKdZQwp65LYuiDtbU+0Bcvlour+Cpsv7GA9ahbUQvOQb0ehqCykISWtjgq2QfjgsbmlmUmxiqZAc+TkE2j/q6FRHkrt6jiRizyM6akGdg1IrYGQR6PLw/KeXjjzsh+UKp5yCmdZ9QmBhkakN4cPgoVBu8R8sLGrQmoG0YnB3Xcv92rE5d36xAg1CZK7taLBfLWb3XNyu1DVGd3V6ot6FCmcz8iZXz1lXCamO82WEm+EiMwp4Nno1lyWBM8BzpNrUytaCf9OAJ/9gYJ9eU4W8urnsNtbPoCScvfF7dzYKGFj2FFC0uQtwVoxMVghWa2kDcGD+J8gFZTcU4rh71qMQLprqhVPT8vy2xsf2M/3DR1sZ5qX6oshsHai3aAH2xrAg0lLPtlTMQKY7VbDTI6EiMrrs3hN9j3ffy+WfCKItzo+FgojP3IqN1B5UjOVdQbk1N+B90/PFt3JV/qt+VcZK2F14Ppk5igYYHPM6Xb7+ZbpQP76TbZjYjD8OMjAdJ+Nk3puNyek5+ZTU869B1ef76/ozPV7/12KOphiHPaCl40/f9vw/QcRo=
 sidebar_class_name: "get api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,24 @@ Returns count of events, active events, and per-event report counts and team siz
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
 <ParamsDetails
-  parameters={[{"in":"path","name":"organizationId","required":true,"schema":{"type":"string","format":"uuid"}}]}
+  {...require("./get-organization-events-summary.ParamsDetails.json")}
 >
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={undefined}
+  {...require("./get-organization-events-summary.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"200":{"description":"Summary returned successfully"},"401":{"description":"Not authenticated"},"403":{"description":"Access denied"},"404":{"description":"Organization not found"},"500":{"description":"Internal server error"}}}
+  {...require("./get-organization-events-summary.StatusCodes.json")}
 >
   
 </StatusCodes>

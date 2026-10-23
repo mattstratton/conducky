@@ -5,7 +5,7 @@ description: "Get all incidents with a specific tag"
 sidebar_label: "Get all incidents with a specific tag"
 hide_title: true
 hide_table_of_contents: true
-api: eJyNVE1v2zAM/SuCThvgxunaXXxasW5FNmwY1g47FDkoMhOrVSSVkrMFhv/7SNt1krqH+WJ9kNQj3yMbmdQmyuJe3vF/mcmgUG0hAfJpI42TBZ2lSmbS0QXtyGNR0hbhqTYIpSwS1pDJqCvYKlk0Mu0DG8aExm1km8kSokYTkvEcjp4Si2vZLjlGDN5FiOz2bj7n36nxba01xLiurd0LBAoJOyiFcdqU4FIkINq7REv2VSFYoxX75g+RAzRTXH71ADqRY0AfAJPpnz+EPJgqRLUnS5NgG6ch2v7L5OX8Ygr9s8eVKSmkOBPfvVBdIiJ5QRkQ3M7tcurG5XE+ibWvXclW71+ry4JyRqesiIA7QAGIHmU7KfYNJKGsPRRM/DGpEkrEANqsjRbEJ2VInFeeuJQb6ErDlBcyV8HkLJG86Whv8+PC90/3QqnRkn2VUijy3HqtbOVjKi7m83P5EtM1FcD6sKUwA3xK8zhEpBj08oyYLWv9uKfFdhLlB3q65M0YZMmYdI0m7TtQJKxI91c1J3O/PL6/ZVX0xK9AIWBvNDLMMOQgat73RnTSL4jbrSLJyS+/75ijk5cO8gnmK3T6YcDa+0cDh0ai7BypaBZN2RFn3Np3ziZZvv84ZC+ufizIi0vdZ34+m8/mk3qQFWkGxeh2RssShF8PR2kUgdgqpzbQE7CPJO6hjZTu2mgAOEa6rUPwyLo45egFP9Rmhq9jb/7h5JoSpNYEavajF74t7iZBqSdd9DVqmHnc5INTzNmWyxRIV4T/KMr/avykXiNJCf6mPFhFHLUDlmbQ/z0zSI7dkMxo0A2j79AEpCjWOZs2zUpF+IW2bfn4qQZkFdJyp9CoFXNKmixN5DW12lrZCBNU4zSTb34OE/atGEZm9jrmZ7U5ltpO2Zp3tHwk7T3P63ZJhhWokkTMMPq7K5pJIR15TQYo98w4G24+MQX/AP0QHoU=
+api: eJyNVE2P0zAQ/SvWnEAyTfm65ES1fKgg0Iot4lD14DrT1mxim/GkUEX572iSbNpu9kAuju2Z5+d5z9MAm32CfA0rGTcaoiFTISPJagPOQw7R8AE0eFMh5JKxLEAD4e/aERaQM9WoIdkDVgbyBvgUJTAxOb+HVkOByZKL7ILArcxeLd9DuxGMFINPmCTt1Xwuw3XwXW0tprSry/KkCJkcHrFQzltXoOcEGmzwjJ4l18RYOmskN/uVBKCZ8grbX2gZNEQKEYldf/wZ8hxqiMwJNDjGKk0h2v7T8Gb+ekr9Y6CtKwr06oX6FpTpLqI4KDwK3S7tzTRNyuMDq12ofSFRb5+qy9IzkjelSkhHJIVEgaCdFPsTsjJleS6Y+uP4oIxKEa3bOavY7EFDhXwIBeSwx640InkOmYkuE4tkTSd7m10Wvj+6N0pNJeRwYI55lpXBmvIQEuev5/OX8JjTezxiGWKFngf60OpLiJRncvLMBl/U9v40s6GaoNxSKGorkxFkI5xsTY5PHamEKbngF7VcZr253L8TV/TCb9EQUh80Kiw0YDC1zPsg0MPPx0CVYcjh88+VaHR10tk+0X3Bzj9C2IZw7/D8kGzwHi3Pkis64ZzfhS7ZcSn7N8Pt1eJ2CRqk1P3NX87ms/mkHovbpdoFUmPaC3UTClRhNyzxaAJVGW/22AtwSozV8IyM7Z7RQHBEuqtjDCS+uNbokT5YGSfbqQ9/d7XdaiidRZ/w4oSvy9UENET0KdRkcRZonw1JKZNYKVMMiSvjL1D+1+NX9RpFYvzLWSyN88Kx49IM/l+LgqD7Jqkhf2h950ew0SA+l9Cm2ZqEP6hsW1n+XSOJCzcajoac2Yqm6wYKl+S/gHxnyoQTVmM3g2ffhw77XA0tUz/N+cFtXqx2NGUtM9Bwj6exX7ebVsMBTYHU0ej3FtZi5IusSQOVNzP2hk8fRIJ//RAehQ==
 sidebar_class_name: "get api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,24 @@ Get all incidents with a specific tag
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
 <ParamsDetails
-  parameters={[{"in":"path","name":"tagId","required":true,"schema":{"type":"string"},"description":"Tag ID"}]}
+  {...require("./get-all-incidents-with-a-specific-tag.ParamsDetails.json")}
 >
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={undefined}
+  {...require("./get-all-incidents-with-a-specific-tag.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"200":{"description":"Successfully retrieved incidents","content":{"application/json":{"schema":{"type":"object","properties":{"incidents":{"type":"array","items":{"type":"object"}}}}}}},"403":{"description":"Forbidden - No access to event"},"404":{"description":"Tag not found"},"500":{"description":"Internal server error"}}}
+  {...require("./get-all-incidents-with-a-specific-tag.StatusCodes.json")}
 >
   
 </StatusCodes>

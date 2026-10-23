@@ -5,7 +5,7 @@ description: "Get all tags for an event by slug"
 sidebar_label: "Get all tags for an event by slug"
 hide_title: true
 hide_table_of_contents: true
-api: eJyNVE1v2zAM/SuCThvgxu7aXXxasXVFNmwolhQ7FDkoMpMIVSRXH8EMw/99pOW5Tt3DTpYp8umR70ktD2LvefnI1/TdZLwWThwhgKNoy5XhJcbCgWfc4Ab+wQlMWOm4x5CD56gcVLwMLkLGvTzAUfCy5aGpKdkHp8yedxmvwEun6qAsQd4SCPOE0m0Ix9fWePBU+qEo6HNesIpSgve7qHXDHCAs8qhYTx/Rr4urec1X67aqqsCwC/bTMtEjsGBZ30Iqu56XJW7GBraz0VSU9/EtSkuDYzJCMw/uBI6Bc9bxbtbrHQQmtO65IqRjwiQGbNukEWQcR36wOEa+h8CzNPGS56JWOZXlfX5OyXk7CtBhZjo7iRWdxqJDCHWZ59pKoQ/Wh/KqKC75a1JfEEXb+tjL0GNgn1MIjxh4/EJaU0X51ODiOEO5dxY36WcE2RAnGZ0KTU8KRfW4fxOpo8fNdH9Fbkmab0E4cClpNA/R4IOp6D8lYSQtUN6jCBj/9ntNIp2dNIJgD9+hwaLeytLaJwUvZsbuDMiw8KrqlVNmZ/tiFTTtfx66Zzf3S6yiUafOLxfFopjNA7N6hceyC1xWwOxuCAWmjFQVTf0ojNhDEqDxAWi6SCcIGYjBQHBEWsW6to7Mca7RK33w+ina9in909k2NqiVBLxokxN+LNczUFtjko1OwsK6fT4U+ZxyaUw1+gr5T1D+x+RnsxoFCvAn5LUWqE838GiHC/BI6mFhf8uz9PKQIRJc+fISoanI6lTRtlvh4cHprqPwcwRHRsTlSTgltiQr2rJSntZ45XZCe5iRIyXotJK/+zU8cu/Z5NXK3qb/z3SGHHcSOtIfLp/QgtOns9t0k0t/d0tj/Qu3zOVz
+api: eJyNVE1v2zAM/SsCTxugxum6XXxa0bVFNmwolg47BDkoMpMIlUVXH8EMw/99oOW5SdPDTtYH+fjE98wOotoFKFfwyN+1hEZ5VWNEz6cdGAclNCruQYJTNUIJeEAXlzbtQILH52Q8VlBGn1BC0HusFZQdxLbh4BC9cTvoJVQYtDdNNMSQtwwiAqP0a8YJDbmAgVM/zOf8OU1YJq0xhG2ythUeozd4wEoM9HsJH+dX5zl35DemqtCJC/GDhBoQRCQxPCGnfTxPy9wcRbGl5CqO+/QWpYWL6J2yIqA/oBfoPXnoz956j1EoaweuYkteKJcZiE2bWyChxrinCkrYYQSZO15CoRpTcFoxxBccXHSTAD1IyLWzWMlbKGEfY1MWhSWt7J5CLK/m80t4TeoLHtBSUw8yDBjQy2OIUBZcfqbJVUk/tTNN9RnKg6cqad5MIGvmpJM3sR1IBQzBkLtO/KLV+vh+yW7Jmm9QefQ5aDIP04DRVLzPQSDHxR35WkUo4evvRxbppNIEohrzDVuQ2cqa6Mngi5k1OYc6zoKpBuWM29KQbKLl+5vx9eL6YQESuNX55Zez+Wx+1o/rh8Wg8JR2IW6oQkHb8SgK47SpuOu1cmqHWYA2ROTuanJR6cgMRoIT0jI1DXk2x6lGr/TBWhm+Djn888l1L8EajS7gUYXvi8czUGrQBUpe44z8rhiTQsGx3KaGQqyVO0L5H5Of9GoSKOKfWDRWGcf8Bh7d+AOsWD2QeUjJPHnYEBmufJlEawlsdc7ouo0K+Mvbvufj54SejbiWcFDeqA3LuuqgMoHXFZRbZQOekWMluFoJ736OQ+69OJpa8m36/0zn2HEHZRPvQMITtiejs1/3Rz/9/S239S+3zOVz
 sidebar_class_name: "get api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,24 @@ Get all tags for an event by slug
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
 <ParamsDetails
-  parameters={[{"in":"path","name":"eventSlug","required":true,"schema":{"type":"string"},"description":"Event slug"}]}
+  {...require("./get-all-tags-for-an-event-by-slug.ParamsDetails.json")}
 >
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={undefined}
+  {...require("./get-all-tags-for-an-event-by-slug.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"200":{"description":"Successfully retrieved tags"},"403":{"description":"Forbidden - No access to event"},"404":{"description":"Event not found"},"500":{"description":"Internal server error"}}}
+  {...require("./get-all-tags-for-an-event-by-slug.StatusCodes.json")}
 >
   
 </StatusCodes>

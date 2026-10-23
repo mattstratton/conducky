@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Successfully retrieved incidents","content":{"application/json":{"schema":{"type":"object","properties":{"incidents":{"type":"array","items":{"type":"object"}}}}}}},"403":{"description":"Forbidden - No access to event"},"404":{"description":"Tag not found"},"500":{"description":"Internal server error"}}}
