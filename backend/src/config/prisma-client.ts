@@ -9,6 +9,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 
+/**
+ * Build the `pg` driver adapter Prisma 7 needs, from DATABASE_URL.
+ * Used directly by clients that pass their own options (see config/database.ts).
+ */
 export function createAdapter() {
   return new PrismaPg({
     connectionString: process.env.DATABASE_URL,
@@ -17,6 +21,10 @@ export function createAdapter() {
   });
 }
 
+/**
+ * Create a PrismaClient with default options on the shared adapter setup.
+ * Prefer this over `new PrismaClient()`, which has no adapter and throws.
+ */
 export function createPrismaClient() {
   return new PrismaClient({ adapter: createAdapter() });
 }
