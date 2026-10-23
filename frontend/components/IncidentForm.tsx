@@ -6,7 +6,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "./ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "./ui/form";
 import { Badge } from "./ui/badge";
 import { CoCTeamList } from "./CoCTeamList";
 import { TagSelector, Tag } from "./tags/TagSelector";
@@ -266,8 +266,16 @@ const IncidentFormComponent: React.FC<IncidentFormProps> = ({ eventSlug, eventNa
         </div>
       )}
       
-      {eventSlug && <CoCTeamList eventSlug={eventSlug} />}
-      
+      {eventSlug && (
+        <>
+          <CoCTeamList eventSlug={eventSlug} />
+          <p className="mt-2 text-sm text-muted-foreground">
+            The Code of Conduct team can see every incident submitted to this event, including its
+            full details. Only submit an incident if you are comfortable with them reading it.
+          </p>
+        </>
+      )}
+
       <Card className="p-6">
         <h3 className="text-xl font-semibold mb-6 text-foreground">
           Submit an Incident
@@ -293,6 +301,10 @@ const IncidentFormComponent: React.FC<IncidentFormProps> = ({ eventSlug, eventNa
                       placeholder="Enter a concise summary (10-70 characters)"
                     />
                   </FormControl>
+                  <FormDescription>
+                    The title is not encrypted and can appear in lists and searches. Keep sensitive
+                    details out of it and put them in the description instead.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

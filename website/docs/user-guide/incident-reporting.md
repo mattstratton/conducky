@@ -35,10 +35,13 @@ There are several ways to submit an incident report:
 
 ### Step 1: Basic Information
 
+The form lists the event's Code of Conduct team above the fields. The team can see every incident submitted to the event, including its full details, so submit only if you are comfortable with them reading it.
+
 **Incident Title** (Required)
 - Provide a concise summary in 10-70 characters
 - Think of this as a subject line that helps responders quickly understand the issue
 - Examples: "Harassment during keynote", "Unsafe booth behavior", "Code of conduct violation"
+- The title is not encrypted and can appear in lists and searches, so keep sensitive details out of it and put them in the description
 
 **Incident Description** (Required)
 - Describe what happened in as much or as little detail as you're comfortable sharing
