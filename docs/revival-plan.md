@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. **PR C (this branch, `chore/nodemailer-10`):** nodemailer 6 → 10. **Remaining, each its own PR, in this order:** (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. **PR D (this branch, `chore/jspdf-4`):** jspdf 3 → 4. **Remaining, each its own PR, in this order:** (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -44,7 +44,16 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
 
-## Step 4 log, PR C (2026-10-23): branch `chore/nodemailer-10`
+## Step 4 log, PR D (2026-10-23): branch `chore/jspdf-4`
+
+jspdf `^3.0.1` (locked 3.0.4) -> `^4.2.1`. **Frontend prod audit: no critical left** (was 1: jspdf); 10 remain (6 high, 4 moderate), all the Tailwind 3 build chain and Next's bundled postcss.
+
+- Only user is the incident PDF export in `frontend/components/incidents/EnhancedIncidentList.tsx`, which uses core APIs only (`text`, `line`, `addPage`, `setFont`, `splitTextToSize`, `save`), no plugins.
+- Verified: same export calls run in node on 3.0.4 vs 4.2.1 (40 incidents, 6 pages). Output is byte-identical except the `/Producer`, `/CreationDate` and `/ID` lines, all 40 incidents extractable as text. Frontend 20 suites / 134 tests, production build clean, `tsc` unchanged (19 old fixture errors, none in this file).
+- **Not verified:** clicking Export > PDF in the browser (no test covers it). The by-hand check was the same API calls outside the component.
+- Supersedes dependabot #453 (jspdf 4.1.0, too low).
+
+## Step 4 log, PR C (2026-10-23): merged as #480, branch `chore/nodemailer-10`
 
 nodemailer `^6.9.7` (locked 6.10.1) -> `^10.2.1`; `@types/nodemailer` removed (v10 ships its own types). **Backend prod audit: 0 vulnerabilities** (18 at the start of step 4).
 
