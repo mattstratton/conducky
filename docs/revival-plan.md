@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. **PR D (this branch, `chore/jspdf-4`):** jspdf 3 → 4. **Remaining, each its own PR, in this order:** (d) Prisma 6.10 → latest 6.x (needs `Buffer`→`Uint8Array` typing fixes); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. **PR E (this branch, `chore/prisma-6-latest`):** Prisma 6.10 → 6.19.3. **Remaining, each its own PR, in this order:** (f) **Prisma 6 → 7** (decided: do it soon, not parked; it is the only fix for the `deepmerge-ts` advisory below, and the `prisma.config.ts` / driver-adapter changes need reading first); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (g) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -43,6 +43,14 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 4 log, PR E (2026-10-23): branch `chore/prisma-6-latest`
+
+`prisma` and `@prisma/client` 6.10.1 -> 6.19.3 (still exact-pinned, still moved together). 6.11+ types `Bytes` as `Uint8Array<ArrayBuffer>`, so the five Prisma writes of uploaded files now pass `new Uint8Array(data)` (`event.service.ts` logo, `incident.service.ts` x2 related files, `organization.service.ts` logo, `user.service.ts` avatar). The old `uploader` type error was a knock-on of the failed `data` overload and went away with it.
+
+- Verified: backend 42/42 suites (365 tests), type-check and build clean, container restarted on 6.19.3 (`/health` 200, 12 migrations found and none pending, seeds ran). On the real dev DB, inside a rolled-back transaction, wrote and read back every byte value (0-255) through all four `Bytes` models (`UserAvatar`, `EventLogo`, `OrganizationLogo`, `RelatedFile`, with the `uploader` include): all identical, nothing left behind. Reads now return `Uint8Array` at runtime, but every read path already wraps it in `Buffer.from(...)` before `res.send`, so file serving is unchanged.
+- **Audit regression, accepted:** backend `npm audit --omit=dev` goes 0 -> 3 high. All three are one advisory, GHSA-ggr8-5vv4-36mx (`deepmerge-ts` < 8, stack exhaustion on recursive objects), pulled in by `@prisma/config` (the Prisma CLI's config loader) from 6.13 on. It is not reachable from a request. 6.12.0 is the newest release without it, but is 7 releases older. The only real fix is Prisma 7 (`deepmerge-ts` 8): follow-up (f).
+- The Prisma entries in `.github/dependabot.yml` were removed (their reason, the Bytes typing, is resolved), so grouped minor/patch PRs bump both packages together. Majors stay blocked by the temporary wildcard.
 
 ## Step 4 log, PR D (2026-10-23): branch `chore/jspdf-4`
 
