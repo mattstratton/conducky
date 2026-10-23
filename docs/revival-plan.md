@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. PR F (#488, merged): Prisma 6 → 7.10.1. PR G (#489, merged): website: Docusaurus 3.8.1 → 3.10.2 + OpenAPI plugins 4 → 5 + Node 22 on Netlify/RTD. **PR H (this branch, `chore/dependabot-allow-majors`):** removes the TEMPORARY dependabot major-ignore. **Remaining:** check the first Read the Docs build on Node 22 (builds on push to `main`); decide on the superseded dependabot PRs (see log); (g) Tailwind 3 → 4 (optional, build-time chain only; dependabot will now offer it). Also: close superseded dependabot PRs (see log)
+- [x] 4. Dep debt, done 2026-10-23: #461 (in-range security updates, frontend build fix, dependabot config), #477 (Docker images on Node 24), #480 (nodemailer 10), #486 (jspdf 4), #487 + #488 (Prisma 6.19 then 7.10.1), #489 (Docusaurus 3.10, OpenAPI plugins 5, Node 22 hosting), #491 (dependabot majors re-enabled), grouped dependabot PRs #463 #493 #492 #469, plus the cleanup PR (`chore/post-dependabot-cleanup`). Backend runtime audit 0, frontend runtime 6 (1 high), website 44 (0 critical). Optional leftovers are under "Known problems" below (Tailwind 4, Next 16, Read the Docs on Node 22, docker-publish untested).
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -23,11 +23,11 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 ## Known problems still open (from initial review, 2026-10-22)
 
-- ~~Docker images ran `node:18-alpine`~~ fixed in PR B. Still on old Node: RTD builds on Node 20 (EOL Apr 2026) and Netlify on 18; both want a bump when the website moves to Docusaurus 3.10 (needs Node 20+; 3.10 also needs `@docusaurus/faster` because of `future.v4`)
+- ~~Docker images ran `node:18-alpine`~~ fixed in PR B. ~~Netlify on Node 18, RTD on Node 20~~: both moved to Node 22 in #489. **Not yet confirmed:** the first Read the Docs build on Node 22 (RTD only builds on push to `main`); if it fails, the fix is the `nodejs` line in `.readthedocs.yaml`
 - **Unexplained intermittent test failure** (seen once, 2026-10-23, Node 24): `tests/integration/logs-api.test.js › should accept valid frontend log` got `404` on `POST /api/logs` in the first host-run `npm run test:all` right after `docker compose restart backend`. Not reproduced in 7 later full runs (4 in-container, 3 host) or 3 isolated runs of the suite. `index.ts` mounts `/api` routes synchronously, so it isn't an obvious startup race. Also observed: the dev backend's nodemon restarts while tests run (likely jest writing `backend/ctrf/ctrf-report.json`, which nodemon watches; unverified), which makes `/health` return 000 mid-run. If it recurs, capture `--runInBand` output and whether the dev stack was restarting
 - `npm run test:all` runs jest **on the host** against the bind-mounted `node_modules` (not in the container as CLAUDE.md's command list implies). Works while Linux-built native modules aren't loaded by the tests; fragile
-- Many tracked files have **CRLF line endings** (Dockerfiles, docker-compose.yml, ...). `sed '...$'` anchors silently fail on them; match without `$`, and keep the CRLFs so diffs stay one line
-- Remaining prod vulns after PR A: backend `nodemailer` (fix only in v10); frontend `jspdf` (critical, fix only in v4), plus Tailwind 3 build-tool chain (braces/micromatch/chokidar/fast-glob) and Next's bundled postcss (fix only in Next 16). Website: 91 total / 20 critical, all build-time Docusaurus tooling (static site, no runtime exposure)
+- Many tracked files have **CRLF line endings** (Dockerfiles, docker-compose.yml, ...). `sed '...$'` anchors silently fail on them; match without `$`, and keep the CRLFs so diffs stay one line. Also: `npm install`/`uninstall` on this machine once rewrote `frontend/package-lock.json` with CRLF (a 36k-line diff for removing one package). Always check `git diff --stat` on lockfiles; convert back to LF (`b.replace(b'\r\n', b'\n')`) if it explodes
+- Remaining vulnerabilities (verified 2026-10-23 after the dependabot merges): backend runtime audit **0**; frontend runtime 6 (1 high, 5 moderate), from two advisories: `postcss` <= 8.5.22 bundled inside Next (high; fixed only by Next 16, see #452) and `postcss-selector-parser` via the Tailwind 3 / `@tailwindcss/typography` chain (moderate; Tailwind 4 would clear it); website 44 (0 critical; pinned by Docusaurus's own dependencies, needs upstream releases; a temporary `tinypool` override is in `website/package.json`, see the PR G log). Nothing here is reachable from a request
 - ~70 open issues, stale/duplicated (step 5)
 - Backend CI needs repo secrets, so fork PRs can't run backend tests
 - Frontend: 19 `tsc` errors, all in test files (`IncidentDetailView.test.tsx`, `CoCTeamList.test.tsx`, `KeyboardNavigationTest.test.tsx`); no frontend `type-check` script
@@ -44,6 +44,21 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 4 log, PR I (2026-10-23): grouped dependabot PRs + cleanup (`chore/post-dependabot-cleanup`)
+
+Reviewed one at a time, each in an isolated git worktree (not the main tree's bind-mounted `node_modules`), then merged:
+- **#463 backend** (`swagger-jsdoc` 6.2.8 -> 6.3.0, `jest-ctrf-json-reporter` 0.0.9 -> 0.2.0): `swagger.json` regenerated with both versions is byte-identical (and equals the tracked file), so the API docs cannot change; the new reporter passes 42/42 suites and writes a CTRF 0.2.0 report that is a superset of the old shape (extra fields, ~190 KB -> 315 KB); CI's combine step passed.
+- **#493 frontend** (`@types/dompurify` 3.0.5 -> 3.2.0, same reporter): tests 134, `tsc` 19 (unchanged), build clean. `@types/dompurify` 3.2.0 is a deprecated stub (DOMPurify ships its own types), so this cleanup PR removes it (tests, `tsc` 19, build all unchanged without it).
+- **#492 website** (`react`/`react-dom` 19.1.0 -> 19.3.1, `@mdx-js/react` 3.1.1): built in a worktree; same 131 pages, **visible text identical on 131/131** vs a build of `main`.
+- **#469 GitHub Actions group** (10 updates, mostly majors): the `test.yml` bumps were exercised by the PR's own CI. The `docker-publish.yml` bumps (`setup-buildx` 4, `login-action` 4, `metadata-action` 6, `build-push-action` 7, `attest-build-provenance` 4, `checkout` 7) were checked against the release notes: the workflow uses none of the removed inputs/envs or the changed `#` handling; the Node 24 runtime needs runner >= v2.327.1, which `ubuntu-latest` has. **Still untested end to end: it only runs on a `v*` tag.** Watch the first release's "Publish Docker Images" run; if it fails, revert `docker-publish.yml` from #469.
+- After #469, the test workflow on `main` passed and Codecov processed the `main` upload (36.43%, unchanged), so `codecov-action` v7 works with the repo token.
+
+Things learned:
+- **Dependabot PRs never get `codecov/*` statuses**: Dependabot runs don't receive the repo's `CODECOV_TOKEN` secret, so the upload fails with "Token required because branch is protected" (the step has `fail_ci_if_error: false`, so the job still passes). Not a regression.
+- The test workflow still uses `codecov/test-results-action@v1`, which logs "This action is being deprecated in favor of 'codecov-action'". Part of the tools re-evaluation follow-up.
+
+Also in this PR: `@types/dompurify` removed from `frontend`; the step 4 / known-problems / superseded-PR lines above brought up to date.
 
 ## Step 4 log, PR H (2026-10-23): branch `chore/dependabot-allow-majors`
 
@@ -122,7 +137,7 @@ nodemailer `^6.9.7` (locked 6.10.1) -> `^10.2.1`; `@types/nodemailer` removed (v
 - **Prisma hold is unrelated to Node** (it's the `Bytes` typing change in 6.11+), so it stays until follow-up (d).
 - Fixed `scripts/guard-bash.sh` again: the `down -v` check matched `-v` anywhere later in the command (`... | grep -v ...`). Now limited to the `docker compose down ...` segment. Added `scripts/guard-bash.test.sh` (19 cases; run it after touching the guard).
 
-Superseded dependabot PRs (verified against lockfiles after PR A; not yet closed, waiting on dependabot to self-close): #456 qs, #451 lodash, #444 validator, #442 express, #439 body-parser, #438 js-yaml, #400 form-data, #393 multer (backend), #445 validator (frontend). Obsolete or wrong target: #452 Next 16 (15.5.28 has the fixes), #453 jspdf 4.1.0 (needs >= 4.2.1), #441 nodemailer 7.0.11 (advisories need 10.x). Website PRs (#455 #454 #450 #443 #440 #434 #394) belong to follow-up (e).
+Superseded dependabot PRs: **closed 2026-10-23** with a "superseded" comment after checking each target version against the lockfiles on `main` (#393 #394 #400 #438 #439 #440 #441 #442 #443 #444 #445 #450 #451 #453 #454 #455 #456 #484 #485). Dependabot reopens one if it is still needed. #452 (Next 16) stays open as a real major for later.
 
 ## Step 4 log, PR A (2026-10-23): merged as #461, branch `chore/dependency-debt`
 
