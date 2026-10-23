@@ -18,6 +18,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 - **Docs hosting is intentional, keep both.** conducky.com (Netlify, `website/netlify.toml`) is the homepage + docs; Read the Docs (`.readthedocs.yaml`) builds the same Docusaurus site on every push to `main` (151 builds, latest = HEAD). Only nit: Netlify pins Node 18, RTD pins Node 20.
 - **One branch for steps 2+3**, one PR. Steps 4 and 5 get their own.
+- **Follow-up (after step 5): re-evaluate every third-party tool and service on the repo.** The set was chosen over a year ago. Known trigger: DeepSource now gates monorepo support behind team accounts (the dashboard shows "Monorepos is only available for teams accounts" when logged in; results are still visible when logged out), and it has been the only failing check on a PR. Review DeepSource, SonarCloud, CodeFactor, Codeac, Codecov, GitGuardian, CodeQL, codebeat (README badge, `.codebeatignore`) and `.deepsource.toml`: which are still connected, which add signal beyond CI + CodeQL, which to drop. Decide per tool, keep the badges honest.
 - **Parked until stable (after step 5): make conducky deployable on Vercel as well as Railway/Docker and others.** Needs a deploy-target story: Next.js frontend on Vercel is easy; the Express backend + Postgres + uploaded files (stored in DB today, issue #240) + sessions + rate-limit tables need an answer (serverless Express, separate host, or port to route handlers). Don't start before steps 1-5 are done.
 
 ## Known problems still open (from initial review, 2026-10-22)
