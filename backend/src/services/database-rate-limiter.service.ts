@@ -3,7 +3,7 @@
  * Provides persistent rate limiting using PostgreSQL
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import logger from '../config/logger';
 

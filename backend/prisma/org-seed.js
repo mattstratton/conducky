@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('./db');
 const bcrypt = require('bcrypt');
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   console.log('🌱 Seeding organization data...');

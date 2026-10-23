@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { createPrismaClient } = require('./db');
+const prisma = createPrismaClient();
 
 /**
  * Unified roles seed - creates the core UnifiedRole entries needed for the system to function

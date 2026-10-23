@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { createPrismaClient } = require('./db');
+const prisma = createPrismaClient();
 
 /**
  * Essential roles seed - creates only the core roles needed for the system to function

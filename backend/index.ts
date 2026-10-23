@@ -11,7 +11,7 @@ import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from './src/config/prisma-client';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
@@ -68,7 +68,7 @@ import { getSessionConfig } from './src/config/session';
 import { setupSwagger } from './src/config/swagger';
 
 // Initialize Prisma client (after environment is loaded)
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 // Initialize configurable logging service
 (async () => {

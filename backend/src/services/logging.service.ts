@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 
 interface LoggingSettings {
   level: string;

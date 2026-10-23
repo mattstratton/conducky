@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { NotificationService } from '../services/notification.service';
 import { UserResponse } from '../types';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { requireAuth } from '../middleware/auth';
 import logger from '../config/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const notificationService = new NotificationService(prisma);
 
 

@@ -1,8 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import logger from '../config/logger';
 
 // Follow the same pattern as organization.service.ts
-const defaultPrisma = new PrismaClient();
+const defaultPrisma = createPrismaClient();
 
 // Type definitions for better type safety
 type RoleScope = 'system' | 'organization' | 'event';

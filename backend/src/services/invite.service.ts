@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import bcrypt from 'bcrypt';
 import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';

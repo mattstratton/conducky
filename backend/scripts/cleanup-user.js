@@ -5,8 +5,8 @@
  * Usage: docker-compose exec backend node scripts/cleanup-user.js <email>
  */
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { createPrismaClient } = require('../prisma/db');
+const prisma = createPrismaClient();
 
 async function cleanupUser(email) {
   try {

@@ -4,7 +4,8 @@ import userRoutes from './event/users.routes';
 import commentRoutes from './event/comments.routes';
 import mainEventRoutes from './event/main.routes';
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { requireSystemAdmin } from '../utils/rbac';
 import logger from '../config/logger';
 import { EventService } from '../services/event.service';
@@ -12,7 +13,7 @@ import { EventService } from '../services/event.service';
 const router = Router();
 
 // Create single PrismaClient instance to reuse across requests
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const eventService = new EventService(prisma);
 
 // Get all events (System Admin only)

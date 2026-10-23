@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. **PR E (this branch, `chore/prisma-6-latest`):** Prisma 6.10 → 6.19.3. **Remaining, each its own PR, in this order:** (f) **Prisma 6 → 7** (decided: do it soon, not parked; it is the only fix for the `deepmerge-ts` advisory below, and the `prisma.config.ts` / driver-adapter changes need reading first); (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (g) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. **PR F (this branch, `chore/prisma-7`):** Prisma 6 → 7.10.1. **Remaining, each its own PR, in this order:** (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (g) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -44,6 +44,25 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 4 log, PR F (2026-10-23): branch `chore/prisma-7`
+
+`prisma`, `@prisma/client` 6.19.3 -> **7.10.1** (exact-pinned; npm's `latest` tag is now `8.0.0-rc.27`, a release candidate, so 7.10.1 is the last stable 7.x), plus new `@prisma/adapter-pg` 7.10.1 and `pg`. **Backend prod audit is back to 0**: Prisma 7 pulls `deepmerge-ts` 8, which fixes the advisory accepted in #487.
+
+What changed:
+- **Generator** `prisma-client` (was `prisma-client-js`), output `backend/src/generated/prisma` (gitignored), `moduleFormat = "cjs"` so the backend stays CommonJS. The 23 stray tracked files in `backend/generated/` (nothing imported them) are deleted. `binaryTargets` is gone.
+- **`backend/prisma.config.ts`** now holds the schema path, migrations path and datasource URL (the URL left `schema.prisma`). It uses `process.env.DATABASE_URL ?? ""` rather than `env()`, because `env()` throws at load time and `prisma generate` runs in CI and image builds without a database; `migrate` still fails on an empty URL ("Connection url is empty").
+- **Driver adapter.** Every client needs one. `backend/src/config/prisma-client.ts` has `createAdapter()` (`PrismaPg`, 5s `connectionTimeoutMillis` to match v6) and `createPrismaClient()`. 20 `new PrismaClient()` sites in `src/` + `index.ts` use it; `config/database.ts` keeps its own typed client (log events) on the shared adapter.
+- **64-file import move**: `src/` and `index.ts` import from `generated/prisma/client`. Tests keep importing `@prisma/client`; `jest.config.js` `moduleNameMapper` points both that and the generated path at the existing `__mocks__/@prisma/client.js` in-memory mock.
+- **Plain-node scripts** (6 in `prisma/`, 5 in `scripts/`) can't `require` a TypeScript client, so `backend/prisma/db.js` registers ts-node and re-exports the factory. Their `package.json` / entrypoint commands are unchanged.
+- **Bug fixed on the way:** `middleware/unified-rbac.ts` built a new `PrismaClient` (a new connection pool) on every request that resolved an event slug and never disconnected it; it now uses one module-level client.
+- **CI:** the backend job runs `npx prisma generate` before the build (Prisma 7 no longer generates on install). Docs: `CLAUDE.md` (Prisma 7 conventions), `database-monitoring.md` (generate after migrate), `deployment.md` (5s timeout, stricter TLS / `P1010`).
+
+Verified: backend 42/42 suites (365 tests), type-check and build clean. Container restart: generate + `migrate deploy` ("No pending migrations") + seeds (through the ts-node shim) + server healthy. **Real DB:** all 256 byte values round-trip through `UserAvatar`, `EventLogo`, `OrganizationLogo`, `RelatedFile` (with the `uploader` include) inside a rolled-back transaction. **Fresh DB:** all 12 migrations applied to a throwaway database, `migrate diff` against `schema.prisma`: no difference; throwaway dropped. **Compiled prod build** (`node dist/index.js`, `NODE_ENV=production`): `/health` 200 and a bad-credentials login is a clean 401, so the engine loads from `dist/`.
+
+Decision: did **not** consolidate the ~20 clients into one. Measured: 30 parallel real queries held 16 idle connections, and 12s later 0 (pg's 10s idle timeout), against Postgres `max_connections = 100`. Only the per-request client above was a real leak.
+
+**Not verified:** TLS / `sslmode=require` against a managed Postgres (dev DB has no TLS); uploading an avatar or logo through the UI (the DB layer is checked); `docker-publish` image build (the new CI generate step only covers the test job; the entrypoint generates at container start, as before).
 
 ## Step 4 log, PR E (2026-10-23): branch `chore/prisma-6-latest`
 

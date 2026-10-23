@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { UnifiedRBACService } from "../services/unified-rbac.service";
 import { EventService } from "../services/event.service";
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from '../config/prisma-client';
 import logger from '../config/logger';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const unifiedRBAC = new UnifiedRBACService(prisma);
 
 /**

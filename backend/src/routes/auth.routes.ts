@@ -3,7 +3,7 @@ import passport from 'passport';
 import { AuthService } from '../services/auth.service';
 import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import logger from '../config/logger';
 
 // Import security middleware
@@ -44,7 +44,7 @@ export const cleanupOAuthInterval = () => {
 };
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const authService = new AuthService(prisma);
 const authController = new AuthController(authService);
 

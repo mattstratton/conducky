@@ -7,7 +7,7 @@ dist/
 *.tsbuildinfo
 
 # Generated files
-/generated/prisma
+/src/generated/
 
 # Log files
 logs/

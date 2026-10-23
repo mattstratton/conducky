@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { UserNotificationSettings } from '../../types';
 import logger from '../config/logger';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 export async function getUserNotificationSettings(userId: string): Promise<UserNotificationSettings> {
   let settings = await prisma.userNotificationSettings.findUnique({ where: { userId } });

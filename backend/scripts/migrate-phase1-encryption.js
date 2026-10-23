@@ -1,7 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('../prisma/db');
 const { encryptField, decryptField, isEncrypted } = require('../dist/src/utils/encryption');
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 /**
  * Migration script for Phase 1 database encryption

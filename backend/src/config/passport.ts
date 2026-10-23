@@ -3,10 +3,11 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import bcrypt from 'bcrypt';
-import { PrismaClient, User, SocialProvider } from '@prisma/client';
+import { User, SocialProvider } from '../generated/prisma/client';
+import { createPrismaClient } from './prisma-client';
 import logger from '../config/logger';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 // Function to get OAuth settings from database
 async function getOAuthSettings() {

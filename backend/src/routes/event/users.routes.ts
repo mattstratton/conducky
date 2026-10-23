@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { EventService } from '../../services/event.service';
 import { requireRole } from '../../middleware/rbac';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../config/prisma-client';
 import logger from '../../config/logger';
 
 const router = Router({ mergeParams: true });
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const eventService = new EventService(prisma);
 
 // Get my roles for an event

@@ -1,4 +1,4 @@
-import { PrismaClient, Organization, OrganizationRole, OrganizationLogo, OrganizationInviteLink } from '@prisma/client';
+import { PrismaClient, Organization, OrganizationRole, OrganizationLogo, OrganizationInviteLink } from '../generated/prisma/client';
 import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { randomUUID } from 'crypto';

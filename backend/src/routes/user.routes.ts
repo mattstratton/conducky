@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { UserController } from '../controllers/user.controller';
 import { requireAuth } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import multer from 'multer';
 
 // Import security middleware
@@ -11,7 +11,7 @@ import { validateUser, handleValidationErrors } from '../middleware/validation';
 import logger from '../config/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const userService = new UserService(prisma);
 const userController = new UserController(userService);
 

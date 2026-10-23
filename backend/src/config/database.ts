@@ -5,7 +5,8 @@
  * with comprehensive query monitoring and performance tracking
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { createAdapter } from './prisma-client';
 import logger from '../config/logger';
 import { databaseMonitor } from '../services/database-monitoring.service';
 
@@ -15,6 +16,7 @@ const VERY_SLOW_QUERY_THRESHOLD = 500; // milliseconds
 
 // Initialize Prisma client with comprehensive monitoring
 export const prisma = new PrismaClient({
+  adapter: createAdapter(),
   log: process.env.NODE_ENV === 'development' 
     ? [
         { emit: 'event', level: 'query' },
