@@ -22,7 +22,7 @@ Conducky is a comprehensive **Code of Conduct incident management platform** des
 
 ## 🏗️ Architecture
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Shadcn/ui
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS, Shadcn/ui
 - **Backend**: Node.js, Express, TypeScript, Prisma ORM
 - **Database**: PostgreSQL with comprehensive indexing and performance optimization
 - **Authentication**: Passport.js with social login support

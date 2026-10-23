@@ -2,10 +2,10 @@
 process.env.NODE_ENV = 'test';
 process.env.ENCRYPTION_KEY = 'test-encryption-key-for-testing-purposes-that-is-long-enough';
 
-const { encryptField, decryptField, isEncrypted } = require('../../dist/src/utils/encryption');
+const { encryptField, decryptField, isEncrypted } = require('../../src/utils/encryption');
 
 // Mock logger - must be set up before any imports
-jest.mock('../../dist/src/config/logger', () => ({
+jest.mock('../../src/config/logger', () => ({
   default: {
     error: jest.fn(),
     info: jest.fn(),
@@ -48,7 +48,7 @@ describe('Event Encryption Utilities', () => {
     });
 
     it('should handle invalid encrypted data gracefully', () => {
-      const mockLogger = require('../../dist/src/config/logger').default;
+      const mockLogger = require('../../src/config/logger').default;
       mockLogger.error.mockClear();
       
       // Test with invalid encrypted format
@@ -125,7 +125,7 @@ describe('Event Encryption Utilities', () => {
 
   describe('Error Handling', () => {
     it('should handle decryption errors gracefully', () => {
-      const mockLogger = require('../../dist/src/config/logger').default;
+      const mockLogger = require('../../src/config/logger').default;
       mockLogger.error.mockClear();
       
       // This will fail decryption but should not throw

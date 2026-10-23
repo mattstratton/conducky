@@ -1,6 +1,6 @@
-const { IncidentService } = require('../../dist/src/services/incident.service');
-const { CommentService } = require('../../dist/src/services/comment.service');
-const { encryptField, decryptField, isEncrypted } = require('../../dist/src/utils/encryption');
+const { IncidentService } = require('../../src/services/incident.service');
+const { CommentService } = require('../../src/services/comment.service');
+const { encryptField, decryptField, isEncrypted } = require('../../src/utils/encryption');
 
 // Mock Prisma
 const mockPrisma = {

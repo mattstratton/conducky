@@ -1,4 +1,4 @@
-const { OrganizationAnalyticsService } = require('../../dist/src/services/organization-analytics.service');
+const { OrganizationAnalyticsService } = require('../../src/services/organization-analytics.service');
 
 describe('OrganizationAnalyticsService (unit)', () => {
   test('getOrganizationAnalytics computes metrics and distributions', async () => {

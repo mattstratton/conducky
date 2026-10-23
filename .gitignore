@@ -7,7 +7,10 @@ node_modules/
 tmp/
 # Test coverage output
 **/coverage/
-reference/cursor_fixing_issue_90_and_project_guid.md
+docs/archive/reference/cursor_fixing_issue_90_and_project_guid.md
 
 # Temporary testing files
-reference/sample-users-testing.md
+docs/archive/reference/sample-users-testing.md
+
+# TypeScript incremental build cache
+*.tsbuildinfo

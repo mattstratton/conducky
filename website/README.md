@@ -85,7 +85,7 @@ The API documentation is automatically generated from OpenAPI specifications. He
 
 #### Step 1: Add JSDoc Comments to Backend Routes
 
-Add comprehensive JSDoc comments to your API routes in the backend. See `reference/example-jsdoc.md` for examples.
+Add comprehensive JSDoc comments to your API routes in the backend. See `docs/archive/reference/example-jsdoc.md` for examples.
 
 ```typescript
 /**
