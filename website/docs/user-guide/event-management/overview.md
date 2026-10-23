@@ -56,7 +56,7 @@ This guide is organized into focused sections:
 - **Monitor system-wide** event activity
 - **Manage event status** (active/disabled)
 
-:::warning System Admin Event Access
+:::warning[System Admin Event Access]
 System Admins do **not** automatically have access to event data. They must be explicitly added to events by Event Admins to view or manage incident reports.
 :::
 

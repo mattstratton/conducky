@@ -5,7 +5,7 @@ description: "Create a new tag"
 sidebar_label: "Create a new tag"
 hide_title: true
 hide_table_of_contents: true
-api: eJylVcFy2jAQ/RWNTu0MYNI0F06lSTqlnU4zDW0PDAchL6BEllRJTsIw/vfuygYMTpNDOWBZWr3dfft2veVRrAIfzfiUnvMe9/CnhBA/2nzDR9v0qjzkfBR9CT0urYlgIh0J57SSIiprsrtgDe0FuYZC0CpuHPARt4s7kJH3WkAzbkQBnLC09fiEB0Sc5OTdeevARwWBMJLdAStEr8wKL+QQpFeOPOM2Rs7Ikr05618MmVwLL2QEH97yaufkVZDP8MSSKf7nCAWD1aBH93fBvYpwTYZscsWr9KOMg7Mm1Km8G57Roxu59CAi5CyUUkIIy1LrDf8Pno8ZxOq+bqSeyQ7jf579f1P6EllVtWPl/XDYJeKX0CpPGTLwHsGT4XnX8JP1C5XnYFifTUwol0slFfGO6RQqBLQKdPniOS8TpNQboVkA/wB+56o6reRlKgkTzMAjIwZ7vIC4tpgXdzYkAkVc41smnMpSB/V4DUq9tOWl13i6jtGNskxbKfQa743Oh6iCU29XSJq2rqAsagxMoA0REAP9DFASeSnvN7goOig33uJhYnAHMqeYZOlV3KSgUInEz7ik0Gfz9vktyakWwwKEB18b7atIYVCKyQzfayPcqRdYlUKgVvmX31Ni/8jTHgRz+AqkbUUBS2vvFU2BWmYkeIPiHARUI5WElP7jMIuun0ThNBymwqENGzkeNvYqbClTmaVNsahIKPyyIZONbyZ4hSpXE3k2GA6GHXrRii1xOOyv9XGJc8Ium63IlJEqpyIWwogV1PXchAhF0844lFrh75FuS+esJ1Edl/yk3Njuio5Dbf7h6BgTxBEBOGxaHr5Nph1QbHsTbOklDKxfZc2lkJEtsU7yxvjbcXab4YiafXkjPMXMaYHVrRq326ZPZlR7vBibbww1A+1utwsR4KfXVUXbWGxPUsXlg/BKLKhSKFS8ACJHvZGK71FCiT0aj/0p+SZzXdYSOxmV1En1jTGOVxdftJ23+vzm+y2xt2g+gwUWG3e9eKRPGf6POC5s4iC1Tdrbci3MqsTq43mNSb+/Mr6Hug==
+api: eJylVU1v2zgQ/SvEnFqAsZx2e9Fps0mKusVig026ezB8GFNjm41EskMqiWHovxdDyV9x2hyqiyTy8c3wzRtyAwmXEcop3Ml7poHpe0sx/eWrNZSb/GuZKigTt6TBeJfIJZnCEGprMFnvim/ROxmLZkUNyldaB4IS/PwbmQT6gGgKDhsC4ao9gwZ6IJcmlUQP7ANxshSFI+P2XDGxdUvQUFE0bINEhlIyV4JUb87PPoyVWSGjScTxLXTbIK+SfKInlaHK+IrUGxotR1rWb5N7leFagGpyBV1+ZMcxeBf7rbwbn8vrNHPDhIkqFVtjKMZFW9dr+A2djxVMuHwdZF/YXad/ov7PJf2VWF23VeWP8fhUiP+wtlXeoSJmz5CB70+BHz3PbVWRU2dq4mK7WFhjRfdA3NgYrXdRFn94KcrEJWKHtYrED8TbUN3zSl7mkihUjh6VKKihobTyFZQQfMwCYlpBCQUGW+QO0tCTSi9toOUaSlilFMqiqL3BeuVjKt+Px+cnvrmiB6p9aGQXPQd0+pAiloXEGRnvqtbcr0fGNycsN+yr1mQFtyQzycm0bNM6JxUp63PRSurT2eH8rdipN8OckIl70K6KkoZsMcOgHECgh4+PnhtMUMLn/+9E/aNIOxIM9guJt60kbLy/t3IK9DYTwzsyaRRtlUsiTv93fxZdP2ETatqfCvs2HOy4H9i58MCZ1i18zsUmYYHLQUx1cTMBDVK5Xsjz0Xg0PpH34maiFp7VbtmZupRzwi+GoaSsM7aSIjbocEl9PdcxUTO0M5p0kP6O6bYNwbOY6rjkz8pNDVqZjj38z6PpTkNtDbl4KNDfk7sTUh/IRd+yoZHnZTEsioVgRXWxd4PuMM/TZjiSZlfeRE+pCDVaJ+nksJuhT6ZSe9D9XTPTIM0go5vNHCN95brrZPh7SyxWnWl4QLY4l0pNZ52GFWFFnF18T+tePTkez+4ktsDrtrfYs6NSOqlfcWEMhfRL7Oygz2/+uRX15sM12PhK1jA+ylWGj1ACaPBZg9w2eWwDNbpli0vB9pzy/AAyvoe6
 sidebar_class_name: "post api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,22 @@ Create a new tag
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
-<ParamsDetails
-  parameters={undefined}
->
+<ParamsDetails>
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["name","color","eventId"],"properties":{"name":{"type":"string","description":"Tag name (1-50 characters)"},"color":{"type":"string","description":"Hex color code (e.g.,"},"eventId":{"type":"string","description":"Event ID"}}}}}}}
+  {...require("./create-a-new-tag.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"201":{"description":"Tag created successfully","content":{"application/json":{"schema":{"type":"object","properties":{"tag":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"color":{"type":"string"},"eventId":{"type":"string"}}}}}}}},"400":{"description":"Validation error"},"403":{"description":"Forbidden - Insufficient permissions"},"500":{"description":"Internal server error"}}}
+  {...require("./create-a-new-tag.StatusCodes.json")}
 >
   
 </StatusCodes>

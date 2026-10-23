@@ -1,0 +1,1 @@
+{"parameters":[{"in":"path","name":"orgSlug","required":true,"schema":{"type":"string"},"description":"Organization slug identifier","example":"devconf-org"}]}

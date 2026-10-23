@@ -5,7 +5,7 @@ description: "Get all tags for an event"
 sidebar_label: "Get all tags for an event"
 hide_title: true
 hide_table_of_contents: true
-api: eJyFVcFu2zAM/RVBpw1w43TdLj6tWLsiGzYMa4cdimBQZCZRK1sqJRcLDP/7SMtxkiZYc7Ekkk8k3xPTyqhWQRb38o6/80x6haqCCMinrTS1LOgsrmUmazLQDp6hjrOSDhCeGoNQyiJiA5kMeg2VkkUr48aza4ho6pXsMllC0Gh8NI4BrxlCzK5kN2eU4F0dIHDgu+mUP4fut43WEMKysXYjEAiUcihFn3omtasjwXGY8t4arTgsfwgc2x4n5RYPoCMFenQeMJp0c2rE6KUQ1YacTIQqvB5typNlp5adMGhnHZ60bNt7yvZHuyZV+ko2tTYlwewnXjfVAlB2u18m308vjrv92eHClBQuzsR3J1TfexGd6DPjND6cImlGLGCtrAiAz4ACEB1f95L7G4hCWduzJ5YOhaoH5EyS8NaOSpcr6Iti3RUyV97k7J73fnk7tKgjl3RZ0mqDlrzXMfoiz63Tyq5diMXFdHouX2ZxRRjW+Yp1mDCosH2IQBh074TUVTb6cUOL6gjlBzoy8mYEmXNOukETN31SpOtA9suGS7mf79tvWZmJsAUoBExOI2OchhxeFe+TE52kBfFUKRKD/PL7jlk5uGmnY2++Qi9kTlg792hg95apupoENAmkX6bK1EvXB5to2f5pqF5c/phRFLc6VX4+mU6mR/0gr57SMeyMliUItxyOothKU1SqVitIBGwCvbLhKSvdC3xIcES6bbx3yKo45OgFP/TUDZtDcv94YKYCaTwAzZq9G77N7o5A6S3VwTWoYeJwlQ9BIWdfbpMnXVH+eyj/U/VBj0ZiIvyNubeKeOmG+9tB8ffMGgUOA26LU2xHA2mIlc2ObbtQAX6h7To+fmoAWXe0fFZo1IJZJBWWJvCantZS2QBHOY0zVL75OQz1t2Kc0tnpnLcKq1lez8o2vKPlI+lt9zfRzcl1Daok6XIqyXpJU8XHvbij0c0vZZwHN9fc+H8L00hX
+api: eJyFVduO0zAQ/RVrnkAyTbm95IkVNxUEWrGLeFhVyHWmrVnHY8ZORRXl39EkabbdVtCXxJnbmTnH0xay2SQo7+BWnksN0bCpMSPL1xZcgBKiyVvQEEyNUALuMORFBRoYfzeOsYIyc4Makt1ibaBsIe+juKbMLmyg01BhsuxidiQJ30sKtXgH3VKypEghYZLAF/O5PE7dbxprMaV14/1eMWZ2uMNK9dA1WAoZQ5YwE6N31khY8StJbHsOila/0GbQEJkicnZD5WEQk5dhNnvQ4DLW6f/RrrrY9jCyCwZLnvii5TDeS7aflpqh0/+gCdZVGPIx8NDUK2ToHn4aXs1fnk/7A/HKVRUG9Ux9JWX62atMqkcmMF5fImkRMnIwXiXkHbJCZpJyj7n/iFkZ73v21JpYmTBm1lBj3lIFJWywb0p0V0JhoivEvej9inYcUQcahmKDVhv2UMI251gWhSdr/JZSLl/O58/hMYp3uENPsRYdDjmg08cpUllI3ZmlUDX2fj+zVJ9luWaqGiuHKclSMNmGXd73oBKm5ChcNdLK3fLYfiPKHAhboWHkwWliTGDAeKvkPDiBHl8+ENcmQwmfftwKKyeVHnQc3WfshSyALdG9w4e7bCkEtHmWXNVT5cKa+mCXvdjfjt2rq+sFaJBRD50/n81n87N5XF0vekqnsGfqLVWoaD1+yuogTVWbYDY4ELBPGevxKhvbC3wEOGW6aWIkFlWccvSIH6yNE3Ma3N+cmDsN3lkMCY8qfFncniWliCFRwxZnxJtiDEqF+MqYIqVcm3CU5V+qPpnRREzGP7mI3rgguPr67aj4O2ENNIwL7pCnPKyGpQZRtji27cok/M6+6+Tz7wZZdLfUsDPszEpYvGuhckneKyjXxic8wzTtUHjybVzqT9W0pfVlzAeFBZHXzvhGTqDhHvdHfxPdstOwRVMh91AG65W1GPNR3Nnqlpsy7YOP72XwfwEL00hX
 sidebar_class_name: "get api-method"
 info_path: api/conducky-api
 custom_edit_url: null
@@ -19,6 +19,7 @@ import StatusCodes from "@theme/StatusCodes";
 import OperationTabs from "@theme/OperationTabs";
 import TabItem from "@theme/TabItem";
 import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
 
 <Heading
   as={"h1"}
@@ -43,27 +44,24 @@ Get all tags for an event
   id={"request"}
   as={"h2"}
   className={"openapi-tabs__heading"}
-  children={"Request"}
 >
+  <Translate id="theme.openapi.request.title">Request</Translate>
 </Heading>
 
 <ParamsDetails
-  parameters={[{"in":"path","name":"eventId","required":true,"schema":{"type":"string"},"description":"Event ID"}]}
+  {...require("./get-all-tags-for-an-event.ParamsDetails.json")}
 >
   
 </ParamsDetails>
 
 <RequestSchema
-  title={"Body"}
-  body={undefined}
+  {...require("./get-all-tags-for-an-event.RequestSchema.json")}
 >
   
 </RequestSchema>
 
 <StatusCodes
-  id={undefined}
-  label={undefined}
-  responses={{"200":{"description":"Successfully retrieved tags","content":{"application/json":{"schema":{"type":"object","properties":{"tags":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"color":{"type":"string"},"eventId":{"type":"string"},"_count":{"type":"object","properties":{"incidents":{"type":"number"}}}}}}}}}}},"403":{"description":"Forbidden - No access to event"},"500":{"description":"Internal server error"}}}
+  {...require("./get-all-tags-for-an-event.StatusCodes.json")}
 >
   
 </StatusCodes>

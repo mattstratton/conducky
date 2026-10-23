@@ -52,7 +52,7 @@ After creating an event, System Admins can generate invite links for event organ
    - Set maximum uses (optional, defaults to 1)
 5. **Share invite**: Copy the generated invite link and send to the event organizer
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: System Admin event creation form showing required fields
 
 ## Creating Events (Organization Admin)

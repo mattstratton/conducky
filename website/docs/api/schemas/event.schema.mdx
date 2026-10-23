@@ -25,8 +25,7 @@ import Heading from "@theme/Heading";
 
 
 <Schema
-  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"Event unique identifier"},"name":{"type":"string","description":"Event name"},"slug":{"type":"string","description":"Event URL slug"},"description":{"type":"string","description":"Event description"},"isActive":{"type":"boolean","description":"Whether the event is currently active"},"startDate":{"type":"string","format":"date","description":"Event start date"},"endDate":{"type":"string","format":"date","description":"Event end date"},"contactEmail":{"type":"string","format":"email","description":"Contact email for the event"},"createdAt":{"type":"string","format":"date-time","description":"Event creation timestamp"}},"title":"Event"}}
-  schemaType={"response"}
+  {...require("./event.Schema.json")}
 >
   
 </Schema>

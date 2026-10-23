@@ -131,7 +131,7 @@ Conducky uses a three-level navigation system designed to help you work efficien
 - User management across events
 - Global settings and maintenance
 
-:::tip Navigation Tips
+:::tip[Navigation Tips]
 - Use breadcrumbs at the top to understand your current location
 - The sidebar navigation changes based on your current context
 - Your role in each event determines what navigation items you see
@@ -161,7 +161,7 @@ Before logging in, the Conducky home page content depends on system configuratio
 
 **Screenshot needed:** *Private home page showing only login form*
 
-:::info Administrator Control
+:::info[Administrator Control]
 The public event listing can be controlled by System Admins through System Settings. This affects what visitors see before authentication.
 :::
 
@@ -255,7 +255,7 @@ If you participate in multiple events, Conducky provides powerful tools to manag
 - **Quiet hours**: Set times when you don't want notifications
 - **Event-specific settings**: Different rules for different events
 
-:::tip Notification Strategy
+:::tip[Notification Strategy]
 For multi-event users, consider setting up email notifications for urgent items and using the in-app notification center for everything else.
 :::
 

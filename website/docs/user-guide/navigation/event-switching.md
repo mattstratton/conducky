@@ -15,7 +15,7 @@ The "My Events" section in the sidebar provides:
 - **Role Visibility**: Shows your role in each event (Admin, Responder, Reporter)
 - **Context Preservation**: Maintains your current page type when switching
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Sidebar event switcher showing multiple events with role badges
 
 ### Using the Event Switcher
@@ -41,7 +41,7 @@ The global dashboard (`/dashboard`) provides:
 - **Recent Activity**: Cross-event activity summary
 - **Event Navigation**: Click any event card to enter that event's context
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Global dashboard showing multiple event cards with different roles
 
 ### Event Card Features
@@ -134,7 +134,7 @@ To leave an event:
 3. **Click "Leave Event"** next to the event you want to leave
 4. **Confirm your decision** - this will remove all access to event data
 
-:::warning Leaving Events
+:::warning[Leaving Events]
 When you leave an event, you lose access to all event data, including incident reports you submitted. Event administrators can re-invite you if needed.
 :::
 

@@ -255,5 +255,5 @@ Monitor for unusual access patterns:
 2. Review system admin documentation
 3. Contact system administrator for escalation
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Role management interface showing team member assignments and invite link creation 

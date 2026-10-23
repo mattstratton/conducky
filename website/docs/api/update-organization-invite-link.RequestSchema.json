@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"disabled":{"type":"boolean","description":"Whether to disable the invite"},"note":{"type":"string","description":"Updated note for the invite"}}}}}}}

@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
-- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. **PR F (this branch, `chore/prisma-7`):** Prisma 6 → 7.10.1. **Remaining, each its own PR, in this order:** (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (g) Tailwind 3 → 4 (optional, build-time chain only). Also: close superseded dependabot PRs (see log)
+- [~] 4. Dep debt. **Done:** PR A (#461, merged): pin `latest`, in-range security updates, frontend build fix, dependabot config. PR B (#477, merged): Docker images to Node 24, guard-hook fix, temporary dependabot major-ignore. PR C (#480, merged): nodemailer 6 → 10. PR D (#486, merged): jspdf 3 → 4. PR E (#487, merged): Prisma 6.10 → 6.19.3. PR F (#488, merged): Prisma 6 → 7.10.1. **PR G (this branch, `chore/docusaurus-3-10`):** website: Docusaurus 3.8.1 → 3.10.2 + OpenAPI plugins 4 → 5 + Node 22 on Netlify/RTD. **Remaining:** (g) Tailwind 3 → 4 (optional, build-time chain only); then remove the TEMPORARY dependabot major-ignore. Also: close superseded dependabot PRs (see log)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -44,6 +44,24 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 4 log, PR G (2026-10-23): branch `chore/docusaurus-3-10`
+
+Website only (static site, build-time tooling; no runtime exposure). All `@docusaurus/*` exact-pinned at **3.10.2** (was 3.8.1), plus `@docusaurus/faster`; `docusaurus-plugin-openapi-docs` / `docusaurus-theme-openapi-docs` 4.5.1 -> **5.2.0** (5.x peers need Docusaurus >= 3.10 and `docusaurus-plugin-sass`, added; 4.5.1 fails on 3.10 with `useTabsContext() must be used within a Tabs component` on all 31 API pages).
+
+**Why it was not a bump:** `future: { v4: true }` is a shortcut, and 3.10 added flags to it that 3.8 did not have: `mdx1CompatDisabledByDefault`, `fasterByDefault`, `useCssCascadeLayers`, `siteStorageNamespacing`. Effects found and fixed:
+- `mdx1Compat` off: 25 HTML comments (`<!-- Screenshot Placeholder -->`) in 13 pages were hard MDX errors -> `{/* ... */}`.
+- `mdx1Compat` off, silent: 13 old-style admonitions (`:::warning Title`) in 8 pages rendered as literal text, including the System Admin access/isolation warnings -> `:::warning[Title]`. **The build succeeded with these broken**; only a visible-text diff against a saved 3.8.1 build caught it. Do this check on any future Docusaurus bump.
+- `onBrokenMarkdownLinks` moved to `markdown.hooks.onBrokenMarkdownLinks` (deprecated top-level option).
+- `useCssCascadeLayers` / `siteStorageNamespacing`: compared home, a docs page and an API page in a browser against the 3.8.1 build, no visual difference. Storage namespacing means a returning visitor's saved light/dark choice resets once.
+
+**Hosting:** Node 18 -> 22 in `netlify.toml` and `website/netlify.toml` (Docusaurus 3.10 needs Node 20+), RTD `nodejs` 20 -> 22 (20 is EOL), `website/package.json` engines `>=20`. Not verifiable locally: the Netlify deploy preview on the PR is the check; RTD builds on push to `main`.
+
+**Audit** (`npm audit`, all dependencies): 91 (20 critical) -> 55 (0 critical). `npm audit fix` (non-forced, Docusaurus stays aligned) took it to 55; an `overrides` entry `tinypool: 2.2.0` clears the 18 critical entries (all one prototype-pollution advisory; Docusaurus core pins tinypool 1.1.1 exactly). **TEMPORARY: remove the `overrides` block when Docusaurus core moves off tinypool 1.x.** Remaining 55 (16 moderate, 39 high; the "high" count rose from 21 only because wrapper packages inherit severity) are stuck behind Docusaurus's own pins: `serialize-javascript` (copy-webpack-plugin 11), `braces` (no patched release exists), `js-yaml`/`yaml`/`uuid` (openapi plugin chain), `@faker-js/faker` (postman-collection), `postcss-selector-parser`. Needs upstream releases; build-time only. The suggested `npm audit fix --force` "fixes" are downgrades (`docusaurus-plugin-openapi-docs@2.1.3`, `@docusaurus/core@3.7.0`): ignore them.
+
+Verified: production build succeeds, no warnings or errors; same 131 pages as 3.8.1; **visible text of 130/131 pages identical** to the 3.8.1 build (the one difference is an emoji variation selector in the API index). API reference pages render with the 5.x plugin's slightly different request-body block (type/example toggle). `docs/api` is regenerated by every build (`build-docs.js` cleans and regenerates; two runs are byte-identical) and the 5.x plugin adds 91 `.json` files, so the regenerated output is committed in its own commit.
+
+**Not verified:** the Netlify deploy preview and the RTD build on Node 22; search, if any; any page not in the three I compared in a browser (home, account-setup, one API page).
 
 ## Step 4 log, PR F (2026-10-23): branch `chore/prisma-7`
 

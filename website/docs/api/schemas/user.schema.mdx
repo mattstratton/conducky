@@ -25,8 +25,7 @@ import Heading from "@theme/Heading";
 
 
 <Schema
-  schema={{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"User unique identifier"},"email":{"type":"string","format":"email","description":"User email address"},"firstName":{"type":"string","description":"User first name"},"lastName":{"type":"string","description":"User last name"},"role":{"type":"string","enum":["SYSTEM_ADMIN","ADMIN","RESPONDENT","GUEST"],"description":"User global role"},"isActive":{"type":"boolean","description":"Whether the user account is active"},"createdAt":{"type":"string","format":"date-time","description":"Account creation timestamp"}},"title":"User"}}
-  schemaType={"response"}
+  {...require("./user.Schema.json")}
 >
   
 </Schema>

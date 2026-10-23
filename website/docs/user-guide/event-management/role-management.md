@@ -53,7 +53,7 @@ Each event can have users with different roles that determine their access and c
 
 ## System Admin Event Access
 
-:::warning Important: System Admin Isolation
+:::warning[Important: System Admin Isolation]
 System Admins do **not** automatically have access to event data. This is a security feature that ensures proper data isolation between events.
 :::
 
@@ -84,7 +84,7 @@ Event Admins can invite users to join their event team:
 5. **Add personal message**: Optional message to include with the invitation
 6. **Send invitations**: Generate and send invitation links
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Team invitation interface showing role selection and email entry
 
 ### Invitation Process

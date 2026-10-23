@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Tag deleted successfully"},"400":{"description":"Tag is in use and cannot be deleted"},"403":{"description":"Forbidden - Insufficient permissions"},"404":{"description":"Tag not found"},"500":{"description":"Internal server error"}}}
