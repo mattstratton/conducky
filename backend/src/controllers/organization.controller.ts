@@ -3,7 +3,8 @@ import { OrganizationService } from '../services/organization.service';
 import { EventService } from '../services/event.service';
 import { logAudit } from '../utils/audit';
 import { UserResponse } from '../types';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { UnifiedRBACService } from '../services/unified-rbac.service';
 import logger from '../config/logger';
 
@@ -17,7 +18,7 @@ const organizationService = new OrganizationService();
 let prismaInstance: PrismaClient | null = null;
 const getPrismaClient = () => {
   if (!prismaInstance) {
-    prismaInstance = new PrismaClient();
+    prismaInstance = createPrismaClient();
   }
   return prismaInstance;
 };

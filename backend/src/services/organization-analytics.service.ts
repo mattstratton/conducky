@@ -1,4 +1,4 @@
-import { PrismaClient, Incident, IncidentState, IncidentSeverity } from '@prisma/client';
+import { PrismaClient, Incident, IncidentState, IncidentSeverity } from '../generated/prisma/client';
 
 export type TimeRangeParam = '30d' | '90d' | '1y' | 'all';
 

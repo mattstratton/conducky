@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { InviteService } from '../services/invite.service';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { requireAuth } from '../middleware/auth';
 import logger from '../config/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const inviteService = new InviteService(prisma);
 
 // Get invite details by code

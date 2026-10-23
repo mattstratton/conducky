@@ -1,7 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('./db');
 const bcrypt = require('bcrypt');
 const { seedRoles } = require('./roles-seed');
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   console.log('🌱 Starting development seed data...');

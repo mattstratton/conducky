@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { TagService } from '../services/tag.service';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { requireRole } from '../middleware/rbac';
 import { logger } from '../utils/logger';
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const tagService = new TagService(prisma);
 
 /**

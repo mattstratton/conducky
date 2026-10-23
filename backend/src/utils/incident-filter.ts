@@ -5,7 +5,7 @@
  * based on the user's role and relationship to the incident
  */
 
-import { Incident, User } from '@prisma/client';
+import { Incident, User } from '../generated/prisma/client';
 
 // Define minimal incident fields that unauthorized users can see
 export interface IncidentMinimal {

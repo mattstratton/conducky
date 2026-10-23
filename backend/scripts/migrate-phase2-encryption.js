@@ -13,10 +13,10 @@
  *   --dry-run  Show what would be migrated without making changes
  */
 
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('../prisma/db');
 const { encryptField, isEncrypted } = require('../dist/src/utils/encryption');
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 // Parse command line arguments
 const isDryRun = process.argv.includes('--dry-run');

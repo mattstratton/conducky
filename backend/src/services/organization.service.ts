@@ -1,4 +1,5 @@
-import { PrismaClient, Organization, OrganizationRole, OrganizationLogo, OrganizationInviteLink } from '@prisma/client';
+import { Organization, OrganizationRole, OrganizationLogo, OrganizationInviteLink } from '../generated/prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { logAudit } from '../utils/audit';
@@ -31,7 +32,7 @@ export interface OrganizationMembership {
   createdById: string | null;
 }
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 export interface CreateOrganizationData {
   name: string;

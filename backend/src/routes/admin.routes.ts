@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth, AuthUser } from '../middleware/auth';
 import { requireSystemAdmin, requireRole } from '../utils/rbac';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../config/prisma-client';
 import { reinitializeOAuthStrategies } from '../config/passport';
 import logger, { 
   updateLoggingSettings, 
@@ -22,7 +22,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const eventService = new EventService(prisma);
 
 /**

@@ -18,6 +18,12 @@ module.exports = {
     '^.+\\.(ts|tsx)$': 'ts-jest',
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
+  // Prisma 7 generates the client into src/generated/prisma. Keep every test on the
+  // shared in-memory mock, as the old __mocks__/@prisma/client auto-mock did.
+  moduleNameMapper: {
+    '^@prisma/client$': '<rootDir>/__mocks__/@prisma/client.js',
+    '(^|/)generated/prisma/client$': '<rootDir>/__mocks__/@prisma/client.js',
+  },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
     '**/*.{js,jsx,ts,tsx}',

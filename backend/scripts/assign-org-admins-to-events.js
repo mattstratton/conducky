@@ -5,9 +5,9 @@
   - Idempotent and safe to re-run
   - Supports --dry-run to preview actions
 */
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('../prisma/db');
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const args = process.argv.slice(2);

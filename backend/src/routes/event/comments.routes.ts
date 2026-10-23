@@ -3,13 +3,14 @@ import { CommentService } from '../../services/comment.service';
 import { IncidentService } from '../../services/incident.service';
 import { EventService } from '../../services/event.service';
 import { requireRole } from '../../middleware/rbac';
-import { PrismaClient, CommentVisibility } from '@prisma/client';
+import { CommentVisibility } from '../../generated/prisma/client';
+import { createPrismaClient } from '../../config/prisma-client';
 import { commentCreationRateLimit } from '../../middleware/rate-limit';
 import { validateComment, handleValidationErrors } from '../../middleware/validation';
 import logger from '../../config/logger';
 
 const router = Router({ mergeParams: true });
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const commentService = new CommentService(prisma);
 const incidentService = new IncidentService(prisma);
 const eventService = new EventService(prisma);

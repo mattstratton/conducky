@@ -1,6 +1,6 @@
-import { PrismaClient, CommentVisibility } from '@prisma/client';
+import { PrismaClient, CommentVisibility } from '../generated/prisma/client';
 import { ServiceResult } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import { logAudit } from '../utils/audit';
 import logger from '../config/logger';
 import { encryptField, decryptField, isEncrypted } from '../utils/encryption';

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { ServiceResult } from '../types';

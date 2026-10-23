@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const { createPrismaClient } = require('./db');
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 const seedLoggingSettings = async () => {
   console.log('🔧 Seeding default logging settings...');

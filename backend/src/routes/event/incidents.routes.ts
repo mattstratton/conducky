@@ -4,14 +4,14 @@ import { EventService } from '../../services/event.service';
 import { requireEventRole } from '../../middleware/unified-rbac';
 import { requireRole } from '../../middleware/rbac';
 import { UserResponse } from '../../types';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../config/prisma-client';
 import { createUploadMiddleware } from '../../utils/upload';
 import { reportCreationRateLimit, fileUploadRateLimit } from '../../middleware/rate-limit';
 import { validateReport, handleValidationErrors } from '../../middleware/validation';
 import logger from '../../config/logger';
 
 const router = Router({ mergeParams: true });
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const incidentService = new IncidentService(prisma);
 const eventService = new EventService(prisma);
 

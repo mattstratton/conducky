@@ -1,7 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { unifiedRBAC } from '../services/unified-rbac.service';
-import { RoleScope } from '@prisma/client';
+import { RoleScope } from '../generated/prisma/client';
 import logger from '../config/logger';
+import { createPrismaClient } from '../config/prisma-client';
+
+// One client for the module. This used to build a new client (and connection pool)
+// on every request that resolved an event slug, and never disconnected it.
+const prisma = createPrismaClient();
 
 /**
  * Unified RBAC Middleware
@@ -98,8 +103,6 @@ export function requireEventRole(roleNames: string[] = ['event_admin', 'responde
       
       // If we have a slug instead of ID, or if eventId looks like a slug, look it up
       if (!eventId || !isUUID || req.params.eventSlug || req.params.slug) {
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
         
         const slug = req.params.eventSlug || req.params.slug || (!isUUID ? eventId : null);
         if (slug) {

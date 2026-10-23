@@ -1,11 +1,11 @@
-import { PrismaClient, IncidentSeverity } from '@prisma/client';
+import { PrismaClient, IncidentSeverity } from '../generated/prisma/client';
 import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { logAudit } from '../utils/audit';
 import logger from '../config/logger';
 import { encryptField, decryptField, isEncrypted } from '../utils/encryption';
 
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
 
 export interface IncidentCreateData {
   eventId: string;
