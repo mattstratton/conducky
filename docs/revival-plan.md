@@ -10,7 +10,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
 - [x] 4. Dep debt, done 2026-10-23: #461 (in-range security updates, frontend build fix, dependabot config), #477 (Docker images on Node 24), #480 (nodemailer 10), #486 (jspdf 4), #487 + #488 (Prisma 6.19 then 7.10.1), #489 (Docusaurus 3.10, OpenAPI plugins 5, Node 22 hosting), #491 (dependabot majors re-enabled), grouped dependabot PRs #463 #493 #492 #469, plus the cleanup PR (`chore/post-dependabot-cleanup`). Backend runtime audit 0, frontend runtime 6 (1 high), website 44 (0 critical). Optional leftovers are under "Known problems" below (Tailwind 4, Next 16, Read the Docs on Node 22, docker-publish untested).
-- [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
+- [~] 5. Issue triage: 74 open -> 54 (groups A-D applied 2026-10-23, see the step 5 log); still open: a few owner calls, labeling the rest (`/triage-issues`)
 
 ## Decisions and parked ideas
 
@@ -44,6 +44,25 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - 4 backend suites `require('../../dist/...')`, so without a prior `npm run build` they failed with "Cannot find module" (and with a *stale* build they'd silently test old code). Fixed in step 2/3 by importing from `src/`.
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
+
+## Step 5 log (2026-10-23): issue triage, groups A-D applied
+
+74 open issues (filed Jun-Aug 2025, none touched since) -> **54 open**: 20 closed, 6 marked `high-priority`. Each close has a one-line reason on the issue. For each possibly-done issue I checked the code first rather than trusting the body.
+
+**Closed as done / obsolete (5):** #421 delete orgs (API route + Delete button in org settings; note the issue floated "only empty orgs", the endpoint deletes the org and its data), #278 org logo upload (route + file input in org settings), #417 org analytics API reference pages (exist under `website/docs/api`), #94 and #118 (pointed at `ReportForm.js` / `Avatar.js`, which no longer exist; `IncidentForm.tsx` has try/catch/finally, avatars use shadcn `AvatarFallback`).
+
+**Closed as duplicates (9):** anonymous reporting #72 #73 #76 -> #12 (not built; the event page shows a "Coming soon" placeholder); virus scanning #234 -> #242; SLA #114 #23 -> #113; comments #247 -> #260; #275 (RLS) -> #423 (noted there); #294 -> #244 (I did not verify every bullet of #244, much of audit logging exists).
+
+**Closed as won't do (6):** #235 #238 #253 (generic performance umbrellas, no measured problem; Next already splits per page), #274 (ML pattern detection: privacy-sensitive, out of scope), #357 (jest-puppeteer; open a Playwright issue if e2e is wanted), #259 (websockets: infrastructure against simple deploys, incl. Vercel/Railway).
+
+**Marked `high-priority` (6), the "next" list:** #430 (explain on the incident form why the CoC team is shown, and that titles are not encrypted), #328 (reporting someone on the CoC team, conflict of interest; needs a design call), #423 (tenant scoping at the data layer), #411 (login `autocomplete` attributes, verified missing), #263 (report details cut off with large text on mobile), #242 (virus scanning).
+
+**Kept as "later" (no label):** everything else, including #117 (avatar queries in a loop, verified still in `event.service.ts`) and #214 (in-memory sort in `getUserActivity`, verified), #240 (cloud file storage; default to DB, optional cloud), #241 (Redis rate limiting; owner wants it optional), #279 (org-scoped event paths; implementation plan in the comments), #281 (Railway template, in progress; tied to the parked Vercel/Railway deployability work).
+
+**Not applied yet:**
+- Owner calls: #296 (migrate forms to `ValidatedInput`: the component exists but nothing uses it; leaning close), #337 SMS and #367 incidents by email (leaning later), #377 2FA and #314 email verification (security features, priority is an owner call).
+- Labeling the unlabeled issues (`enhancement` / `bug` / `documentation`) and adding `performance` to #117 / #214 / #229.
+- Two near-duplicate labels exist: `high priority` and `high-priority`. The triage skill uses `high-priority`; #242 now has both. Pick one and merge.
 
 ## Step 4 log, PR I (2026-10-23): grouped dependabot PRs + cleanup (`chore/post-dependabot-cleanup`)
 
