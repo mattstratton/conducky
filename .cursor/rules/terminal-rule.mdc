@@ -1,6 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-- I use zsh, cursor has issues with zsh / p10k, lets use this template: bash -c "{command here}", this will insure we always receive output, but also receive our anticipated exit code.

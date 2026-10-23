@@ -1,183 +1,67 @@
-# CLAUDE.md
+# Conducky
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Multi-tenant Code of Conduct incident management for conferences and events. Safety-critical: security, accessibility and mobile UX beat development speed. Vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md); use those terms (it's **incident**, not "report", and **System Admin**, not "SuperAdmin").
 
-## Development Environment
+## Stack
 
-This project uses **Docker Compose** for local development. Always run commands within the containers:
+- **Frontend** (`frontend/`): Next.js 15 (Pages Router), React, TypeScript, Tailwind 3, Shadcn/ui, Jest + RTL
+- **Backend** (`backend/`): Node, Express 5, TypeScript, Prisma 6, PostgreSQL 15, Passport (local, Google, GitHub), Jest + supertest
+- **Docs site** (`website/`): Docusaurus. User/admin/developer docs live in `website/docs/`
+- **Dev env**: Docker Compose. Run backend/frontend commands inside the containers
+
+## Setup and commands
 
 ```bash
-# Start the full stack
-docker-compose up --build -d
+cp backend/.env.example backend/.env   # then set ENCRYPTION_KEY (openssl rand -base64 32) and SESSION_SECRET
+docker compose up --build -d           # frontend :3001, backend :4000, Prisma Studio :5555
+docker compose exec backend npm run sample-data   # optional demo data
 
-# Backend commands
-docker-compose exec backend [command]
-
-# Frontend commands  
-docker-compose exec frontend [command]
+docker compose exec backend npm test
+docker compose exec frontend npm test
+npm run test:all                                  # both, from repo root
+docker compose exec backend npm run type-check
+docker compose exec backend npx prisma migrate dev --name <what_changed>   # schema change = new migration
 ```
 
-## Essential Commands
+Roles and logging settings seed automatically on backend start. `ENCRYPTION_KEY` (32+ chars) is required or the backend won't boot.
 
-### Testing
-```bash
-# Run all tests (from root)
-npm run test:all
-./scripts/run-all-tests.sh
+## Golden rules
 
-# Backend tests
-docker-compose exec backend npm test
-docker-compose exec backend npm run test:coverage
-docker-compose exec backend npm run test:ci
+- **Diagnose before fixing.** Read the error, trace the code, state a hypothesis, then fix. After 3 failed attempts at the same kind of fix, stop and reassess.
+- **Never dismiss failures.** Failing tests, CI, type errors, lint: investigate every one. No "pre-existing".
+- **Nothing destructive without asking.** No `docker compose down -v`, `docker system prune`, `scripts/refresh-dev.sh`, `prisma migrate reset`, or DELETE/DROP/TRUNCATE without a WHERE, even in dev. The hook in `scripts/guard-bash.sh` blocks the obvious ones.
+- **Migrations are append-only.** Create them with `prisma migrate dev`. Never edit a migration that's on `main` (hook-enforced).
+- **Never commit to or push `main`.** Branch off `main`, stage specific files (no `git add -A`), push and open PRs only when asked, via `/pr`.
+- **Tests ship with the code.** New feature, new endpoint or bug fix means automated tests in the same PR. Bug fixes get a regression test.
+- **Keep docs true.** Behavior, env var, role or API change means update `website/docs/` (and README/CONTRIBUTING if setup changed). `/docs-review` checks this.
 
-# Frontend tests
-docker-compose exec frontend npm test
-docker-compose exec frontend npm run test:coverage
-docker-compose exec frontend npm run test:ci
-```
+## Security invariants (don't regress these)
 
-### Building and Development
-```bash
-# Backend
-docker-compose exec backend npm run build
-docker-compose exec backend npm run type-check
-docker-compose exec backend npm run dev
+- **Event-scoped data.** Every query touching event data is scoped to the event. Event data is isolated between events and between orgs.
+- **No inherited event access.** System Admins and Org Admins can't read event data without an explicit event role. Org Admins are added as Event Admins on event *creation* only. See `website/docs/admin-guide/roles-permissions.md`.
+- **Authz at every layer.** Check `req.user` and role in middleware (`backend/src/middleware/unified-rbac.ts`) and hide unauthorized UI. Don't rely on one.
+- **Sensitive fields are encrypted** (AES-256-GCM, `backend/src/utils/encryption`): incident text, comments, contact emails, OAuth and SMTP credentials. Don't log or return them casually, and never return password hashes or tokens.
+- **Audit-log security-relevant actions** with the `logAudit` helper. Rate-limit auth endpoints. Validate input server-side (express-validator) and sanitize rendered content (DOMPurify).
 
-# Frontend
-docker-compose exec frontend npm run build
-docker-compose exec frontend npm run dev
-```
+## Conventions
 
-### Database Operations
-```bash
-# Essential seeding (roles and logging - runs automatically on startup)
-docker-compose exec backend npm run seed:roles
-docker-compose exec backend npm run seed:logging
+- **Backend**: routes in `src/routes/` call services in `src/services/`; keep business logic out of route handlers. Consistent error response shape. Unified RBAC (`UnifiedRole`, scopes system/organization/event).
+- **Frontend**: Shadcn/ui first (add missing ones with the shadcn CLI), Tailwind only, mobile-first, 44px touch targets. Every async path gets loading and error states. Shared UI in `components/`, global state via `context/`.
+- **Accessibility is a requirement**: semantic HTML, labels on every input, keyboard reachable, visible focus, WCAG AA contrast, form errors announced to screen readers. The repo takes outside a11y PRs; keep that bar.
+- **TypeScript**: strict, no new `any`. Function components with hooks.
+- **Tests**: backend `backend/tests/` (unit, integration, routes, services), frontend co-located `*.test.tsx` plus `frontend/__tests__/`. Read a neighbouring test before writing one. Backend tests mostly mock Prisma, so passing tests do not prove the SQL works; exercise real queries in the dev stack when touching them.
 
-# Development seeding (includes test data)
-docker-compose exec backend npm run seed
-docker-compose exec backend npm run sample-data
+## Workflow
 
-# Prisma operations
-docker-compose exec backend npx prisma generate
-docker-compose exec backend npx prisma migrate dev
-docker-compose exec backend npx prisma studio  # Available on localhost:5555
-```
+- **Issues**: GitHub Issues on `mattstratton/conducky`. Use `gh`. Bugs get `bug`, features get `enhancement`; labels drive release notes (`.github/release.yml`).
+- **Commits/PRs**: reference issues with `Closes #N`. PR template is in `.github/pull_request_template.md`.
+- **Skills** (`.claude/skills/`): `/implement-issue`, `/pr`, `/triage-issues`, `/docs-review`. Reviewer agents in `.claude/agents/`: `security-reviewer`, `accessibility-reviewer`.
+- Other agents (Codex, Copilot, etc.): see `AGENTS.md`, which defers to this file.
 
-## Architecture Overview
+## Where things are
 
-**Conducky** is a multi-tenant Code of Conduct incident management platform for conferences and events.
-
-### Core Architecture Principles
-- **Multi-tenancy**: Organizations manage multiple events with centralized oversight
-- **Event-scoped data isolation**: All incident data is strictly scoped to specific events
-- **Role-based access control (RBAC)**: Unified role system with inheritance across organization/event levels
-- **Mobile-first design**: Primary interface optimized for mobile incident reporting and response
-- **End-to-end encryption**: AES-256-GCM encryption for all sensitive data
-
-### Technology Stack
-- **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Shadcn/ui components
-- **Backend**: Node.js + Express + TypeScript + Prisma ORM
-- **Database**: PostgreSQL with comprehensive indexing and field-level encryption
-- **Authentication**: Passport.js with OAuth support (Google, GitHub)
-
-### Project Structure
-```
-backend/
-├── src/
-│   ├── config/         # Database, session, CORS, environment config
-│   ├── controllers/    # Route handlers (auth, user, event, organization)
-│   ├── middleware/     # Auth, RBAC, validation, security, rate limiting
-│   ├── routes/         # API routes organized by feature
-│   ├── services/       # Business logic (auth, event, incident, notification)
-│   ├── utils/          # Helpers (encryption, audit, email, validation)
-│   └── types/          # TypeScript type definitions
-├── prisma/             # Database schema and seeds
-└── tests/              # Unit and integration tests
-
-frontend/
-├── components/         # React components (shared, UI, feature-specific)
-├── pages/             # Next.js pages and API routes
-├── hooks/             # Custom React hooks
-├── lib/               # Utilities (validation, logging, sanitization)
-├── context/           # React context providers
-└── types/             # TypeScript type definitions
-```
-
-## Key Development Patterns
-
-### Authentication & Authorization
-- Always verify user authentication before accessing protected resources
-- Use `req.user` from Passport.js session middleware
-- Implement event-scoped authorization checks in middleware
-- SuperAdmins cannot access event data without explicit event roles
-
-### Database & Security
-- All queries must be event-scoped when dealing with event data
-- Use Prisma ORM with TypeScript for type safety
-- Sensitive data (incidents, comments, emails) is automatically encrypted
-- Required environment variable: `ENCRYPTION_KEY` (minimum 32 characters)
-
-### API Development
-- Routes are organized by feature area (auth, events, organizations, etc.)
-- Use consistent error response format across all endpoints
-- Implement proper request validation using express-validator
-- Add audit logging for security-critical actions using `logAudit` helper
-
-### Frontend Patterns
-- Use Shadcn/ui components exclusively before creating custom components
-- Implement proper loading and error states for all async operations
-- Mobile-first responsive design with Tailwind CSS
-- Use React Context for global state (user, modal, navigation)
-
-## Security Requirements
-
-### Field-Level Encryption
-All sensitive data is automatically encrypted using AES-256-GCM:
-- Incident descriptions, parties involved, locations
-- All incident comments and communication
-- Event contact emails and configuration
-- OAuth credentials and SMTP passwords
-
-### Access Control
-- Role-based permissions at UI and API levels
-- Event data isolation between different events
-- Rate limiting on authentication endpoints
-- Comprehensive audit logging for administrative actions
-
-### Data Validation
-- Client and server-side input validation
-- XSS prevention with DOMPurify sanitization
-- SQL injection prevention via parameterized queries
-- Secure session management with HTTP-only cookies
-
-## Testing Guidelines
-
-### Test Requirements
-- All new features require automated tests (unit, integration, or both)
-- All new API endpoints must include test coverage
-- Bug fixes should include regression tests
-- Tests must pass before features are considered complete
-
-### Test Commands
-```bash
-# Run all tests locally before pushing
-npm run test:all
-
-# Individual test suites with coverage
-docker-compose exec backend npm run test:coverage
-docker-compose exec frontend npm run test:coverage
-```
-
-### CI/CD
-- GitHub Actions runs tests on all PRs and pushes to main
-- CTRF test reporting provides detailed test results in PRs
-- Codecov integration tracks test coverage for both frontend and backend
-
-## Important Notes
-
-- Never commit secrets or API keys to version control
-- Use `.env` files for local development configuration
-- System settings (email, OAuth) are managed through the admin UI and stored encrypted in the database
-- Always test mobile responsiveness - this is a mobile-first application
-- Document complex business logic and any new testing procedures
+- Data model: `backend/prisma/schema.prisma`, `website/docs/developer-docs/data-model.md`
+- Security: `website/docs/developer-docs/security-architecture.md`
+- API docs: Swagger at `localhost:4000/api-docs` when running
+- Revival checklist and open decisions: `docs/revival-plan.md`
+- `docs/archive/` is old planning and per-session notes. History, **not** source of truth; it contradicts current code in places.

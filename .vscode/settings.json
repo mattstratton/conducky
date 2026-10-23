@@ -10,7 +10,7 @@
     "!**/node_modules",
     "!**/.git",
     "!**/vendor",
-    "!**/reference/**"
+    "!**/docs/archive/**"
   ],
   "kiroAgent.configureMCP": "Disabled"
 }

@@ -1,4 +1,4 @@
-const { encryptField, decryptField, isEncrypted, isLegacyEncrypted } = require('../../dist/src/utils/encryption');
+const { encryptField, decryptField, isEncrypted, isLegacyEncrypted } = require('../../src/utils/encryption');
 
 describe('Encryption Utilities', () => {
   const originalEnv = process.env.ENCRYPTION_KEY;

@@ -24,7 +24,7 @@ Conducky is a safety-critical application designed to help manage code of conduc
 ### Prerequisites
 
 - **Docker & Docker Compose**: Required for local development environment
-- **Node.js 18+**: For running scripts outside Docker (optional)
+- **Node.js 24+**: For running scripts outside Docker (optional)
 - **Git**: For version control
 - **A code editor**: We recommend VS Code with TypeScript extensions
 
@@ -92,7 +92,7 @@ Both frontend and backend use `.env` files for configuration:
 
 ### Core Technologies
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Shadcn/ui
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS, Shadcn/ui
 - **Backend**: Node.js, Express, TypeScript, Prisma ORM
 - **Database**: PostgreSQL
 - **Authentication**: Passport.js with social login support
@@ -116,7 +116,7 @@ conducky/
 │   ├── prisma/        # Database schema and migrations
 │   └── tests/         # Test files
 ├── website/           # Docusaurus documentation site
-└── reference/         # Design documents and references
+└── docs/archive/      # Historical planning notes (not source of truth)
 ```
 
 ### Key Architectural Principles

@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "bash scripts/guard-bash.sh" }]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "bash scripts/guard-migration-edit.sh" }]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)",
+      "Bash(docker compose exec backend npm test*)",
+      "Bash(docker compose exec backend npm run test*)",
+      "Bash(docker compose exec backend npm run build)",
+      "Bash(docker compose exec backend npm run type-check)",
+      "Bash(docker compose exec frontend npm test*)",
+      "Bash(docker compose exec frontend npm run test*)",
+      "Bash(docker compose exec frontend npx tsc --noEmit)",
+      "Bash(npm run test:all)",
+      "Bash(gh issue list*)",
+      "Bash(gh issue view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr view*)",
+      "Bash(gh run list*)"
+    ]
+  }
+}
