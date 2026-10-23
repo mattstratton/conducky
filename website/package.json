@@ -25,18 +25,18 @@
     "@docusaurus/plugin-client-redirects": "^3.8.1",
     "@docusaurus/preset-classic": "3.8.1",
     "@docusaurus/theme-mermaid": "^3.8.1",
-    "@mdx-js/react": "^3.0.0",
+    "@mdx-js/react": "^3.1.1",
     "clsx": "^2.0.0",
-    "docusaurus-plugin-openapi-docs": "^4.5.1",
-    "docusaurus-theme-openapi-docs": "^4.5.1",
+    "docusaurus-plugin-openapi-docs": "^4.7.1",
+    "docusaurus-theme-openapi-docs": "^4.7.1",
     "prism-react-renderer": "^2.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.8.1",
     "@docusaurus/types": "3.8.1",
-    "@types/node": "^22.10.2"
+    "@types/node": "^22.20.5"
   },
   "browserslist": {
     "production": [
