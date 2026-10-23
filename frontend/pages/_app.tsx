@@ -214,14 +214,14 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                       <span className="ml-3 font-bold text-lg text-yellow-500">Conducky</span>
                       <AppBreadcrumbs eventName={eventName} />
                     </div>
-                    <div className="flex flex-1 pt-12 md:pt-12">
+                    <div className="flex min-w-0 flex-1 pt-12 md:pt-12">
                       <AppSidebar user={{
                         name: user.name || user.email || "User",
                         email: user.email || "",
                         avatar: user.avatarUrl || "",
                         roles: user.roles || [],
                       }} events={events} organizations={organizations} globalRoles={globalRoles} />
-                      <main className="flex-1 bg-background text-foreground pb-10">
+                      <main className="min-w-0 flex-1 bg-background text-foreground pb-10">
                         <Component {...pageProps} />
                       </main>
                     </div>
