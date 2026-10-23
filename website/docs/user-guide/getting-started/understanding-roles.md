@@ -25,7 +25,7 @@ Conducky uses a comprehensive role-based access control system with two types of
 - **Organization Admin**: Management of multiple events within an organization
 - **Organization Viewer**: Read-only access to multiple events within an organization
 
-:::info Multi-Role Support
+:::info[Multi-Role Support]
 You can have different roles in different events. For example, you might be an Event Admin for one conference and a Reporter for another.
 :::
 

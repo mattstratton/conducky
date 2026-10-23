@@ -88,7 +88,7 @@ Manage your participation in events from `/profile/events`:
 3. **Confirm** your decision
 4. **Lose access** to all event data immediately
 
-:::warning Leaving Events
+:::warning[Leaving Events]
 When you leave an event, you lose access to all reports you submitted and cannot see any event data. Event Admins can re-invite you if needed.
 :::
 

@@ -20,7 +20,7 @@ Conducky implements a robust authentication system with multiple login methods a
 - **Rate limiting**: Protection against brute force attacks
 - **Account lockout**: Temporary lockout after failed attempts
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Standard login form with security features highlighted
 
 ### 2. Social Authentication
@@ -108,7 +108,7 @@ Multi-factor authentication support is planned for a future release. Currently, 
 - Account lockout protection
 - Login attempt monitoring
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: MFA setup interface with QR code and backup codes (future feature)
 
 ### Account Security Monitoring
@@ -204,7 +204,7 @@ const hasEventAccess = await checkEventPermission(
 - **MFA enforcement**: Require for admin accounts
 - **Rate limiting**: Adjust thresholds for your environment
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: System admin OAuth configuration interface
 
 ### For Users
@@ -238,7 +238,7 @@ const hasEventAccess = await checkEventPermission(
 - **Monthly access pattern analysis**
 - **Quarterly security review**
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Authentication metrics dashboard
 
 ## 🛠️ Troubleshooting Authentication

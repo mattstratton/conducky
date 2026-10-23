@@ -31,7 +31,6 @@ const config = {
   baseUrl: baseUrl,
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
 
   i18n: {
     defaultLocale: 'en',
@@ -121,6 +120,9 @@ const config = {
   // Enable Mermaid support globally
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
 
   themeConfig:

@@ -62,5 +62,5 @@ Higher-level roles automatically inherit permissions from lower-level roles with
 - **[Role Management](./management)** - Assigning and managing user roles
 - **Security Best Practices** - Recommendations for secure RBAC usage
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: RBAC dashboard showing role hierarchy and assignments 

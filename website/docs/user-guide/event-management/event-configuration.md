@@ -23,7 +23,7 @@ The following fields can be edited inline:
 - **Code of Conduct**: Community guidelines (Markdown supported)
 - **Contact Email**: Primary contact for the event
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Event configuration page showing inline editing interface with edit icons
 
 ### Who Can Edit

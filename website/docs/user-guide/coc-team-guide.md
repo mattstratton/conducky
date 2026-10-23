@@ -27,7 +27,7 @@ Navigate to your event's incident dashboard at:
 - `/events/[event-name]/incidents`
 - Or click "Incidents" in the event navigation menu
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Incident dashboard for responders showing the incident queue view
 
 ### Dashboard Features
@@ -100,7 +100,7 @@ graph LR
 - **Your action**: Archive and move to long-term storage
 - **Next steps**: No further action unless new information emerges
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Incident status management interface showing workflow stages
 
 ### Changing Incident Status
@@ -142,7 +142,7 @@ graph LR
 3. During status change: Assign while moving to "Investigating"
 4. Bulk assignment: Select multiple incidents and assign to one person
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Response team collaboration interface showing team assignment
 
 ### Team Communication
@@ -184,7 +184,7 @@ graph LR
 - Custom date ranges for specific periods
 - Filter by incident date vs. report submission date
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Incident filtering and search interface
 
 ### Search Functionality
@@ -218,7 +218,7 @@ graph LR
 - Use for investigation planning and related file discussion
 - Include decision-making rationale and next steps
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Comment system interface showing internal vs external comments
 
 ### Comment Threading and Organization

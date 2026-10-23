@@ -114,7 +114,7 @@ graph TB
 
 ## 🔍 Security Monitoring
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Security dashboard showing system health metrics
 
 ### What We Monitor

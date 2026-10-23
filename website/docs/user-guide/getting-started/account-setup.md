@@ -22,7 +22,7 @@ Visit `/register` to create a new account when setting up a new Conducky instanc
 4. **Automatic elevation**: The first user to register becomes a System Admin automatically
 5. **Next steps**: Subsequent users need invitations to access functionality
 
-:::tip First User Benefits
+:::tip[First User Benefits]
 As the first user, you become a System Admin with full system access. You can create organizations, manage system settings, and invite other users. You'll be guided through initial system setup to get your Conducky instance ready for use.
 :::
 
@@ -92,7 +92,7 @@ Update your password anytime from your profile:
 
 ## Security Best Practices
 
-:::warning Security Best Practices
+:::warning[Security Best Practices]
 - Use a unique, strong password
 - Don't share your account credentials
 - Log out when using shared computers

@@ -17,7 +17,7 @@ The sidebar navigation automatically adapts to mobile devices:
 - **Touch-friendly**: All navigation elements are optimized for touch interaction
 - **Context awareness**: Mobile navigation maintains the same context-aware behavior as desktop
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Mobile sidebar navigation showing hamburger menu and overlay behavior
 
 ### Mobile Navigation Controls
@@ -153,7 +153,7 @@ Mobile navigation is optimized for performance:
 - **Push notifications** for incident updates
 - **Native app-like experience** without app store installation
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Mobile browser showing "Add to Home Screen" option for Conducky
 
 ## Mobile Navigation Best Practices

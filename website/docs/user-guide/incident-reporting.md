@@ -28,7 +28,7 @@ There are several ways to submit an incident report:
 - Press `Ctrl+Shift+R` (or `Cmd+Shift+R` on Mac) from anywhere in the app
 - This works for single-event users or opens a selector for multi-event users
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Mobile incident reporting form showing the clean, accessible interface
 
 ## 📝 The Incident Reporting Process
@@ -181,7 +181,7 @@ You can add comments to your reports to:
 - Share new related files or updates
 - Ask about the status or timeline
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Comment system interface showing public vs internal comments
 
 ## ⚠️ Important Guidelines

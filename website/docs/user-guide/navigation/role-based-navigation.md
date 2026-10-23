@@ -26,7 +26,7 @@ System Admins have access to both system management and personal event participa
 - 🔔 **Notifications** (`/dashboard/notifications`)
 - **My Events** section with event switcher
 
-:::warning System Admin Event Access
+:::warning[System Admin Event Access]
 System Admins do **not** automatically have access to event data. They must be explicitly added to events by Event Admins to view or manage incident reports.
 :::
 
@@ -84,7 +84,7 @@ Responders see report management and team information:
 - Event switcher with role indicators
 - Quick navigation between events
 
-:::info Responder Permissions
+:::info[Responder Permissions]
 Responders can view and manage all incidents in events where they have the Responder role, but cannot manage team members or event settings.
 :::
 
@@ -110,7 +110,7 @@ Reporters see basic event information and their own reports:
 - Event switcher
 - Access to events where you're a reporter
 
-:::note Reporter Limitations
+:::note[Reporter Limitations]
 Reporters can only see their own incident reports and cannot view reports submitted by others. They also cannot access team management features.
 :::
 

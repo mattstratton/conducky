@@ -29,7 +29,7 @@ This page provides detailed information about each role in Conducky's RBAC syste
 **Important Limitation:**
 System Admins follow the principle of least privilege - they cannot access event incident data without explicit event-level permissions. This ensures that system maintenance doesn't compromise event data privacy.
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: System Admin dashboard showing capabilities and limitations
 
 ## 🏢 Organization Level Roles
@@ -85,7 +85,7 @@ System Admins follow the principle of least privilege - they cannot access event
 - Access to all reporter contact information
 - Can see all internal and external comments
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Event Admin dashboard showing team management interface
 
 ### Responder (`responder`)
@@ -133,7 +133,7 @@ System Admins follow the principle of least privilege - they cannot access event
 - Cannot view other users' incidents or reports
 - Cannot change incident status or assignments
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Reporter view showing limited access to own reports only
 
 ## 🔄 Role Inheritance Rules

@@ -314,5 +314,5 @@ const getOrganizationAccess = (orgId, userRole) => {
 - Remove unused or expired roles
 - Monitor for privilege escalation attempts
 
-<!-- Screenshot Placeholder -->
+{/* Screenshot Placeholder */}
 > **Screenshot needed**: Access control audit log showing permission checks and violations 
