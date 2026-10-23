@@ -14,6 +14,8 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 ## Decisions and parked ideas
 
+- **TEMPORARY: dependabot ignores semver-major in all three npm blocks** (`.github/dependabot.yml`). Turning on version updates opened 15 PRs at once (#462-#476), many risky majors (eslint 10, babel 8, `@types/node` 26, dotenv 18, ...). **Remove those three ignore entries once step 4's follow-ups (nodemailer, jspdf, Prisma, website) are done**, so majors come back as individual PRs reviewed one at a time. Don't leave this on: majors carry security fixes.
+
 - **Docs hosting is intentional, keep both.** conducky.com (Netlify, `website/netlify.toml`) is the homepage + docs; Read the Docs (`.readthedocs.yaml`) builds the same Docusaurus site on every push to `main` (151 builds, latest = HEAD). Only nit: Netlify pins Node 18, RTD pins Node 20.
 - **One branch for steps 2+3**, one PR. Steps 4 and 5 get their own.
 - **Parked until stable (after step 5): make conducky deployable on Vercel as well as Railway/Docker and others.** Needs a deploy-target story: Next.js frontend on Vercel is easy; the Express backend + Postgres + uploaded files (stored in DB today, issue #240) + sessions + rate-limit tables need an answer (serverless Express, separate host, or port to route handlers). Don't start before steps 1-5 are done.

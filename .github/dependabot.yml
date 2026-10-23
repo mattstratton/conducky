@@ -21,6 +21,10 @@ updates:
       # upgrade deliberately in its own PR.
       - dependency-name: prisma
       - dependency-name: "@prisma/client"
+      # TEMPORARY: no major-version PRs while the revival upgrades land by hand.
+      # REMOVE when the follow-ups in docs/revival-plan.md are done (step 4).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
@@ -30,6 +34,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # TEMPORARY: no major-version PRs while the revival upgrades land by hand.
+      # REMOVE when the follow-ups in docs/revival-plan.md are done (step 4).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /website
@@ -42,6 +51,10 @@ updates:
     ignore:
       # @docusaurus/* must all share one exact version; bump them together by hand.
       - dependency-name: "@docusaurus/*"
+      # TEMPORARY: no major-version PRs while the revival upgrades land by hand.
+      # REMOVE when the follow-ups in docs/revival-plan.md are done (step 4).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
