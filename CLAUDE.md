@@ -7,7 +7,7 @@ Multi-tenant Code of Conduct incident management for conferences and events. Saf
 - **Frontend** (`frontend/`): Next.js 15 (Pages Router), React, TypeScript, Tailwind 3, Shadcn/ui, Jest + RTL
 - **Backend** (`backend/`): Node, Express 5, TypeScript, Prisma 6, PostgreSQL 15, Passport (local, Google, GitHub), Jest + supertest
 - **Docs site** (`website/`): Docusaurus. User/admin/developer docs live in `website/docs/`
-- **Dev env**: Docker Compose. Run backend/frontend commands inside the containers
+- **Dev env**: Docker Compose (containers run Node 24). Run backend/frontend commands inside the containers. `node_modules` is bind-mounted from the host, so after changing the Node version or a Dockerfile, delete `backend/node_modules` and `frontend/node_modules` before `docker compose up --build`
 
 ## Setup and commands
 
