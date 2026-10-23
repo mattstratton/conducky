@@ -17,7 +17,9 @@ if [[ "$cmd" == *"git push"* ]]; then
 fi
 
 # Dev DB lives in the db_data volume. Wiping it needs an explicit human yes.
-if [[ "$cmd" =~ docker[[:space:]-]+(compose[[:space:]]+)?down.*(-v|--volumes) ]] \
+# Only the `docker compose down ...` segment: a later `grep -v` must not trip the -v check.
+down_seg=$(grep -oE 'docker[[:space:]-]+(compose[[:space:]]+)?down[^;&|]*' <<<"$cmd")
+if [[ "$down_seg" =~ (^|[[:space:]])(-v|--volumes)([[:space:]]|$) ]] \
   || [[ "$cmd" =~ docker[[:space:]]+(system|volume)[[:space:]]+prune ]] \
   || [[ "$cmd" =~ docker[[:space:]]+volume[[:space:]]+rm ]] \
   || [[ "$cmd" == *"scripts/refresh-dev.sh"* ]] \
