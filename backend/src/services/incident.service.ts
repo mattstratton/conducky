@@ -370,7 +370,7 @@ export class IncidentService {
               filename: file.filename,
               mimetype: file.mimetype,
               size: file.size,
-              data: file.data,
+              data: new Uint8Array(file.data),
               uploaderId: file.uploaderId || null,
             },
           });
@@ -1111,7 +1111,7 @@ export class IncidentService {
             filename: file.filename,
             mimetype: file.mimetype,
             size: file.size,
-            data: file.data,
+            data: new Uint8Array(file.data),
             uploaderId: file.uploaderId ?? null,
           },
           include: {

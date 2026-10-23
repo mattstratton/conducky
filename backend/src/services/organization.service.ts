@@ -750,7 +750,7 @@ export class OrganizationService {
 
       // For any other role, check exact match
       return await this.rbacService.hasOrgRole(userId, organizationId, [requiredRole]);
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -780,7 +780,7 @@ export class OrganizationService {
           filename,
           mimetype,
           size,
-          data,
+          data: new Uint8Array(data),
         },
       });
 

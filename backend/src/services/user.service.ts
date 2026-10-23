@@ -953,7 +953,7 @@ export class UserService {
           filename,
           mimetype,
           size,
-          data,
+          data: new Uint8Array(data),
         },
       });
 

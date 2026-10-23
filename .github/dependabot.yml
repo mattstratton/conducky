@@ -17,10 +17,6 @@ updates:
       # Revisit when the backend tests move to ESM/vitest. See docs/revival-plan.md.
       - dependency-name: isomorphic-dompurify
         versions: [">=2.27.0"]
-      # Prisma CLI and client must move together and need code changes (Bytes typing);
-      # upgrade deliberately in its own PR.
-      - dependency-name: prisma
-      - dependency-name: "@prisma/client"
       # TEMPORARY: no major-version PRs while the revival upgrades land by hand.
       # REMOVE when the follow-ups in docs/revival-plan.md are done (step 4).
       - dependency-name: "*"
