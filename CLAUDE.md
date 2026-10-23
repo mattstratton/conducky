@@ -5,7 +5,7 @@ Multi-tenant Code of Conduct incident management for conferences and events. Saf
 ## Stack
 
 - **Frontend** (`frontend/`): Next.js 15 (Pages Router), React, TypeScript, Tailwind 3, Shadcn/ui, Jest + RTL
-- **Backend** (`backend/`): Node, Express 5, TypeScript, Prisma 6, PostgreSQL 15, Passport (local, Google, GitHub), Jest + supertest
+- **Backend** (`backend/`): Node, Express 5, TypeScript, Prisma 7, PostgreSQL 15, Passport (local, Google, GitHub), Jest + supertest
 - **Docs site** (`website/`): Docusaurus. User/admin/developer docs live in `website/docs/`
 - **Dev env**: Docker Compose (containers run Node 24). Run backend/frontend commands inside the containers. `node_modules` is bind-mounted from the host, so after changing the Node version or a Dockerfile, delete `backend/node_modules` and `frontend/node_modules` before `docker compose up --build`
 
@@ -21,6 +21,7 @@ docker compose exec frontend npm test
 npm run test:all                                  # both, from repo root
 docker compose exec backend npm run type-check
 docker compose exec backend npx prisma migrate dev --name <what_changed>   # schema change = new migration
+docker compose exec backend npx prisma generate                           # Prisma 7: migrate no longer regenerates the client
 ```
 
 Roles and logging settings seed automatically on backend start. `ENCRYPTION_KEY` (32+ chars) is required or the backend won't boot.
@@ -45,6 +46,7 @@ Roles and logging settings seed automatically on backend start. `ENCRYPTION_KEY`
 
 ## Conventions
 
+- **Prisma 7**: never `new PrismaClient()` (it needs a driver adapter); use `createPrismaClient()` from `backend/src/config/prisma-client.ts`. The client is generated into `backend/src/generated/prisma` (gitignored, import types and enums from there, not `@prisma/client`), so run `npx prisma generate` on a fresh checkout and after a schema change. Plain-node scripts load it through `backend/prisma/db.js`.
 - **Backend**: routes in `src/routes/` call services in `src/services/`; keep business logic out of route handlers. Consistent error response shape. Unified RBAC (`UnifiedRole`, scopes system/organization/event).
 - **Frontend**: Shadcn/ui first (add missing ones with the shadcn CLI), Tailwind only, mobile-first, 44px touch targets. Every async path gets loading and error states. Shared UI in `components/`, global state via `context/`.
 - **Accessibility is a requirement**: semantic HTML, labels on every input, keyboard reachable, visible focus, WCAG AA contrast, form errors announced to screen readers. The repo takes outside a11y PRs; keep that bar.

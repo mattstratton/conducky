@@ -163,7 +163,7 @@ After deployment:
 
 Common deployment issues:
 
-- **Database connection errors**: Verify `DATABASE_URL` format and database accessibility
+- **Database connection errors**: Verify `DATABASE_URL` format and database accessibility. Connections time out after 5 seconds. Conducky uses the `pg` driver, which verifies TLS certificates: if your managed Postgres uses a self-signed certificate and the backend fails with error `P1010` or a certificate error, trust the CA with `NODE_EXTRA_CA_CERTS=/path/to/ca.pem` rather than disabling verification
 - **CORS errors**: Ensure `CORS_ORIGIN` matches your frontend URL exactly
 - **Session issues**: Verify `SESSION_SECRET` is set and consistent across restarts
 

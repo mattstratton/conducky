@@ -181,6 +181,7 @@ When the performance monitor suggests new indexes:
 4. **Create migration**:
    ```bash
    docker-compose exec backend npx prisma migrate dev --name add-performance-indexes
+   docker-compose exec backend npx prisma generate
    ```
 5. **Monitor impact** using performance metrics
 
