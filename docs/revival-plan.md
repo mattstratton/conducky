@@ -9,7 +9,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 1. Baseline: build stack in Docker, run backend + frontend tests, record what's red (healthy; see log)
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (branch `chore/agent-setup-and-docs-cleanup`, uncommitted)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (same branch)
-- [ ] 4. Dep debt: pin `latest` (next, react, express), triage 18 dependabot PRs (Next 16 and nodemailer 7 majors get their own PRs)
+- [~] 4. Dep debt. **PR A (in review)**: pin `latest`, in-range security updates, frontend build fix, dependabot config. **Follow-ups, each its own PR, in this order:** (a) Docker images to Node 24, then lift the two holds; (b) nodemailer 6 → 10; (c) jspdf 3 → 4; (d) Prisma 6.10 → latest 6.x; (e) website: Docusaurus 3.10 + Netlify Node + audit fix; (f) Tailwind 3 → 4 (optional, build-time chain only)
 - [ ] 5. Issue triage: ~70 stale issues, none touched since Aug 2025 (`/triage-issues`)
 
 ## Decisions and parked ideas
@@ -20,8 +20,8 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 ## Known problems still open (from initial review, 2026-10-22)
 
-- `next`/`react`/`express` are `"latest"` in package.json (step 4)
-- 18 open dependabot PRs, oldest Jul 2025 (step 4)
+- **Docker images run `node:18-alpine`** (both Dockerfiles; EOL Apr 2025), while CI and the docs say Node 24. Found when a newer jsdom crashed the container with `ERR_REQUIRE_ESM`. Fix = step 4 follow-up (a). RTD builds on Node 20 (EOL Apr 2026), Netlify on 18; both want a bump when the website moves to Docusaurus 3.10 (needs Node 20+; 3.10 also needs `@docusaurus/faster` because of `future.v4`)
+- Remaining prod vulns after PR A: backend `nodemailer` (fix only in v10); frontend `jspdf` (critical, fix only in v4), plus Tailwind 3 build-tool chain (braces/micromatch/chokidar/fast-glob) and Next's bundled postcss (fix only in Next 16). Website: 91 total / 20 critical, all build-time Docusaurus tooling (static site, no runtime exposure)
 - ~70 open issues, stale/duplicated (step 5)
 - Backend CI needs repo secrets, so fork PRs can't run backend tests
 - Frontend: 19 `tsc` errors, all in test files (`IncidentDetailView.test.tsx`, `CoCTeamList.test.tsx`, `KeyboardNavigationTest.test.tsx`); no frontend `type-check` script
@@ -39,7 +39,24 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
 
-## Step 2 + 3 log (2026-10-22): DONE, uncommitted on `chore/agent-setup-and-docs-cleanup`
+## Step 4 log, PR A (2026-10-23): branch `chore/dependency-debt`
+
+Production-dependency audit (`npm audit --omit=dev`), main -> this branch: **backend 18 vulns (2 critical, 10 high) -> 1 (0 critical, 1 high: nodemailer)**; **frontend 23 (2 crit, 16 high) -> 11 (1 crit: jspdf, 6 high)**.
+
+Changed:
+- Pinned `"latest"`: `express ^5.3.0`, `next ^15.5.28`, `react`/`react-dom ^19.3.1`
+- `npm update` within existing ranges in `backend/` and `frontend/` (+ non-breaking `npm audit fix` in frontend). Includes handlebars (critical), multer, validator, qs, body-parser, lodash; Next 15.3.3 -> 15.5.28 (fixes the critical image-optimizer / Flight RCE advisories; Next 16 is **not** needed); dompurify 3.2.6 -> 3.4.17
+- **Holds** (also encoded in `.github/dependabot.yml` `ignore`): `prisma` + `@prisma/client` exact `6.10.1` (6.19 changes `Bytes` to `Uint8Array<ArrayBuffer>` -> 5 TS errors, 18 suites fail); `isomorphic-dompurify ~2.26.0` (2.27+ uses jsdom 27 -> ESM-only deps -> `ERR_REQUIRE_ESM` on Node 18 and "Unexpected token export" in Jest)
+- **Fixed a pre-existing break on `main`**: `next build` failed on `react/prop-types` in `components/ui/form.tsx` (from the a11y commits, 2026-05-28/06-25). Verified on clean `main` with its original lockfile. Nothing in CI built the frontend, so a release tag would have failed at Docker publish. Fixed with the repo's usual `eslint-disable-next-line`, and **added a `npm run build` step to the frontend CI job**
+- Added `.github/dependabot.yml`: monthly, grouped minor+patch, ignores above. (There was none; the 18 PRs were ungrouped security updates)
+
+Verified: backend 42/42 suites (365 tests), type-check clean, `/health` 200; frontend 20/20 (134), `tsc` = same 19 old test-fixture errors only, production `next build` passes on Node 18 (the Docker image's Node), pages return 200.
+
+Tried and reverted: website `npm audit fix` (floated `@docusaurus/plugin-client-redirects` to 3.10.2 vs core 3.8.1: Docusaurus requires one exact version across `@docusaurus/*`; aligning on 3.10.2 then needs `@docusaurus/faster` + Node 20+; a different `audit fix` result broke webpack's Progress plugin). Website left untouched; follow-up (e).
+
+Lesson: a blanket `npm update` is not safe here even in-range (Prisma minors, jsdom majors via transitive caret). Always run tests, the production build and a container restart.
+
+## Step 2 + 3 log (2026-10-22): DONE, merged in PR #460
 
 Added:
 - `CLAUDE.md` rewritten (258 → ~75 lines; fixed Next 15 / Express 5 / setup / commands; security invariants; golden rules)

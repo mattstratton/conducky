@@ -1,0 +1,51 @@
+version: 2
+
+# Monthly and grouped: one PR per ecosystem per month instead of a pile of one-offs.
+# Security updates still open immediately regardless of this schedule.
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Held until the Docker images move off Node 18: 2.27+ pulls jsdom 27 (ESM-only deps,
+      # needs Node 20+; breaks the app on Node 18 and Jest). See docs/revival-plan.md.
+      - dependency-name: isomorphic-dompurify
+        versions: [">=2.27.0"]
+      # Prisma CLI and client must move together and need code changes (Bytes typing);
+      # upgrade deliberately in its own PR.
+      - dependency-name: prisma
+      - dependency-name: "@prisma/client"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # @docusaurus/* must all share one exact version; bump them together by hand.
+      - dependency-name: "@docusaurus/*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
