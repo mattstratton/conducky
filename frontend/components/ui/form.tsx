@@ -146,6 +146,7 @@ const FormMessage = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : children
+  // eslint-disable-next-line react/prop-types -- false positive: props is typed via the forwardRef generic
   const role = error ? "alert" : props.role
 
   if (!body) {
