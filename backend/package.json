@@ -5,6 +5,7 @@
   "scripts": {
     "backfill:org-admins-to-event-admins": "node scripts/assign-org-admins-to-events.js",
     "backfill:org-admins-to-event-admins:dry-run": "node scripts/assign-org-admins-to-events.js --dry-run",
+    "generate": "prisma generate",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "dev": "nodemon index.js",
