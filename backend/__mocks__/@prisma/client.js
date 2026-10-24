@@ -139,6 +139,7 @@ const inMemoryStore = {
   eventInvites: [],
   userAvatars: [],
   passwordResetTokens: [],
+  emailVerificationTokens: [],
   notifications: [],
   incidentComments: [],
   rateLimitAttempts: [],
@@ -1548,6 +1549,45 @@ class PrismaClient {
           }
         );
         return { count: before - inMemoryStore.passwordResetTokens.length };
+      }),
+    };
+    this.emailVerificationToken = {
+      create: jest.fn(({ data }) => {
+        const token = {
+          id: String(inMemoryStore.emailVerificationTokens.length + 1),
+          createdAt: new Date(),
+          pendingEmail: null,
+          usedAt: null,
+          ...data,
+        };
+        inMemoryStore.emailVerificationTokens.push(token);
+        return token;
+      }),
+      findUnique: jest.fn(({ where }) => {
+        return inMemoryStore.emailVerificationTokens.find((t) => t.tokenHash === where.tokenHash) || null;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.emailVerificationTokens.findIndex((t) => t.id === where.id);
+        if (idx === -1) return null;
+        inMemoryStore.emailVerificationTokens[idx] = { ...inMemoryStore.emailVerificationTokens[idx], ...data };
+        return inMemoryStore.emailVerificationTokens[idx];
+      }),
+      updateMany: jest.fn(({ where, data }) => {
+        let count = 0;
+        inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.map((t) => {
+          if (where?.userId && t.userId !== where.userId) return t;
+          if (where && 'usedAt' in where && where.usedAt === null && t.usedAt !== null) return t;
+          count++;
+          return { ...t, ...data };
+        });
+        return { count };
+      }),
+      deleteMany: jest.fn(({ where }) => {
+        const before = inMemoryStore.emailVerificationTokens.length;
+        inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.filter(
+          (t) => !(where?.userId && t.userId === where.userId)
+        );
+        return { count: before - inMemoryStore.emailVerificationTokens.length };
       }),
     };
     this.notification = {
