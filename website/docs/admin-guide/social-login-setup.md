@@ -192,12 +192,31 @@ backend:
 
 #### Test Case 4: OAuth Error Handling
 
-1. Configure invalid OAuth credentials in environment variables
+Two failures look different. Test both.
+
+**4a. The provider authenticates the user, but Conducky rejects the sign-in** (an
+unverified provider email, a provider account with no email, or a social account
+already linked to a different Conducky user):
+
+1. Sign in with such an account
+2. **Expected Results**:
+   - The user is redirected to `/login?error=oauth_failed`
+   - The login page shows: "Social login failed. If you used Google or GitHub, make sure the email address on that account is verified, then try again, or sign in with email and password."
+
+**4b. The OAuth client itself is misconfigured** (a wrong Client ID or Secret, or
+a redirect URI that does not exactly match the callback URL):
+
+1. Save an intentionally invalid Client ID or Secret for the provider
 2. Navigate to `/login`
 3. Click **"Google"** or **"GitHub"** button
 4. **Expected Results**:
-   - User is redirected to `/login?error=oauth_failed`
-   - Error message is displayed: "Social login failed. Make sure the email address on your Google or GitHub account is verified, then try again, or sign in with email and password."
+   - The user does **not** land on `/login?error=oauth_failed`; that redirect is
+     reserved for a sign-in the app rejects after the provider succeeds
+   - The provider may show its own error page, or the callback fails with a
+     `500` from the API origin
+   - The backend request log shows the failed callback (with the error stack in
+     development); correct the credentials or the authorized redirect URI, then
+     try again
 
 ### Database Verification
 
