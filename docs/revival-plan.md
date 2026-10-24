@@ -10,7 +10,7 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - [x] 2. Agent setup: slim CLAUDE.md, AGENTS.md, `.claude/` hooks/skills/agents, GLOSSARY.md, remove `.cursor/` + `.github/instructions/` (merged, PR #460)
 - [x] 3. Doc cleanup: archive `reference/`, fix Next 14→15 / Node claims, root script + test fixes (merged, PR #460)
 - [x] 4. Dep debt, done 2026-10-23: #461 (in-range security updates, frontend build fix, dependabot config), #477 (Docker images on Node 24), #480 (nodemailer 10), #486 (jspdf 4), #487 + #488 (Prisma 6.19 then 7.10.1), #489 (Docusaurus 3.10, OpenAPI plugins 5, Node 22 hosting), #491 (dependabot majors re-enabled), grouped dependabot PRs #463 #493 #492 #469, plus the cleanup PR (`chore/post-dependabot-cleanup`). Backend runtime audit 0, frontend runtime 6 (1 high), website 44 (0 critical). Optional leftovers are under "Known problems" below (Tailwind 4, Next 16, Read the Docs on Node 22, docker-publish untested).
-- [~] 5. Issue triage: 74 open -> 54 (groups A-D applied 2026-10-23, see the step 5 log); still open: a few owner calls, labeling the rest (`/triage-issues`)
+- [x] 5. Issue triage, done 2026-10-23: 74 open -> 53 (21 closed, 2 new filed, labels cleaned up, 6 `high-priority`; see the step 5 log). Two small `high-priority` fixes shipped (#499, #500). Next up is the owner's pick from the "next" list in the log (`/triage-issues` for later rounds)
 
 ## Decisions and parked ideas
 
@@ -28,7 +28,8 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - `npm run test:all` runs jest **on the host** against the bind-mounted `node_modules` (not in the container as CLAUDE.md's command list implies). Works while Linux-built native modules aren't loaded by the tests; fragile
 - Many tracked files have **CRLF line endings** (Dockerfiles, docker-compose.yml, ...). `sed '...$'` anchors silently fail on them; match without `$`, and keep the CRLFs so diffs stay one line. Also: `npm install`/`uninstall` on this machine once rewrote `frontend/package-lock.json` with CRLF (a 36k-line diff for removing one package). Always check `git diff --stat` on lockfiles; convert back to LF (`b.replace(b'\r\n', b'\n')`) if it explodes
 - Remaining vulnerabilities (verified 2026-10-23 after the dependabot merges): backend runtime audit **0**; frontend runtime 6 (1 high, 5 moderate), from two advisories: `postcss` <= 8.5.22 bundled inside Next (high; fixed only by Next 16, see #452) and `postcss-selector-parser` via the Tailwind 3 / `@tailwindcss/typography` chain (moderate; Tailwind 4 would clear it); website 44 (0 critical; pinned by Docusaurus's own dependencies, needs upstream releases; a temporary `tinypool` override is in `website/package.json`, see the PR G log). Nothing here is reachable from a request
-- ~70 open issues, stale/duplicated (step 5)
+- ~~~70 open issues, stale/duplicated~~ triaged in step 5 (53 open). Still broken and filed: `npm run sample-data` (#502; the dev database is empty until it is fixed or a patched copy is run), `/admin/events` mobile overflow (#501)
+- If the dev frontend answers 500 with `Cannot find module './chunks/vendor-chunks/next.js'`, `frontend/.next` is a stale mix of build outputs (seen after switching branches under a running dev server): delete `frontend/.next` (gitignored) and `docker compose restart frontend`. The restart also rewrites the tracked `frontend/next-env.d.ts`; `git checkout` it
 - Backend CI needs repo secrets, so fork PRs can't run backend tests
 - Frontend: 19 `tsc` errors, all in test files (`IncidentDetailView.test.tsx`, `CoCTeamList.test.tsx`, `KeyboardNavigationTest.test.tsx`); no frontend `type-check` script
 - Backend tests mock Prisma almost everywhere; hardcoded `localhost:5432/conducky_test` in `jest.setup.js` is meaningless inside the container
@@ -45,9 +46,9 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 - Frontend `tsc --noEmit`: 19 errors, all test fixtures. `next build` has `ignoreBuildErrors: false`.
 - Not checked: `next build` (would collide with the dev server's `.next` bind mount), eslint, website build.
 
-## Step 5 log (2026-10-23): issue triage, groups A-D applied
+## Step 5 log (2026-10-23): issue triage, DONE
 
-74 open issues (filed Jun-Aug 2025, none touched since) -> **54 open**: 20 closed, 6 marked `high-priority`. Each close has a one-line reason on the issue. For each possibly-done issue I checked the code first rather than trusting the body.
+74 open issues (filed Jun-Aug 2025, none touched since) -> **53 open** at the end of the day: 21 closed, 2 new issues filed (#501, #502), 6 marked `high-priority`. Each close has a one-line reason on the issue. The sections below are the first pass (groups A-D); "Afterwards" at the end has everything done since. For each possibly-done issue I checked the code first rather than trusting the body.
 
 **Closed as done / obsolete (5):** #421 delete orgs (API route + Delete button in org settings; note the issue floated "only empty orgs", the endpoint deletes the org and its data), #278 org logo upload (route + file input in org settings), #417 org analytics API reference pages (exist under `website/docs/api`), #94 and #118 (pointed at `ReportForm.js` / `Avatar.js`, which no longer exist; `IncidentForm.tsx` has try/catch/finally, avatars use shadcn `AvatarFallback`).
 
@@ -59,10 +60,12 @@ Reference setup for conventions: `~/src/github.com/timescale/tiger-den` (not a T
 
 **Kept as "later" (no label):** everything else, including #117 (avatar queries in a loop, verified still in `event.service.ts`) and #214 (in-memory sort in `getUserActivity`, verified), #240 (cloud file storage; default to DB, optional cloud), #241 (Redis rate limiting; owner wants it optional), #279 (org-scoped event paths; implementation plan in the comments), #281 (Railway template, in progress; tied to the parked Vercel/Railway deployability work).
 
-**Not applied yet:**
-- Owner calls: #296 (migrate forms to `ValidatedInput`: the component exists but nothing uses it; leaning close), #337 SMS and #367 incidents by email (leaning later), #377 2FA and #314 email verification (security features, priority is an owner call).
-- Labeling the unlabeled issues (`enhancement` / `bug` / `documentation`) and adding `performance` to #117 / #214 / #229.
-- Two near-duplicate labels exist: `high priority` and `high-priority`. The triage skill uses `high-priority`; #242 now has both. Pick one and merge.
+**Afterwards (same day):**
+- **Shipped from the "next" list:** #430 and #411 in #499 (privacy copy on the incident form, login `autocomplete` and `aria-pressed`; the toggle's `aria-label` is now constant because a flipping label plus `aria-pressed` double-announces). #263 in #500: the cut-off screenshot was the **Team** page, not incident details; the app shell's flex row and `main` needed `min-w-0`, so wide content (a table) stretched the page to 627px at 390px width. `Refs #263`, so the issue **stays open until checked on a real phone**.
+- **Parked, each needs a design discussion first:** #328 (nothing exists for hiding an incident from specific people; any exclusion rule has to be enforced in RBAC and in every incident query, count, search and export, and a reporter-chosen exclusion list can be abused), #242 (virus scanning: ClamAV opt-in, off by default, fail closed when on; drop the VirusTotal option, which would send evidence to a third party), #423 (row-level security).
+- **Owner calls:** #296 closed (the `ValidatedInput` component was never built; an earlier note above saying it exists was wrong), #314 email verification marked `high-priority` (no verification fields in the schema; prerequisite for trusting password reset and 2FA), #377 2FA, #337 SMS and #367 incidents by email left as "later".
+- **Labels:** #12, #16, #33 got `enhancement`; #117, #214, #229 got `performance`; `high priority` merged into `high-priority` (added to #244, label deleted). Open `high-priority`: #423, #328, #263, #244, #242, #314.
+- **Found along the way, filed:** #501 (`/admin/events` overflows horizontally on mobile, 442px at 390px width) and #502 (`npm run sample-data` crashes: it queries the removed `organizationMembership` model, unrelated to Prisma 7).
 
 ## Step 4 log, PR I (2026-10-23): grouped dependabot PRs + cleanup (`chore/post-dependabot-cleanup`)
 
