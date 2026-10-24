@@ -6,6 +6,7 @@ import { emailService } from '../utils/email';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { logAudit } from '../utils/audit';
 import logger from '../config/logger';
+import { EmailVerificationService } from './email-verification.service';
 
 export interface PasswordValidation {
   isValid: boolean;
@@ -58,8 +59,11 @@ export class AuthService {
 
   // Rate limiting for password reset attempts
   // Uses database for persistence across server restarts
+  private verification: EmailVerificationService;
+
   constructor(private prisma: PrismaClient) {
     this.rbacService = new UnifiedRBACService(prisma);
+    this.verification = new EmailVerificationService(prisma);
   }
 
   /**
@@ -227,7 +231,7 @@ export class AuthService {
   /**
    * Register a new user
    */
-  async registerUser(data: RegistrationData): Promise<ServiceResult<{ user: any; madeSystemAdmin: boolean }>> {
+  async registerUser(data: RegistrationData): Promise<ServiceResult<{ user: any; madeSystemAdmin: boolean; verificationRequired: boolean; verificationEmailSent: boolean }>> {
     try {
       const { email, password, name } = data;
 
@@ -272,7 +276,8 @@ export class AuthService {
       const existing = await this.prisma.user.findUnique({ 
         where: { email: email.toLowerCase() } 
       });
-      if (existing) {
+      // An unverified, gated account past the grace window gives up the address
+      if (existing && !(await this.verification.releaseUnverifiedAddress(email))) {
         return {
           success: false,
           error: "Email already registered."
@@ -289,6 +294,19 @@ export class AuthService {
           name: name.trim() 
         },
       });
+
+      // Gate the account (fail closed: never leave a usable ungated account behind)
+      let gate: { verificationRequired: boolean; emailSent: boolean };
+      try {
+        gate = await this.verification.onSignup(user, { isFirstUser: userCount === 0 });
+      } catch (err) {
+        await this.prisma.user.delete({ where: { id: user.id } });
+        logger().error('Registration gating failed; new user removed', {
+          userId: user.id,
+          error: err instanceof Error ? err.message : 'unknown',
+        });
+        return { success: false, error: 'Registration failed.' };
+      }
 
       // If this is the first user, assign system_admin role using unified RBAC
       let madeSystemAdmin = false;
@@ -313,7 +331,9 @@ export class AuthService {
         success: true,
         data: {
           user: { id: user.id, email: user.email, name: user.name },
-          madeSystemAdmin
+          madeSystemAdmin,
+          verificationRequired: gate.verificationRequired,
+          verificationEmailSent: gate.emailSent
         }
       };
     } catch (error: any) {
