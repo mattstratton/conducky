@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt';
 import { User, SocialProvider } from '../generated/prisma/client';
 import { createPrismaClient } from './prisma-client';
 import logger from '../config/logger';
+import { isGated } from '../services/email-verification.service';
+import { emailService } from '../utils/email';
 
 const prisma = createPrismaClient();
 
@@ -88,6 +90,15 @@ passport.use(new LocalStrategy(
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
         return done(null, false, { message: 'Invalid email or password.' });
+      }
+
+      // Only after the password is proven correct, so this reveals nothing to a guesser.
+      // isConfigured() is evaluated last so ordinary sign-ins never touch the email service.
+      if (isGated(user) && await emailService.isConfigured()) {
+        return done(null, false, {
+          message: 'Please verify your email address to sign in.',
+          code: 'EMAIL_NOT_VERIFIED'
+        } as { message: string; code: string });
       }
 
       return done(null, user);

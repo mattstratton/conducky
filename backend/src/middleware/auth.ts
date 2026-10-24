@@ -136,7 +136,10 @@ export function loginMiddleware(req: Request, res: Response, next: NextFunction)
           logger().error('Failed to log audit for failed login:', auditErr);
         }
       }
-      return res.status(401).json({ error: info?.message || 'Invalid credentials' });
+      return res.status(401).json({
+        error: info?.message || 'Invalid credentials',
+        ...(info?.code && { code: info.code })
+      });
     }
     
     return req.logIn(user, async (loginErr: any) => {
