@@ -54,6 +54,16 @@ export interface EmailResult {
 }
 
 /**
+ * Mask an email address for display: john@example.com -> j***@example.com
+ */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at < 1) return '***';
+  const local = email.slice(0, at);
+  return `${local.length === 1 ? '*' : local[0] + '***'}${email.slice(at)}`;
+}
+
+/**
  * Email Service - Flexible email sending with multiple provider support
  * Supports SMTP, SendGrid, and console logging for development
  */
@@ -380,6 +390,163 @@ The Conducky Team
       text,
       html,
     });
+  }
+
+  /**
+   * Whether a real email provider is configured and reachable.
+   * A failed init falls back to console, which counts as not configured.
+   */
+  async isConfigured(): Promise<boolean> {
+    await this.initialize();
+    return this.config.provider !== 'console';
+  }
+
+  /**
+   * Wrap notice content in the standard HTML email layout.
+   * Callers must pass already-escaped content.
+   */
+  private renderNoticeHtml(title: string, name: string, bodyHtml: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #ffffff; padding: 30px; border: 1px solid #dee2e6; }
+    .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; border-radius: 0 0 8px 8px; }
+    .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Conducky</h1>
+      <h2>${title}</h2>
+    </div>
+
+    <div class="content">
+      <p>Hello ${Handlebars.escapeExpression(name || 'there')},</p>
+      ${bodyHtml}
+    </div>
+
+    <div class="footer">
+      <p>This email was sent by Conducky Code of Conduct Management System</p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  /**
+   * Send an email verification link (or an email-change confirmation link)
+   * @param to - Address being verified
+   * @param name - User's display name
+   * @param token - Verification token
+   * @param opts - emailChange: true when confirming a new address
+   * @param frontendUrl - Frontend base URL (optional)
+   */
+  async sendVerificationEmail(
+    to: string,
+    name: string,
+    token: string,
+    opts: { emailChange?: boolean } = {},
+    frontendUrl: string = process.env.FRONTEND_BASE_URL || 'http://localhost:3000'
+  ): Promise<EmailResult> {
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const subject = opts.emailChange ? 'Confirm Your New Conducky Email Address' : 'Verify Your Conducky Email Address';
+    const intro = opts.emailChange
+      ? 'Please confirm this address as the new email for your Conducky account.'
+      : 'Please verify your email address to finish setting up your Conducky account.';
+
+    const text = `
+Hello ${name || 'there'},
+
+${intro}
+
+Please click the following link:
+${verifyUrl}
+
+This link will expire in 24 hours.
+
+If you didn't request this, you can ignore this email.
+
+Best regards,
+The Conducky Team
+    `.trim();
+
+    const html = this.renderNoticeHtml(
+      subject,
+      name,
+      `<p>${intro}</p>
+      <div style="text-align: center;">
+        <a href="${verifyUrl}" class="button">${opts.emailChange ? 'Confirm Email' : 'Verify Email'}</a>
+      </div>
+      <p>Or copy and paste this link in your browser:</p>
+      <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">${verifyUrl}</p>
+      <p>This link will expire in 24 hours.</p>
+      <p>If you didn't request this, you can ignore this email.</p>`
+    );
+
+    return await this.sendEmail({ to, subject, text, html });
+  }
+
+  /**
+   * Tell the current address that an email change was requested
+   * @param maskedNewEmail - Already-masked new address (see maskEmail)
+   */
+  async sendEmailChangeRequestedNotice(to: string, name: string, maskedNewEmail: string): Promise<EmailResult> {
+    const subject = 'Email Change Requested on Your Conducky Account';
+    const text = `
+Hello ${name || 'there'},
+
+A request was made to change the email address on your Conducky account to ${maskedNewEmail}.
+
+The change only takes effect once the new address is confirmed. If this wasn't you, change your password right away.
+
+Best regards,
+The Conducky Team
+    `.trim();
+
+    const html = this.renderNoticeHtml(
+      subject,
+      name,
+      `<p>A request was made to change the email address on your Conducky account to <strong>${Handlebars.escapeExpression(maskedNewEmail)}</strong>.</p>
+      <p>The change only takes effect once the new address is confirmed. If this wasn't you, change your password right away.</p>`
+    );
+
+    return await this.sendEmail({ to, subject, text, html });
+  }
+
+  /**
+   * Tell the old address that the account email was changed
+   * @param maskedNewEmail - Already-masked new address (see maskEmail)
+   */
+  async sendEmailChangedNotice(to: string, name: string, maskedNewEmail: string): Promise<EmailResult> {
+    const subject = 'Your Conducky Email Address Was Changed';
+    const text = `
+Hello ${name || 'there'},
+
+The email address on your Conducky account was changed to ${maskedNewEmail}.
+
+If this wasn't you, contact your event or system administrator immediately.
+
+Best regards,
+The Conducky Team
+    `.trim();
+
+    const html = this.renderNoticeHtml(
+      subject,
+      name,
+      `<p>The email address on your Conducky account was changed to <strong>${Handlebars.escapeExpression(maskedNewEmail)}</strong>.</p>
+      <p>If this wasn't you, contact your event or system administrator immediately.</p>`
+    );
+
+    return await this.sendEmail({ to, subject, text, html });
   }
 
   /**
