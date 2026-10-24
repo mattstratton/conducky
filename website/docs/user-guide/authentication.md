@@ -48,6 +48,8 @@ When the instance has email configured, new email/password accounts (including a
 2. Click the link. It opens a page confirming your email is verified
 3. Sign in with your email and password
 
+This is for new accounts: the link verifies your address as soon as it opens. A link for changing the email address on an existing account works differently and asks you to select **Confirm email change** first. See [Changing Your Email Address](./getting-started/profile-management.md#changing-your-email-address).
+
 #### If the email doesn't arrive
 - Check your spam folder
 - Try to sign in with your email and password. The sign-in page shows "check your email" with a **Resend** button

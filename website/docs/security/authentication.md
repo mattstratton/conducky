@@ -86,7 +86,8 @@ When email is configured, Conducky verifies that people own the address they sig
 **Changing your email address:**
 - When email is configured, a change is not applied until the new address is verified; the current address stays in use
 - The old address receives a notice when the change is requested (with a partly masked new address, and advice to change the password if it was not the account owner) and a confirmation when it takes effect. There is no cancel link
-- Only the newest change link works, a new request is refused for 60 seconds after the last one, and changing or resetting the password cancels any pending change link
+- Only the newest change link works, a new request is refused for 60 seconds after the last one, and changing or resetting the password cancels any pending change link (and a not-yet-verified signup's current verification link, so the person requests a new one)
+- The change link opens a page that asks the person to confirm with a button; nothing is applied just by opening the link. This stops email security scanners that open links from confirming a change on their own. Signup verification links still verify automatically when opened
 - If email is not configured, the change is applied immediately and the new address is treated as unverified
 
 **When email is not configured:** verification is skipped entirely. Nobody is blocked, nothing is purged, and anyone can sign up with any address. The backend logs a warning at startup and System Admins see a warning banner on every `/admin` page. Setting up email is strongly recommended; see [Email configuration](../admin-guide/system-configuration.md#email-configuration).

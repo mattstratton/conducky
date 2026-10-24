@@ -29,7 +29,9 @@ When the instance has email set up, a new email address is **not applied until y
 
 1. Change the email in your profile settings and save
 2. The page says a verification link was sent to the **new** address. Your **current** address stays in use until you verify
-3. Open the link sent to the new address. The change takes effect and you're told it worked
+3. Open the link sent to the new address. The page asks you to confirm the change: select **Confirm email change**. The change takes effect and you're told it worked
+
+Nothing changes just by opening the link; you must select the button. If you didn't request the change, don't confirm it and your email address will not change.
 
 **What you should know:**
 - **Notices to your old address**: Your current address gets a notice that a change was requested (showing a partly hidden version of the new address), and a confirmation when the change takes effect. If you didn't request the change, change your password right away. The notice has no cancel link
@@ -207,7 +209,7 @@ When you leave an event, you lose access to all reports you submitted and cannot
 
 **Common solutions:**
 - **Check permissions**: Some fields may be restricted
-- **Verify email**: A new email address is only applied after you click the verification link sent to it
+- **Verify email**: A new email address is only applied after you open the link sent to it and select **Confirm email change**
 - **Clear browser cache**: Try refreshing the page
 - **Contact support**: Some changes require administrator help
 
