@@ -32,6 +32,8 @@ async function submit(newEmail?: string, newName?: string) {
 }
 
 describe('profile settings: email change', () => {
+  afterEach(() => jest.restoreAllMocks());
+
   beforeEach(() => {
     setUser.mockReset();
     mockFetch.mockReset();
@@ -83,8 +85,43 @@ describe('profile settings: email change', () => {
     const region = document.getElementById('profile-status')!;
     await waitFor(() => expect(region).toHaveTextContent(
       'We could not send a verification link to new@example.com. Your email is still old@example.com. Try saving again.'));
-    expect(screen.getByLabelText(/email address/i)).toHaveValue('old@example.com');
+    expect(screen.getByLabelText(/email address/i)).toHaveValue('new@example.com');
     expect(screen.queryByText(/updated successfully/i)).not.toBeInTheDocument();
+  });
+
+  it('resubmits the same pending address after a failed send', async () => {
+    patchReply = { status: 200, body: { user, emailChangePending: 'new@example.com', verificationEmailSent: false } };
+    renderPage();
+    await submit('new@example.com');
+    await waitFor(() => expect(document.getElementById('profile-status')).toHaveTextContent(/could not send/));
+    fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await waitFor(() => expect(mockFetch.mock.calls.filter((c: [string, { method?: string }]) => c[1]?.method === 'PATCH')).toHaveLength(2));
+    const second = mockFetch.mock.calls.filter((c: [string, { method?: string }]) => c[1]?.method === 'PATCH')[1];
+    expect(JSON.parse(second[1].body).email).toBe('new@example.com');
+  });
+
+  it('treats an absent verificationEmailSent as failed', async () => {
+    patchReply = { status: 200, body: { user, emailChangePending: 'new@example.com' } };
+    renderPage();
+    await submit('new@example.com');
+    await waitFor(() => expect(document.getElementById('profile-status')).toHaveTextContent(/could not send/));
+    expect(screen.getByLabelText(/email address/i)).toHaveValue('new@example.com');
+  });
+
+  it('keeps the typed address after a failed send when setUser updates the user', async () => {
+    patchReply = { status: 200, body: { user: { ...user }, emailChangePending: 'new@example.com', verificationEmailSent: false } };
+    function Stateful() {
+      const [u, setU] = React.useState<typeof user | null>(user);
+      return (
+        <UserContext.Provider value={{ user: u, setUser: setU } as never}>
+          <ProfileSettings />
+        </UserContext.Provider>
+      );
+    }
+    render(<Stateful />);
+    await submit('new@example.com');
+    await waitFor(() => expect(document.getElementById('profile-status')).toHaveTextContent(/could not send/));
+    expect(screen.getByLabelText(/email address/i)).toHaveValue('new@example.com');
   });
 
   it('announces a 429 and keeps the typed values', async () => {
@@ -100,7 +137,73 @@ describe('profile settings: email change', () => {
     patchReply = { status: 409, body: { error: 'This email address is already in use.' } };
     renderPage();
     await submit('taken@example.com');
-    expect(await screen.findByRole('alert')).toHaveTextContent('This email address is already in use.');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('This email address is already in use.');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    const email = screen.getByLabelText(/email address/i);
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(email.getAttribute('aria-describedby')).toContain(alert.id);
+  });
+
+  it('routes an email-related 400 to the field, other 400s to the top alert', async () => {
+    patchReply = { status: 400, body: { error: 'Invalid Email address' } };
+    renderPage();
+    await submit('x@example.com');
+    expect((await screen.findByRole('alert')).id).toBe('email-error');
+    patchReply = { status: 400, body: { error: 'Name too long' } };
+    fireEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Name too long'));
+    expect(screen.getByRole('alert').id).not.toBe('email-error');
+  });
+
+  it('error alert uses explicit contrast-safe colours', async () => {
+    patchReply = { status: 429, body: { error: 'wait' } };
+    renderPage();
+    await submit('new@example.com');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveClass('border-red-600', 'text-red-700', 'dark:border-red-400', 'dark:text-red-400');
+  });
+
+  it('does not announce an alert after a pending success', async () => {
+    patchReply = { status: 200, body: { user, emailChangePending: 'new@example.com', verificationEmailSent: true } };
+    renderPage();
+    await submit('new@example.com');
+    await waitFor(() => expect(document.getElementById('profile-status')).toHaveTextContent(/We sent/));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('announces saving in the status region and clears it after', async () => {
+    renderPage();
+    await submit(undefined, 'Renamed');
+    const region = document.getElementById('profile-status')!;
+    await waitFor(() => expect(region).toHaveTextContent('Profile updated successfully!'));
+    expect(region).not.toHaveTextContent(/Saving profile/);
+  });
+
+  it('clears the notice and describedby when the email is edited again', async () => {
+    patchReply = { status: 200, body: { user, emailChangePending: 'new@example.com', verificationEmailSent: true } };
+    renderPage();
+    await submit('new@example.com');
+    await waitFor(() => expect(document.getElementById('profile-status')).toHaveTextContent(/We sent/));
+    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'other@example.com' } });
+    expect(document.getElementById('profile-status')).toBeEmptyDOMElement();
+    expect(screen.getByLabelText(/email address/i)).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps the focused submit button enabled when the email is invalid, and announces it', async () => {
+    renderPage();
+    await submit('not-an-email');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/valid email/i);
+    const btn = screen.getByRole('button', { name: /save profile/i });
+    expect(btn).not.toBeDisabled();
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('sets autocomplete on name and email', async () => {
+    renderPage();
+    expect(await screen.findByLabelText(/email address/i)).toHaveAttribute('autocomplete', 'email');
+    expect(screen.getByLabelText(/full name/i)).toHaveAttribute('autocomplete', 'name');
   });
 
   it('announces a network error', async () => {
@@ -131,6 +234,7 @@ describe('profile settings: email change', () => {
     const btn = await screen.findByRole('button', { name: /saving/i });
     expect(btn).not.toBeDisabled();
     expect(btn).toHaveAttribute('aria-disabled', 'true');
+    expect(document.getElementById('profile-status')).toHaveTextContent('Saving profile…');
     release(undefined);
     await waitFor(() => expect(screen.getByRole('button', { name: /save profile/i })).toBeInTheDocument());
   });
