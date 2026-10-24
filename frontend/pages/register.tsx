@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CheckYourEmail } from '@/components/CheckYourEmail';
 import { Eye, EyeOff, Check, X, Github } from 'lucide-react';
 
 
@@ -34,6 +35,8 @@ interface ApiResponse {
     email: string;
     name: string;
   };
+  verificationRequired?: boolean;
+  verificationEmailSent?: boolean;
 }
 
 export default function Register() {
@@ -46,6 +49,7 @@ export default function Register() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<{ email: string; emailSent: boolean } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
@@ -205,7 +209,13 @@ export default function Register() {
 
       const data: ApiResponse = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.verificationRequired === true) {
+        // The account cannot sign in until the address is verified
+        setPendingVerification({
+          email: formData.email.trim().toLowerCase(),
+          emailSent: data.verificationEmailSent === true,
+        });
+      } else if (response.ok) {
         // Registration successful
         const { next } = router.query;
         
@@ -262,6 +272,24 @@ export default function Register() {
     if (passwordStrength.score < 4) return 'Medium';
     return 'Strong';
   };
+
+  if (pendingVerification) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="pt-6">
+            <CheckYourEmail
+              email={pendingVerification.email}
+              password={formData.password}
+              emailSent={pendingVerification.emailSent}
+              headingLevel="h1"
+              onEmailChanged={(email) => setPendingVerification((p) => (p ? { ...p, email } : p))}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">

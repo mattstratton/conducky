@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Github, Eye, EyeOff } from "lucide-react";
 import { logger } from "@/lib/logger";
+import { CheckYourEmail } from "@/components/CheckYourEmail";
 
 // Define User interface
 interface User {
@@ -35,6 +36,7 @@ interface UserContextType {
 interface ApiResponse {
   error?: string;
   message?: string;
+  code?: string;
 }
 
 interface SessionResponse extends ApiResponse {
@@ -52,6 +54,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [oauthProviders, setOauthProviders] = useState({ google: false, github: false });
   const router = useRouter();
@@ -100,6 +103,7 @@ function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerification(false);
     try {
           const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/api/auth/login', {
       method: 'POST',
@@ -209,6 +213,10 @@ function Login() {
         try {
           const data: ApiResponse = await res.json();
           errMsg = data.error || data.message || errMsg;
+          if (data.code === 'EMAIL_NOT_VERIFIED') {
+            setNeedsVerification(true);
+            return;
+          }
         } catch {
           // If not JSON, keep default
         }
@@ -233,6 +241,34 @@ function Login() {
       window.location.href = redirectUrl;
     }
   };
+
+  if (needsVerification) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="pt-6">
+            <CheckYourEmail
+              email={email}
+              password={password}
+              headingLevel="h1"
+              onEmailChanged={setEmail}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-4 h-11 w-full"
+              onClick={() => {
+                setNeedsVerification(false);
+                setPassword('');
+              }}
+            >
+              Back to sign in
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background transition-colors duration-200 p-4">
