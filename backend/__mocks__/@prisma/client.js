@@ -139,6 +139,7 @@ const inMemoryStore = {
   eventInvites: [],
   userAvatars: [],
   passwordResetTokens: [],
+  emailVerificationTokens: [],
   notifications: [],
   incidentComments: [],
   rateLimitAttempts: [],
@@ -1550,6 +1551,60 @@ class PrismaClient {
         return { count: before - inMemoryStore.passwordResetTokens.length };
       }),
     };
+    // Filter support is deliberate: unknown keys throw so a test can't pass or fail for the wrong reason.
+    const matchesEvt = (row, where = {}) =>
+      Object.entries(where).every(([key, cond]) => {
+        if (['userId', 'id', 'tokenHash', 'pendingEmail', 'usedAt'].includes(key)) {
+          return row[key] === cond;
+        }
+        if (key === 'expiresAt') {
+          const ops = cond instanceof Date ? { equals: cond } : cond;
+          return Object.entries(ops).every(([op, val]) => {
+            if (op === 'lt') return row.expiresAt < val;
+            if (op === 'gt') return row.expiresAt > val;
+            throw new Error(`emailVerificationToken mock: unsupported expiresAt operator "${op}"`);
+          });
+        }
+        throw new Error(`emailVerificationToken mock: unsupported filter "${key}"`);
+      });
+    this.emailVerificationToken = {
+      create: jest.fn(({ data }) => {
+        const token = {
+          id: require('crypto').randomUUID(),
+          createdAt: new Date(),
+          pendingEmail: null,
+          usedAt: null,
+          ...data,
+        };
+        inMemoryStore.emailVerificationTokens.push(token);
+        return token;
+      }),
+      findUnique: jest.fn(({ where }) => {
+        return inMemoryStore.emailVerificationTokens.find((t) => t.tokenHash === where.tokenHash) || null;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const idx = inMemoryStore.emailVerificationTokens.findIndex((t) => t.id === where.id);
+        if (idx === -1) return null;
+        inMemoryStore.emailVerificationTokens[idx] = { ...inMemoryStore.emailVerificationTokens[idx], ...data };
+        return inMemoryStore.emailVerificationTokens[idx];
+      }),
+      updateMany: jest.fn(({ where, data }) => {
+        let count = 0;
+        inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.map((t) => {
+          if (!matchesEvt(t, where)) return t;
+          count++;
+          return { ...t, ...data };
+        });
+        return { count };
+      }),
+      deleteMany: jest.fn(({ where } = {}) => {
+        const before = inMemoryStore.emailVerificationTokens.length;
+        inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.filter(
+          (t) => !matchesEvt(t, where)
+        );
+        return { count: before - inMemoryStore.emailVerificationTokens.length };
+      }),
+    };
     this.notification = {
       findMany: jest.fn(({ where, include, orderBy, skip, take }) => {
         let results = [...inMemoryStore.notifications];
@@ -1719,6 +1774,91 @@ class PrismaClient {
         });
       }),
     };
+    // Verification-service additions. Unknown filters throw so tests cannot pass for the wrong reason.
+    const onlyUserId = (name, where = {}) => {
+      Object.keys(where).forEach((k) => {
+        if (k !== 'userId') throw new Error(`${name} mock: unsupported filter "${k}"`);
+      });
+    };
+    this.notification.deleteMany = jest.fn(({ where = {} } = {}) => {
+      onlyUserId('notification.deleteMany', where);
+      const before = inMemoryStore.notifications.length;
+      inMemoryStore.notifications = inMemoryStore.notifications.filter((n) => n.userId !== where.userId);
+      return { count: before - inMemoryStore.notifications.length };
+    });
+    inMemoryStore.socialAccounts = inMemoryStore.socialAccounts || [];
+    this.socialAccount = {
+      deleteMany: jest.fn(({ where = {} } = {}) => {
+        onlyUserId('socialAccount.deleteMany', where);
+        const before = inMemoryStore.socialAccounts.length;
+        inMemoryStore.socialAccounts = inMemoryStore.socialAccounts.filter((s) => s.userId !== where.userId);
+        return { count: before - inMemoryStore.socialAccounts.length };
+      }),
+      // OAuth account resolution additions (hardened like the rest: unknown filters throw).
+      findFirst: jest.fn(({ where = {} } = {}) => {
+        Object.keys(where).forEach((k) => {
+          if (!['userId', 'provider'].includes(k)) throw new Error(`socialAccount.findFirst mock: unsupported filter "${k}"`);
+        });
+        return inMemoryStore.socialAccounts.find((s) => Object.entries(where).every(([k, v]) => s[k] === v)) || null;
+      }),
+      create: jest.fn(({ data }) => {
+        const dup = inMemoryStore.socialAccounts.some(
+          (s) => (s.provider === data.provider && s.providerId === data.providerId) ||
+                 (s.userId === data.userId && s.provider === data.provider),
+        );
+        if (dup) {
+          const err = new Error('Unique constraint failed');
+          err.code = 'P2002';
+          throw err;
+        }
+        const row = { id: `sa-${inMemoryStore.socialAccounts.length + 1}`, ...data };
+        inMemoryStore.socialAccounts.push(row);
+        return row;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const row = inMemoryStore.socialAccounts.find((s) => s.id === where.id);
+        if (!row) throw new Error('socialAccount.update mock: not found');
+        Object.assign(row, data);
+        return row;
+      }),
+    };
+    // Supports equality on id/emailVerificationRequired/emailVerifiedAt, null-or-{ lt } on
+    // verificationSentAt/createdAt, and OR of those. Anything else throws.
+    const userMatches = (u, where) =>
+      Object.entries(where).every(([k, v]) => {
+        if (k === 'OR') return v.some((w) => userMatches(u, w));
+        const val = u[k] === undefined ? null : u[k];
+        if (['verificationSentAt', 'createdAt'].includes(k) && v !== null && typeof v === 'object') {
+          Object.keys(v).forEach((op) => {
+            if (op !== 'lt') throw new Error(`user.deleteMany mock: unsupported operator "${op}"`);
+          });
+          return val !== null && val < v.lt;
+        }
+        if (!['id', 'emailVerificationRequired', 'emailVerifiedAt', 'verificationSentAt', 'createdAt'].includes(k)) {
+          throw new Error(`user.deleteMany mock: unsupported filter "${k}"`);
+        }
+        return val === v;
+      });
+    this.user.deleteMany = jest.fn(({ where = {} } = {}) => {
+      const before = inMemoryStore.users.length;
+      inMemoryStore.users = inMemoryStore.users.filter((u) => !userMatches(u, where));
+      return { count: before - inMemoryStore.users.length };
+    });
+    this.user.updateMany = jest.fn(({ where = {}, data = {} } = {}) => {
+      const allowed = ['id', 'email', 'emailVerificationRequired', 'emailVerifiedAt'];
+      Object.keys(where).forEach((k) => {
+        if (!allowed.includes(k)) throw new Error(`user.updateMany mock: unsupported filter "${k}"`);
+      });
+      const match = (u) =>
+        Object.entries(where).every(([k, v]) => (u[k] === undefined ? null : u[k]) === v);
+      let count = 0;
+      inMemoryStore.users = inMemoryStore.users.map((u) => {
+        if (!match(u)) return u;
+        count++;
+        return { ...u, ...data };
+      });
+      return { count };
+    });
     this.incidentComment = {
               findMany: jest.fn(({ where, orderBy, skip, take, include }) => {
           let results = [...inMemoryStore.incidentComments];

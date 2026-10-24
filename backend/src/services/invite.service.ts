@@ -4,6 +4,7 @@ import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { logAudit } from '../utils/audit';
 import logger from '../config/logger';
+import { EmailVerificationService } from './email-verification.service';
 
 export interface InviteCreateData {
   eventId: string;
@@ -451,9 +452,11 @@ export class InviteService {
   /**
    * Register a new user with an invite
    */
-  async registerWithInvite(data: RegistrationWithInviteData): Promise<ServiceResult<{ message: string; user: any }>> {
+  async registerWithInvite(data: RegistrationWithInviteData): Promise<ServiceResult<{ message: string; user: any; verificationRequired: boolean; verificationEmailSent: boolean }>> {
     try {
-      const { inviteCode, email, password, name } = data;
+      const { inviteCode, password, name } = data;
+      // Login lowercases the address, so store it the same way
+      const email = (data.email ?? '').trim().toLowerCase();
 
       if (!email || !password) {
         return {
@@ -487,18 +490,6 @@ export class InviteService {
         };
       }
 
-      // Check if user already exists
-      const existing = await this.prisma.user.findUnique({
-        where: { email }
-      });
-
-      if (existing) {
-        return {
-          success: false,
-          error: 'Email already registered.'
-        };
-      }
-
       // Validate password strength
       const passwordValidation = this.validatePassword(password);
       if (!passwordValidation.isValid) {
@@ -508,12 +499,31 @@ export class InviteService {
         };
       }
 
+      // Check if user already exists (after all validation: a request that fails validation must delete nothing)
+      const existing = await this.prisma.user.findUnique({
+        where: { email }
+      });
+
+      const verification = new EmailVerificationService(this.prisma);
+      if (existing && !(await verification.releaseUnverifiedAddress(email))) {
+        return {
+          success: false,
+          error: 'Email already registered.'
+        };
+      }
+
       // Hash password and create user
       const passwordHash = await bcrypt.hash(password, 10);
       
       const user = await this.prisma.user.create({
         data: { email, passwordHash, name: name || null }
       });
+
+      // Gate the account (fail closed: never leave a usable ungated account behind)
+      const gate = await verification.gateNewUser(user, { isFirstUser: false });
+      if (!gate) {
+        return { success: false, error: 'Registration failed.' };
+      }
 
       // Get unified role name directly from unified role ID
       const role = await this.prisma.unifiedRole.findUnique({
@@ -543,7 +553,9 @@ export class InviteService {
         success: true,
         data: {
           message: 'Registration successful!',
-          user: { id: user.id, email: user.email, name: user.name }
+          user: { id: user.id, email: user.email, name: user.name },
+          verificationRequired: gate.verificationRequired,
+          verificationEmailSent: gate.emailSent
         }
       };
     } catch (error: any) {

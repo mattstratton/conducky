@@ -33,7 +33,9 @@ export class AuthController {
 
       res.status(200).json({
         message: 'Registration successful!',
-        user: result.data?.user
+        user: result.data?.user,
+        verificationRequired: result.data?.verificationRequired,
+        verificationEmailSent: result.data?.verificationEmailSent
       });
     } catch (error) {
       logger().error('Registration error:', error);

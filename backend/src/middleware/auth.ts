@@ -6,9 +6,6 @@
 
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import bcrypt from 'bcrypt';
-import { prisma } from '../config/database';
 import { logAudit } from '../utils/audit';
 import logger from '../config/logger';
 
@@ -20,46 +17,6 @@ export interface AuthUser {
   email: string;
   name: string;
   [key: string]: any;
-}
-
-/**
- * Configure Passport.js local strategy
- */
-export function configurePassport() {
-  // Passport local strategy
-  passport.use(
-    new LocalStrategy(
-      { usernameField: 'email' },
-      async (email: string, password: string, done: any) => {
-        try {
-          const user = await prisma.user.findUnique({ where: { email } });
-          if (!user || !user.passwordHash) {
-            return done(null, false, { message: 'Incorrect email or password.' });
-          }
-          const valid = await bcrypt.compare(password, user.passwordHash);
-          if (!valid) {
-            return done(null, false, { message: 'Incorrect email or password.' });
-          }
-          return done(null, user);
-        } catch (err) {
-          return done(err);
-        }
-      },
-    ),
-  );
-
-  passport.serializeUser((user: any, done: any) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: string, done: any) => {
-    try {
-      const user = await prisma.user.findUnique({ where: { id } });
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
 }
 
 /**
@@ -136,7 +93,10 @@ export function loginMiddleware(req: Request, res: Response, next: NextFunction)
           logger().error('Failed to log audit for failed login:', auditErr);
         }
       }
-      return res.status(401).json({ error: info?.message || 'Invalid credentials' });
+      return res.status(401).json({
+        error: info?.message || 'Invalid credentials',
+        ...(info?.code && { code: info.code })
+      });
     }
     
     return req.logIn(user, async (loginErr: any) => {

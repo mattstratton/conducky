@@ -66,6 +66,7 @@ import { getSessionConfig } from './src/config/session';
 
 // Import Swagger configuration
 import { setupSwagger } from './src/config/swagger';
+import { startUnverifiedPurge } from './src/services/unverified-purge.service';
 
 // Initialize Prisma client (after environment is loaded)
 const prisma = createPrismaClient();
@@ -446,6 +447,7 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, host, () => {
     logger().info(`Server running on ${host}:${PORT}`);
 logger().info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    startUnverifiedPurge(prisma);
   });
 }
 

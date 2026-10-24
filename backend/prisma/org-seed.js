@@ -81,6 +81,7 @@ async function main() {
         email: userData.email,
         name: userData.name,
         passwordHash: passwordHash,
+        emailVerifiedAt: new Date(),
       },
     });
     createdUsers.push(user);

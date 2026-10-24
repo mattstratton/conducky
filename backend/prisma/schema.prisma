@@ -70,6 +70,10 @@ model User {
   email          String   @unique
   name           String?
   passwordHash   String? // Optional for social login users
+  emailVerifiedAt DateTime?
+  emailVerificationRequired Boolean @default(false)
+  verificationSentAt DateTime?
+  emailVerificationTokens EmailVerificationToken[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   incidents      Incident[] @relation("ReporterIncidents")
@@ -90,6 +94,20 @@ model User {
   pinnedIncidents UserPinnedIncident[]
   // Back-reference for incident state changes
   incidentStateChanges IncidentStateHistory[] @relation("UserIncidentStateChanges")
+}
+
+model EmailVerificationToken {
+  id           String    @id @default(uuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  tokenHash    String    @unique
+  pendingEmail String?
+  email        String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Event {

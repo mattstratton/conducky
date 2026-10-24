@@ -19,7 +19,7 @@ async function upsertUser(email, name, password) {
   return prisma.user.upsert({
     where: { email },
     update: {},
-    create: { email, name, passwordHash: await bcrypt.hash(password, 10) },
+    create: { email, name, passwordHash: await bcrypt.hash(password, 10), emailVerifiedAt: new Date() },
   });
 }
 

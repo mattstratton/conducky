@@ -84,6 +84,7 @@ async function main() {
         email: u.email,
         name: u.name,
         passwordHash,
+        emailVerifiedAt: new Date(),
       },
     });
     console.log(`👤 User created: ${u.name} (${u.email})`);

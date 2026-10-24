@@ -5,6 +5,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
 import { createPrismaClient } from '../config/prisma-client';
 import logger from '../config/logger';
+import { EmailVerificationService } from '../services/email-verification.service';
 
 // Import security middleware
 import { authRateLimit, passwordResetRateLimit, emailCheckRateLimit } from '../middleware/rate-limit';
@@ -85,6 +86,69 @@ router.post('/register/invite/:inviteCode', authRateLimit, async (req: Request, 
 
 // Login route
 router.post('/login', authRateLimit, loginMiddleware);
+
+// Email verification (public; the token or password is the credential)
+const verification = new EmailVerificationService(prisma);
+const normEmail = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
+
+router.post('/verify-email', authRateLimit, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.body ?? {};
+    const result = typeof token === 'string' ? await verification.verifyToken(token) : { status: 'invalid' as const };
+    if (result.status === 'invalid') {
+      res.status(400).json({ error: 'This verification link is invalid or has expired.' });
+      return;
+    }
+    res.json({ status: result.status });
+  } catch (error) {
+    logger().error('Verify email error:', { error: error instanceof Error ? error.message : 'unknown' });
+    res.status(500).json({ error: 'Email verification failed.' });
+  }
+});
+
+// Always the same 200, and the send is not awaited, so neither body nor timing reveals the account state.
+router.post('/resend-verification', authRateLimit, (req: Request, res: Response): void => {
+  const email = normEmail(req.body?.email);
+  if (email) {
+    verification.resendFor(email).catch((error: unknown) => {
+      logger().error('Resend verification failed', { error: error instanceof Error ? error.message : 'unknown' });
+    });
+  }
+  res.json({ message: 'If that account is awaiting verification, a new email is on its way.' });
+});
+
+router.post('/correct-email', authRateLimit, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await verification.correctEmail({
+      email: req.body?.email,
+      password: req.body?.password,
+      newEmail: req.body?.newEmail,
+    });
+    switch (result.status) {
+      case 'ok':
+        res.json({ email: result.email, verificationEmailSent: result.verificationEmailSent });
+        return;
+      case 'invalid_input':
+        res.status(400).json({ error: 'Email, password and new email are required.' });
+        return;
+      case 'invalid_email':
+        res.status(400).json({ error: 'Please enter a valid email address.' });
+        return;
+      case 'invalid_credentials':
+        res.status(401).json({ error: 'Invalid email or password.' });
+        return;
+      case 'not_eligible':
+        res.status(400).json({ error: 'This account does not need email verification.' });
+        return;
+      case 'taken':
+        res.status(409).json({ error: 'Email already registered.' });
+        return;
+    }
+  } catch (error) {
+    logger().error('Correct email error:', { error: error instanceof Error ? error.message : 'unknown' });
+    res.status(500).json({ error: 'Email correction failed.' });
+  }
+});
 
 // Logout route  
 router.post('/logout', logoutMiddleware);
