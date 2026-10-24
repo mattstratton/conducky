@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-type State = 'verifying' | 'verified' | 'already_verified' | 'email_changed' | 'invalid' | 'rate_limited' | 'network';
+type State = 'verifying' | 'confirm' | 'verified' | 'already_verified' | 'email_changed' | 'invalid' | 'rate_limited' | 'network';
 
 const SUCCESS_COPY: Record<string, string> = {
   verified: 'Your email address is verified. You can sign in now.',
@@ -26,7 +26,31 @@ export default function VerifyEmailPage() {
   const [attempt, setAttempt] = useState(0);
   const calledFor = useRef<string | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const token = typeof router.query.token === 'string' ? router.query.token : '';
+  // Email-change links must not apply on load: a link scanner that runs JS would confirm them.
+  const needsClick = router.query.confirm === '1';
+
+  const verify = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/verify-email`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ token }),
+        }
+      );
+      if (res.status === 429) return setState('rate_limited');
+      if (!res.ok) return setState('invalid');
+      const data: { status?: string } = await res.json().catch(() => ({}));
+      setState(data.status && SUCCESS_COPY[data.status] ? (data.status as State) : 'verified');
+    } catch {
+      setState('network');
+    }
+  };
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -34,41 +58,53 @@ export default function VerifyEmailPage() {
       setState('invalid');
       return;
     }
+    if (needsClick) {
+      setState((s) => (s === 'verifying' ? 'confirm' : s));
+      return;
+    }
     // Guard against strict-mode double effects: one API call per token.
     const key = `${token}:${attempt}`;
     if (calledFor.current === key) return;
     calledFor.current = key;
-    (async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/verify-email`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ token }),
-          }
-        );
-        if (res.status === 429) return setState('rate_limited');
-        if (!res.ok) return setState('invalid');
-        const data: { status?: string } = await res.json().catch(() => ({}));
-        setState(data.status && SUCCESS_COPY[data.status] ? (data.status as State) : 'verified');
-      } catch {
-        setState('network');
-      }
-    })();
-  }, [router.isReady, token, attempt]);
+    verify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, token, attempt, needsClick]);
+
+  // One post per click: a double click (or Try again while busy) is ignored.
+  const confirm = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    // Keep focus on the Confirm button; only the Try again path (button about to unmount) moves it.
+    if (state !== 'confirm') statusRef.current?.focus();
+    setState('confirm');
+    await verify();
+    busyRef.current = false;
+    setBusy(false);
+    statusRef.current?.focus();
+  };
 
   const isSuccess = state in SUCCESS_COPY;
   const canRetry = state === 'rate_limited' || state === 'network';
   const title = isSuccess
     ? 'Email verified'
-    : state === 'verifying'
+    : state === 'confirm'
+      ? 'Confirm email change'
+      : state === 'verifying'
       ? 'Verifying your email'
       : canRetry
         ? 'Verification could not be completed'
         : 'Verification link problem';
-  const statusText = state === 'verifying' ? 'Verifying your email address...' : isSuccess ? SUCCESS_COPY[state] : '';
+  const statusText =
+    state === 'verifying'
+      ? 'Verifying your email address...'
+      : state === 'confirm'
+        ? busy
+          ? 'Confirming your new email address...'
+          : ''
+        : isSuccess
+          ? SUCCESS_COPY[state]
+          : '';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -90,6 +126,21 @@ export default function VerifyEmailPage() {
           >
             {statusText}
           </div>
+          {state === 'confirm' && (
+            <>
+              <p className="text-sm text-center">
+                You asked to change the email address on your Conducky account. Confirm to finish the change.
+              </p>
+              <Button
+                type="button"
+                className="h-11"
+                aria-disabled={busy}
+                onClick={confirm}
+              >
+                Confirm email change
+              </Button>
+            </>
+          )}
           {ERROR_COPY[state] && (
             <Alert variant="destructive">
               <AlertDescription>{ERROR_COPY[state]}</AlertDescription>
@@ -100,6 +151,7 @@ export default function VerifyEmailPage() {
               type="button"
               className="h-11"
               onClick={() => {
+                if (needsClick) return confirm();
                 setState('verifying');
                 statusRef.current?.focus();
                 setAttempt((n) => n + 1);
@@ -108,7 +160,7 @@ export default function VerifyEmailPage() {
               Try again
             </Button>
           )}
-          {state !== 'verifying' && (
+          {state !== 'verifying' && state !== 'confirm' && (
             <Link
               href="/login"
               className="inline-flex h-11 items-center justify-center rounded-md px-4 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

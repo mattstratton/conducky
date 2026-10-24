@@ -97,6 +97,26 @@ describe('EmailService verification additions', () => {
       expect(mail.html).toContain('/verify-email?token=abc');
     });
 
+    it('signup links auto-verify: no confirm param and the original ignore copy', async () => {
+      await makeService().sendVerificationEmail('u@example.com', 'Ursula', 'abc', {}, 'https://app.test');
+      const mail = sentMail();
+      expect(mail.text).toContain('https://app.test/verify-email?token=abc\n');
+      expect(mail.text).not.toContain('confirm=1');
+      expect(mail.html).not.toContain('confirm=1');
+      expect(mail.text).toContain("If you didn't request this, you can ignore this email.");
+    });
+
+    it('email-change links require a click (confirm=1) and say not to confirm if unrequested', async () => {
+      await makeService().sendVerificationEmail('u@example.com', 'Ursula', 'abc', { emailChange: true }, 'https://app.test');
+      const mail = sentMail();
+      const copy = 'If you did not request this change, do not confirm it; your email address will not change.';
+      expect(mail.text).toContain('https://app.test/verify-email?token=abc&confirm=1');
+      expect(mail.html).toContain('/verify-email?token=abc&amp;confirm=1');
+      expect(mail.text).toContain(copy);
+      expect(mail.html).toContain(copy);
+      expect(mail.text).not.toContain("you can ignore this email");
+    });
+
     it('sendVerificationEmail escapes the name in HTML', async () => {
       await makeService().sendVerificationEmail('u@example.com', '<b>x</b>', 'abc');
       expect(sentMail().html).not.toContain('<b>x</b>');
