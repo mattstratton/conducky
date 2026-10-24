@@ -95,11 +95,23 @@ passport.use(new LocalStrategy(
 
       // Only after the password is proven correct, so this reveals nothing to a guesser.
       // isConfigured() is evaluated last so ordinary sign-ins never touch the email service.
-      if (isGated(user) && await emailService.isConfigured()) {
-        return done(null, false, {
-          message: 'Please verify your email address to sign in.',
-          code: 'EMAIL_NOT_VERIFIED'
-        } as { message: string; code: string });
+      if (isGated(user)) {
+        if (await emailService.isConfigured()) {
+          return done(null, false, {
+            message: 'Please verify your email address to sign in.',
+            code: 'EMAIL_NOT_VERIFIED'
+          } as { message: string; code: string });
+        }
+        // Mail is down, so this person is let in. Ungate them: otherwise the 7-day purge
+        // would delete an account in use once mail returns (#520).
+        try {
+          await prisma.user.updateMany({
+            where: { id: user.id, emailVerificationRequired: true, emailVerifiedAt: null },
+            data: { emailVerificationRequired: false },
+          });
+        } catch (ungateErr) {
+          logger().error('Failed to ungate user admitted while email is not configured:', ungateErr instanceof Error ? ungateErr.message : 'unknown error');
+        }
       }
 
       return done(null, user);

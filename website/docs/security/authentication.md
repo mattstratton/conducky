@@ -90,7 +90,7 @@ When email is configured, Conducky verifies that people own the address they sig
 - The change link opens a page that asks the person to confirm with a button; nothing is applied just by opening the link. This stops email security scanners that open links from confirming a change on their own. Signup verification links still verify automatically when opened
 - If email is not configured, the change is applied immediately and the new address is treated as unverified
 
-**When email is not configured:** verification is skipped entirely. Nobody is blocked, nothing is purged, and anyone can sign up with any address. The backend logs a warning at startup and System Admins see a warning banner on every `/admin` page. Setting up email is strongly recommended; see [Email configuration](../admin-guide/system-configuration.md#email-configuration).
+**When email is not configured:** verification is skipped entirely. Nobody is blocked, nothing is purged, and anyone can sign up with any address. An unverified account that signs in while email is not configured is exempted from verification for good, so it is never purged if email is set up later. The backend logs a warning at startup and System Admins see a warning banner on every `/admin` page. Setting up email is strongly recommended; see [Email configuration](../admin-guide/system-configuration.md#email-configuration).
 
 All verification actions are written to the [audit log](./audit-logging.md#email-verification-events).
 

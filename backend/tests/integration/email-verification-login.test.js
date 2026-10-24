@@ -74,4 +74,18 @@ describe('sign-in block for unverified gated accounts', () => {
     seedUser({ emailVerificationRequired: true, emailVerifiedAt: null });
     expect((await login(request(app))).status).toBe(200);
   });
+
+  test('admitted while email is not configured -> ungated, so the purge can never pick them (#520)', async () => {
+    isConfigured.mockResolvedValue(false);
+    seedUser({ emailVerificationRequired: true, emailVerifiedAt: null });
+    expect((await login(request(app))).status).toBe(200);
+    expect(inMemoryStore.users[0].emailVerificationRequired).toBe(false);
+    expect(inMemoryStore.users[0].emailVerifiedAt).toBeNull();
+  });
+
+  test('blocked while email IS configured -> stays gated', async () => {
+    seedUser({ emailVerificationRequired: true, emailVerifiedAt: null });
+    expect((await login(request(app))).status).toBe(401);
+    expect(inMemoryStore.users[0].emailVerificationRequired).toBe(true);
+  });
 });
