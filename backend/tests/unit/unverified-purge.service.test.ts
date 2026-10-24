@@ -44,8 +44,9 @@ describe('purgeUnverifiedAccounts', () => {
 
   it('deletes candidates through the service and counts them', async () => {
     expect(await run()).toBe(2);
-    expect(service.deleteGatedUnverifiedAccount).toHaveBeenCalledWith('a');
-    expect(service.deleteGatedUnverifiedAccount).toHaveBeenCalledWith('b');
+    const opts = { lastMailBefore: new Date(NOW.getTime() - UNVERIFIED_PURGE_MS) };
+    expect(service.deleteGatedUnverifiedAccount).toHaveBeenCalledWith('a', opts);
+    expect(service.deleteGatedUnverifiedAccount).toHaveBeenCalledWith('b', opts);
   });
 
   it('skips and does not count or audit a false result', async () => {
@@ -97,12 +98,14 @@ describe('startUnverifiedPurge', () => {
     jest.useFakeTimers();
     const findMany = jest.fn().mockRejectedValue(new Error('db down'));
     jest.spyOn(emailService, 'isConfigured').mockResolvedValue(true);
-    jest.spyOn(logger(), 'error').mockImplementation((() => logger()) as any);
+    const logError = jest.spyOn(logger(), 'error').mockImplementation((() => logger()) as any);
 
     const timer = startUnverifiedPurge({ user: { findMany } } as any);
     expect(timer).not.toBeNull();
+    expect(timer!.hasRef()).toBe(false);
     await jest.advanceTimersByTimeAsync(0);
     expect(findMany).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith('Unverified account purge failed', { error: 'db down' });
     await jest.advanceTimersByTimeAsync(DAY);
     expect(findMany).toHaveBeenCalledTimes(2);
     clearInterval(timer!);

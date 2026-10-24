@@ -1822,15 +1822,26 @@ class PrismaClient {
         return row;
       }),
     };
-    this.user.deleteMany = jest.fn(({ where = {} } = {}) => {
-      const allowed = ['id', 'emailVerificationRequired', 'emailVerifiedAt'];
-      Object.keys(where).forEach((k) => {
-        if (!allowed.includes(k)) throw new Error(`user.deleteMany mock: unsupported filter "${k}"`);
+    // Supports equality on id/emailVerificationRequired/emailVerifiedAt, null-or-{ lt } on
+    // verificationSentAt/createdAt, and OR of those. Anything else throws.
+    const userMatches = (u, where) =>
+      Object.entries(where).every(([k, v]) => {
+        if (k === 'OR') return v.some((w) => userMatches(u, w));
+        const val = u[k] === undefined ? null : u[k];
+        if (['verificationSentAt', 'createdAt'].includes(k) && v !== null && typeof v === 'object') {
+          Object.keys(v).forEach((op) => {
+            if (op !== 'lt') throw new Error(`user.deleteMany mock: unsupported operator "${op}"`);
+          });
+          return val !== null && val < v.lt;
+        }
+        if (!['id', 'emailVerificationRequired', 'emailVerifiedAt', 'verificationSentAt', 'createdAt'].includes(k)) {
+          throw new Error(`user.deleteMany mock: unsupported filter "${k}"`);
+        }
+        return val === v;
       });
-      const match = (u) =>
-        Object.entries(where).every(([k, v]) => (u[k] === undefined ? null : u[k]) === v);
+    this.user.deleteMany = jest.fn(({ where = {} } = {}) => {
       const before = inMemoryStore.users.length;
-      inMemoryStore.users = inMemoryStore.users.filter((u) => !match(u));
+      inMemoryStore.users = inMemoryStore.users.filter((u) => !userMatches(u, where));
       return { count: before - inMemoryStore.users.length };
     });
     this.user.updateMany = jest.fn(({ where = {}, data = {} } = {}) => {

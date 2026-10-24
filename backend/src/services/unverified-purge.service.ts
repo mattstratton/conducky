@@ -21,11 +21,12 @@ export async function purgeUnverifiedAccounts(
 ): Promise<number> {
   if (!(await emailService.isConfigured())) return 0;
 
+  const cutoff = new Date(now.getTime() - UNVERIFIED_PURGE_MS);
   const candidates = await prisma.user.findMany({
     where: {
       emailVerificationRequired: true,
       emailVerifiedAt: null,
-      verificationSentAt: { lt: new Date(now.getTime() - UNVERIFIED_PURGE_MS) },
+      verificationSentAt: { lt: cutoff },
     },
     select: { id: true },
   });
@@ -33,7 +34,7 @@ export async function purgeUnverifiedAccounts(
   let deleted = 0;
   for (const { id } of candidates) {
     try {
-      if (!(await service.deleteGatedUnverifiedAccount(id))) continue;
+      if (!(await service.deleteGatedUnverifiedAccount(id, { lastMailBefore: cutoff }))) continue;
       deleted++;
     } catch (error) {
       logger().error('Failed to purge unverified account', { userId: id, error: msg(error) });

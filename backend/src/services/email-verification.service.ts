@@ -188,9 +188,10 @@ export class EmailVerificationService {
     const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user || !isGated(user)) return false;
     if (!(await this.mailer.isConfigured())) return false;
+    const now = Date.now();
     const since = user.verificationSentAt ?? user.createdAt;
-    if (since && Date.now() - since.getTime() <= TAKEOVER_GRACE_MS) return false;
-    if (!(await this.deleteGatedUnverifiedAccount(user.id))) return false;
+    if (since && now - since.getTime() <= TAKEOVER_GRACE_MS) return false;
+    if (!(await this.deleteGatedUnverifiedAccount(user.id, { lastMailBefore: new Date(now - TAKEOVER_GRACE_MS) }))) return false;
     // userId null: the actor is the anonymous registrant, and AuditLog.userId would FK-fail on the deleted id.
     await logAudit({ action: 'unverified_account_replaced', targetType: 'User', targetId: user.id, userId: null });
     return true;
@@ -203,8 +204,10 @@ export class EmailVerificationService {
    * a remaining RESTRICT relation blocks the delete (P2003: created organizations or organization
    * invite links, which a never-signed-in gated account cannot have). Other errors are rethrown.
    * UserRole rows go with the user (ON DELETE CASCADE), so role holders are deleted too.
+   * With opts.lastMailBefore, the delete also requires the last verification mail (or, if none was
+   * sent, account creation) to predate it, so a resend that lands after the caller's check wins.
    */
-  async deleteGatedUnverifiedAccount(userId: string): Promise<boolean> {
+  async deleteGatedUnverifiedAccount(userId: string, opts?: { lastMailBefore?: Date }): Promise<boolean> {
     const ROLLBACK = new Error('not a gated unverified account');
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -216,7 +219,17 @@ export class EmailVerificationService {
         await tx.notification.deleteMany({ where });
         // Conditional delete closes the race with a concurrent verification; rollback undoes the child deletes.
         const { count } = await tx.user.deleteMany({
-          where: { id: userId, emailVerificationRequired: true, emailVerifiedAt: null },
+          where: {
+            id: userId,
+            emailVerificationRequired: true,
+            emailVerifiedAt: null,
+            ...(opts?.lastMailBefore && {
+              OR: [
+                { verificationSentAt: { lt: opts.lastMailBefore } },
+                { verificationSentAt: null, createdAt: { lt: opts.lastMailBefore } },
+              ],
+            }),
+          },
         });
         if (count !== 1) throw ROLLBACK;
       });

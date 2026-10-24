@@ -69,3 +69,40 @@ describe('emailVerificationToken mock', () => {
     expect(() => model.deleteMany({ where: { expiresAt: { equals: t(1) } } })).toThrow(/equals/);
   });
 });
+
+describe('user.deleteMany mock (OR / verificationSentAt / createdAt)', () => {
+  const users = new PrismaClient().user;
+  const cut = t(10);
+  const seedUsers = () => {
+    inMemoryStore.users.length = 0;
+    inMemoryStore.users.push(
+      { id: 'sent-old', verificationSentAt: t(1), createdAt: t(1) },
+      { id: 'sent-new', verificationSentAt: t(20), createdAt: t(1) },
+      { id: 'never-old', verificationSentAt: null, createdAt: t(1) },
+      { id: 'never-new', verificationSentAt: null, createdAt: t(20) },
+    );
+  };
+  const ids = () => inMemoryStore.users.map((u) => u.id).sort();
+
+  test('OR of lt and null+lt deletes only rows whose last mail predates the cutoff', () => {
+    seedUsers();
+    const r = users.deleteMany({ where: { OR: [{ verificationSentAt: { lt: cut } }, { verificationSentAt: null, createdAt: { lt: cut } }] } });
+    expect(r.count).toBe(2);
+    expect(ids()).toEqual(['never-new', 'sent-new']);
+  });
+
+  test('verificationSentAt null and createdAt lt work on their own', () => {
+    seedUsers();
+    users.deleteMany({ where: { verificationSentAt: null } });
+    expect(ids()).toEqual(['sent-new', 'sent-old']);
+    users.deleteMany({ where: { createdAt: { lt: cut } } });
+    expect(ids()).toEqual([]);
+  });
+
+  test('unsupported keys and operators throw', () => {
+    seedUsers();
+    expect(() => users.deleteMany({ where: { bogus: 1 } })).toThrow(/bogus/);
+    expect(() => users.deleteMany({ where: { OR: [{ bogus: 1 }] } })).toThrow(/bogus/);
+    expect(() => users.deleteMany({ where: { createdAt: { gt: cut } } })).toThrow(/gt/);
+  });
+});

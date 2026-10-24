@@ -362,8 +362,8 @@ describe('EmailVerificationService', () => {
       expect(findUser(u.id)).toBeDefined();
     });
 
-    it('never sent and no createdAt: releasable', async () => {
-      const u = addUser({ verificationSentAt: null });
+    it('never sent: releasable once account creation is past the grace window', async () => {
+      const u = addUser({ verificationSentAt: null, createdAt: new Date(Date.now() - 2 * HOUR) });
       expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
     });
 
@@ -415,6 +415,18 @@ describe('EmailVerificationService', () => {
       expect(TAKEOVER_GRACE_MS).toBe(HOUR);
     });
 
+    it('does not delete when a resend lands after the grace check but before the delete', async () => {
+      const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      const real = prisma.user.deleteMany.getMockImplementation();
+      prisma.user.deleteMany.mockImplementationOnce((args: any) => {
+        findUser(u.id).verificationSentAt = new Date(Date.now() - 10 * MIN);
+        return real(args);
+      });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(false);
+      expect(findUser(u.id)).toBeDefined();
+      expect(logAudit).not.toHaveBeenCalled();
+    });
+
     it('leaves a verified account', async () => {
       const u = addUser({ emailVerifiedAt: new Date(), verificationSentAt: new Date(Date.now() - 2 * HOUR) });
       expect(await svc.releaseUnverifiedAddress(u.email)).toBe(false);
@@ -458,6 +470,30 @@ describe('EmailVerificationService', () => {
       expect(await svc.deleteGatedUnverifiedAccount('nope')).toBe(false);
       expect(findUser(verified.id)).toBeDefined();
       expect(findUser(ungated.id)).toBeDefined();
+    });
+
+    describe('with lastMailBefore', () => {
+      const cutoff = new Date(Date.now() - HOUR);
+
+      // Child-row rollback is not modelled by the in-memory $transaction; the real-DB check covers it.
+      it('returns false and keeps the user when the last mail is newer than the cutoff', async () => {
+        const u = addUser({ verificationSentAt: new Date(Date.now() - 10 * MIN) });
+        expect(await svc.deleteGatedUnverifiedAccount(u.id, { lastMailBefore: cutoff })).toBe(false);
+        expect(findUser(u.id)).toBeDefined();
+      });
+
+      it('deletes when the last mail is older than the cutoff', async () => {
+        const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+        expect(await svc.deleteGatedUnverifiedAccount(u.id, { lastMailBefore: cutoff })).toBe(true);
+        expect(findUser(u.id)).toBeUndefined();
+      });
+
+      it('falls back to createdAt when no mail was ever sent', async () => {
+        const old = addUser({ createdAt: new Date(Date.now() - 2 * HOUR) });
+        const fresh = addUser({ createdAt: new Date(Date.now() - 10 * MIN) });
+        expect(await svc.deleteGatedUnverifiedAccount(fresh.id, { lastMailBefore: cutoff })).toBe(false);
+        expect(await svc.deleteGatedUnverifiedAccount(old.id, { lastMailBefore: cutoff })).toBe(true);
+      });
     });
 
     it('rethrows non-P2003 errors', async () => {
