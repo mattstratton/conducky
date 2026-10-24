@@ -20,7 +20,7 @@ describe('EmailSetupBanner', () => {
       await screen.findByText(/Email is not configured\. New signups are not being verified\. Configuring email is strongly recommended\./)
     ).toBeInTheDocument();
     const link = screen.getByRole('link', { name: 'How to configure email' });
-    expect(link).toHaveAttribute('href', expect.stringContaining('conducky.com/docs/admin-guide/system-configuration#email-configuration'));
+    expect(link).toHaveAttribute('href', expect.stringContaining('conducky.com/admin-guide/system-configuration#email-configuration'));
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/admin/email-status'),
       expect.objectContaining({ credentials: 'include' })

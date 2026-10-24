@@ -21,6 +21,8 @@ describe('logEmailSetupWarning', () => {
     expect(msg).toContain('STRONGLY RECOMMENDED');
     expect(msg).toContain('EMAIL_PROVIDER');
     expect(msg).toContain('\n');
+    expect(msg).toContain('https://conducky.com/admin-guide/system-configuration#email-configuration');
+    expect(msg).not.toContain('conducky.com/docs/');
   });
 
   it('logs nothing when configured', async () => {

@@ -7,7 +7,7 @@ const WARNING = [
   'Email verification is DISABLED: new email/password signups are NOT verified.',
   'Email setup is STRONGLY RECOMMENDED.',
   'Set EMAIL_PROVIDER (smtp or sendgrid) and its credentials.',
-  'See the admin guide: https://conducky.com/docs/admin-guide/system-configuration#email-configuration',
+  'See the admin guide: https://conducky.com/admin-guide/system-configuration#email-configuration',
   '============================================================',
 ].join('\n');
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-const DOCS_URL = 'https://conducky.com/docs/admin-guide/system-configuration#email-configuration';
+const DOCS_URL = 'https://conducky.com/admin-guide/system-configuration#email-configuration';
 
 /** Banner is for System Admins on /admin pages only. */
 export function shouldShowEmailSetupBanner(globalRoles: string[], pathname: string): boolean {
