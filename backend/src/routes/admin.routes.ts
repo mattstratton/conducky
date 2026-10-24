@@ -3,6 +3,7 @@ import { requireAuth, AuthUser } from '../middleware/auth';
 import { requireSystemAdmin, requireRole } from '../utils/rbac';
 import { createPrismaClient } from '../config/prisma-client';
 import { reinitializeOAuthStrategies } from '../config/passport';
+import { emailService } from '../utils/email';
 import logger, { 
   updateLoggingSettings, 
   getLoggingSettings, 
@@ -765,6 +766,16 @@ router.get('/settings/email', requireSystemAdmin(), async (req: Request, res: Re
   } catch (error) {
     logger().error('Error fetching email settings:', error);
     res.status(500).json({ error: 'Failed to fetch email settings.' });
+  }
+});
+
+// Lets the admin UI warn loudly when email (and so email verification) is off.
+router.get('/email-status', requireSystemAdmin(), async (req: Request, res: Response) => {
+  try {
+    res.json({ configured: await emailService.isConfigured() });
+  } catch (error) {
+    logger().error('Error checking email status:', error);
+    res.status(500).json({ error: 'Failed to check email status.' });
   }
 });
 
