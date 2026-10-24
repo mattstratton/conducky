@@ -3,9 +3,8 @@
 // thing, before anything touches the database, so they refuse to run in production.
 module.exports = function assertDevOnly(script) {
   if (process.env.NODE_ENV === 'production') {
-    console.error(
+    throw new Error(
       `${script} creates test accounts with published passwords and must not run when NODE_ENV=production.`,
     );
-    process.exit(1);
   }
 };

@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const { seedUnifiedRoles } = require('./unified-roles-seed');
 const prisma = createPrismaClient();
 
-// Grant a unified role once; safe to run again.
+/** Grant a unified role once; safe to run again. */
 async function grantRole(userId, roleMap, roleName, scopeType, scopeId) {
   const roleId = roleMap[roleName].id;
   await prisma.userRole.upsert({
@@ -14,6 +14,7 @@ async function grantRole(userId, roleMap, roleName, scopeType, scopeId) {
   });
 }
 
+/** Create the user with a hashed password if the email is new; safe to run again. */
 async function upsertUser(email, name, password) {
   return prisma.user.upsert({
     where: { email },
@@ -83,7 +84,7 @@ async function main() {
     create: { key: 'showPublicEventList', value: 'false' },
   });
 
-  console.log('✅ Test organization created:', testOrg.name, '(ID:', testOrg.id + ')');
+  console.log(`✅ Test organization created: ${testOrg.name} (ID: ${testOrg.id})`);
   console.log('✅ Test event linked to organization. Event ID:', event.id);
   console.log('✅ System Admin user seeded:', superEmail, '/ password:', superPassword);
   console.log('✅ Event Admin user seeded:', adminEmail, '/ password:', adminPassword, '(also org admin)');
@@ -95,7 +96,7 @@ async function main() {
 main()
   .catch(e => {
     console.error(e);
-    process.exit(1);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
