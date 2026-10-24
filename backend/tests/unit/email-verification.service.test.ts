@@ -169,6 +169,30 @@ describe('EmailVerificationService', () => {
       expect(findUser(u.id).emailVerifiedAt).toBeNull();
     });
 
+    it('token with pendingEmail fails closed with no state change', async () => {
+      const u = addUser();
+      const raw = await svc.issueToken(u.id, 'new@example.com');
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+      expect(findUser(u.id).emailVerifiedAt).toBeNull();
+      expect(store.emailVerificationTokens[0].usedAt).toBeNull();
+    });
+
+    it('used and expired token is invalid, not already_verified', async () => {
+      const u = addUser({ emailVerifiedAt: new Date() });
+      const raw = await svc.issueToken(u.id);
+      Object.assign(store.emailVerificationTokens[0], { usedAt: new Date(), expiresAt: new Date(Date.now() - 1000) });
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+    });
+
+    it('a failed user update rolls the claim back path: error propagates', async () => {
+      const u = addUser();
+      const raw = await svc.issueToken(u.id);
+      prisma.user.update.mockImplementationOnce(() => {
+        throw new Error('db down');
+      });
+      await expect(svc.verifyToken(raw)).rejects.toThrow('db down');
+    });
+
     it('used token for a user who is not verified is invalid', async () => {
       const u = addUser();
       const raw = await svc.issueToken(u.id);
@@ -226,14 +250,59 @@ describe('EmailVerificationService', () => {
       expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
       expect(findUser(u.id)).toBeUndefined();
       expect(logAudit).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'unverified_account_replaced', targetType: 'User', targetId: u.id })
+        expect.objectContaining({
+          action: 'unverified_account_replaced',
+          targetType: 'User',
+          targetId: u.id,
+          userId: null,
+        })
       );
     });
 
-    it('deletes a gated account that never got mail', async () => {
-      const u = addUser({ verificationSentAt: null });
+    it('never sent, created 2 hours ago: released', async () => {
+      const u = addUser({ verificationSentAt: null, createdAt: new Date(Date.now() - 2 * HOUR) });
       expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
       expect(findUser(u.id)).toBeUndefined();
+    });
+
+    it('never sent, created 10 minutes ago: not released', async () => {
+      const u = addUser({ verificationSentAt: null, createdAt: new Date(Date.now() - 10 * MIN) });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(false);
+      expect(findUser(u.id)).toBeDefined();
+    });
+
+    it('never sent and no createdAt: releasable', async () => {
+      const u = addUser({ verificationSentAt: null });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
+    });
+
+    it('lowercases and trims the address', async () => {
+      const u = addUser({ email: 'case@example.com', verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      expect(await svc.releaseUnverifiedAddress('  CASE@Example.com ')).toBe(true);
+      expect(findUser(u.id)).toBeUndefined();
+    });
+
+    it('also clears reset tokens and other RESTRICT children', async () => {
+      const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      store.passwordResetTokens.push({ id: 'p1', userId: u.id, token: 't', expiresAt: new Date() });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
+      expect(store.passwordResetTokens.filter((t: any) => t.userId === u.id)).toHaveLength(0);
+    });
+
+    it('returns false (no throw) when the delete hits a foreign key (P2003)', async () => {
+      const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      prisma.user.deleteMany.mockImplementationOnce(() => {
+        throw Object.assign(new Error('fk'), { code: 'P2003' });
+      });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(false);
+      expect(logAudit).not.toHaveBeenCalled();
+    });
+
+    it('returns false when the account got verified between check and delete', async () => {
+      const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      prisma.user.deleteMany.mockImplementationOnce(() => ({ count: 0 }));
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(false);
+      expect(logAudit).not.toHaveBeenCalled();
     });
 
     it('leaves a gated account whose last mail was 10 minutes ago', async () => {
@@ -301,5 +370,23 @@ describe('EmailVerificationService', () => {
       await svc.resendFor(u.email);
       expect(send).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('prisma mock additions used by the verification service', () => {
+  const client: any = new PrismaClient();
+
+  it('user.deleteMany filters on id/gating fields (null matches missing) and throws on others', async () => {
+    store.users.push({ id: 'm1', email: 'm1@x.y', emailVerificationRequired: true });
+    store.users.push({ id: 'm2', email: 'm2@x.y', emailVerificationRequired: true, emailVerifiedAt: new Date() });
+    expect(await client.user.deleteMany({ where: { id: 'm2', emailVerificationRequired: true, emailVerifiedAt: null } })).toEqual({ count: 0 });
+    expect(await client.user.deleteMany({ where: { id: 'm1', emailVerificationRequired: true, emailVerifiedAt: null } })).toEqual({ count: 1 });
+    expect(() => client.user.deleteMany({ where: { email: 'm2@x.y' } })).toThrow('unsupported filter');
+    store.users = store.users.filter((u: any) => u.id !== 'm2');
+  });
+
+  it('socialAccount/notification deleteMany throw on unsupported filters', () => {
+    expect(() => client.socialAccount.deleteMany({ where: { id: '1' } })).toThrow('unsupported filter');
+    expect(() => client.notification.deleteMany({ where: { id: '1' } })).toThrow('unsupported filter');
   });
 });

@@ -1774,6 +1774,38 @@ class PrismaClient {
         });
       }),
     };
+    // Verification-service additions. Unknown filters throw so tests cannot pass for the wrong reason.
+    const onlyUserId = (name, where = {}) => {
+      Object.keys(where).forEach((k) => {
+        if (k !== 'userId') throw new Error(`${name} mock: unsupported filter "${k}"`);
+      });
+    };
+    this.notification.deleteMany = jest.fn(({ where = {} } = {}) => {
+      onlyUserId('notification.deleteMany', where);
+      const before = inMemoryStore.notifications.length;
+      inMemoryStore.notifications = inMemoryStore.notifications.filter((n) => n.userId !== where.userId);
+      return { count: before - inMemoryStore.notifications.length };
+    });
+    inMemoryStore.socialAccounts = inMemoryStore.socialAccounts || [];
+    this.socialAccount = {
+      deleteMany: jest.fn(({ where = {} } = {}) => {
+        onlyUserId('socialAccount.deleteMany', where);
+        const before = inMemoryStore.socialAccounts.length;
+        inMemoryStore.socialAccounts = inMemoryStore.socialAccounts.filter((s) => s.userId !== where.userId);
+        return { count: before - inMemoryStore.socialAccounts.length };
+      }),
+    };
+    this.user.deleteMany = jest.fn(({ where = {} } = {}) => {
+      const allowed = ['id', 'emailVerificationRequired', 'emailVerifiedAt'];
+      Object.keys(where).forEach((k) => {
+        if (!allowed.includes(k)) throw new Error(`user.deleteMany mock: unsupported filter "${k}"`);
+      });
+      const match = (u) =>
+        Object.entries(where).every(([k, v]) => (u[k] === undefined ? null : u[k]) === v);
+      const before = inMemoryStore.users.length;
+      inMemoryStore.users = inMemoryStore.users.filter((u) => !match(u));
+      return { count: before - inMemoryStore.users.length };
+    });
     this.incidentComment = {
               findMany: jest.fn(({ where, orderBy, skip, take, include }) => {
           let results = [...inMemoryStore.incidentComments];

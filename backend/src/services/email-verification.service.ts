@@ -76,23 +76,26 @@ export class EmailVerificationService {
     if (!raw) return { status: 'invalid' };
     const token = await this.prisma.emailVerificationToken.findUnique({ where: { tokenHash: hashToken(raw) } });
     if (!token) return { status: 'invalid' };
-
-    const alreadyVerified = async (): Promise<VerifyResult> => {
-      const u = await this.prisma.user.findUnique({ where: { id: token.userId } });
-      return u?.emailVerifiedAt ? { status: 'already_verified' } : { status: 'invalid' };
-    };
-
-    if (token.usedAt) return alreadyVerified();
+    // Fail closed: an email-change token must never mark the CURRENT address verified. Task 10 replaces this.
+    if (token.pendingEmail) return { status: 'invalid' };
+    // Expiry first, so a used token that has also expired is invalid, not already_verified.
     if (token.expiresAt.getTime() < Date.now()) return { status: 'invalid' };
 
-    // Atomic single-use claim: of two concurrent clicks, only one gets count 1.
-    const claimed = await this.prisma.emailVerificationToken.updateMany({
-      where: { id: token.id, usedAt: null },
-      data: { usedAt: new Date() },
+    // Claim + verify in one transaction: a concurrent duplicate waits on the winner's row lock,
+    // then sees the committed emailVerifiedAt, and a failed user update can't burn the token.
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.emailVerificationToken.updateMany({
+        where: { id: token.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count === 0) {
+        const u = await tx.user.findUnique({ where: { id: token.userId } });
+        return u?.emailVerifiedAt ? ('already_verified' as const) : ('invalid' as const);
+      }
+      await tx.user.update({ where: { id: token.userId }, data: { emailVerifiedAt: new Date() } });
+      return 'verified' as const;
     });
-    if (claimed.count === 0) return alreadyVerified();
-
-    await this.prisma.user.update({ where: { id: token.userId }, data: { emailVerifiedAt: new Date() } });
+    if (outcome !== 'verified') return { status: outcome };
     await logAudit({ action: 'email_verified', targetType: 'User', targetId: token.userId, userId: token.userId });
     return { status: 'verified', userId: token.userId };
   }
@@ -113,17 +116,39 @@ export class EmailVerificationService {
 
   /**
    * Frees an address held by an unverified signup so someone else can register it.
-   * Only when mail works and the last verification mail is over TAKEOVER_GRACE_MS old (or never sent),
-   * so a pending signup cannot be wiped by a stranger.
+   * Only when mail works and the last verification mail (or, if none was sent, account creation)
+   * is over TAKEOVER_GRACE_MS old, so a pending signup cannot be wiped by a stranger.
+   * Returns false, never throws, if the account cannot be deleted (e.g. it already has roles).
    */
   async releaseUnverifiedAddress(email: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user || !isGated(user)) return false;
     if (!(await this.mailer.isConfigured())) return false;
-    const sentAt = user.verificationSentAt;
-    if (sentAt && Date.now() - sentAt.getTime() <= TAKEOVER_GRACE_MS) return false;
-    await this.prisma.user.delete({ where: { id: user.id } });
-    await logAudit({ action: 'unverified_account_replaced', targetType: 'User', targetId: user.id, userId: user.id });
+    const since = user.verificationSentAt ?? user.createdAt;
+    if (since && Date.now() - since.getTime() <= TAKEOVER_GRACE_MS) return false;
+
+    const ROLLBACK = new Error('not deletable');
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Clear RESTRICT children a bare gated account can have (see user FKs); roles/orgs still block.
+        const where = { userId: user.id };
+        await tx.passwordResetToken.deleteMany({ where });
+        await tx.userNotificationSettings.deleteMany({ where });
+        await tx.userAvatar.deleteMany({ where });
+        await tx.socialAccount.deleteMany({ where });
+        await tx.notification.deleteMany({ where });
+        // Conditional delete closes the race with a concurrent verification.
+        const { count } = await tx.user.deleteMany({
+          where: { id: user.id, emailVerificationRequired: true, emailVerifiedAt: null },
+        });
+        if (count !== 1) throw ROLLBACK;
+      });
+    } catch (err) {
+      if (err === ROLLBACK || (err as { code?: string })?.code === 'P2003') return false;
+      throw err;
+    }
+    // userId null: the actor is the anonymous registrant, and AuditLog.userId would FK-fail on the deleted id.
+    await logAudit({ action: 'unverified_account_replaced', targetType: 'User', targetId: user.id, userId: null });
     return true;
   }
 
