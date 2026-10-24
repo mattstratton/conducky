@@ -1,4 +1,7 @@
 // Mock the RBAC middleware - needs to be at the top level before imports
+// NOTE: this mock answers 403 for an unauthenticated request, whereas the real middleware
+// (backend/src/utils/rbac.ts) answers 401. The real guard is therefore not exercised here;
+// it is covered by the neighbouring admin suites' assumption.
 jest.mock('../../src/utils/rbac', () => ({
   requireSystemAdmin: () => (req, res, next) => {
     const { inMemoryStore } = require('../../__mocks__/@prisma/client');
