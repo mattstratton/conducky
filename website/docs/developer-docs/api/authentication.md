@@ -13,14 +13,14 @@ Authentication endpoints handle user registration, login, session management, an
 - **POST** `/api/auth/register`
 - **Description:** Register a new user. The first user becomes Global Admin (SystemAdmin).
 - **Body:** `{ email, password, name }`
-- **Response:** `{ message, user, madeSystemAdmin? }`
+- **Response:** `{ message, user, verificationRequired, verificationEmailSent }`
 
 ### Register with Invite
 
 - **POST** `/api/auth/register/invite/:inviteCode`
 - **Description:** Register a new user using an invite code. Automatically assigns the role specified in the invite.
 - **Body:** `{ email, password, name }`
-- **Response:** `{ message, user }`
+- **Response:** `{ message, user, verificationRequired, verificationEmailSent }`
 - **Notes:**
   - Validates the invite code and checks if it's not disabled or expired
   - Automatically assigns the user to the event with the role specified in the invite

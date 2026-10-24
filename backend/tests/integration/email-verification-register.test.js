@@ -5,6 +5,7 @@ const request = require('supertest');
 const app = require('../../index');
 const { inMemoryStore } = require('@prisma/client');
 const { emailService } = require('../../src/utils/email');
+const { logAudit } = require('../../src/utils/audit');
 const { EmailVerificationService } = require('../../src/services/email-verification.service');
 
 jest.mock('../../src/utils/audit', () => ({
@@ -31,6 +32,9 @@ beforeEach(() => {
     { id: 'invite-1', code: 'INVITE01', eventId: '1', roleId: '4', useCount: 0, disabled: false },
   ];
   jest.restoreAllMocks();
+  logAudit.mockClear();
+  // seed rows would collide with the ids the mock hands to new users (upsert updates in place)
+  inMemoryStore.userRoles = inMemoryStore.userRoles.filter((r) => !['1', '2'].includes(r.userId) || r.scopeType === 'x');
   jest.spyOn(emailService, 'isConfigured').mockResolvedValue(true);
   sendSpy = jest.spyOn(emailService, 'sendVerificationEmail').mockResolvedValue({ success: true });
 });
@@ -47,7 +51,9 @@ describe('POST /api/auth/register', () => {
     expect(findUser('new@example.com').emailVerificationRequired).toBe(true);
     expect(sendSpy).toHaveBeenCalledTimes(1);
     expect(sendSpy.mock.calls[0][0]).toBe('new@example.com');
-    expect(sendSpy.mock.calls[0][2]).toMatch(/^[0-9a-f]{64}$/);
+    const token = sendSpy.mock.calls[0][2];
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(res.body)).not.toContain(token);
   });
 
   test('unconfigured: signup is not gated', async () => {
@@ -62,6 +68,7 @@ describe('POST /api/auth/register', () => {
 
   test('first user is stored verified, made system admin, never gated', async () => {
     inMemoryStore.users.length = 0;
+    const before = inMemoryStore.userRoles.length;
     const res = await register('first@example.com');
     expect(res.status).toBe(200);
     expect(res.body.verificationRequired).toBe(false);
@@ -69,7 +76,7 @@ describe('POST /api/auth/register', () => {
     expect(u.emailVerifiedAt).toBeTruthy();
     expect(u.emailVerificationRequired).toBeFalsy();
     expect(
-      inMemoryStore.userRoles.some((r) => r.userId === u.id && r.roleId === '1' && r.scopeType === 'system')
+      inMemoryStore.userRoles.slice(before).some((r) => r.userId === u.id && r.roleId === '1' && r.scopeType === 'system')
     ).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
   });
@@ -128,6 +135,7 @@ describe('POST /api/auth/register/invite/:inviteCode', () => {
     request(app).post('/api/auth/register/invite/INVITE01').send({ email, password: PASSWORD, name: 'Invitee' });
 
   test('invite signup is gated and still receives its role', async () => {
+    const before = inMemoryStore.userRoles.length;
     const res = await invite('guest@example.com');
     expect(res.status).toBe(201);
     expect(res.body.verificationRequired).toBe(true);
@@ -135,7 +143,7 @@ describe('POST /api/auth/register/invite/:inviteCode', () => {
     const u = findUser('guest@example.com');
     expect(u.emailVerificationRequired).toBe(true);
     expect(
-      inMemoryStore.userRoles.some((r) => r.userId === u.id && r.roleId === '4' && r.scopeType === 'event' && r.scopeId === '1')
+      inMemoryStore.userRoles.slice(before).some((r) => r.userId === u.id && r.roleId === '4' && r.scopeType === 'event' && r.scopeId === '1')
     ).toBe(true);
     expect(sendSpy).toHaveBeenCalledTimes(1);
   });
@@ -177,10 +185,27 @@ describe('POST /api/auth/register/invite/:inviteCode', () => {
   });
 
   test('fail closed: onSignup throwing deletes the new user and grants no role', async () => {
+    const before = inMemoryStore.userRoles.length;
     jest.spyOn(EmailVerificationService.prototype, 'onSignup').mockRejectedValue(new Error('db write failed'));
     const res = await invite('guest@example.com');
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Registration failed.');
     expect(findUser('guest@example.com')).toBeUndefined();
+    expect(inMemoryStore.userRoles.slice(before)).toEqual([]);
+  });
+
+  test('weak password for a releasable stale address deletes nothing and writes no replace audit', async () => {
+    inMemoryStore.users.push({
+      id: 'squatter', email: 'guest@example.com', passwordHash: 'x',
+      emailVerificationRequired: true, emailVerifiedAt: null,
+      verificationSentAt: new Date(Date.now() - 120 * MIN), createdAt: new Date(Date.now() - 120 * MIN),
+    });
+    const res = await request(app)
+      .post('/api/auth/register/invite/INVITE01')
+      .send({ email: 'guest@example.com', password: 'weak', name: 'Invitee' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Password must meet/);
+    expect(inMemoryStore.users.find((u) => u.id === 'squatter')).toBeDefined();
+    expect(logAudit).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'unverified_account_replaced' }));
   });
 });

@@ -115,6 +115,34 @@ export class EmailVerificationService {
   }
 
   /**
+   * onSignup for a just-created user, failing closed: if gating throws, log the error first, then try to
+   * delete the user so no usable ungated account survives. Returns null on failure (callers answer
+   * `Registration failed.`); never throws.
+   */
+  async gateNewUser(
+    user: User,
+    opts: { isFirstUser: boolean }
+  ): Promise<{ verificationRequired: boolean; emailSent: boolean } | null> {
+    try {
+      return await this.onSignup(user, opts);
+    } catch (err) {
+      logger().error('Signup gating failed; removing new user', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+    try {
+      await this.prisma.user.delete({ where: { id: user.id } });
+    } catch (err) {
+      logger().error('Cleanup of ungated new user failed; account may remain ungated', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+    return null;
+  }
+
+  /**
    * Frees an address held by an unverified signup so someone else can register it.
    * Only when mail works and the last verification mail (or, if none was sent, account creation)
    * is over TAKEOVER_GRACE_MS old, so a pending signup cannot be wiped by a stranger.

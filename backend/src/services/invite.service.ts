@@ -490,7 +490,16 @@ export class InviteService {
         };
       }
 
-      // Check if user already exists
+      // Validate password strength
+      const passwordValidation = this.validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return {
+          success: false,
+          error: 'Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.'
+        };
+      }
+
+      // Check if user already exists (after all validation: a request that fails validation must delete nothing)
       const existing = await this.prisma.user.findUnique({
         where: { email }
       });
@@ -503,15 +512,6 @@ export class InviteService {
         };
       }
 
-      // Validate password strength
-      const passwordValidation = this.validatePassword(password);
-      if (!passwordValidation.isValid) {
-        return {
-          success: false,
-          error: 'Password must meet all security requirements: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.'
-        };
-      }
-
       // Hash password and create user
       const passwordHash = await bcrypt.hash(password, 10);
       
@@ -520,15 +520,8 @@ export class InviteService {
       });
 
       // Gate the account (fail closed: never leave a usable ungated account behind)
-      let gate: { verificationRequired: boolean; emailSent: boolean };
-      try {
-        gate = await verification.onSignup(user, { isFirstUser: false });
-      } catch (err) {
-        await this.prisma.user.delete({ where: { id: user.id } });
-        logger().error('Invite registration gating failed; new user removed', {
-          userId: user.id,
-          error: err instanceof Error ? err.message : 'unknown',
-        });
+      const gate = await verification.gateNewUser(user, { isFirstUser: false });
+      if (!gate) {
         return { success: false, error: 'Registration failed.' };
       }
 

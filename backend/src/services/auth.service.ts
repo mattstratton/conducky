@@ -57,9 +57,10 @@ export interface RateLimitResult {
 export class AuthService {
   private rbacService: UnifiedRBACService;
 
+  private verification: EmailVerificationService;
+
   // Rate limiting for password reset attempts
   // Uses database for persistence across server restarts
-  private verification: EmailVerificationService;
 
   constructor(private prisma: PrismaClient) {
     this.rbacService = new UnifiedRBACService(prisma);
@@ -296,15 +297,8 @@ export class AuthService {
       });
 
       // Gate the account (fail closed: never leave a usable ungated account behind)
-      let gate: { verificationRequired: boolean; emailSent: boolean };
-      try {
-        gate = await this.verification.onSignup(user, { isFirstUser: userCount === 0 });
-      } catch (err) {
-        await this.prisma.user.delete({ where: { id: user.id } });
-        logger().error('Registration gating failed; new user removed', {
-          userId: user.id,
-          error: err instanceof Error ? err.message : 'unknown',
-        });
+      const gate = await this.verification.gateNewUser(user, { isFirstUser: userCount === 0 });
+      if (!gate) {
         return { success: false, error: 'Registration failed.' };
       }
 

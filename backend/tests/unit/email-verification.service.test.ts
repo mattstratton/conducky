@@ -1,6 +1,7 @@
 import { PrismaClient, inMemoryStore } from '@prisma/client';
 import crypto from 'crypto';
 import { emailService } from '../../src/utils/email';
+import logger from '../../src/config/logger';
 import {
   EmailVerificationService,
   hashToken,
@@ -431,5 +432,43 @@ describe('prisma mock additions used by the verification service', () => {
   it('socialAccount/notification deleteMany throw on unsupported filters', () => {
     expect(() => client.socialAccount.deleteMany({ where: { id: '1' } })).toThrow('unsupported filter');
     expect(() => client.notification.deleteMany({ where: { id: '1' } })).toThrow('unsupported filter');
+  });
+});
+
+describe('EmailVerificationService.gateNewUser', () => {
+  const user = { id: 'gate-1', email: 'g@example.com', name: 'G' } as any;
+  let prisma: any;
+  let svc: EmailVerificationService;
+  let errorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    store.users.length = 0;
+    store.users.push({ ...user });
+    prisma = new PrismaClient();
+    svc = new EmailVerificationService(prisma);
+    errorSpy = jest.spyOn(logger(), 'error').mockImplementation((() => logger()) as any);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('returns the onSignup result on success', async () => {
+    jest.spyOn(svc, 'onSignup').mockResolvedValue({ verificationRequired: true, emailSent: true });
+    expect(await svc.gateNewUser(user, { isFirstUser: false })).toEqual({ verificationRequired: true, emailSent: true });
+    expect(store.users).toHaveLength(1);
+  });
+
+  it('onSignup throws, delete succeeds: user removed, null returned, original error logged', async () => {
+    jest.spyOn(svc, 'onSignup').mockRejectedValue(new Error('write failed'));
+    expect(await svc.gateNewUser(user, { isFirstUser: false })).toBeNull();
+    expect(store.users).toHaveLength(0);
+    expect(errorSpy).toHaveBeenCalledWith(expect.any(String), { userId: 'gate-1', error: 'write failed' });
+  });
+
+  it('onSignup AND delete throw: original error logged first, userId logged, null, no rejection', async () => {
+    jest.spyOn(svc, 'onSignup').mockRejectedValue(new Error('write failed'));
+    jest.spyOn(prisma.user, 'delete').mockRejectedValue(new Error('delete failed'));
+    await expect(svc.gateNewUser(user, { isFirstUser: false })).resolves.toBeNull();
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy.mock.calls[0][1]).toEqual({ userId: 'gate-1', error: 'write failed' });
+    expect(errorSpy.mock.calls[1][1]).toEqual({ userId: 'gate-1', error: 'delete failed' });
   });
 });
