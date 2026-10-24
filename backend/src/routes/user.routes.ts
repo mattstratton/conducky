@@ -9,11 +9,13 @@ import multer from 'multer';
 import { fileUploadRateLimit } from '../middleware/rate-limit';
 import { validateUser, handleValidationErrors } from '../middleware/validation';
 import logger from '../config/logger';
+import { EmailVerificationService } from '../services/email-verification.service';
 
 const router = Router();
 const prisma = createPrismaClient();
 const userService = new UserService(prisma);
 const userController = new UserController(userService);
+const verification = new EmailVerificationService(prisma);
 
 // Multer setup for avatar uploads (memory storage, 2MB limit)
 const uploadAvatar = multer({
@@ -84,6 +86,32 @@ router.patch('/me/password', requireAuth, async (req: any, res: Response): Promi
       logger().error('Password change error:', error);
     }
     res.status(500).json({ error: 'Failed to change password.' });
+  }
+});
+
+// Existing account asks for a verification mail to its current address (never blocks anything)
+router.post('/me/verification-email', requireAuth, async (req: any, res: Response): Promise<void> => {
+  try {
+    const result = await verification.sendOwnVerification(req.user.id);
+    switch (result.status) {
+      case 'ok':
+        res.json({
+          message: result.emailSent ? 'Verification email sent.' : 'Verification email could not be sent.',
+          verificationEmailSent: result.emailSent,
+        });
+        return;
+      case 'already_verified':
+        res.json({ status: 'already_verified' });
+        return;
+      case 'cooldown':
+        res.status(429).json({ error: 'Please wait a minute before requesting another verification email.' });
+        return;
+      default:
+        res.status(400).json({ error: 'This account cannot request a verification email.' });
+    }
+  } catch (error: any) {
+    logger().error('Own verification email failed', { error: error instanceof Error ? error.message : 'unknown' });
+    res.status(500).json({ error: 'Failed to send verification email.' });
   }
 });
 

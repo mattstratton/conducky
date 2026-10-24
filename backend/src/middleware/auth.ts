@@ -61,6 +61,8 @@ export function testAuthMiddleware(req: any, res: Response, next: NextFunction):
       id: testUserId,
       email: `${testUserId}@example.com`,
       name: `User${testUserId}`,
+      // Test-only: lets a test supply passport-row fields (passwordHash, emailVerifiedAt, ...)
+      ...JSON.parse((req.headers['x-test-user-fields'] as string) || '{}'),
     };
   } else {
     // Default authenticated user

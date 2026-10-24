@@ -32,6 +32,10 @@ export type CorrectEmailResult =
   | { status: 'ok'; email: string; verificationEmailSent: boolean }
   | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' | 'cooldown' };
 
+export type OwnVerificationResult =
+  | { status: 'ok'; emailSent: boolean }
+  | { status: 'already_verified' | 'not_eligible' | 'cooldown' };
+
 // Valid bcrypt hash of a throwaway string: unknown accounts still pay for a compare (timing).
 const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
 const norm = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
@@ -294,6 +298,22 @@ export class EmailVerificationService {
       if (err === ROLLBACK || (err as { code?: string })?.code === 'P2003') return false;
       throw err;
     }
+  }
+
+  /**
+   * A signed-in password account asks for a verification mail to its CURRENT address (the nudge for
+   * accounts that predate verification). Re-reads the user; never blocks anything, so no gating involved.
+   */
+  async sendOwnVerification(userId: string): Promise<OwnVerificationResult> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { status: 'not_eligible' };
+    if (user.emailVerifiedAt) return { status: 'already_verified' };
+    // isConfigured last: the console provider logs the whole mail, token included.
+    if (!user.passwordHash || !(await this.mailer.isConfigured())) return { status: 'not_eligible' };
+    if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
+      return { status: 'cooldown' };
+    }
+    return { status: 'ok', emailSent: await this.sendVerification(user) };
   }
 
   /** Never reveals whether the address exists, is verified or is rate limited. */
