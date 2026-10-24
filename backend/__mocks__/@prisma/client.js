@@ -1807,7 +1807,7 @@ class PrismaClient {
       return { count: before - inMemoryStore.users.length };
     });
     this.user.updateMany = jest.fn(({ where = {}, data = {} } = {}) => {
-      const allowed = ['id', 'emailVerificationRequired', 'emailVerifiedAt'];
+      const allowed = ['id', 'email', 'emailVerificationRequired', 'emailVerifiedAt'];
       Object.keys(where).forEach((k) => {
         if (!allowed.includes(k)) throw new Error(`user.updateMany mock: unsupported filter "${k}"`);
       });

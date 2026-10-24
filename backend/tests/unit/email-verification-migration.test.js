@@ -19,3 +19,13 @@ describe('email verification migration', () => {
     expect(sql).toContain('UPDATE "User" SET "emailVerifiedAt" = NOW() WHERE "passwordHash" IS NULL');
   });
 });
+
+describe('email verification token email migration', () => {
+  test('adds a nullable email column to the token table', () => {
+    const dir = fs.readdirSync(migrationsDir).find((d) => d.endsWith('_email_verification_token_email'));
+    expect(dir).toBeDefined();
+    const sql = fs.readFileSync(path.join(migrationsDir, dir, 'migration.sql'), 'utf8').replace(/\s+/g, ' ');
+    expect(sql).toContain('ALTER TABLE "EmailVerificationToken" ADD COLUMN "email" TEXT');
+    expect(sql).not.toContain('NOT NULL');
+  });
+});

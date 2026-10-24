@@ -102,6 +102,7 @@ model EmailVerificationToken {
   userId       String
   tokenHash    String    @unique
   pendingEmail String?
+  email        String?
   expiresAt    DateTime
   usedAt       DateTime?
   createdAt    DateTime  @default(now())

@@ -40,6 +40,7 @@ const addToken = (raw, userId, over) =>
     id: `t-${raw}`,
     userId,
     tokenHash: hashToken(raw),
+    email: 'foo@example.com',
     pendingEmail: null,
     usedAt: null,
     expiresAt: new Date(Date.now() + HOUR),

@@ -74,7 +74,7 @@ describe('EmailVerificationService', () => {
   describe('issueToken', () => {
     it('stores only the hash, expires in about 24h', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       expect(raw).toMatch(/^[0-9a-f]{64}$/);
       expect(store.emailVerificationTokens).toHaveLength(1);
       const row = store.emailVerificationTokens[0];
@@ -86,16 +86,16 @@ describe('EmailVerificationService', () => {
     it('deletes earlier unused tokens for the user only', async () => {
       const a = addUser();
       const b = addUser();
-      await svc.issueToken(a.id);
-      await svc.issueToken(b.id);
-      await svc.issueToken(a.id);
+      await svc.issueToken(a.id, a.email);
+      await svc.issueToken(b.id, b.email);
+      await svc.issueToken(a.id, a.email);
       expect(store.emailVerificationTokens.filter((t: any) => t.userId === a.id)).toHaveLength(1);
       expect(store.emailVerificationTokens.filter((t: any) => t.userId === b.id)).toHaveLength(1);
     });
 
     it('stores pendingEmail when given', async () => {
       const u = addUser();
-      await svc.issueToken(u.id, 'new@example.com');
+      await svc.issueToken(u.id, u.email, 'new@example.com');
       expect(store.emailVerificationTokens[0].pendingEmail).toBe('new@example.com');
     });
   });
@@ -137,7 +137,7 @@ describe('EmailVerificationService', () => {
   describe('verifyToken', () => {
     it('verifies a valid token and audits', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       expect(await svc.verifyToken(raw)).toEqual({ status: 'verified', userId: u.id });
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(findUser(u.id).emailVerifiedAt).toBeInstanceOf(Date);
@@ -149,14 +149,14 @@ describe('EmailVerificationService', () => {
 
     it('second call after success is already_verified (double-click safe)', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       await svc.verifyToken(raw);
       expect(await svc.verifyToken(raw)).toEqual({ status: 'already_verified' });
     });
 
     it('expired token is invalid with no state change', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       store.emailVerificationTokens[0].expiresAt = new Date(Date.now() - 1000);
       expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
       expect(findUser(u.id).emailVerifiedAt).toBeNull();
@@ -165,7 +165,7 @@ describe('EmailVerificationService', () => {
 
     it('garbled and empty tokens are invalid', async () => {
       const u = addUser();
-      await svc.issueToken(u.id);
+      await svc.issueToken(u.id, u.email);
       expect(await svc.verifyToken('garbage')).toEqual({ status: 'invalid' });
       expect(await svc.verifyToken('')).toEqual({ status: 'invalid' });
       expect(findUser(u.id).emailVerifiedAt).toBeNull();
@@ -173,7 +173,7 @@ describe('EmailVerificationService', () => {
 
     it('token with pendingEmail fails closed with no state change', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id, 'new@example.com');
+      const raw = await svc.issueToken(u.id, u.email, 'new@example.com');
       expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
       expect(findUser(u.id).emailVerifiedAt).toBeNull();
       expect(store.emailVerificationTokens[0].usedAt).toBeNull();
@@ -181,23 +181,57 @@ describe('EmailVerificationService', () => {
 
     it('used and expired token is invalid, not already_verified', async () => {
       const u = addUser({ emailVerifiedAt: new Date() });
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       Object.assign(store.emailVerificationTokens[0], { usedAt: new Date(), expiresAt: new Date(Date.now() - 1000) });
       expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
     });
 
     it('a failing user update inside the transaction propagates the error', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
-      prisma.user.update.mockImplementationOnce(() => {
+      const raw = await svc.issueToken(u.id, u.email);
+      prisma.user.updateMany.mockImplementationOnce(() => {
         throw new Error('db down');
       });
       await expect(svc.verifyToken(raw)).rejects.toThrow('db down');
     });
 
+    it('stores the lowercased destination on the token', async () => {
+      const u = addUser();
+      await svc.issueToken(u.id, ' Mixed@Example.COM ');
+      expect(store.emailVerificationTokens[0].email).toBe('mixed@example.com');
+    });
+
+    it.each([[null], ['other@example.com']])(
+      'token whose email is %p (not the current address) is invalid with no state change',
+      async (bound) => {
+        const u = addUser();
+        const raw = await svc.issueToken(u.id, u.email);
+        store.emailVerificationTokens[0].email = bound;
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).emailVerifiedAt).toBeNull();
+        expect(store.emailVerificationTokens[0].usedAt).toBeNull();
+      }
+    );
+
+    it('compares the bound address case-insensitively', async () => {
+      const u = addUser({ email: 'Mixed@Example.com' });
+      const raw = await svc.issueToken(u.id, 'MIXED@example.com');
+      expect((await svc.verifyToken(raw)).status).toBe('verified');
+    });
+
+    it('a token mailed to a stale address cannot verify after the address changed (same-address race)', async () => {
+      const u = addUser({ email: 'a@example.com' });
+      const stale = { ...findUser(u.id) }; // snapshot taken before the correction
+      store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, email: 'victim@example.com' } : x));
+      await svc.sendVerification(stale as any);
+      expect(send.mock.calls[0][0]).toBe('a@example.com');
+      expect(await svc.verifyToken(lastRawToken())).toEqual({ status: 'invalid' });
+      expect(findUser(u.id).emailVerifiedAt).toBeNull();
+    });
+
     it('used token for a user who is not verified is invalid', async () => {
       const u = addUser();
-      const raw = await svc.issueToken(u.id);
+      const raw = await svc.issueToken(u.id, u.email);
       store.emailVerificationTokens[0].usedAt = new Date();
       expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
     });
@@ -493,7 +527,7 @@ describe('EmailVerificationService.correctEmail', () => {
       verificationSentAt: null,
     });
     store.emailVerificationTokens.push({
-      id: 'old', userId: 'cx-1', tokenHash: hashToken('old'), pendingEmail: null, usedAt: null,
+      id: 'old', userId: 'cx-1', tokenHash: hashToken('old'), email: 'a@example.com', pendingEmail: null, usedAt: null,
       expiresAt: new Date(Date.now() + HOUR),
     });
     prisma = new PrismaClient();
@@ -522,6 +556,31 @@ describe('EmailVerificationService.correctEmail', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  test('old token is revoked by the transaction even when the later issuance fails', async () => {
+    jest.spyOn(svc, 'sendVerification').mockResolvedValue(false);
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r.status).toBe('ok');
+    expect(store.emailVerificationTokens.find((t: any) => t.id === 'old')).toBeUndefined();
+    expect(await svc.verifyToken('old')).toEqual({ status: 'invalid' });
+  });
+
+  test('gating is re-checked on emailVerificationRequired too (flipped mid-request)', async () => {
+    (emailService.isConfigured as jest.Mock).mockImplementation(async () => {
+      find('cx-1').emailVerificationRequired = false;
+      return true;
+    });
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r.status).toBe('not_eligible');
+    expect(find('cx-1').email).toBe('a@example.com');
+  });
+
+  test('same-address resend binds its token to the address it mails', async () => {
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'A@example.com' });
+    expect(r).toEqual({ status: 'ok', email: 'a@example.com', verificationEmailSent: true });
+    expect(send.mock.calls[0][0]).toBe('a@example.com');
+    expect(store.emailVerificationTokens.map((t: any) => t.email)).toEqual(['a@example.com']);
+  });
+
   test('a unique violation on the update maps to taken', async () => {
     jest.spyOn(prisma.user, 'updateMany').mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
     const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
@@ -539,6 +598,6 @@ describe('EmailVerificationService.correctEmail', () => {
 describe('user.updateMany mock', () => {
   test('throws on unsupported filters', () => {
     const prisma: any = new PrismaClient();
-    expect(() => prisma.user.updateMany({ where: { email: 'x' }, data: {} })).toThrow(/unsupported filter/);
+    expect(() => prisma.user.updateMany({ where: { name: 'x' }, data: {} })).toThrow(/unsupported filter/);
   });
 });

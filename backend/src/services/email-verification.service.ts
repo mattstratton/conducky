@@ -42,14 +42,18 @@ export class EmailVerificationService {
     private mailer = emailService
   ) {}
 
-  /** Replaces the user's earlier unused tokens; returns the raw token (only its hash is stored). */
-  async issueToken(userId: string, pendingEmail?: string): Promise<string> {
+  /**
+   * Replaces the user's earlier unused tokens; returns the raw token (only its hash is stored).
+   * `email` is the address this token is mailed to; verifyToken only honours it while it is still the user's address.
+   */
+  async issueToken(userId: string, email: string, pendingEmail?: string): Promise<string> {
     await this.prisma.emailVerificationToken.deleteMany({ where: { userId, usedAt: null } });
     const raw = crypto.randomBytes(32).toString('hex');
     await this.prisma.emailVerificationToken.create({
       data: {
         userId,
         tokenHash: hashToken(raw),
+        email: norm(email),
         pendingEmail: pendingEmail ?? null,
         expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
       },
@@ -62,9 +66,11 @@ export class EmailVerificationService {
     pendingEmail?: string
   ): Promise<boolean> {
     try {
-      const raw = await this.issueToken(user.id, pendingEmail);
+      // ONE destination for both the token binding and the recipient, so they cannot diverge.
+      const to = norm(pendingEmail ?? user.email);
+      const raw = await this.issueToken(user.id, to, pendingEmail);
       const result = await this.mailer.sendVerificationEmail(
-        pendingEmail ?? user.email,
+        to,
         user.name ?? '',
         raw,
         { emailChange: !!pendingEmail }
@@ -93,18 +99,32 @@ export class EmailVerificationService {
 
     // Claim + verify in one transaction: a concurrent duplicate waits on the winner's row lock,
     // then sees the committed emailVerifiedAt, and a failed user update can't burn the token.
-    const outcome = await this.prisma.$transaction(async (tx) => {
-      const claimed = await tx.emailVerificationToken.updateMany({
-        where: { id: token.id, usedAt: null },
-        data: { usedAt: new Date() },
-      });
-      if (claimed.count === 0) {
+    // The token only counts for the address it was mailed to (token.email), which must still be the
+    // user's current address; the conditional updateMany makes that check atomic with the update.
+    const ROLLBACK = new Error('address changed since the token was mailed');
+    let outcome: 'verified' | 'already_verified' | 'invalid';
+    try {
+      outcome = await this.prisma.$transaction(async (tx) => {
         const u = await tx.user.findUnique({ where: { id: token.userId } });
-        return u?.emailVerifiedAt ? ('already_verified' as const) : ('invalid' as const);
-      }
-      await tx.user.update({ where: { id: token.userId }, data: { emailVerifiedAt: new Date() } });
-      return 'verified' as const;
-    });
+        // A token for a stale (or unbound) address is rejected before it is claimed.
+        if (!token.usedAt && (!u || !token.email || norm(token.email) !== norm(u.email))) return 'invalid' as const;
+        const claimed = await tx.emailVerificationToken.updateMany({
+          where: { id: token.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        if (claimed.count === 0) return u?.emailVerifiedAt ? ('already_verified' as const) : ('invalid' as const);
+        if (!u) throw ROLLBACK;
+        const { count } = await tx.user.updateMany({
+          where: { id: token.userId, email: u.email },
+          data: { emailVerifiedAt: new Date() },
+        });
+        if (count !== 1) throw ROLLBACK;
+        return 'verified' as const;
+      });
+    } catch (err) {
+      if (err === ROLLBACK) return { status: 'invalid' };
+      throw err;
+    }
     if (outcome !== 'verified') return { status: outcome };
     await logAudit({ action: 'email_verified', targetType: 'User', targetId: token.userId, userId: token.userId });
     return { status: 'verified', userId: token.userId };
