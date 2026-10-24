@@ -250,9 +250,20 @@ function Login() {
             <CheckYourEmail
               email={email}
               password={password}
-              emailSent
+              headingLevel="h1"
               onEmailChanged={setEmail}
             />
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-4 h-11 w-full"
+              onClick={() => {
+                setNeedsVerification(false);
+                setPassword('');
+              }}
+            >
+              Back to sign in
+            </Button>
           </CardContent>
         </Card>
       </div>

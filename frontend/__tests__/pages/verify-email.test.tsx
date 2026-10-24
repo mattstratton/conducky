@@ -1,7 +1,9 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import VerifyEmailPage from '../../pages/verify-email';
+
+jest.mock('next/head', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 
 let mockQuery: Record<string, unknown> = {};
 let mockReady = true;
@@ -83,5 +85,62 @@ describe('verify-email page', () => {
     render(<React.StrictMode><VerifyEmailPage /></React.StrictMode>);
     await screen.findByText(/is verified/i);
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats an array-valued token as invalid without calling the API', async () => {
+    mockQuery = { token: ['a', 'b'] };
+    render(<VerifyEmailPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/invalid or has expired/i);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('calls the API exactly once when isReady flips from false to true', async () => {
+    mockReady = false;
+    reply(200, { status: 'verified' });
+    const { rerender } = render(<VerifyEmailPage />);
+    expect(mockFetch).not.toHaveBeenCalled();
+    mockReady = true;
+    rerender(<VerifyEmailPage />);
+    await screen.findByText(/is verified/i);
+    rerender(<VerifyEmailPage />);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses a single persistent status region', async () => {
+    reply(200, { status: 'verified' });
+    render(<VerifyEmailPage />);
+    const region = screen.getByRole('status');
+    expect(region).toHaveTextContent(/verifying/i);
+    await waitFor(() => expect(region).toHaveTextContent(/is verified/i));
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getAllByRole('status')[0]).toBe(region);
+  });
+
+  it('offers Try again after a network error and re-runs the call', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('down'));
+    render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    reply(200, { status: 'verified' });
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await screen.findByText(/is verified/i);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('offers Try again on 429 but not on an invalid link', async () => {
+    reply(429, {});
+    const { unmount } = render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    unmount();
+    reply(400, {});
+    render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+  });
+
+  it('sets a document title per state', async () => {
+    reply(200, { status: 'verified' });
+    render(<VerifyEmailPage />);
+    await waitFor(() => expect(document.title).toBe('Email verified'));
   });
 });

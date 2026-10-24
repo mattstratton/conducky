@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Head from 'next/head';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
@@ -21,6 +23,7 @@ const ERROR_COPY: Record<string, string> = {
 export default function VerifyEmailPage() {
   const router = useRouter();
   const [state, setState] = useState<State>('verifying');
+  const [attempt, setAttempt] = useState(0);
   const calledFor = useRef<string | null>(null);
   const token = typeof router.query.token === 'string' ? router.query.token : '';
 
@@ -31,8 +34,9 @@ export default function VerifyEmailPage() {
       return;
     }
     // Guard against strict-mode double effects: one API call per token.
-    if (calledFor.current === token) return;
-    calledFor.current = token;
+    const key = `${token}:${attempt}`;
+    if (calledFor.current === key) return;
+    calledFor.current = key;
     (async () => {
       try {
         const res = await fetch(
@@ -52,29 +56,45 @@ export default function VerifyEmailPage() {
         setState('network');
       }
     })();
-  }, [router.isReady, token]);
+  }, [router.isReady, token, attempt]);
 
   const isSuccess = state in SUCCESS_COPY;
+  const canRetry = state === 'rate_limited' || state === 'network';
+  const title = isSuccess ? 'Email verified' : state === 'verifying' ? 'Verifying your email' : 'Verification link problem';
+  const statusText = state === 'verifying' ? 'Verifying your email address...' : isSuccess ? SUCCESS_COPY[state] : '';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <Head>
+        <title>{title}</title>
+      </Head>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
           <h1 className="text-2xl font-semibold tracking-tight text-center">Email verification</h1>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {state === 'verifying' && (
-            <p role="status" className="text-sm text-center">Verifying your email address...</p>
-          )}
-          {isSuccess && (
-            <p role="status" className="text-sm font-medium text-center text-green-700 dark:text-green-400">
-              {SUCCESS_COPY[state]}
-            </p>
-          )}
+          <div
+            role="status"
+            className={isSuccess ? 'text-sm font-medium text-center text-green-700 dark:text-green-400' : 'text-sm text-center'}
+          >
+            {statusText}
+          </div>
           {ERROR_COPY[state] && (
             <Alert variant="destructive">
               <AlertDescription>{ERROR_COPY[state]}</AlertDescription>
             </Alert>
+          )}
+          {canRetry && (
+            <Button
+              type="button"
+              className="h-11"
+              onClick={() => {
+                setState('verifying');
+                setAttempt((n) => n + 1);
+              }}
+            >
+              Try again
+            </Button>
           )}
           {state !== 'verifying' && (
             <Link

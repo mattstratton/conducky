@@ -282,6 +282,7 @@ export default function Register() {
               email={pendingVerification.email}
               password={formData.password}
               emailSent={pendingVerification.emailSent}
+              headingLevel="h1"
               onEmailChanged={(email) => setPendingVerification((p) => (p ? { ...p, email } : p))}
             />
           </CardContent>

@@ -53,6 +53,7 @@ describe('CheckYourEmail', () => {
     await userEvent.click(screen.getByRole('button', { name: /change address/i }));
     await waitFor(() => expect(onEmailChanged).toHaveBeenCalledWith('b@example.com'));
     expect(screen.getByText(/We sent a verification link to/i)).toHaveTextContent('b@example.com');
+    expect(screen.getByRole('heading', { name: /check your email/i })).toHaveFocus();
     const [url, init] = mockFetch.mock.calls[0];
     expect(url).toMatch(/\/api\/auth\/correct-email$/);
     expect(JSON.parse(init.body)).toEqual({ email: 'a@example.com', password: PASSWORD, newEmail: 'b@example.com' });
@@ -88,5 +89,106 @@ describe('CheckYourEmail', () => {
     await userEvent.click(screen.getByRole('button', { name: /change address/i }));
     await screen.findByRole('alert');
     expect(container.textContent).not.toContain(PASSWORD);
+  });
+
+  const correct = async (value = 'b@example.com') => {
+    await userEvent.type(screen.getByLabelText(/wrong address/i), value);
+    await userEvent.click(screen.getByRole('button', { name: /change address/i }));
+  };
+
+  it('has the polite live region in the DOM before any message and it is not display:none', () => {
+    setup();
+    const region = document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(region).not.toBeNull();
+    expect(region).toBeEmptyDOMElement();
+    expect(region.className).not.toMatch(/hidden/);
+  });
+
+  it('shows the server-returned address, not the typed one', async () => {
+    reply(200, { email: 'canonical@example.com', verificationEmailSent: true });
+    setup();
+    await correct('Typed@Example.com');
+    await waitFor(() =>
+      expect(screen.getByText(/We sent a verification link to/i)).toHaveTextContent('canonical@example.com')
+    );
+  });
+
+  it('shows could-not-send copy when the correction response says no mail was sent', async () => {
+    reply(200, { email: 'b@example.com', verificationEmailSent: false });
+    setup();
+    await correct();
+    expect(await screen.findByText(/We could not send the email. Use Resend to try again./i)).toBeInTheDocument();
+    expect(screen.queryByText(/We sent a verification link to/i)).not.toBeInTheDocument();
+  });
+
+  it('resend uses the new address after a correction', async () => {
+    reply(200, { email: 'b@example.com', verificationEmailSent: true });
+    setup();
+    await correct();
+    await screen.findByText(/We sent a verification link to/i);
+    reply(200, { message: 'ok' });
+    await userEvent.click(screen.getByRole('button', { name: /resend/i }));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toEqual({ email: 'b@example.com' });
+  });
+
+  it('ignores a second resend click while busy and announces the busy text', async () => {
+    let resolve: (v: unknown) => void = () => {};
+    mockFetch.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+    setup();
+    const btn = screen.getByRole('button', { name: /resend/i });
+    await userEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    expect(btn).not.toBeDisabled();
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(/sending/i);
+    await userEvent.click(btn);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    resolve({ ok: true, status: 200, json: async () => ({}) });
+    await screen.findByText('If this address needs verification, a new link is on its way.');
+  });
+
+  it('blocks a double submit of the correction form while busy', async () => {
+    let resolve: (v: unknown) => void = () => {};
+    mockFetch.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+    setup();
+    await userEvent.type(screen.getByLabelText(/wrong address/i), 'b@example.com');
+    await userEvent.type(screen.getByLabelText(/wrong address/i), '{enter}{enter}');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(/changing/i);
+    resolve({ ok: true, status: 200, json: async () => ({ email: 'b@example.com', verificationEmailSent: true }) });
+    await waitFor(() => expect(screen.getByRole('heading', { name: /check your email/i })).toHaveFocus());
+  });
+
+  it('links a correct-email error to the input', async () => {
+    reply(409, { error: 'Email already registered.' });
+    setup();
+    await correct();
+    const alert = await screen.findByRole('alert');
+    const input = screen.getByLabelText(/wrong address/i);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    const id = input.getAttribute('aria-describedby') as string;
+    expect(alert.querySelector(`#${id}`)).not.toBeNull();
+  });
+
+  it('does not mark the input invalid for a resend error', async () => {
+    reply(429, {});
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /resend/i }));
+    await screen.findByRole('alert');
+    expect(screen.getByLabelText(/wrong address/i)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('uses neutral copy when emailSent is not provided', () => {
+    render(<CheckYourEmail email="a@example.com" password={PASSWORD} />);
+    expect(screen.getByText(/We sent a link to/i)).toHaveTextContent('a@example.com');
+    expect(screen.queryByText(/We could not send/i)).not.toBeInTheDocument();
+  });
+
+  it('supports the heading level prop', () => {
+    const { unmount } = setup();
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
+    unmount();
+    setup({ headingLevel: 'h1' });
+    expect(screen.getByRole('heading', { level: 1, name: /check your email/i })).toBeInTheDocument();
   });
 });

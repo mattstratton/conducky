@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Head from 'next/head';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,116 +9,164 @@ interface CheckYourEmailProps {
   email: string;
   // Only used to authorize correct-email; never rendered or stored beyond this prop.
   password: string;
-  emailSent: boolean;
+  // true: we sent a link; false: sending failed; undefined: unknown (e.g. from sign-in)
+  emailSent?: boolean;
   onEmailChanged?: (email: string) => void;
+  headingLevel?: 'h1' | 'h2';
+}
+
+interface ApiData {
+  error?: string;
+  email?: string;
+  verificationEmailSent?: boolean;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 const RATE_LIMITED = 'Too many attempts. Please wait a few minutes and try again.';
+const ERROR_ID = 'check-your-email-error';
 
-async function post(path: string, body: unknown): Promise<{ status: number; data: { error?: string } }> {
+async function post(path: string, body: unknown): Promise<{ status: number; data: ApiData }> {
   const res = await fetch(`${API}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(body),
   });
-  const data = await res.json().catch(() => ({}));
+  const data: ApiData = await res.json().catch(() => ({}));
   return { status: res.status, data };
 }
 
-export function CheckYourEmail({ email, password, emailSent, onEmailChanged }: CheckYourEmailProps) {
+export function CheckYourEmail({
+  email,
+  password,
+  emailSent,
+  onEmailChanged,
+  headingLevel = 'h2',
+}: CheckYourEmailProps) {
   const [shownEmail, setShownEmail] = useState(email);
-  const [sent, setSent] = useState(emailSent);
+  const [sent, setSent] = useState<boolean | undefined>(emailSent);
   const [newEmail, setNewEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState<{ text: string; source: 'resend' | 'correct' } | null>(null);
   const [busy, setBusy] = useState<'resend' | 'correct' | null>(null);
+  const busyRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const Heading = headingLevel;
 
   useEffect(() => {
     headingRef.current?.focus();
   }, []);
 
-  const run = async (kind: 'resend' | 'correct', fn: () => Promise<void>) => {
+  const run = async (kind: 'resend' | 'correct', busyText: string, fn: () => Promise<void>) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(kind);
-    setMessage('');
-    setError('');
+    setStatus(busyText);
+    setError(null);
     try {
       await fn();
     } catch {
-      setError('Network error. Please try again.');
+      setStatus('');
+      setError({ text: 'Network error. Please try again.', source: kind });
     } finally {
+      busyRef.current = false;
       setBusy(null);
     }
   };
 
   const handleResend = () =>
-    run('resend', async () => {
-      const { status } = await post('/api/auth/resend-verification', { email: shownEmail });
-      if (status === 429) setError(RATE_LIMITED);
-      else if (status >= 200 && status < 300) setMessage('If this address needs verification, a new link is on its way.');
-      else setError('Something went wrong. Please try again.');
+    run('resend', 'Sending…', async () => {
+      const { status: code } = await post('/api/auth/resend-verification', { email: shownEmail });
+      if (code === 429) {
+        setStatus('');
+        setError({ text: RATE_LIMITED, source: 'resend' });
+      } else if (code >= 200 && code < 300) {
+        setStatus('If this address needs verification, a new link is on its way.');
+      } else {
+        setStatus('');
+        setError({ text: 'Something went wrong. Please try again.', source: 'resend' });
+      }
     });
 
   const handleCorrect = (e: React.FormEvent) => {
     e.preventDefault();
-    return run('correct', async () => {
-      const { status, data } = await post('/api/auth/correct-email', {
+    if (!newEmail.trim()) return;
+    return run('correct', 'Changing…', async () => {
+      const typed = newEmail.trim();
+      const { status: code, data } = await post('/api/auth/correct-email', {
         email: shownEmail,
         password,
-        newEmail: newEmail.trim(),
+        newEmail: typed,
       });
-      if (status === 429) {
-        setError(RATE_LIMITED);
-      } else if (status >= 200 && status < 300) {
-        const changed = newEmail.trim();
-        setShownEmail(changed);
-        setSent(true);
+      setStatus('');
+      if (code === 429) {
+        setError({ text: RATE_LIMITED, source: 'correct' });
+      } else if (code >= 200 && code < 300) {
+        const confirmed = data.email ?? typed;
+        setShownEmail(confirmed);
+        setSent(data.verificationEmailSent === true);
         setNewEmail('');
-        setMessage(`We updated your address to ${changed}. If it needs verification, a new link is on its way.`);
-        onEmailChanged?.(changed);
+        setStatus('Email address changed.');
+        onEmailChanged?.(confirmed);
+        headingRef.current?.focus();
       } else {
-        setError(data.error || 'We could not change the address. Please try again.');
+        setError({ text: data.error || 'We could not change the address. Please try again.', source: 'correct' });
       }
     });
   };
 
+  const correctError = error?.source === 'correct';
+
   return (
     <div className="grid gap-4">
-      <h2
+      <Head>
+        <title>Check your email</title>
+      </Head>
+      <Heading
         ref={headingRef}
         tabIndex={-1}
-        className="text-2xl font-semibold tracking-tight text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+        className="text-2xl font-semibold tracking-tight text-center rounded focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Check your email
-      </h2>
+      </Heading>
       <p className="text-sm text-center">
-        {sent ? (
+        {sent === true && (
           <>
             We sent a verification link to <strong className="break-all">{shownEmail}</strong>
           </>
-        ) : (
-          'We could not send the email. Use Resend to try again.'
+        )}
+        {sent === false && 'We could not send the email. Use Resend to try again.'}
+        {sent === undefined && (
+          <>
+            Your account needs its email address verified. We sent a link to{' '}
+            <strong className="break-all">{shownEmail}</strong> when you signed up; use Resend if you need a new
+            one.
+          </>
         )}
       </p>
+      {sent === false && (
+        <p className="text-sm text-center text-muted-foreground break-all">Address: {shownEmail}</p>
+      )}
       <p className="text-sm text-center text-muted-foreground">
         Open the link to finish setting up your account, then sign in.
       </p>
 
-      <div aria-live="polite" className="empty:hidden">
-        {message && (
-          <p className="text-sm font-medium text-center text-green-700 dark:text-green-400">{message}</p>
-        )}
+      <div aria-live="polite" className="min-h-0 text-sm font-medium text-center text-green-700 dark:text-green-400">
+        {status}
       </div>
       {error && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription id={ERROR_ID}>{error.text}</AlertDescription>
         </Alert>
       )}
 
-      <Button type="button" className="h-11 w-full" onClick={handleResend} disabled={busy !== null}>
-        {busy === 'resend' ? 'Sending...' : 'Resend verification email'}
+      <Button
+        type="button"
+        className="h-11 w-full"
+        onClick={handleResend}
+        aria-disabled={busy !== null}
+      >
+        {busy === 'resend' ? 'Sending…' : 'Resend verification email'}
       </Button>
 
       <form onSubmit={handleCorrect} className="grid gap-2">
@@ -131,9 +180,16 @@ export function CheckYourEmail({ email, password, emailSent, onEmailChanged }: C
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
           placeholder="you@example.com"
+          aria-invalid={correctError ? true : undefined}
+          aria-describedby={correctError ? ERROR_ID : undefined}
         />
-        <Button type="submit" variant="outline" className="h-11 w-full" disabled={busy !== null || !newEmail.trim()}>
-          {busy === 'correct' ? 'Changing...' : 'Change address'}
+        <Button
+          type="submit"
+          variant="outline"
+          className="h-11 w-full"
+          aria-disabled={busy !== null || !newEmail.trim()}
+        >
+          {busy === 'correct' ? 'Changing…' : 'Change address'}
         </Button>
       </form>
     </div>

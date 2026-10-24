@@ -68,8 +68,17 @@ describe('Login page', () => {
     it('renders CheckYourEmail for EMAIL_NOT_VERIFIED instead of the generic error', async () => {
       await signIn({ status: 401, body: { error: 'Please verify your email address to sign in.', code: 'EMAIL_NOT_VERIFIED' } });
       expect(await screen.findByRole('heading', { name: /check your email/i })).toBeInTheDocument();
-      expect(screen.getByText(/We sent a verification link to/i)).toHaveTextContent('a@example.com');
+      expect(screen.getByRole('heading', { level: 1, name: /check your email/i })).toBeInTheDocument();
+      expect(screen.getByText(/We sent a link to/i)).toHaveTextContent('a@example.com');
+      expect(screen.queryByText(/We sent a verification link to/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/Please verify your email address to sign in/i)).not.toBeInTheDocument();
+    });
+
+    it('Back to sign in returns to the form with the password cleared', async () => {
+      await signIn({ status: 401, body: { error: 'x', code: 'EMAIL_NOT_VERIFIED' } });
+      fireEvent.click(await screen.findByRole('button', { name: /back to sign in/i }));
+      expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/^password$/i, { selector: 'input' })).toHaveValue('');
     });
 
     it('still shows the generic error for a wrong password', async () => {
