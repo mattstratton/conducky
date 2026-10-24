@@ -14,6 +14,7 @@ export function UnverifiedEmailBanner() {
   const { user } = useContext(UserContext);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [errorIsInfo, setErrorIsInfo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState(false);
   const busyRef = useRef(false);
@@ -29,6 +30,7 @@ export function UnverifiedEmailBanner() {
     busyRef.current = true;
     setBusy(true);
     setError('');
+    setErrorIsInfo(false);
     setStatus('Sending…');
     try {
       const res = await fetch(`${API}/api/users/me/verification-email`, { method: 'POST', credentials: 'include' });
@@ -46,7 +48,10 @@ export function UnverifiedEmailBanner() {
         );
       } else {
         setStatus('');
-        setError(typeof data.error === 'string' && data.error ? data.error : 'Something went wrong. Please try again.');
+        const message = typeof data.error === 'string' && data.error ? data.error : 'Something went wrong. Please try again.';
+        // 409 = a change to a new address is pending: informational, and the link went to that address.
+        setErrorIsInfo(res.status === 409);
+        setError(res.status === 409 ? `${message} Check the inbox of your new address.` : message);
       }
     } catch {
       setStatus('');
@@ -62,7 +67,7 @@ export function UnverifiedEmailBanner() {
     // aria-atomic=false: only the changed text is announced, not the whole banner.
     <div role="status" aria-atomic="false">
       {verified && (
-        <p ref={verifiedRef} tabIndex={-1} className="mx-4 mt-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+        <p ref={verifiedRef} tabIndex={-1} className="mx-4 mt-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background">
           {status}
         </p>
       )}
@@ -79,7 +84,13 @@ export function UnverifiedEmailBanner() {
             </p>
             {status && <p className="font-medium">{status}</p>}
             {error && (
-              <p className="font-medium text-red-800 dark:text-red-300">
+              <p
+                className={
+                  errorIsInfo
+                    ? 'font-medium text-blue-900 dark:text-blue-100'
+                    : 'font-medium text-red-800 dark:text-red-300'
+                }
+              >
                 {error}
               </p>
             )}
@@ -88,7 +99,7 @@ export function UnverifiedEmailBanner() {
                 type="button"
                 onClick={send}
                 aria-disabled={busy}
-                className="min-h-[44px] focus-visible:ring-2 focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                className="min-h-[44px] focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-background aria-disabled:pointer-events-none aria-disabled:opacity-50"
               >
                 Send verification email
               </Button>

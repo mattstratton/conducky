@@ -112,15 +112,38 @@ describe('UnverifiedEmailBanner', () => {
   });
 
   it('errors are carried by the polite wrapper only (no nested alert), as plain text', async () => {
-    reply(409, { error: 'Pending <b>change</b>' });
+    reply(500, { error: 'Pending <b>change</b>' });
     renderWith(U);
     await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
     const msg = await screen.findByText('Pending <b>change</b>');
     expect(msg.closest('[role="status"]')).not.toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(msg).toHaveClass('text-red-800');
     mockFetch.mockRejectedValueOnce(new Error('down'));
     await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
     await waitFor(() => expect(screen.getByText('Network error. Please try again.')).toBeInTheDocument());
     expect(screen.queryByText('Pending <b>change</b>')).toBeNull();
+  });
+
+  it('409 (pending email change) is informational: blue palette, inbox hint, one polite announcement', async () => {
+    reply(409, { error: 'An email change is already pending.' });
+    renderWith(U);
+    await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
+    const msg = await screen.findByText('An email change is already pending. Check the inbox of your new address.');
+    expect(msg).toHaveClass('text-blue-900');
+    expect(msg.className).not.toMatch(/red/);
+    expect(msg.closest('[role="status"]')).toBe(screen.getByRole('status'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+  });
+
+  it('gives the programmatic focus ring a colour and offset on the message and the button', async () => {
+    reply(200, { status: 'already_verified' });
+    renderWith(U);
+    const btn = screen.getByRole('button', { name: 'Send verification email' });
+    expect(btn).toHaveClass('focus-visible:ring-ring', 'ring-offset-background');
+    await userEvent.click(btn);
+    const msg = await screen.findByText('Your email is already verified.');
+    expect(msg).toHaveClass('focus-visible:ring-ring', 'ring-offset-background');
   });
 });
