@@ -13,8 +13,11 @@ This document describes the main data models used in the system, based on the Pr
 - **email**: Unique email address
 - **name**: Optional display name
 - **passwordHash**: Hashed password (nullable for social login users)
+- **emailVerifiedAt**: Timestamp when the address was verified (null when unverified)
+- **emailVerificationRequired**: Boolean, default false. The "gated" flag: true only for signups made while email was configured. Gated accounts cannot sign in until verified and are deleted if they never verify. Existing accounts are never gated
+- **verificationSentAt**: Timestamp of the last verification email that was sent successfully (the 7 day purge and the 1 hour replacement window count from it)
 - **createdAt, updatedAt**: Timestamps
-- **Relations**: userRoles, grantedRoles, incidents, auditLogs, reportComments, relatedFilesUploaded, assignedIncidents, avatar, passwordResetTokens, notifications, socialAccounts, notificationSettings, createdOrganizations, createdOrgInvites
+- **Relations**: userRoles, grantedRoles, incidents, auditLogs, reportComments, relatedFilesUploaded, assignedIncidents, avatar, passwordResetTokens, emailVerificationTokens, notifications, socialAccounts, notificationSettings, createdOrganizations, createdOrgInvites
 
 ## Event
 
@@ -195,7 +198,17 @@ Represents a file uploaded as a related file for an incident.
 - **createdAt**: Timestamp
 - **Relations**: user
 
-## Notification
+## EmailVerificationToken
+
+- **id**: UUID, primary key
+- **userId**: User reference (cascade delete)
+- **tokenHash**: Unique hash of the token; the raw token is only ever in the email
+- **email**: The address the link was mailed to. A link only works for that address
+- **pendingEmail**: For email change links, the new address to apply on verification (null for signup and account verification links)
+- **expiresAt**: Token expiration date (24 hours after issue)
+- **usedAt**: When the token was used (null while unused)
+- **createdAt**: Timestamp
+- **Relations**: user
 
 - **id**: UUID, primary key
 - **userId**: User reference

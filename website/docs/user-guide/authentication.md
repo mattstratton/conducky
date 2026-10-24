@@ -21,7 +21,9 @@ New users can create accounts directly through the registration page:
    - **Confirm Password**: Must match your password
 3. Accept the terms of service (if required)
 4. Click "Create Account"
-5. You'll be logged in automatically after successful registration
+5. What happens next depends on whether your Conducky instance has email set up:
+   - **Email is set up**: You'll be asked to check your email. Click the verification link to confirm your address, then sign in. See [Verifying your email address](#verifying-your-email-address).
+   - **Email is not set up**: Your account is created without verification and you can sign in right away.
 
 #### Password Requirements
 Your password must meet the following security requirements:
@@ -35,6 +37,34 @@ Your password must meet the following security requirements:
 - **First User**: The first person to register becomes a System Admin automatically
 - **Subsequent Users**: Need to be invited to events to access functionality
 - **Email Uniqueness**: Each email address can only be used for one account
+- **First Account**: The first account on an instance is verified automatically, so setting up a new instance never locks you out
+
+### Verifying your email address
+
+When the instance has email configured, new email/password accounts (including accounts created through an invitation link) must verify their email address before they can sign in.
+
+#### Verification Steps
+1. After you register, Conducky emails a verification link to the address you used
+2. Click the link. It opens a page confirming your email is verified
+3. Sign in with your email and password
+
+#### If the email doesn't arrive
+- Check your spam folder
+- Try to sign in with your email and password. The sign-in page shows "check your email" with a **Resend** button
+- Typed the wrong address? Use **Wrong address?** on that screen to fix the typo (you'll need your password) and the verification email is sent to the corrected address
+
+#### Verification link details
+- **Expires after 24 hours**: Request a new one with **Resend**
+- **Single-use**: Each link works once
+- **Address-bound**: A link only works for the address it was sent to
+- **Unverified accounts are deleted after 7 days**: If you never verify, the account is removed and you can register again. The 7 days count from the last verification email that was sent
+- **Reusing a pending address**: If someone started a signup with an address that is still waiting for verification, a new signup with the same address replaces the pending one only if its last verification email is more than an hour old. Otherwise you'll see "Email already registered."
+
+#### Signing in with Google or GitHub
+Accounts created with Google or GitHub are verified from the start, but only when the provider reports your email address as verified. If it doesn't, sign-in is rejected. If the provider's email matches an existing account that wasn't verified yet, signing in with the provider links to that account and marks it verified. If that account was a new signup still waiting for verification, its password is removed; use **Forgot Password** if you want to set one.
+
+#### Accounts created before verification existed
+You are never locked out. If you have an email/password account that isn't verified and the instance has email set up, you'll see a banner with a **Send verification email** button. You can keep using Conducky without verifying. You can request at most one email per minute. Accounts that are verified, or that only use Google or GitHub, never see the banner.
 
 ### Invitation-Based Registration
 
@@ -74,6 +104,7 @@ Most users join Conducky through event invitations:
 - **Remember Me**: Your session persists across browser sessions
 - **Auto-redirect**: After login, you're sent to the most appropriate page
 - **Error Handling**: Clear messages for invalid credentials or account issues
+- **Unverified email**: If your new account hasn't verified its email yet, sign-in shows "check your email" instead of signing you in
 
 ### Session Management
 

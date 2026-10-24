@@ -61,7 +61,7 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 ### Database-Stored Configuration
 
-**Email settings and OAuth credentials are now managed through the admin UI** and stored securely in the database with field-level encryption. See the [System Configuration Guide](website/docs/admin-guide/system-configuration.md) for details.
+**OAuth credentials are managed through the admin UI** and stored securely in the database with field-level encryption. **Email is configured with environment variables** (`EMAIL_PROVIDER`, `SMTP_*`, `SENDGRID_API_KEY`, `EMAIL_FROM`). Email is strongly recommended: without it, new signups are not verified. See the [System Configuration Guide](website/docs/admin-guide/system-configuration.md#email-configuration) for details.
 
 - **Backend:**
   - `backend/.env` (example):
@@ -92,8 +92,8 @@ Both the frontend and backend use `.env` files to manage environment variables a
 
 ### Configuration Management
 
-- **System Settings**: Email and OAuth configuration is managed through **Admin → System Settings** in the web UI
-- **Environment Variables**: Only core application settings (database, session, URLs) use environment variables
+- **System Settings**: OAuth configuration is managed through **Admin → System Settings** in the web UI
+- **Environment Variables**: Core application settings (database, session, URLs) and email (`EMAIL_PROVIDER` and related variables) use environment variables
 - **Security**: All sensitive configuration data is encrypted before database storage
 
 ### Overriding Variables

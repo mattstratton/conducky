@@ -18,10 +18,27 @@ Your profile settings are accessible from the user menu in the top-right corner 
 
 **Basic information you can manage:**
 - **Name**: Display name shown to other users
-- **Email**: Login email and contact address
+- **Email**: Login email and contact address (changing it requires verifying the new address; see below)
 - **Avatar**: Profile picture (if supported)
 
 **Screenshot needed:** *Profile information form showing editable fields*
+
+### Changing Your Email Address
+
+When the instance has email set up, a new email address is **not applied until you verify it**:
+
+1. Change the email in your profile settings and save
+2. The page says a verification link was sent to the **new** address. Your **current** address stays in use until you verify
+3. Open the link sent to the new address. The change takes effect and you're told it worked
+
+**What you should know:**
+- **Notices to your old address**: Your current address gets a notice that a change was requested (showing a partly hidden version of the new address), and a confirmation when the change takes effect. If you didn't request the change, change your password right away. The notice has no cancel link
+- **Only the newest link works**: If you request another change, earlier links stop working
+- **One request per minute**: Requesting another change within 60 seconds shows "Please wait a minute before requesting another email change."
+- **Changing or resetting your password** cancels any pending change link
+- **Address already in use**: You'll see "This email address is already in use."
+
+If the instance does not have email set up, the change is applied immediately and the new address is treated as unverified.
 
 ### Account Security
 
@@ -190,7 +207,7 @@ When you leave an event, you lose access to all reports you submitted and cannot
 
 **Common solutions:**
 - **Check permissions**: Some fields may be restricted
-- **Verify email**: New email addresses may need verification
+- **Verify email**: A new email address is only applied after you click the verification link sent to it
 - **Clear browser cache**: Try refreshing the page
 - **Contact support**: Some changes require administrator help
 

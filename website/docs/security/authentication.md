@@ -19,6 +19,7 @@ Conducky implements a robust authentication system with multiple login methods a
 - **Password hashing**: Using bcrypt with salt for secure storage
 - **Rate limiting**: Protection against brute force attacks
 - **Account lockout**: Temporary lockout after failed attempts
+- **Email verification**: New accounts must prove they own their email address (when email is configured; see [Email verification](#4-email-verification))
 
 {/* Screenshot Placeholder */}
 > **Screenshot needed**: Standard login form with security features highlighted
@@ -53,7 +54,44 @@ graph LR
 - Event administrators generate secure invite links
 - Users click link and are prompted to create account
 - Account is automatically associated with the invited event and role
-- Immediate access to event functionality upon completion
+- Immediate access to event functionality upon completion (after verifying their email address, when email is configured)
+
+### 4. Email Verification
+
+When email is configured, Conducky verifies that people own the address they sign up with.
+
+**Who must verify:**
+- New email/password signups, including signups through an invite link, must click an emailed link before they can sign in
+- The first account on an instance (who becomes the System Admin) is verified automatically
+- Accounts created before verification existed, or while email was not configured, are never locked out. They can verify at any time from a banner in the app
+
+**Verification links:**
+- **Hashed**: Only a hash of each token is stored; the raw token exists only in the email
+- **Single-use**: A link cannot be reused
+- **Address-bound**: A link only works for the address it was mailed to, so a link cannot be replayed after the address changes
+- **Expiring**: Links expire after 24 hours and can be re-sent
+
+**Protecting pending signups:**
+- An unverified new account that tries to sign in with the right password sees "check your email" (with Resend and a way to fix a mistyped address). Requests to resend are always answered the same way, so they do not reveal whether an account exists
+- A new account that never verifies is deleted after 7 days. This runs daily and at startup, counts from the last verification email that was sent successfully, and never runs while email is not configured
+- Registering an address held by a still-pending unverified signup replaces that signup only if its last verification email is more than 1 hour old. Otherwise the registrant gets "Email already registered."
+- Login, registration, registration with an invite, verification, resend and correct-email requests share one rate limit of 5 requests per 15 minutes per IP. The "send me a verification email" button for existing accounts has its own limit (5 per 15 minutes per IP) and a 60 second cooldown per account
+
+**Google and GitHub:**
+- A provider sign-in is accepted only when the provider reports the email address as verified. Otherwise it is rejected
+- When the provider email matches an existing account that is not verified, the sign-in links to that account and marks it verified
+- If that account was a new signup still waiting for verification, its password is cleared (the person can set one with Forgot Password). This stops someone who pre-registered another person's address from keeping a password for the account
+- If it was an older account (created before verification existed, or while email was not configured), the password is kept. This is a documented, accepted residual risk: for those accounts there is no proof the password holder owns the address
+
+**Changing your email address:**
+- When email is configured, a change is not applied until the new address is verified; the current address stays in use
+- The old address receives a notice when the change is requested (with a partly masked new address, and advice to change the password if it was not the account owner) and a confirmation when it takes effect. There is no cancel link
+- Only the newest change link works, a new request is refused for 60 seconds after the last one, and changing or resetting the password cancels any pending change link
+- If email is not configured, the change is applied immediately and the new address is treated as unverified
+
+**When email is not configured:** verification is skipped entirely. Nobody is blocked, nothing is purged, and anyone can sign up with any address. The backend logs a warning at startup and System Admins see a warning banner on every `/admin` page. Setting up email is strongly recommended; see [Email configuration](../admin-guide/system-configuration.md#email-configuration).
+
+All verification actions are written to the [audit log](./audit-logging.md#email-verification-events).
 
 ## 🔑 Session Management
 
