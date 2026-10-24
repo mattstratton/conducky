@@ -15,8 +15,9 @@ const user = { id: 'u1', name: 'Test User', email: 'old@example.com' };
 const setUser = jest.fn();
 const mockFetch = jest.fn();
 // setUser receives either a user or an updater (so the saved fields merge into the context user).
-const appliedTo = (prev: unknown) =>
-  setUser.mock.calls.map(([arg]) => (typeof arg === 'function' ? arg(prev) : arg));
+type Applied = Record<string, unknown> | null;
+const appliedTo = (prev: Applied): Applied[] =>
+  setUser.mock.calls.map(([arg]: [Applied | ((p: Applied) => Applied)]) => (typeof arg === 'function' ? arg(prev) : arg));
 let patchReply: { status: number; body: unknown } | 'network';
 
 function renderPage() {
@@ -79,7 +80,7 @@ describe('profile settings: email change', () => {
     await waitFor(() => expect(region).toHaveTextContent(
       'We sent a verification link to new@example.com. Your email stays old@example.com until you verify.'));
     expect(screen.getByLabelText(/email address/i)).toHaveValue('old@example.com');
-    expect(appliedTo(user).some((u) => u.email === 'new@example.com')).toBe(false);
+    expect(appliedTo(user).some((u) => u?.email === 'new@example.com')).toBe(false);
     expect(screen.queryByText('Profile updated successfully!')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toHaveAttribute('aria-describedby', expect.stringContaining('profile-status'));
   });
