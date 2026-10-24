@@ -112,4 +112,30 @@ describe('Register page - email verification', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /check your email/i })).toBeInTheDocument();
     expect(screen.getByText(/We could not send the email/i)).toBeInTheDocument();
   });
+
+  describe('invite continuation when verification is required', () => {
+    const pending = { message: 'ok', verificationRequired: true, verificationEmailSent: true };
+
+    it.each(['/invite/abc', '/org-invite/abc'])('shows a sign-in link that keeps %s', async (next) => {
+      mockQuery = { next };
+      await submit(pending);
+      await screen.findByRole('heading', { name: /check your email/i });
+      expect(screen.getByText('After you verify your email, sign in to join the event.')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Sign in to continue' })).toHaveAttribute(
+        'href',
+        `/login?next=${encodeURIComponent(next)}`
+      );
+    });
+
+    it.each(['/dashboard', 'https://evil.example/invite/abc', '//evil.example/invite/abc', undefined])(
+      'adds nothing for next=%s',
+      async (next) => {
+        mockQuery = next ? { next } : {};
+        await submit(pending);
+        await screen.findByRole('heading', { name: /check your email/i });
+        expect(screen.queryByText(/sign in to join the event/i)).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: 'Sign in to continue' })).not.toBeInTheDocument();
+      }
+    );
+  });
 });

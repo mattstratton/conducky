@@ -285,6 +285,18 @@ export default function Register() {
               headingLevel="h1"
               onEmailChanged={(email) => setPendingVerification((p) => (p ? { ...p, email } : p))}
             />
+            {typeof router.query.next === 'string' &&
+              (router.query.next.startsWith('/invite/') || router.query.next.startsWith('/org-invite/')) && (
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                  After you verify your email, sign in to join the event.{' '}
+                  <Link
+                    href={`/login?next=${encodeURIComponent(router.query.next)}`}
+                    className="text-primary underline underline-offset-4"
+                  >
+                    Sign in to continue
+                  </Link>
+                </p>
+              )}
           </CardContent>
         </Card>
       </div>
