@@ -1,5 +1,6 @@
 import type { PrismaClient, SocialProvider, User } from '../generated/prisma/client';
 import { logAudit } from '../utils/audit';
+import logger from '../config/logger';
 
 type ProviderEmail = { value: string; verified?: boolean; primary?: boolean };
 
@@ -21,8 +22,19 @@ export interface OAuthInput {
   profileData: string;
 }
 
-// Thrown inside the transaction (rolling it back) when the account's email changed under us.
-class AddressChanged extends Error {}
+const FRIENDLY = 'Sign-in could not be completed, please try again.';
+
+// Thrown inside the transaction (rolling it back) when re-resolving can succeed: the account's
+// email changed under us, or a concurrent first sign-in created the user row.
+class Retry extends Error {}
+// Not retryable (e.g. this provider id is already linked to another user).
+class SignInFailed extends Error {
+  constructor() {
+    super(FRIENDLY);
+  }
+}
+
+const codeOf = (err: unknown) => (err as { code?: string } | null)?.code;
 
 /**
  * Finds or creates the user for a provider-verified email. An existing account that never proved
@@ -35,17 +47,23 @@ export async function resolveOAuthUser(prisma: PrismaClient, input: OAuthInput):
     try {
       const { user, cleared, wasUnverified } = await link(prisma, input);
       if (wasUnverified) {
-        // AuditLog has no metadata column, so a cleared password gets its own row.
-        await logAudit({ action: 'oauth_linked_unverified_account', targetType: 'User', targetId: user.id, userId: user.id });
-        if (cleared) {
-          await logAudit({ action: 'oauth_password_cleared', targetType: 'User', targetId: user.id, userId: user.id });
+        // Committed already: a failed audit write must not fail the sign-in.
+        try {
+          // AuditLog has no metadata column, so a cleared password gets its own row.
+          await logAudit({ action: 'oauth_linked_unverified_account', targetType: 'User', targetId: user.id, userId: user.id });
+          if (cleared) {
+            await logAudit({ action: 'oauth_password_cleared', targetType: 'User', targetId: user.id, userId: user.id });
+          }
+        } catch (auditErr) {
+          logger().error('Failed to write OAuth link audit:', auditErr instanceof Error ? auditErr.message : 'unknown error');
         }
       }
       return user;
-    } catch (err: any) {
-      // AddressChanged: email moved under us. P2002: concurrent first sign-in created the row. Re-resolve once.
-      if (attempt === 0 && (err instanceof AddressChanged || err?.code === 'P2002')) continue;
-      if (err instanceof AddressChanged) throw new Error('Sign-in could not be completed, please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Retry) {
+        if (attempt === 0) continue;
+        throw new SignInFailed();
+      }
       throw err;
     }
   }
@@ -60,9 +78,14 @@ async function link(prisma: PrismaClient, input: OAuthInput) {
     const wasUnverified = !!existing && !existing.emailVerifiedAt;
 
     if (!existing) {
-      user = await tx.user.create({
-        data: { email, name: displayName, passwordHash: null, emailVerifiedAt: new Date() },
-      });
+      try {
+        user = await tx.user.create({
+          data: { email, name: displayName, passwordHash: null, emailVerifiedAt: new Date() },
+        });
+      } catch (err) {
+        if (codeOf(err) === 'P2002') throw new Retry(); // concurrent first sign-in; re-resolve into that row
+        throw err;
+      }
     } else if (existing.emailVerifiedAt) {
       user = existing;
     } else {
@@ -77,7 +100,7 @@ async function link(prisma: PrismaClient, input: OAuthInput) {
         },
         data: cleared ? { emailVerifiedAt: new Date(), passwordHash: null } : { emailVerifiedAt: new Date() },
       });
-      if (count !== 1) throw new AddressChanged();
+      if (count !== 1) throw new Retry();
       user = (await tx.user.findUnique({ where: { id: existing.id } })) as User;
     }
 
@@ -88,9 +111,15 @@ async function link(prisma: PrismaClient, input: OAuthInput) {
         data: { providerName: displayName, profileData },
       });
     } else {
-      await tx.socialAccount.create({
-        data: { userId: user.id, provider, providerId, providerEmail: email, providerName: displayName, profileData },
-      });
+      try {
+        await tx.socialAccount.create({
+          data: { userId: user.id, provider, providerId, providerEmail: email, providerName: displayName, profileData },
+        });
+      } catch (err) {
+        // (provider, providerId) already belongs to another user: retrying cannot help.
+        if (codeOf(err) === 'P2002') throw new SignInFailed();
+        throw err;
+      }
     }
     return { user, cleared, wasUnverified };
   });

@@ -3,6 +3,7 @@ import { pickVerifiedEmail, resolveOAuthUser } from '../../src/services/oauth-ac
 
 jest.mock('../../src/utils/audit', () => ({ logAudit: jest.fn() }));
 import { logAudit } from '../../src/utils/audit';
+import logger from '../../src/config/logger';
 
 const store = inMemoryStore as any;
 
@@ -155,5 +156,50 @@ describe('resolveOAuthUser', () => {
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(2);
     expect(find(u.id).emailVerifiedAt).toBeNull();
     expect(store.socialAccounts).toHaveLength(0);
+  });
+
+  it('a failing audit write does not fail the sign-in and is logged without secrets', async () => {
+    const u = addUser({ emailVerificationRequired: true });
+    (logAudit as jest.Mock).mockRejectedValue(new Error('audit down'));
+    const errSpy = jest.spyOn(logger(), 'error').mockImplementation((() => logger()) as any);
+    const user = await resolveOAuthUser(prisma, input());
+    expect(user.id).toBe(u.id);
+    expect(find(u.id).emailVerifiedAt).toBeInstanceOf(Date);
+    expect(find(u.id).passwordHash).toBeNull();
+    expect(store.socialAccounts).toHaveLength(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.any(String), 'audit down');
+    errSpy.mockRestore();
+    (logAudit as jest.Mock).mockReset();
+  });
+
+  it('keeps the other provider social account when linking this one', async () => {
+    const u = addUser({ emailVerifiedAt: new Date() });
+    store.socialAccounts.push({ id: 'sa-gh', userId: u.id, provider: 'github', providerId: 'gh-1' });
+    await resolveOAuthUser(prisma, input());
+    expect(store.socialAccounts.map((s: any) => s.provider).sort()).toEqual(['github', 'google']);
+  });
+
+  it('concurrent first sign-in: user.create P2002 retries and links into the row created meanwhile', async () => {
+    const real = prisma.user.create.getMockImplementation();
+    let first = true;
+    prisma.user.create.mockImplementation((args: any) => {
+      if (first) {
+        first = false;
+        store.users.push({ id: 'winner', email: 'victim@example.com', name: 'W', passwordHash: null, emailVerifiedAt: new Date() });
+      }
+      return real(args); // throws P2002 because the winner row now exists
+    });
+    const user = await resolveOAuthUser(prisma, input());
+    expect(user.id).toBe('winner');
+    expect(store.users.filter((x: any) => x.email === 'victim@example.com')).toHaveLength(1);
+    expect(store.socialAccounts).toHaveLength(1);
+  });
+
+  it('provider id already linked to another user: friendly error, no retry', async () => {
+    const other = addUser({ email: 'other@example.com', emailVerifiedAt: new Date() });
+    addUser({ emailVerifiedAt: new Date() });
+    store.socialAccounts.push({ id: 'sa-o', userId: other.id, provider: 'google', providerId: 'g-123' });
+    await expect(resolveOAuthUser(prisma, input())).rejects.toThrow('Sign-in could not be completed, please try again.');
+    expect(prisma.socialAccount.create).toHaveBeenCalledTimes(1);
   });
 });
