@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { UserContext } from '../_app';
@@ -36,6 +37,8 @@ export default function ProfileSettings() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
+  // Pending email change notice: 'sent' (success) or 'failed' (warning), shown in the polite live region.
+  const [emailNotice, setEmailNotice] = useState<{ kind: 'sent' | 'failed'; text: string } | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   
   // Password form state
@@ -143,8 +146,11 @@ export default function ProfileSettings() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The submit button uses aria-disabled while saving (so focus is kept), so guard here.
+    if (profileLoading) return;
     setProfileError('');
     setProfileSuccess('');
+    setEmailNotice(null);
     setEmailError(null);
 
     // Validate email before submitting
@@ -173,7 +179,16 @@ export default function ProfileSettings() {
       }
 
       setUser(data.user);
-      setProfileSuccess('Profile updated successfully!');
+      if (data.emailChangePending) {
+        // The address has not changed yet: the form keeps showing the current one.
+        const current = data.user?.email ?? user?.email ?? '';
+        setProfileForm(prev => ({ ...prev, email: current }));
+        setEmailNotice(data.verificationEmailSent
+          ? { kind: 'sent', text: `We sent a verification link to ${data.emailChangePending}. Your email stays ${current} until you verify.` }
+          : { kind: 'failed', text: `We could not send a verification link to ${data.emailChangePending}. Your email is still ${current}. Try saving again.` });
+      } else {
+        setProfileSuccess('Profile updated successfully!');
+      }
     } catch (error) {
       console.error('Profile update error:', error);
       setProfileError('Network error. Please try again.');
@@ -308,27 +323,47 @@ export default function ProfileSettings() {
                       }}
                       placeholder="Enter your email address"
                       className={emailError ? 'border-red-500 focus:border-red-500' : ''}
+                      aria-invalid={emailError ? true : undefined}
+                      aria-describedby={[emailError && 'email-error', emailNotice && 'profile-status'].filter(Boolean).join(' ') || undefined}
                       required
                     />
                     {emailError && (
-                      <p className="text-sm text-red-600">{emailError}</p>
+                      <p id="email-error" className="text-sm text-red-600">{emailError}</p>
                     )}
                   </div>
                 </div>
                 
                 {profileError && (
-                  <div className="text-sm text-red-600 dark:text-red-400">
-                    {profileError}
-                  </div>
+                  <Alert variant="destructive">
+                    <AlertDescription>{profileError}</AlertDescription>
+                  </Alert>
                 )}
+
+                {/* Always mounted so screen readers register it before its content changes. */}
+                <div id="profile-status" role="status">
+                  {profileSuccess && (
+                    <Alert role="presentation" className="border-green-600 text-green-700 dark:text-green-400">
+                      <AlertDescription>{profileSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+                  {emailNotice && (
+                    <Alert
+                      role="presentation"
+                      className={emailNotice.kind === 'sent'
+                        ? 'border-green-600 text-green-700 dark:text-green-400'
+                        : 'border-amber-600 text-amber-800 dark:text-amber-400'}
+                    >
+                      <AlertDescription>{emailNotice.text}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
                 
-                {profileSuccess && (
-                  <div className="text-sm text-green-600 dark:text-green-400">
-                    {profileSuccess}
-                  </div>
-                )}
-                
-                <Button type="submit" disabled={profileLoading || !!emailError} className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  disabled={!!emailError}
+                  aria-disabled={profileLoading || undefined}
+                  className="flex items-center gap-2 min-h-[44px] aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                >
                   <Save className="h-4 w-4" />
                   {profileLoading ? 'Saving...' : 'Save Profile'}
                 </Button>
