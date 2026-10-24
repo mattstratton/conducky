@@ -157,7 +157,7 @@ For detailed security configuration, see the [Admin Security Guide](website/docs
   docker-compose exec backend npm run seed:logging  # Default logging settings
   ```
 
-- **Development seeding (optional):**
+- **Development seeding (optional, development only):** these create test accounts with the passwords below (one is a System Admin) and refuse to run when `NODE_ENV=production`. Never run them on a real deployment.
   ```sh
   docker-compose exec backend npm run seed          # Includes roles, logging, and test data
   docker-compose exec backend npm run sample-data   # Additional sample organizations and incidents

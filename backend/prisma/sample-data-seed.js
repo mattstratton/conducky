@@ -1,3 +1,4 @@
+require('./dev-only')('sample-data-seed.js');
 const { createPrismaClient } = require('./db');
 const bcrypt = require('bcrypt');
 const prisma = createPrismaClient();
@@ -355,8 +356,12 @@ async function main() {
     }
 
     // Also ensure current organization admins receive event_admin for seeded events
-    const orgAdminMemberships = await prisma.organizationMembership.findMany({
-      where: { organizationId: eventRecords[event.slug].organizationId, role: 'org_admin' },
+    const orgAdminMemberships = await prisma.userRole.findMany({
+      where: {
+        roleId: roleMap['org_admin'].id,
+        scopeType: 'organization',
+        scopeId: eventRecords[event.slug].organizationId
+      },
       select: { userId: true }
     });
     for (const m of orgAdminMemberships) {
@@ -497,6 +502,16 @@ async function main() {
   ];
 
   for (const incidentData of sampleIncidents) {
+    // Incidents use create (not upsert), so skip ones already seeded for the event
+    const existing = await prisma.incident.findFirst({
+      where: { eventId: eventRecords[incidentData.eventSlug].id, title: incidentData.title },
+      select: { id: true },
+    });
+    if (existing) {
+      console.log(`⏭️  Incident already exists: ${incidentData.title}`);
+      continue;
+    }
+
     const timeline = {};
     const now = new Date();
     if (incidentData.state && incidentData.state !== 'submitted') {
