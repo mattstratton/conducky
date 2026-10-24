@@ -355,8 +355,12 @@ async function main() {
     }
 
     // Also ensure current organization admins receive event_admin for seeded events
-    const orgAdminMemberships = await prisma.organizationMembership.findMany({
-      where: { organizationId: eventRecords[event.slug].organizationId, role: 'org_admin' },
+    const orgAdminMemberships = await prisma.userRole.findMany({
+      where: {
+        roleId: roleMap['org_admin'].id,
+        scopeType: 'organization',
+        scopeId: eventRecords[event.slug].organizationId
+      },
       select: { userId: true }
     });
     for (const m of orgAdminMemberships) {
