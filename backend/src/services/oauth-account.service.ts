@@ -150,7 +150,10 @@ export async function verifyOAuthProfile(
     }
     return done(null, await resolveOAuthUser(prisma, build(email)));
   } catch (error) {
-    if (error instanceof SignInFailed) return done(null, false, { message: error.message });
+    if (error instanceof SignInFailed) {
+      logger().warn(`${label} OAuth sign-in rejected: ${error.message}`);
+      return done(null, false, { message: error.message });
+    }
     logger().error(`${label} OAuth error:`, error);
     return done(error, false);
   }

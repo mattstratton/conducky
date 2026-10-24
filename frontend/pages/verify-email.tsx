@@ -30,7 +30,7 @@ export default function VerifyEmailPage() {
   const busyRef = useRef(false);
   const token = typeof router.query.token === 'string' ? router.query.token : '';
   // Email-change links must not apply on load: a link scanner that runs JS would confirm them.
-  const needsClick = router.query.confirm === '1';
+  const needsClick = router.query.confirm !== undefined;
 
   const verify = async () => {
     try {

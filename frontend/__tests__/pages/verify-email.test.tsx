@@ -253,11 +253,10 @@ describe('verify-email page: email change links (confirm=1)', () => {
     expect(screen.queryByRole('button', { name: 'Confirm email change' })).not.toBeInTheDocument();
   });
 
-  it('only confirm=1 triggers the click-to-confirm mode', async () => {
+  it('any confirm value (even confirm=0) fails safe into click-to-confirm', async () => {
     mockQuery = { token: 'abc123', confirm: '0' };
-    reply(200, { status: 'verified' });
     render(<VerifyEmailPage />);
-    await screen.findByText(/is verified/i);
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('button', { name: 'Confirm email change' })).toBeInTheDocument();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
