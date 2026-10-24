@@ -226,12 +226,122 @@ describe('EmailVerificationService', () => {
       expect(findUser(u.id).emailVerifiedAt).toBeNull();
     });
 
-    it('token with pendingEmail fails closed with no state change', async () => {
-      const u = addUser();
-      const raw = await svc.issueToken(u.id, u.email, 'new@example.com');
-      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
-      expect(findUser(u.id).emailVerifiedAt).toBeNull();
-      expect(store.emailVerificationTokens[0].usedAt).toBeNull();
+    describe('email change tokens (pendingEmail)', () => {
+      const NEW = 'new@example.com';
+      let notice: jest.SpyInstance;
+      beforeEach(() => {
+        notice = jest.spyOn(emailService, 'sendEmailChangedNotice').mockResolvedValue({ success: true } as any);
+      });
+      const setup = async (over: Record<string, unknown> = {}) => {
+        const u = addUser({ emailVerifiedAt: new Date(), ...over });
+        const raw = await svc.issueToken(u.id, NEW, ` ${NEW.toUpperCase()} `);
+        return { u, raw };
+      };
+
+      it('normalizes pendingEmail when storing it', async () => {
+        await setup();
+        expect(store.emailVerificationTokens[0].pendingEmail).toBe(NEW);
+      });
+
+      it('applies the change, drops other unused tokens, notifies the old address, audits', async () => {
+        const { u, raw } = await setup();
+        const oldEmail = u.email;
+        store.emailVerificationTokens.push({ id: 'o', userId: u.id, tokenHash: 'x', email: oldEmail, pendingEmail: null, usedAt: null });
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'email_changed', userId: u.id });
+        expect(findUser(u.id).email).toBe(NEW);
+        expect(findUser(u.id).emailVerifiedAt).toBeInstanceOf(Date);
+        expect(store.emailVerificationTokens.filter((t: any) => !t.usedAt)).toHaveLength(0);
+        expect(notice).toHaveBeenCalledWith(oldEmail, 'Test', 'n***@example.com');
+        expect(logAudit).toHaveBeenCalledWith({ action: 'email_change_applied', targetType: 'User', targetId: u.id, userId: u.id });
+      });
+
+      it('double click -> already_verified, no second notice', async () => {
+        const { raw } = await setup();
+        await svc.verifyToken(raw);
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'already_verified' });
+        expect(notice).toHaveBeenCalledTimes(1);
+      });
+
+      it('no notice when mail is not configured', async () => {
+        const { raw } = await setup();
+        configured.mockResolvedValue(false);
+        expect((await svc.verifyToken(raw)).status).toBe('email_changed');
+        expect(notice).not.toHaveBeenCalled();
+      });
+
+      it('a throwing notice does not fail the committed change', async () => {
+        const { u, raw } = await setup();
+        notice.mockRejectedValue(new Error('smtp'));
+        expect((await svc.verifyToken(raw)).status).toBe('email_changed');
+        expect(findUser(u.id).email).toBe(NEW);
+      });
+
+      it('a token whose address is not the pending one fails closed', async () => {
+        const u = addUser();
+        const raw = await svc.issueToken(u.id, u.email, NEW);
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).email).toBe(u.email);
+        expect(store.emailVerificationTokens[0].usedAt).toBeNull();
+      });
+
+      it('another account owns the pending address -> invalid, rolled back', async () => {
+        const { u, raw } = await setup();
+        addUser({ email: NEW });
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).email).toBe(u.email);
+        expect(notice).not.toHaveBeenCalled();
+      });
+
+      it('conditional update guard: email changed under the transaction -> invalid, nothing changed', async () => {
+        const { u, raw } = await setup();
+        const snapshot = { ...findUser(u.id) };
+        store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, email: 'moved@example.com' } : x));
+        jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(snapshot);
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).email).toBe('moved@example.com');
+        expect(findUser(u.id).emailVerifiedAt).toBe(snapshot.emailVerifiedAt);
+        expect(notice).not.toHaveBeenCalled();
+      });
+
+      it('the update is conditional on the current email', async () => {
+        const { u, raw } = await setup();
+        await svc.verifyToken(raw);
+        expect(prisma.user.updateMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: u.id, email: u.email } })
+        );
+      });
+
+      it('P2002 on the update -> invalid, not rethrown', async () => {
+        const { u, raw } = await setup();
+        prisma.user.updateMany.mockImplementationOnce(() => {
+          throw Object.assign(new Error('unique'), { code: 'P2002' });
+        });
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).email).toBe(u.email);
+        expect(notice).not.toHaveBeenCalled();
+      });
+
+      it('other update errors still propagate', async () => {
+        const { raw } = await setup();
+        prisma.user.updateMany.mockImplementationOnce(() => {
+          throw new Error('db down');
+        });
+        await expect(svc.verifyToken(raw)).rejects.toThrow('db down');
+      });
+
+      it('an unused change token for the address the user already has is stale -> invalid', async () => {
+        const { u, raw } = await setup();
+        store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, email: NEW } : x));
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(notice).not.toHaveBeenCalled();
+      });
+
+      it('expired change token is invalid', async () => {
+        const { u, raw } = await setup();
+        store.emailVerificationTokens[0].expiresAt = new Date(Date.now() - 1000);
+        expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+        expect(findUser(u.id).email).toBe(u.email);
+      });
     });
 
     it('used and expired token is invalid, not already_verified', async () => {
