@@ -1794,6 +1794,33 @@ class PrismaClient {
         inMemoryStore.socialAccounts = inMemoryStore.socialAccounts.filter((s) => s.userId !== where.userId);
         return { count: before - inMemoryStore.socialAccounts.length };
       }),
+      // OAuth account resolution additions (hardened like the rest: unknown filters throw).
+      findFirst: jest.fn(({ where = {} } = {}) => {
+        Object.keys(where).forEach((k) => {
+          if (!['userId', 'provider'].includes(k)) throw new Error(`socialAccount.findFirst mock: unsupported filter "${k}"`);
+        });
+        return inMemoryStore.socialAccounts.find((s) => Object.entries(where).every(([k, v]) => s[k] === v)) || null;
+      }),
+      create: jest.fn(({ data }) => {
+        const dup = inMemoryStore.socialAccounts.some(
+          (s) => (s.provider === data.provider && s.providerId === data.providerId) ||
+                 (s.userId === data.userId && s.provider === data.provider),
+        );
+        if (dup) {
+          const err = new Error('Unique constraint failed');
+          err.code = 'P2002';
+          throw err;
+        }
+        const row = { id: `sa-${inMemoryStore.socialAccounts.length + 1}`, ...data };
+        inMemoryStore.socialAccounts.push(row);
+        return row;
+      }),
+      update: jest.fn(({ where, data }) => {
+        const row = inMemoryStore.socialAccounts.find((s) => s.id === where.id);
+        if (!row) throw new Error('socialAccount.update mock: not found');
+        Object.assign(row, data);
+        return row;
+      }),
     };
     this.user.deleteMany = jest.fn(({ where = {} } = {}) => {
       const allowed = ['id', 'emailVerificationRequired', 'emailVerifiedAt'];

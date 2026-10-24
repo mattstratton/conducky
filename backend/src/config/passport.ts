@@ -7,6 +7,7 @@ import { User, SocialProvider } from '../generated/prisma/client';
 import { createPrismaClient } from './prisma-client';
 import logger from '../config/logger';
 import { isGated } from '../services/email-verification.service';
+import { pickVerifiedEmail, resolveOAuthUser } from '../services/oauth-account.service';
 import { emailService } from '../utils/email';
 
 const prisma = createPrismaClient();
@@ -124,79 +125,25 @@ async function initializeOAuthStrategies() {
       },
       async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
         try {
-          const email = profile.emails?.[0]?.value?.toLowerCase();
+          const email = pickVerifiedEmail(profile.emails);
           if (!email) {
-            return done(new Error('No email provided by Google'), false);
+            return done(new Error(profile.emails?.length
+              ? 'Your Google email address is not verified by Google.'
+              : 'No email provided by Google'), false);
           }
 
-          // Check if user already exists with this email
-          let user = await prisma.user.findUnique({
-            where: { email },
-            include: { socialAccounts: true }
+          const user = await resolveOAuthUser(prisma, {
+            provider: SocialProvider.google,
+            providerId: profile.id,
+            email,
+            displayName: profile.displayName,
+            // Note: Not storing access/refresh tokens for security
+            profileData: JSON.stringify({
+              id: profile.id,
+              displayName: profile.displayName,
+              email: email
+            })
           });
-
-          if (user) {
-            // User exists, check if they have this social account linked
-            const existingSocialAccount = user.socialAccounts.find(
-              account => account.provider === SocialProvider.google
-            );
-
-            if (!existingSocialAccount) {
-              // Link this Google account to existing user
-              await prisma.socialAccount.create({
-                data: {
-                  userId: user.id,
-                  provider: SocialProvider.google,
-                  providerId: profile.id,
-                  providerEmail: email,
-                  providerName: profile.displayName,
-                  // Note: Not storing access/refresh tokens for security
-                  profileData: JSON.stringify({
-                    id: profile.id,
-                    displayName: profile.displayName,
-                    email: email
-                  })
-                }
-              });
-            } else {
-              // Update existing social account
-              await prisma.socialAccount.update({
-                where: { id: existingSocialAccount.id },
-                data: {
-                  providerName: profile.displayName,
-                  profileData: JSON.stringify({
-                    id: profile.id,
-                    displayName: profile.displayName,
-                    email: email
-                  })
-                }
-              });
-            }
-          } else {
-            // Create new user with Google account
-            user = await prisma.user.create({
-              data: {
-                email,
-                name: profile.displayName,
-                passwordHash: null, // No password for social login
-                socialAccounts: {
-                  create: {
-                    provider: SocialProvider.google,
-                    providerId: profile.id,
-                    providerEmail: email,
-                    providerName: profile.displayName,
-                    // Note: Not storing access/refresh tokens for security
-                    profileData: JSON.stringify({
-                      id: profile.id,
-                      displayName: profile.displayName,
-                      email: email
-                    })
-                  }
-                }
-              },
-              include: { socialAccounts: true }
-            });
-          }
 
           return done(null, user);
         } catch (error) {
@@ -218,86 +165,31 @@ async function initializeOAuthStrategies() {
         clientSecret: oauthSettings.github.clientSecret,
         callbackURL: `${process.env.BACKEND_BASE_URL || 'http://localhost:4000'}/api/auth/github/callback`,
         scope: ['user:email'],
+        allRawEmails: true, // include each address's `verified` flag; the default keeps only the primary and drops it
         passReqToCallback: true // Enable passing request to callback for state access
       },
       async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
         try {
-          const email = profile.emails?.[0]?.value?.toLowerCase();
+          const email = pickVerifiedEmail(profile.emails);
           if (!email) {
-            return done(new Error('No email provided by GitHub'), false);
+            return done(new Error(profile.emails?.length
+              ? 'Your GitHub email address is not verified by GitHub.'
+              : 'No email provided by GitHub'), false);
           }
 
-          // Check if user already exists with this email
-          let user = await prisma.user.findUnique({
-            where: { email },
-            include: { socialAccounts: true }
+          const user = await resolveOAuthUser(prisma, {
+            provider: SocialProvider.github,
+            providerId: profile.id,
+            email,
+            displayName: profile.displayName || profile.username,
+            // Note: Not storing access/refresh tokens for security
+            profileData: JSON.stringify({
+              id: profile.id,
+              username: profile.username,
+              displayName: profile.displayName,
+              email: email
+            })
           });
-
-          if (user) {
-            // User exists, check if they have this social account linked
-            const existingSocialAccount = user.socialAccounts.find(
-              account => account.provider === SocialProvider.github
-            );
-
-            if (!existingSocialAccount) {
-              // Link this GitHub account to existing user
-              await prisma.socialAccount.create({
-                data: {
-                  userId: user.id,
-                  provider: SocialProvider.github,
-                  providerId: profile.id,
-                  providerEmail: email,
-                  providerName: profile.displayName || profile.username,
-                  // Note: Not storing access/refresh tokens for security
-                  profileData: JSON.stringify({
-                    id: profile.id,
-                    username: profile.username,
-                    displayName: profile.displayName,
-                    email: email
-                  })
-                }
-              });
-            } else {
-              // Update existing social account
-              await prisma.socialAccount.update({
-                where: { id: existingSocialAccount.id },
-                data: {
-                  providerName: profile.displayName || profile.username,
-                  profileData: JSON.stringify({
-                    id: profile.id,
-                    username: profile.username,
-                    displayName: profile.displayName,
-                    email: email
-                  })
-                }
-              });
-            }
-          } else {
-            // Create new user with GitHub account
-            user = await prisma.user.create({
-              data: {
-                email,
-                name: profile.displayName || profile.username,
-                passwordHash: null, // No password for social login
-                socialAccounts: {
-                  create: {
-                    provider: SocialProvider.github,
-                    providerId: profile.id,
-                    providerEmail: email,
-                    providerName: profile.displayName || profile.username,
-                    // Note: Not storing access/refresh tokens for security
-                    profileData: JSON.stringify({
-                      id: profile.id,
-                      username: profile.username,
-                      displayName: profile.displayName,
-                      email: email
-                    })
-                  }
-                }
-              },
-              include: { socialAccounts: true }
-            });
-          }
 
           return done(null, user);
         } catch (error) {
