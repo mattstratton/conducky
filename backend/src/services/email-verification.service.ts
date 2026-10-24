@@ -65,7 +65,7 @@ export class EmailVerificationService {
     return raw;
   }
 
-  /** Revokes the user's unused tokens (e.g. a pending email change) after a password change. Logs, never throws. */
+  /** Revokes the user's unused tokens (e.g. a pending email change) after a password change or an unconfigured-mail email write. Logs, never throws. */
   async revokeUnusedTokens(userId: string): Promise<void> {
     try {
       await this.prisma.emailVerificationToken.deleteMany({ where: { userId, usedAt: null } });

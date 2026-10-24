@@ -53,7 +53,7 @@ Each invite link has the following properties:
 
 When someone uses an invite link, they'll be prompted to create an account (if they don't have one) and will automatically be assigned to your event with the specified role.
 
-If the instance has email set up, people who create an account through an invite link must also verify their email address (with a link emailed to them) before they can sign in. Their event role is waiting for them once they do. Someone who signs in with Google or GitHub instead already has a provider-verified address, so there is no extra step.
+If the instance has email set up, people who create an account through an invite link must also verify their email address (with a link emailed to them) before they can sign in. Once verified, they sign in using the "Sign in to continue" link on the signup page, which brings them back to the invite so the role is granted. Someone who signs in with Google or GitHub instead already has a provider-verified address, so there is no extra step.
 
 ---
 
