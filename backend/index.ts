@@ -67,7 +67,7 @@ import { getSessionConfig } from './src/config/session';
 // Import Swagger configuration
 import { setupSwagger } from './src/config/swagger';
 import { startUnverifiedPurge } from './src/services/unverified-purge.service';
-import { emailService } from './src/utils/email';
+import { emailService, EmailService } from './src/utils/email';
 import { logEmailSetupWarning } from './src/utils/email-startup-check';
 
 // Initialize Prisma client (after environment is loaded)
@@ -382,8 +382,6 @@ app.get('/session', async (req: any, res: any) => {
 });
 
 // Email config status endpoint
-import { EmailService } from './src/utils/email';
-
 app.get('/api/config/email-enabled', (_req, res) => {
   try {
     const emailService = new EmailService();

@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import bcrypt from 'bcrypt';
 import validator from 'validator';
 import type { PrismaClient, User } from '../generated/prisma/client';

@@ -66,7 +66,7 @@ export default function VerifyEmailPage() {
     const key = `${token}:${attempt}`;
     if (calledFor.current === key) return;
     calledFor.current = key;
-    verify();
+    void verify();
   }, [router.isReady, token, attempt, needsClick]);
 
   // One post per click: a double click (or Try again while busy) is ignored.
