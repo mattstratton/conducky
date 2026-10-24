@@ -23,7 +23,7 @@ interface User {
 
 interface UserContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null | ((prev: User | null) => User | null)) => void;
 }
 
 export default function ProfileSettings() {
@@ -187,7 +187,8 @@ export default function ProfileSettings() {
         return;
       }
 
-      setUser(data.user);
+      // Merge: the PATCH response omits context-only fields (canVerifyEmail, emailVerified, roles).
+      setUser(prev => (prev ? { ...prev, ...data.user } : data.user));
       if (data.emailChangePending) {
         // The address has not changed yet: the form keeps showing the current one.
         const current = data.user?.email ?? user?.email ?? '';

@@ -59,9 +59,6 @@ export class AuthService {
 
   private verification: EmailVerificationService;
 
-  // Rate limiting for password reset attempts
-  // Uses database for persistence across server restarts
-
   constructor(private prisma: PrismaClient) {
     this.rbacService = new UnifiedRBACService(prisma);
     this.verification = new EmailVerificationService(prisma);
