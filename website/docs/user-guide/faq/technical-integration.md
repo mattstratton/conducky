@@ -76,10 +76,12 @@ To reset your password:
 
 ## Can I change my email address?
 
-Email address changes typically require administrator assistance:
-- **Contact your event administrators** for account updates
-- **Verify your identity** through established procedures
-- **Update your profile** once the change is approved
+Yes, you can change it yourself in your profile settings:
+- **Enter the new address** and save
+- **Verify the new address** with the link emailed to it. Your current address keeps working until you do
+- **Only the newest link works**, and you can request one change per minute
+
+If the instance doesn't have email set up, the change is applied immediately. See [Changing Your Email Address](../getting-started/profile-management.md#changing-your-email-address).
 
 ## What file size limits exist for uploads?
 

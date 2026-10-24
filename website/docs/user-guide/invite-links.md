@@ -53,6 +53,8 @@ Each invite link has the following properties:
 
 When someone uses an invite link, they'll be prompted to create an account (if they don't have one) and will automatically be assigned to your event with the specified role.
 
+If the instance has email set up, people who create an account through an invite link must also verify their email address (with a link emailed to them) before they can sign in. Once verified, they sign in using the "Sign in to continue" link on the signup page, which brings them back to the invite so the role is granted. Someone who signs in with Google or GitHub instead already has a provider-verified address, so there is no extra step.
+
 ---
 
 ## Overview
@@ -75,7 +77,7 @@ When someone uses an invite link, they'll be prompted to create an account (if t
 
 ## Redeeming Invite Links
 - Anyone with a valid invite link can register and join the event as a Reporter.
-- If not logged in, users can register via the invite link page.
+- If not logged in, users can register via the invite link page. When email is configured they then verify their email address before signing in.
 - If already logged in, users can join the event directly.
 - **API:**
   - `POST /register/invite/:inviteCode` (register via invite)

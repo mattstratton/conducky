@@ -190,7 +190,7 @@ For production deployments:
 3. Click **"Google"** or **"GitHub"** button
 4. **Expected Results**:
    - User is redirected to `/login?error=oauth_failed`
-   - Error message is displayed: "Social login failed. Please try again or use email/password."
+   - Error message is displayed: "Social login failed. Make sure the email address on your Google or GitHub account is verified, then try again, or sign in with email and password."
 
 ### Database Verification
 

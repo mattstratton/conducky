@@ -21,6 +21,7 @@ Visit `/register` to create a new account when setting up a new Conducky instanc
 3. **Password requirements**: 8+ characters, mix of letters, numbers, symbols
 4. **Automatic elevation**: The first user to register becomes a System Admin automatically
 5. **Next steps**: Subsequent users need invitations to access functionality
+6. **Email verification**: Your account is verified automatically as the first user. Later accounts must verify their email address when the instance has email set up (see [Verifying your email address](../authentication.md#verifying-your-email-address))
 
 :::tip[First User Benefits]
 As the first user, you become a System Admin with full system access. You can create organizations, manage system settings, and invite other users. You'll be guided through initial system setup to get your Conducky instance ready for use.
@@ -33,7 +34,7 @@ As the first user, you become a System Admin with full system access. You can cr
 Most users join through event invitations sent by administrators:
 
 1. **Click** the invitation link sent by an event administrator
-2. **Create account** or log in if you already have one
+2. **Create account** or log in if you already have one (if the instance has email set up, verify your email address from the link we send you before signing in)
 3. **Accept invitation** to join the event with the specified role
 4. **Automatic redirect** to the event dashboard
 

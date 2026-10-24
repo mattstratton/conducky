@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import bcrypt from 'bcrypt';
 import validator from 'validator';
 import type { PrismaClient, User } from '../generated/prisma/client';
@@ -32,6 +32,10 @@ export type CorrectEmailResult =
   | { status: 'ok'; email: string; verificationEmailSent: boolean }
   | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' | 'cooldown' };
 
+export type OwnVerificationResult =
+  | { status: 'ok'; emailSent: boolean; email: string }
+  | { status: 'already_verified' | 'not_eligible' | 'cooldown' | 'pending_change' };
+
 // Valid bcrypt hash of a throwaway string: unknown accounts still pay for a compare (timing).
 const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
 const norm = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
@@ -61,7 +65,7 @@ export class EmailVerificationService {
     return raw;
   }
 
-  /** Revokes the user's unused tokens (e.g. a pending email change) after a password change. Logs, never throws. */
+  /** Revokes the user's unused tokens (e.g. a pending email change) after a password change or an unconfigured-mail email write. Logs, never throws. */
   async revokeUnusedTokens(userId: string): Promise<void> {
     try {
       await this.prisma.emailVerificationToken.deleteMany({ where: { userId, usedAt: null } });
@@ -78,6 +82,8 @@ export class EmailVerificationService {
     pendingEmail?: string
   ): Promise<boolean> {
     try {
+      // The console provider logs whole mails, link included: never issue a token or mail without a real provider.
+      if (!(await this.mailer.isConfigured())) return false;
       // ONE destination for both the token binding and the recipient, so they cannot diverge.
       const to = norm(pendingEmail ?? user.email);
       const raw = await this.issueToken(user.id, to, pendingEmail);
@@ -89,7 +95,15 @@ export class EmailVerificationService {
       );
       if (!result.success) return false;
       await this.prisma.user.update({ where: { id: user.id }, data: { verificationSentAt: new Date() } });
-      await logAudit({ action: 'verification_email_sent', targetType: 'User', targetId: user.id, userId: user.id });
+      // The mail is out and verificationSentAt is set: a failed audit must not report "could not send".
+      try {
+        await logAudit({ action: 'verification_email_sent', targetType: 'User', targetId: user.id, userId: user.id });
+      } catch (auditErr) {
+        logger().error('Audit of verification email failed', {
+          userId: user.id,
+          error: auditErr instanceof Error ? auditErr.message : 'unknown',
+        });
+      }
       return true;
     } catch (err) {
       logger().error('Failed to send verification email', {
@@ -268,6 +282,8 @@ export class EmailVerificationService {
     try {
       await this.prisma.$transaction(async (tx) => {
         const where = { userId };
+        // Token rows before the user row, like verifyToken and correctEmail, so a racing click cannot deadlock the purge.
+        await tx.emailVerificationToken.deleteMany({ where });
         await tx.passwordResetToken.deleteMany({ where });
         await tx.userNotificationSettings.deleteMany({ where });
         await tx.userAvatar.deleteMany({ where });
@@ -294,6 +310,27 @@ export class EmailVerificationService {
       if (err === ROLLBACK || (err as { code?: string })?.code === 'P2003') return false;
       throw err;
     }
+  }
+
+  /**
+   * A signed-in password account asks for a verification mail to its CURRENT address (the nudge for
+   * accounts that predate verification). Re-reads the user; never blocks anything, so no gating involved.
+   */
+  async sendOwnVerification(userId: string): Promise<OwnVerificationResult> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { status: 'not_eligible' };
+    if (user.emailVerifiedAt) return { status: 'already_verified' };
+    // isConfigured last: the console provider logs the whole mail, token included.
+    if (!user.passwordHash || !(await this.mailer.isConfigured())) return { status: 'not_eligible' };
+    if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
+      return { status: 'cooldown' };
+    }
+    // A live change token would be revoked by issuing a new one, silently killing the link already mailed.
+    const live = await this.prisma.emailVerificationToken.findMany({
+      where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (live.some((t) => t.pendingEmail)) return { status: 'pending_change' };
+    return { status: 'ok', emailSent: await this.sendVerification(user), email: norm(user.email) };
   }
 
   /** Never reveals whether the address exists, is verified or is rate limited. */
@@ -324,9 +361,10 @@ export class EmailVerificationService {
     if (!isGated(user) || !(await this.mailer.isConfigured())) return { status: 'not_eligible' };
 
     if (newEmail === email) {
-      const recent = user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS;
-      const sent = recent ? false : await this.sendVerification(user);
-      return { status: 'ok', email, verificationEmailSent: sent };
+      if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
+        return { status: 'cooldown' };
+      }
+      return { status: 'ok', email, verificationEmailSent: await this.sendVerification(user) };
     }
 
     // Same cooldown as the same-address branch, checked before anything is released, changed or sent.

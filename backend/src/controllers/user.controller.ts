@@ -15,29 +15,6 @@ interface AuthUser {
 export class UserController {
   constructor(private userService: UserService) {}
 
-  async updateProfile(req: Request, res: Response): Promise<void> {
-    try {
-      const user = req.user as any; const userId = user?.id;
-      
-      if (!userId) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
-
-      const result = await this.userService.updateProfile(userId, req.body);
-      
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
-        return;
-      }
-
-      res.status(200).json(result.data);
-    } catch (error) {
-      logger().error('Update profile error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-
   async changePassword(req: Request, res: Response): Promise<void> {
     try {
       const user = req.user as any; const userId = user?.id;

@@ -30,6 +30,14 @@ Conducky requires specific environment variables to function properly. See the [
 - `NODE_ENV` - Set this to "production" when running in a production environment
 - `ENCRYPTION_KEY` - **REQUIRED** Encryption key for database field-level encryption. Must be at least 32 characters long. Generate with `openssl rand -base64 48`. Used to encrypt incident data, comments, contact emails, and system configuration.
 
+:::warning[Set up email before you open signups]
+Email is strongly recommended for every deployment. Without it, Conducky cannot verify that people own the email addresses they sign up with, so email verification is switched off: nobody is blocked, nothing is cleaned up, and anyone can register with any address. System Admins see a warning banner on every `/admin` page and the backend logs a warning at startup until email is configured.
+
+Set `EMAIL_PROVIDER` (`smtp` or `sendgrid`) and its credentials in the backend environment. See [Email configuration](./system-configuration.md#email-configuration).
+
+Also make sure `NODE_ENV=production` is set on the backend. In production, the development seed data scripts refuse to run.
+:::
+
 **Frontend** (`.env` in `/frontend`):
 
 - `NEXT_PUBLIC_API_URL` - Backend API URL for client-side calls

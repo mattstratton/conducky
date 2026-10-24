@@ -110,6 +110,25 @@ export const passwordResetRateLimit = rateLimit({
 });
 
 /**
+ * Own verification email requests (the nudge banner)
+ * 5 requests per 15 minutes per IP, a separate budget from login/register
+ */
+export const verificationEmailRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: shouldSkipRateLimit,
+  handler: (req: Request, res: Response) => {
+    res.status(429).json({
+      error: 'Verification email rate limit exceeded',
+      message: 'Too many verification email requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    });
+  }
+});
+
+/**
  * File upload rate limiting
  * 20 uploads per 15 minutes per IP
  */

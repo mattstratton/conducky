@@ -28,7 +28,7 @@ const FRIENDLY = 'Sign-in could not be completed, please try again.';
 // email changed under us, or a concurrent first sign-in created the user row.
 class Retry extends Error {}
 // Not retryable (e.g. this provider id is already linked to another user).
-class SignInFailed extends Error {
+export class SignInFailed extends Error {
   constructor() {
     super(FRIENDLY);
   }
@@ -123,4 +123,38 @@ async function link(prisma: PrismaClient, input: OAuthInput) {
     }
     return { user, cleared, wasUnverified };
   });
+}
+
+type VerifyDone = (error: unknown, user?: User | false, info?: { message: string }) => void;
+
+/**
+ * Passport verify callback shared by the Google and GitHub strategies. Anything the person can act
+ * on (unverified provider email, SignInFailed) is done(null, false, ...) so failureRedirect sends
+ * them to the login page; passport turns done(err) into a raw 500 on the API origin.
+ */
+export async function verifyOAuthProfile(
+  prisma: PrismaClient,
+  label: 'Google' | 'GitHub',
+  profile: { emails?: ProviderEmail[] },
+  build: (email: string) => OAuthInput,
+  done: VerifyDone,
+): Promise<void> {
+  try {
+    const email = pickVerifiedEmail(profile.emails);
+    if (!email) {
+      return done(null, false, {
+        message: profile.emails?.length
+          ? `Your ${label} email address is not verified by ${label}.`
+          : `No email provided by ${label}`,
+      });
+    }
+    return done(null, await resolveOAuthUser(prisma, build(email)));
+  } catch (error) {
+    if (error instanceof SignInFailed) {
+      logger().warn(`${label} OAuth sign-in rejected: ${error.message}`);
+      return done(null, false, { message: error.message });
+    }
+    logger().error(`${label} OAuth error:`, error);
+    return done(error, false);
+  }
 }

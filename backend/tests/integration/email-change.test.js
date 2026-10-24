@@ -107,6 +107,21 @@ describe('requesting an email change (mail not configured)', () => {
     expect(requestedNotice).not.toHaveBeenCalled();
   });
 
+  test('revokes unused tokens: a change link mailed while mail worked cannot apply later', async () => {
+    const first = await patch({ email: 'later@example.com' });
+    expect(first.status).toBe(200);
+    const raw = lastRaw();
+    expect(inMemoryStore.emailVerificationTokens).toHaveLength(1);
+    isConfigured.mockResolvedValue(false);
+    const res = await patch({ email: NEW });
+    expect(res.status).toBe(200);
+    expect(me().email).toBe(NEW);
+    expect(inMemoryStore.emailVerificationTokens).toHaveLength(0);
+    const late = await verify(raw);
+    expect(late.status).toBe(400);
+    expect(me().email).toBe(NEW);
+  });
+
   test('the account is not purgeable, not releasable to a registrant, and can still sign in once mail works again', async () => {
     isConfigured.mockResolvedValue(false);
     me().verificationSentAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);

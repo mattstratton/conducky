@@ -7,7 +7,7 @@ import { User, SocialProvider } from '../generated/prisma/client';
 import { createPrismaClient } from './prisma-client';
 import logger from '../config/logger';
 import { isGated } from '../services/email-verification.service';
-import { pickVerifiedEmail, resolveOAuthUser } from '../services/oauth-account.service';
+import { verifyOAuthProfile } from '../services/oauth-account.service';
 import { emailService } from '../utils/email';
 
 const prisma = createPrismaClient();
@@ -123,33 +123,19 @@ async function initializeOAuthStrategies() {
         scope: ['profile', 'email'],
         passReqToCallback: true // Enable passing request to callback for state access
       },
-      async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
-        try {
-          const email = pickVerifiedEmail(profile.emails);
-          if (!email) {
-            return done(new Error(profile.emails?.length
-              ? 'Your Google email address is not verified by Google.'
-              : 'No email provided by Google'), false);
-          }
-
-          const user = await resolveOAuthUser(prisma, {
-            provider: SocialProvider.google,
-            providerId: profile.id,
-            email,
+      async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false, info?: { message: string }) => void) => {
+        return verifyOAuthProfile(prisma, 'Google', profile, (email) => ({
+          provider: SocialProvider.google,
+          providerId: profile.id,
+          email,
+          displayName: profile.displayName,
+          // Note: Not storing access/refresh tokens for security
+          profileData: JSON.stringify({
+            id: profile.id,
             displayName: profile.displayName,
-            // Note: Not storing access/refresh tokens for security
-            profileData: JSON.stringify({
-              id: profile.id,
-              displayName: profile.displayName,
-              email: email
-            })
-          });
-
-          return done(null, user);
-        } catch (error) {
-          logger().error('Google OAuth error:', error);
-          return done(error, false);
-        }
+            email: email
+          })
+        }), done);
       }
     ));
     logger().info('Google OAuth strategy initialized from database settings');
@@ -168,34 +154,20 @@ async function initializeOAuthStrategies() {
         allRawEmails: true, // include each address's `verified` flag; the default keeps only the primary and drops it
         passReqToCallback: true // Enable passing request to callback for state access
       },
-      async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false) => void) => {
-        try {
-          const email = pickVerifiedEmail(profile.emails);
-          if (!email) {
-            return done(new Error(profile.emails?.length
-              ? 'Your GitHub email address is not verified by GitHub.'
-              : 'No email provided by GitHub'), false);
-          }
-
-          const user = await resolveOAuthUser(prisma, {
-            provider: SocialProvider.github,
-            providerId: profile.id,
-            email,
-            displayName: profile.displayName || profile.username,
-            // Note: Not storing access/refresh tokens for security
-            profileData: JSON.stringify({
-              id: profile.id,
-              username: profile.username,
-              displayName: profile.displayName,
-              email: email
-            })
-          });
-
-          return done(null, user);
-        } catch (error) {
-          logger().error('GitHub OAuth error:', error);
-          return done(error, false);
-        }
+      async (req: any, accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: User | false, info?: { message: string }) => void) => {
+        return verifyOAuthProfile(prisma, 'GitHub', profile, (email) => ({
+          provider: SocialProvider.github,
+          providerId: profile.id,
+          email,
+          displayName: profile.displayName || profile.username,
+          // Note: Not storing access/refresh tokens for security
+          profileData: JSON.stringify({
+            id: profile.id,
+            username: profile.username,
+            displayName: profile.displayName,
+            email: email
+          })
+        }), done);
       }
     ));
     logger().info('GitHub OAuth strategy initialized from database settings');

@@ -457,7 +457,12 @@ The Conducky Team
     opts: { emailChange?: boolean } = {},
     frontendUrl: string = process.env.FRONTEND_BASE_URL || 'http://localhost:3000'
   ): Promise<EmailResult> {
-    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    // Change links need an explicit click on the page (a link scanner must not apply them); signup links auto-verify.
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}${opts.emailChange ? '&confirm=1' : ''}`;
+    const htmlUrl = verifyUrl.replace(/&/g, '&amp;');
+    const ignore = opts.emailChange
+      ? 'If you did not request this change, do not confirm it; your email address will not change.'
+      : "If you didn't request this, you can ignore this email.";
     const subject = opts.emailChange ? 'Confirm Your New Conducky Email Address' : 'Verify Your Conducky Email Address';
     const intro = opts.emailChange
       ? 'Please confirm this address as the new email for your Conducky account.'
@@ -473,7 +478,7 @@ ${verifyUrl}
 
 This link will expire in 24 hours.
 
-If you didn't request this, you can ignore this email.
+${ignore}
 
 Best regards,
 The Conducky Team
@@ -484,12 +489,12 @@ The Conducky Team
       name,
       `<p>${intro}</p>
       <div style="text-align: center;">
-        <a href="${verifyUrl}" class="button">${opts.emailChange ? 'Confirm Email' : 'Verify Email'}</a>
+        <a href="${htmlUrl}" class="button">${opts.emailChange ? 'Confirm Email' : 'Verify Email'}</a>
       </div>
       <p>Or copy and paste this link in your browser:</p>
-      <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">${verifyUrl}</p>
+      <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">${htmlUrl}</p>
       <p>This link will expire in 24 hours.</p>
-      <p>If you didn't request this, you can ignore this email.</p>`
+      <p>${ignore}</p>`
     );
 
     return await this.sendEmail({ to, subject, text, html });

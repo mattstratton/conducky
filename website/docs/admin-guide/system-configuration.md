@@ -1,6 +1,6 @@
 # System Configuration
 
-Conducky uses database-stored configuration for critical system settings like email and OAuth providers. This allows for dynamic configuration changes without requiring application restarts or code deployments.
+Conducky uses database-stored configuration for critical system settings like OAuth providers. This allows for dynamic configuration changes without requiring application restarts or code deployments. Email is the exception: it is configured with environment variables (see [Email configuration](#email-configuration)).
 
 ## Overview
 
@@ -8,7 +8,7 @@ System configuration is managed through the Admin UI and stored securely in the 
 
 ### Supported Configuration Areas
 
-- **Email Settings**: SMTP, SendGrid, or Console email providers
+- **Email**: SMTP or SendGrid, configured with environment variables (the Admin UI can only send a test message)
 - **Google OAuth**: Social login with Google accounts
 - **GitHub OAuth**: Social login with GitHub accounts
 
@@ -53,43 +53,50 @@ Use a reputable online password generator to create a 32+ character random strin
 - Rotating the encryption key requires re-encrypting all stored settings
 - Backup your encryption key - lost keys mean lost configuration data
 
-## Email Configuration
+## Email configuration
 
-### Accessing Email Settings
+Email is **strongly recommended**. Conducky uses it to verify that people own the address they sign up with, to send password reset links, and to send notifications.
 
-1. Log in as a System Admin
-2. Navigate to **Admin → System Settings**
-3. Find the **Email Configuration** card
+### Environment variables only
 
-### Provider Options
+The live mailer reads **only environment variables** on the backend. Set them and restart the backend:
 
-#### Console Provider
-- **Use case**: Development and testing
-- **Behavior**: Logs emails to console instead of sending
-- **Configuration**: Only requires from address and name
+| Variable | Purpose |
+|----------|---------|
+| `EMAIL_PROVIDER` | `smtp` or `sendgrid`. Anything else (or unset) means `console`, which only logs emails and counts as **not configured**. |
+| `EMAIL_FROM` | From address (defaults to `noreply@conducky.local`, so set it) |
+| `EMAIL_REPLY_TO` | Optional reply-to address |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | SMTP server, port (default 587) and `true` for implicit TLS (usually port 465) |
+| `SMTP_USER`, `SMTP_PASS` | SMTP credentials (used only when both are set) |
+| `SENDGRID_API_KEY` | SendGrid API key |
 
-#### SMTP Provider
-- **Use case**: Custom email servers, hosted email services
-- **Required settings**:
-  - SMTP Host (e.g., `smtp.gmail.com`)
-  - SMTP Port (usually 587 or 465)
-  - Username and Password
-  - Security settings (TLS/SSL)
+:::warning[The email settings page does not configure email]
+The email card under **Admin → System Settings** (and `PUT /api/admin/settings/email`) stores settings in the database, but the mailer does not read them. Today that page is only useful for sending a test message. Configure email with the environment variables above.
+:::
 
-#### SendGrid Provider
-- **Use case**: SendGrid email service
-- **Required settings**:
-  - SendGrid API Key
-  - From address and name
+### What counts as configured
 
-### Testing Email Configuration
+Email is "configured" when `EMAIL_PROVIDER` is `smtp` or `sendgrid` (any capitalisation) and the mailer initialized without falling back to console. Conducky verifies the connection when the mailer first initializes. A failure there (wrong password, blocked port) makes it count as not configured until the next restart, and the startup warning and admin banner appear. It does not detect problems that start later, so watch for `verificationEmailSent: false` responses and send a real message to test.
 
-Use the **Test Connection** tab to verify your email settings:
+### What changes when email is configured
 
-1. Configure your email provider settings
-2. Save the configuration
-3. Click **Test Email Connection**
-4. Check the specified email address for the test message
+- New email/password signups, including signups through an invite link, must click an emailed verification link before they can sign in. See [Email verification](../security/authentication.md#4-email-verification).
+- Existing accounts are never locked out. Existing email/password users who have not verified see a banner offering to send a verification email.
+- Changing an email address in profile settings is not applied until the new address is verified.
+- New accounts that never verify are deleted after 7 days. Accounts whose verification email never sent successfully are not purged.
+
+### If email is not configured
+
+Verification is skipped entirely: nobody is blocked, nothing is deleted, and signups work as before. That also means anyone can register with an address they do not own. Conducky is loud about it:
+
+- The backend logs a warning at startup.
+- System Admins see a warning banner on every `/admin` page: "Email is not configured. New signups are not being verified. Configuring email is strongly recommended."
+
+If you configure email later, accounts created before then are not gated; they can verify from the banner.
+
+### Testing email configuration
+
+The **Test Connection** tab in **Admin → System Settings** sends a test message to your own address using the settings you type into the form. It does not use the backend environment variables, so a passing test does not prove they are right. After setting them, trigger a real email (for example **Forgot Password** with your own address) to confirm delivery.
 
 ## OAuth Configuration
 
@@ -131,24 +138,9 @@ Use the **Test Connection** tab to verify your email settings:
 
 If you're migrating from environment variable-based configuration:
 
-### Email Migration
+### Email
 
-**Old environment variables:**
-```bash
-EMAIL_PROVIDER=smtp
-EMAIL_FROM_ADDRESS=noreply@example.com
-EMAIL_FROM_NAME=MyApp
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=username
-SMTP_PASSWORD=password
-```
-
-**Migration steps:**
-1. Access Admin → System Settings
-2. Configure email settings through the UI
-3. Test the configuration
-4. Remove environment variables from your deployment
+Email is not part of this migration: it is configured with environment variables (see [Email configuration](#email-configuration)), not through the Admin UI.
 
 ### OAuth Migration
 
@@ -180,6 +172,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 - Verify SMTP credentials and server settings
 - Check firewall and network connectivity
 - Ensure from address is authorized by your email provider
+- The admin test-send uses the values typed into the form and does not exercise the environment variables the live mailer reads, so a passing test does not prove verification emails will send
 
 **OAuth Login Issues:**
 - Verify redirect URIs match exactly
@@ -189,7 +182,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 ### Logs and Debugging
 
 - **Backend logs**: Check Docker logs for detailed error messages
-- **Email testing**: Use the built-in test functionality
+- **Email testing**: The built-in test uses the form values, not the environment variables the live mailer reads; confirm with a real email such as Forgot Password
 - **OAuth debugging**: Check browser network tab for redirect errors
 
 ## Security Best Practices
@@ -217,9 +210,10 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 System configuration can also be managed via API:
 
 - `GET /api/admin/system/settings` - Retrieve all settings
-- `PUT /api/admin/settings/email` - Update email configuration
+- `PUT /api/admin/settings/email` - Store email settings (not read by the live mailer; see [Email configuration](#email-configuration))
 - `PUT /api/admin/settings/google-oauth` - Update Google OAuth
 - `PUT /api/admin/settings/github-oauth` - Update GitHub OAuth
-- `POST /api/admin/settings/email/test` - Test email configuration
+- `POST /api/admin/settings/email/test` - Send a test email
+- `GET /api/admin/email-status` - Whether a real email provider is configured: `{ configured: boolean }`
 
 All API endpoints require System Admin authentication. 

@@ -15,6 +15,8 @@ import { GlobalNavigation } from "@/components/GlobalNavigation";
 import { Users } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { logger } from "@/lib/logger";
+import { EmailSetupBanner, shouldShowEmailSetupBanner } from "@/components/EmailSetupBanner";
+import { UnverifiedEmailBanner } from "@/components/UnverifiedEmailBanner";
 
 // User context for global user state
 interface User {
@@ -23,6 +25,8 @@ interface User {
   name?: string;
   roles?: string[];
   avatarUrl?: string;
+  emailVerified?: boolean;
+  canVerifyEmail?: boolean;
 }
 interface UserContextType {
   user: User | null;
@@ -222,6 +226,8 @@ const MyApp: React.FC<AppProps> = ({ Component, pageProps }) => {
                         roles: user.roles || [],
                       }} events={events} organizations={organizations} globalRoles={globalRoles} />
                       <main className="min-w-0 flex-1 bg-background text-foreground pb-10">
+                        {shouldShowEmailSetupBanner(globalRoles, router.pathname) && <EmailSetupBanner />}
+                        <UnverifiedEmailBanner />
                         <Component {...pageProps} />
                       </main>
                     </div>

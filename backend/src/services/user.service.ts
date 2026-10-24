@@ -174,6 +174,9 @@ export class UserService {
         data: updateData
       });
 
+      // A change link requested while mail worked must not apply over this immediate write later.
+      if (changed && !pendingChange) await this.verification.revokeUnusedTokens(userId);
+
       // Get avatar if exists
       const avatar = await this.prisma.userAvatar.findUnique({
         where: { userId }

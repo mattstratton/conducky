@@ -96,7 +96,7 @@ function Login() {
     
     // Check for OAuth error
     if (router.query.error === 'oauth_failed') {
-      setError('Social login failed. Please try again or use email/password.');
+      setError('Social login failed. If you used Google or GitHub, make sure the email address on that account is verified, then try again, or sign in with email and password.');
     }
   }, [router.query.next, router.query.message, router.query.error]);
 

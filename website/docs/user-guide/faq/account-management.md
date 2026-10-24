@@ -26,11 +26,12 @@ To update your profile:
 
 ## Can I change my email address?
 
-Email address changes typically require administrator verification:
-- **Submit a request** through your profile settings
-- **Contact event administrators** for assistance
-- **Verify your identity** through established procedures
-- **Update linked accounts** after the change is approved
+Yes, you can change it yourself in your profile settings. No administrator is involved:
+- **Enter the new address** and save
+- **Check the new address** for a verification link. Your current address stays in use until you click it
+- **Watch your old address**: It gets a notice when the change is requested and another when it takes effect. If you didn't ask for the change, change your password right away
+
+If the instance doesn't have email set up, the change is applied immediately. See [Changing Your Email Address](../getting-started/profile-management.md#changing-your-email-address) for details.
 
 ## How do I enable or disable notifications?
 

@@ -1,5 +1,5 @@
 import { PrismaClient, inMemoryStore } from '@prisma/client';
-import { pickVerifiedEmail, resolveOAuthUser } from '../../src/services/oauth-account.service';
+import { pickVerifiedEmail, resolveOAuthUser, verifyOAuthProfile } from '../../src/services/oauth-account.service';
 
 jest.mock('../../src/utils/audit', () => ({ logAudit: jest.fn() }));
 import { logAudit } from '../../src/utils/audit';
@@ -201,5 +201,56 @@ describe('resolveOAuthUser', () => {
     store.socialAccounts.push({ id: 'sa-o', userId: other.id, provider: 'google', providerId: 'g-123' });
     await expect(resolveOAuthUser(prisma, input())).rejects.toThrow('Sign-in could not be completed, please try again.');
     expect(prisma.socialAccount.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('verifyOAuthProfile (passport verify callback)', () => {
+  let prisma: any;
+  const build = (email: string) => ({
+    provider: 'google' as any,
+    providerId: 'g-123',
+    email,
+    displayName: 'Vic Tim',
+    profileData: '{}',
+  });
+  beforeEach(() => {
+    store.users = [];
+    prisma = new PrismaClient();
+    store.socialAccounts = [];
+  });
+
+  it('unverified provider email: done(null, false, { message }) so the route redirects, not 500s', async () => {
+    const done = jest.fn();
+    await verifyOAuthProfile(prisma, 'Google', { id: 'g-123', emails: [{ value: 'a@x.com', verified: false }] }, build, done);
+    expect(done).toHaveBeenCalledWith(null, false, { message: 'Your Google email address is not verified by Google.' });
+  });
+
+  it('no email at all: done(null, false, { message })', async () => {
+    const done = jest.fn();
+    await verifyOAuthProfile(prisma, 'GitHub', { id: 'x' }, build, done);
+    expect(done).toHaveBeenCalledWith(null, false, { message: 'No email provided by GitHub' });
+  });
+
+  it('SignInFailed: done(null, false, { message })', async () => {
+    const other = { id: 'o1', email: 'other@example.com', name: 'O', passwordHash: null, emailVerifiedAt: new Date() };
+    store.users.push(other, { id: 'o2', email: 'victim@example.com', name: 'V', passwordHash: null, emailVerifiedAt: new Date() });
+    store.socialAccounts.push({ id: 'sa-o', userId: other.id, provider: 'google', providerId: 'g-123' });
+    const done = jest.fn();
+    await verifyOAuthProfile(prisma, 'Google', { id: 'g-123', emails: [{ value: 'victim@example.com', verified: true }] }, build, done);
+    expect(done).toHaveBeenCalledWith(null, false, { message: 'Sign-in could not be completed, please try again.' });
+  });
+
+  it('unexpected errors still go to done(err)', async () => {
+    const boom = new Error('db down');
+    prisma.$transaction = jest.fn().mockRejectedValue(boom);
+    const done = jest.fn();
+    await verifyOAuthProfile(prisma, 'Google', { id: 'g-123', emails: [{ value: 'a@x.com', verified: true }] }, build, done);
+    expect(done).toHaveBeenCalledWith(boom, false);
+  });
+
+  it('success: done(null, user)', async () => {
+    const done = jest.fn();
+    await verifyOAuthProfile(prisma, 'Google', { id: 'g-123', emails: [{ value: 'new@x.com', verified: true }] }, build, done);
+    expect(done).toHaveBeenCalledWith(null, expect.objectContaining({ email: 'new@x.com' }));
   });
 });

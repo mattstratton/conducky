@@ -14,6 +14,10 @@ jest.mock('next/router', () => ({ useRouter: () => mockRouter }));
 const user = { id: 'u1', name: 'Test User', email: 'old@example.com' };
 const setUser = jest.fn();
 const mockFetch = jest.fn();
+// setUser receives either a user or an updater (so the saved fields merge into the context user).
+type Applied = Record<string, unknown> | null;
+const appliedTo = (prev: Applied): Applied[] =>
+  setUser.mock.calls.map(([arg]: [Applied | ((p: Applied) => Applied)]) => (typeof arg === 'function' ? arg(prev) : arg));
 let patchReply: { status: number; body: unknown } | 'network';
 
 function renderPage() {
@@ -49,6 +53,17 @@ describe('profile settings: email change', () => {
     global.fetch = mockFetch as unknown as typeof fetch;
   });
 
+  it('keeps the context-only fields (canVerifyEmail, emailVerified, roles) when a profile save returns a plain user', async () => {
+    const rich = { ...user, canVerifyEmail: true, emailVerified: true, roles: ['event_admin'] };
+    const saved = { id: 'u1', name: 'Renamed', email: 'old@example.com', avatarUrl: null };
+    patchReply = { status: 200, body: { user: saved, message: 'ok' } };
+    renderPage();
+    await submit(undefined, 'Renamed');
+    await waitFor(() => expect(setUser).toHaveBeenCalled());
+    expect(appliedTo(rich)).toContainEqual({ ...rich, ...saved });
+    expect(appliedTo(null)).toContainEqual(saved);
+  });
+
   it('has the polite live region in the DOM before any message', async () => {
     renderPage();
     await screen.findByLabelText(/email address/i);
@@ -65,7 +80,7 @@ describe('profile settings: email change', () => {
     await waitFor(() => expect(region).toHaveTextContent(
       'We sent a verification link to new@example.com. Your email stays old@example.com until you verify.'));
     expect(screen.getByLabelText(/email address/i)).toHaveValue('old@example.com');
-    expect(setUser).not.toHaveBeenCalledWith(expect.objectContaining({ email: 'new@example.com' }));
+    expect(appliedTo(user).some((u) => u?.email === 'new@example.com')).toBe(false);
     expect(screen.queryByText('Profile updated successfully!')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toHaveAttribute('aria-describedby', expect.stringContaining('profile-status'));
   });
@@ -75,7 +90,7 @@ describe('profile settings: email change', () => {
     patchReply = { status: 200, body: { user: updated, emailChangePending: 'new@example.com', verificationEmailSent: true } };
     renderPage();
     await submit('new@example.com', 'Renamed');
-    await waitFor(() => expect(setUser).toHaveBeenCalledWith(updated));
+    await waitFor(() => expect(appliedTo(user)).toContainEqual(updated));
   });
 
   it('shows a warning when the verification link could not be sent', async () => {
@@ -220,7 +235,7 @@ describe('profile settings: email change', () => {
     const region = document.getElementById('profile-status')!;
     await waitFor(() => expect(region).toHaveTextContent('Profile updated successfully!'));
     expect(region).not.toHaveTextContent(/verification|email/i);
-    expect(setUser).toHaveBeenCalledWith(user);
+    expect(appliedTo(user)).toContainEqual(user);
   });
 
   it('does not disable the focused submit button while saving', async () => {

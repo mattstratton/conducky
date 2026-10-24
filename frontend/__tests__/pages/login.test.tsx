@@ -5,11 +5,12 @@ import { UserContext } from '../../pages/_app';
 import '@testing-library/jest-dom';
 
 // Mock the Next.js router
+let mockQuery: Record<string, string> = {};
 jest.mock('next/router', () => ({
   useRouter: () => ({
     push: jest.fn(),
     prefetch: jest.fn(),
-    query: {},
+    query: mockQuery,
     asPath: '/',
   }),
 }));
@@ -88,5 +89,21 @@ describe('Login page', () => {
       await waitFor(() => expect(screen.getByText('Invalid email or password.')).toBeInTheDocument());
       expect(screen.queryByRole('heading', { name: /check your email/i })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('Login page OAuth failure', () => {
+  afterEach(() => { mockQuery = {}; });
+
+  it('tells the person to check their provider email is verified', async () => {
+    mockQuery = { error: 'oauth_failed' };
+    render(
+      <UserContext.Provider value={{ user: null, setUser: jest.fn(), sessionLoading: false }}>
+        <LoginPage />
+      </UserContext.Provider>
+    );
+    expect(await screen.findByText(
+      'Social login failed. If you used Google or GitHub, make sure the email address on that account is verified, then try again, or sign in with email and password.'
+    )).toBeInTheDocument();
   });
 });

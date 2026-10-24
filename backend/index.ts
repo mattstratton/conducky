@@ -67,6 +67,8 @@ import { getSessionConfig } from './src/config/session';
 // Import Swagger configuration
 import { setupSwagger } from './src/config/swagger';
 import { startUnverifiedPurge } from './src/services/unverified-purge.service';
+import { emailService, EmailService } from './src/utils/email';
+import { logEmailSetupWarning } from './src/utils/email-startup-check';
 
 // Initialize Prisma client (after environment is loaded)
 const prisma = createPrismaClient();
@@ -245,12 +247,18 @@ app.get('/api/session', async (req: any, res: any) => {
         where: { userId: req.user.id }
       });
 
+      // Nudge fields come from the deserialized user row (no extra query). isConfigured only when it can matter.
+      const emailVerified = !!req.user.emailVerifiedAt;
+      const canVerifyEmail = !emailVerified && !!req.user.passwordHash && (await emailService.isConfigured());
+
       const response = { 
         authenticated: true, 
         user: {
           id: req.user.id,
           email: req.user.email,
           name: req.user.name,
+          emailVerified,
+          canVerifyEmail,
           roles: roles,
           avatarUrl: avatar ? `/users/${req.user.id}/avatar` : null
         }
@@ -374,8 +382,6 @@ app.get('/session', async (req: any, res: any) => {
 });
 
 // Email config status endpoint
-import { EmailService } from './src/utils/email';
-
 app.get('/api/config/email-enabled', (_req, res) => {
   try {
     const emailService = new EmailService();
@@ -448,6 +454,7 @@ if (process.env.NODE_ENV !== 'test') {
     logger().info(`Server running on ${host}:${PORT}`);
 logger().info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     startUnverifiedPurge(prisma);
+    logEmailSetupWarning().catch(() => {});
   });
 }
 

@@ -68,6 +68,19 @@ Each audit log entry contains:
 | `password_reset_requested` | Password reset initiated | `user` | Request timestamp, IP address |
 | `password_reset_completed` | Password successfully reset | `user` | Reset timestamp |
 
+#### Email Verification Events
+| Action | Description | Target Type | Logged Information |
+|--------|-------------|-------------|-------------------|
+| `verification_email_sent` | A verification email was sent successfully (signup, resend, own request, or email change) | `User` | User ID |
+| `email_verified` | A verification link was used and the address is now verified (an email change link logs `email_change_applied` instead) | `User` | User ID |
+| `verification_email_corrected` | A pending signup fixed a mistyped address (logged after the address changes, whether or not the new email was sent) | `User` | User ID |
+| `unverified_account_replaced` | A new signup replaced a still-pending unverified signup for the same address (its last verification email, or its creation if none was sent, was over an hour old) | `User` | Replaced user ID; User ID is null (the registrant is anonymous) |
+| `unverified_account_purged` | A new account that never verified was deleted 7 days after its last successfully sent verification email (accounts never mailed are not purged) | `User` | Deleted user ID; User ID is null (system action) |
+| `email_change_requested` | A user asked to change their email address (not applied until the new address is verified) | `User` | User ID |
+| `email_change_applied` | The new address was verified and the change took effect | `User` | User ID |
+| `oauth_linked_unverified_account` | A Google or GitHub sign-in linked to an existing unverified account and marked it verified | `User` | User ID |
+| `oauth_password_cleared` | The same sign-in also cleared the password of a new signup that was still awaiting verification | `User` | User ID |
+
 #### Role Management
 | Action | Description | Target Type | Logged Information |
 |--------|-------------|-------------|-------------------|
