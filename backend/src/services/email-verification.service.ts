@@ -82,6 +82,8 @@ export class EmailVerificationService {
     pendingEmail?: string
   ): Promise<boolean> {
     try {
+      // The console provider logs whole mails, link included: never issue a token or mail without a real provider.
+      if (!(await this.mailer.isConfigured())) return false;
       // ONE destination for both the token binding and the recipient, so they cannot diverge.
       const to = norm(pendingEmail ?? user.email);
       const raw = await this.issueToken(user.id, to, pendingEmail);
@@ -93,7 +95,15 @@ export class EmailVerificationService {
       );
       if (!result.success) return false;
       await this.prisma.user.update({ where: { id: user.id }, data: { verificationSentAt: new Date() } });
-      await logAudit({ action: 'verification_email_sent', targetType: 'User', targetId: user.id, userId: user.id });
+      // The mail is out and verificationSentAt is set: a failed audit must not report "could not send".
+      try {
+        await logAudit({ action: 'verification_email_sent', targetType: 'User', targetId: user.id, userId: user.id });
+      } catch (auditErr) {
+        logger().error('Audit of verification email failed', {
+          userId: user.id,
+          error: auditErr instanceof Error ? auditErr.message : 'unknown',
+        });
+      }
       return true;
     } catch (err) {
       logger().error('Failed to send verification email', {
@@ -272,6 +282,8 @@ export class EmailVerificationService {
     try {
       await this.prisma.$transaction(async (tx) => {
         const where = { userId };
+        // Token rows before the user row, like verifyToken and correctEmail, so a racing click cannot deadlock the purge.
+        await tx.emailVerificationToken.deleteMany({ where });
         await tx.passwordResetToken.deleteMany({ where });
         await tx.userNotificationSettings.deleteMany({ where });
         await tx.userAvatar.deleteMany({ where });
@@ -349,9 +361,10 @@ export class EmailVerificationService {
     if (!isGated(user) || !(await this.mailer.isConfigured())) return { status: 'not_eligible' };
 
     if (newEmail === email) {
-      const recent = user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS;
-      const sent = recent ? false : await this.sendVerification(user);
-      return { status: 'ok', email, verificationEmailSent: sent };
+      if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
+        return { status: 'cooldown' };
+      }
+      return { status: 'ok', email, verificationEmailSent: await this.sendVerification(user) };
     }
 
     // Same cooldown as the same-address branch, checked before anything is released, changed or sent.

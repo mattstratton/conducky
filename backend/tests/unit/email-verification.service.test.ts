@@ -119,6 +119,23 @@ describe('EmailVerificationService', () => {
       expect(send.mock.calls[0][3]).toEqual({ emailChange: true });
     });
 
+    it('still returns true when the audit write fails after a successful send', async () => {
+      (logAudit as jest.Mock).mockRejectedValueOnce(new Error('audit down'));
+      const u = addUser();
+      expect(await svc.sendVerification(u)).toBe(true);
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(findUser(u.id).verificationSentAt).toBeInstanceOf(Date);
+    });
+
+    it('issues no token and sends nothing when the mailer is not configured', async () => {
+      configured.mockResolvedValue(false);
+      const u = addUser();
+      expect(await svc.sendVerification(u)).toBe(false);
+      expect(store.emailVerificationTokens).toHaveLength(0);
+      expect(send).not.toHaveBeenCalled();
+      expect(findUser(u.id).verificationSentAt).toBeNull();
+    });
+
     it('returns false and leaves verificationSentAt on failure', async () => {
       send.mockResolvedValue({ success: false } as any);
       const u = addUser();
@@ -564,6 +581,17 @@ describe('EmailVerificationService', () => {
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
+    it('deletes the verification tokens before the user row (same lock order as verify and correct)', async () => {
+      const u = addUser({ verificationSentAt: new Date() });
+      await svc.issueToken(u.id, u.email);
+      expect(await svc.deleteGatedUnverifiedAccount(u.id)).toBe(true);
+      expect(store.emailVerificationTokens.filter((t: any) => t.userId === u.id)).toHaveLength(0);
+      const tokenOrder = prisma.emailVerificationToken.deleteMany.mock.invocationCallOrder;
+      const userOrder = prisma.user.deleteMany.mock.invocationCallOrder;
+      expect(tokenOrder.length).toBeGreaterThan(0);
+      expect(Math.max(...tokenOrder.slice(-1))).toBeLessThan(userOrder[0]);
+    });
+
     it('returns false for a verified account, an ungated account and an unknown id', async () => {
       const verified = addUser({ emailVerifiedAt: new Date() });
       const ungated = addUser({ emailVerificationRequired: false });
@@ -781,6 +809,13 @@ describe('EmailVerificationService.correctEmail', () => {
     const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
     expect(r.status).toBe('not_eligible');
     expect(find('cx-1').email).toBe('a@example.com');
+  });
+
+  test('same-address branch: inside the cooldown -> cooldown (not a fake "could not send"), nothing sent', async () => {
+    find('cx-1').verificationSentAt = new Date(Date.now() - RESEND_COOLDOWN_MS / 2);
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'A@example.com' });
+    expect(r).toEqual({ status: 'cooldown' });
+    expect(send).not.toHaveBeenCalled();
   });
 
   test('same-address resend binds its token to the address it mails', async () => {

@@ -61,6 +61,14 @@ describe('purgeUnverifiedAccounts', () => {
     });
   });
 
+  it('warns once per skipped candidate, with only the user id', async () => {
+    const warn = jest.spyOn(logger(), 'warn').mockImplementation((() => logger()) as any);
+    service.deleteGatedUnverifiedAccount.mockResolvedValueOnce(false);
+    await run();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith('Unverified account purge skipped a candidate', { userId: 'a' });
+  });
+
   it('keeps purging when the audit write fails', async () => {
     (logAudit as jest.Mock).mockRejectedValue(new Error('audit down'));
     expect(await run()).toBe(2);

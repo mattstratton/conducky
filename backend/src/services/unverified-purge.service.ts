@@ -34,7 +34,11 @@ export async function purgeUnverifiedAccounts(
   let deleted = 0;
   for (const { id } of candidates) {
     try {
-      if (!(await service.deleteGatedUnverifiedAccount(id, { lastMailBefore: cutoff }))) continue;
+      if (!(await service.deleteGatedUnverifiedAccount(id, { lastMailBefore: cutoff }))) {
+        // Usually a foreign key blocking the delete: say so, or it is skipped silently every day.
+        logger().warn('Unverified account purge skipped a candidate', { userId: id });
+        continue;
+      }
       deleted++;
     } catch (error) {
       logger().error('Failed to purge unverified account', { userId: id, error: msg(error) });
