@@ -67,7 +67,6 @@ export default function VerifyEmailPage() {
     if (calledFor.current === key) return;
     calledFor.current = key;
     verify();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, token, attempt, needsClick]);
 
   // One post per click: a double click (or Try again while busy) is ignored.
