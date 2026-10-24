@@ -180,8 +180,10 @@ describe('CheckYourEmail', () => {
 
   it('uses neutral copy when emailSent is not provided', () => {
     render(<CheckYourEmail email="a@example.com" password={PASSWORD} />);
-    expect(screen.getByText(/We sent a link to/i)).toHaveTextContent('a@example.com');
+    expect(screen.getByText(/Use Resend to get a new link sent to/i)).toHaveTextContent('a@example.com');
     expect(screen.queryByText(/We could not send/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/we sent/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/when you signed up/i)).not.toBeInTheDocument();
   });
 
   it('supports the heading level prop', () => {
@@ -190,5 +192,44 @@ describe('CheckYourEmail', () => {
     unmount();
     setup({ headingLevel: 'h1' });
     expect(screen.getByRole('heading', { level: 1, name: /check your email/i })).toBeInTheDocument();
+  });
+
+  it('gives aria-disabled buttons a disabled look while busy', async () => {
+    mockFetch.mockReturnValueOnce(new Promise(() => {}));
+    setup();
+    const btn = screen.getByRole('button', { name: /resend/i });
+    await userEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    expect(btn.className).toMatch(/aria-disabled:opacity-50/);
+    expect(btn.className).toMatch(/aria-disabled:pointer-events-none/);
+    const submit = screen.getByRole('button', { name: /change address|changing/i });
+    expect(submit.className).toMatch(/aria-disabled:opacity-50/);
+  });
+
+  it('does not render busy text in the success colour', async () => {
+    mockFetch.mockReturnValueOnce(new Promise(() => {}));
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /resend/i }));
+    const region = document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(region).toHaveTextContent(/sending/i);
+    expect(region.className).not.toMatch(/green/);
+  });
+
+  it('renders success text in the success colour', async () => {
+    reply(200, {});
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /resend/i }));
+    await screen.findByText(/a new link is on its way/i);
+    expect((document.querySelector('[aria-live="polite"]') as HTMLElement).className).toMatch(/green/);
+  });
+
+  it('an empty submit sends nothing and shows a field-level error', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /change address/i }));
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter the correct email address.');
+    const input = screen.getByLabelText(/wrong address/i);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input.getAttribute('aria-describedby')).toBeTruthy();
   });
 });

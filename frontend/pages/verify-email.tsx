@@ -25,6 +25,7 @@ export default function VerifyEmailPage() {
   const [state, setState] = useState<State>('verifying');
   const [attempt, setAttempt] = useState(0);
   const calledFor = useRef<string | null>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
   const token = typeof router.query.token === 'string' ? router.query.token : '';
 
   useEffect(() => {
@@ -60,7 +61,13 @@ export default function VerifyEmailPage() {
 
   const isSuccess = state in SUCCESS_COPY;
   const canRetry = state === 'rate_limited' || state === 'network';
-  const title = isSuccess ? 'Email verified' : state === 'verifying' ? 'Verifying your email' : 'Verification link problem';
+  const title = isSuccess
+    ? 'Email verified'
+    : state === 'verifying'
+      ? 'Verifying your email'
+      : canRetry
+        ? 'Verification could not be completed'
+        : 'Verification link problem';
   const statusText = state === 'verifying' ? 'Verifying your email address...' : isSuccess ? SUCCESS_COPY[state] : '';
 
   return (
@@ -74,8 +81,12 @@ export default function VerifyEmailPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <div
+            ref={statusRef}
             role="status"
-            className={isSuccess ? 'text-sm font-medium text-center text-green-700 dark:text-green-400' : 'text-sm text-center'}
+            tabIndex={-1}
+            className={`rounded focus:outline-none focus:ring-2 focus:ring-ring ${
+              isSuccess ? 'text-sm font-medium text-center text-green-700 dark:text-green-400' : 'text-sm text-center'
+            }`}
           >
             {statusText}
           </div>
@@ -90,6 +101,7 @@ export default function VerifyEmailPage() {
               className="h-11"
               onClick={() => {
                 setState('verifying');
+                statusRef.current?.focus();
                 setAttempt((n) => n + 1);
               }}
             >

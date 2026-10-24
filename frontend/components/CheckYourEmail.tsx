@@ -47,6 +47,7 @@ export function CheckYourEmail({
   const [sent, setSent] = useState<boolean | undefined>(emailSent);
   const [newEmail, setNewEmail] = useState('');
   const [status, setStatus] = useState('');
+  const [statusKind, setStatusKind] = useState<'busy' | 'success'>('busy');
   const [error, setError] = useState<{ text: string; source: 'resend' | 'correct' } | null>(null);
   const [busy, setBusy] = useState<'resend' | 'correct' | null>(null);
   const busyRef = useRef(false);
@@ -61,6 +62,7 @@ export function CheckYourEmail({
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(kind);
+    setStatusKind('busy');
     setStatus(busyText);
     setError(null);
     try {
@@ -81,6 +83,7 @@ export function CheckYourEmail({
         setStatus('');
         setError({ text: RATE_LIMITED, source: 'resend' });
       } else if (code >= 200 && code < 300) {
+        setStatusKind('success');
         setStatus('If this address needs verification, a new link is on its way.');
       } else {
         setStatus('');
@@ -90,7 +93,10 @@ export function CheckYourEmail({
 
   const handleCorrect = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmail.trim()) return;
+    if (!newEmail.trim()) {
+      setError({ text: 'Enter the correct email address.', source: 'correct' });
+      return;
+    }
     return run('correct', 'Changing…', async () => {
       const typed = newEmail.trim();
       const { status: code, data } = await post('/api/auth/correct-email', {
@@ -106,6 +112,7 @@ export function CheckYourEmail({
         setShownEmail(confirmed);
         setSent(data.verificationEmailSent === true);
         setNewEmail('');
+        setStatusKind('success');
         setStatus('Email address changed.');
         onEmailChanged?.(confirmed);
         headingRef.current?.focus();
@@ -138,9 +145,8 @@ export function CheckYourEmail({
         {sent === false && 'We could not send the email. Use Resend to try again.'}
         {sent === undefined && (
           <>
-            Your account needs its email address verified. We sent a link to{' '}
-            <strong className="break-all">{shownEmail}</strong> when you signed up; use Resend if you need a new
-            one.
+            Your account needs its email address verified. Use Resend to get a new link sent to{' '}
+            <strong className="break-all">{shownEmail}</strong>.
           </>
         )}
       </p>
@@ -151,7 +157,12 @@ export function CheckYourEmail({
         Open the link to finish setting up your account, then sign in.
       </p>
 
-      <div aria-live="polite" className="min-h-0 text-sm font-medium text-center text-green-700 dark:text-green-400">
+      <div
+        aria-live="polite"
+        className={`text-sm font-medium text-center ${
+          statusKind === 'success' ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'
+        }`}
+      >
         {status}
       </div>
       {error && (
@@ -162,20 +173,20 @@ export function CheckYourEmail({
 
       <Button
         type="button"
-        className="h-11 w-full"
+        className="h-11 w-full aria-disabled:opacity-50 aria-disabled:pointer-events-none"
         onClick={handleResend}
         aria-disabled={busy !== null}
       >
         {busy === 'resend' ? 'Sending…' : 'Resend verification email'}
       </Button>
 
-      <form onSubmit={handleCorrect} className="grid gap-2">
+      <form onSubmit={handleCorrect} noValidate className="grid gap-2">
         <Label htmlFor="correct-email-input">Wrong address? Enter the correct one</Label>
         <Input
           id="correct-email-input"
           type="email"
           autoComplete="email"
-          required
+          aria-required="true"
           className="h-11"
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
@@ -186,8 +197,8 @@ export function CheckYourEmail({
         <Button
           type="submit"
           variant="outline"
-          className="h-11 w-full"
-          aria-disabled={busy !== null || !newEmail.trim()}
+          className="h-11 w-full aria-disabled:opacity-50 aria-disabled:pointer-events-none"
+          aria-disabled={busy !== null}
         >
           {busy === 'correct' ? 'Changing…' : 'Change address'}
         </Button>

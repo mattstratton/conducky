@@ -69,7 +69,8 @@ describe('Login page', () => {
       await signIn({ status: 401, body: { error: 'Please verify your email address to sign in.', code: 'EMAIL_NOT_VERIFIED' } });
       expect(await screen.findByRole('heading', { name: /check your email/i })).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 1, name: /check your email/i })).toBeInTheDocument();
-      expect(screen.getByText(/We sent a link to/i)).toHaveTextContent('a@example.com');
+      expect(screen.getByText(/Use Resend to get a new link sent to/i)).toHaveTextContent('a@example.com');
+      expect(screen.queryByText(/when you signed up/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/We sent a verification link to/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/Please verify your email address to sign in/i)).not.toBeInTheDocument();
     });
@@ -79,6 +80,7 @@ describe('Login page', () => {
       fireEvent.click(await screen.findByRole('button', { name: /back to sign in/i }));
       expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/^password$/i, { selector: 'input' })).toHaveValue('');
+      expect(screen.getByLabelText(/email/i)).toHaveFocus();
     });
 
     it('still shows the generic error for a wrong password', async () => {

@@ -143,4 +143,30 @@ describe('verify-email page', () => {
     render(<VerifyEmailPage />);
     await waitFor(() => expect(document.title).toBe('Email verified'));
   });
+
+  it('moves focus to the status region when Try again is pressed', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('down'));
+    render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    mockFetch.mockReturnValueOnce(new Promise(() => {}));
+    const btn = screen.getByRole('button', { name: /try again/i });
+    btn.focus();
+    fireEvent.click(btn);
+    await waitFor(() => expect(screen.getByRole('status')).toHaveFocus());
+    expect(screen.getByRole('status')).toHaveTextContent(/verifying/i);
+  });
+
+  it('does not call a rate-limited page a link problem', async () => {
+    reply(429, {});
+    render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    expect(document.title).toBe('Verification could not be completed');
+  });
+
+  it('keeps the link-problem title for an invalid link', async () => {
+    reply(400, {});
+    render(<VerifyEmailPage />);
+    await screen.findByRole('alert');
+    expect(document.title).toBe('Verification link problem');
+  });
 });
