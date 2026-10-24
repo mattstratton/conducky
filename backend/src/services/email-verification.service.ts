@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+import validator from 'validator';
 import type { PrismaClient, User } from '../generated/prisma/client';
 import { emailService } from '../utils/email';
 import { logAudit } from '../utils/audit';
@@ -25,6 +27,14 @@ export type VerifyResult =
   | { status: 'verified' | 'email_changed'; userId: string }
   | { status: 'already_verified' }
   | { status: 'invalid' };
+
+export type CorrectEmailResult =
+  | { status: 'ok'; email: string; verificationEmailSent: boolean }
+  | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' };
+
+// Valid bcrypt hash of a throwaway string: unknown accounts still pay for a compare (timing).
+const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
+const norm = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
 
 export class EmailVerificationService {
   constructor(
@@ -198,5 +208,60 @@ export class EmailVerificationService {
     if (!(await this.mailer.isConfigured())) return;
     if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) return;
     await this.sendVerification(user);
+  }
+
+  /**
+   * Lets a gated unverified account fix a mistyped address. Order matters: ALL validation first
+   * (inputs, password, eligibility), then release of a stale holder, then one transaction that
+   * revokes unused tokens and changes the address only if the account is STILL gated, so a
+   * concurrent verification (or an old token) can never verify an address that was not mailed.
+   */
+  async correctEmail(input: { email: unknown; password: unknown; newEmail: unknown }): Promise<CorrectEmailResult> {
+    const email = norm(input.email);
+    const newEmail = norm(input.newEmail);
+    const password = input.password;
+    if (!email || typeof password !== 'string' || !password) return { status: 'invalid_input' };
+    if (!newEmail || newEmail.length > 254 || !validator.isEmail(newEmail)) return { status: 'invalid_email' };
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    const hashOk = await bcrypt.compare(password, user?.passwordHash || DUMMY_HASH);
+    if (!user || !user.passwordHash || !hashOk) return { status: 'invalid_credentials' };
+    if (!isGated(user) || !(await this.mailer.isConfigured())) return { status: 'not_eligible' };
+
+    if (newEmail === email) {
+      const recent = user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS;
+      const sent = recent ? false : await this.sendVerification(user);
+      return { status: 'ok', email, verificationEmailSent: sent };
+    }
+
+    if (await this.prisma.user.findUnique({ where: { email: newEmail } })) {
+      if (!(await this.releaseUnverifiedAddress(newEmail))) return { status: 'taken' };
+    }
+
+    try {
+      const changed = await this.prisma.$transaction(async (tx) => {
+        await tx.emailVerificationToken.deleteMany({ where: { userId: user.id, usedAt: null } });
+        const { count } = await tx.user.updateMany({
+          where: { id: user.id, emailVerificationRequired: true, emailVerifiedAt: null },
+          data: { email: newEmail },
+        });
+        return count === 1;
+      });
+      if (!changed) return { status: 'not_eligible' };
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code === 'P2002') return { status: 'taken' };
+      throw err;
+    }
+
+    const verificationEmailSent = await this.sendVerification({ id: user.id, email: newEmail, name: user.name });
+    try {
+      await logAudit({ action: 'verification_email_corrected', targetType: 'User', targetId: user.id, userId: user.id });
+    } catch (err) {
+      logger().error('Audit of email correction failed', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+    return { status: 'ok', email: newEmail, verificationEmailSent };
   }
 }

@@ -472,3 +472,73 @@ describe('EmailVerificationService.gateNewUser', () => {
     expect(errorSpy.mock.calls[1][1]).toEqual({ userId: 'gate-1', error: 'delete failed' });
   });
 });
+
+describe('EmailVerificationService.correctEmail', () => {
+  const bcrypt = require('bcrypt');
+  let prisma: any;
+  let svc: EmailVerificationService;
+  let send: jest.SpyInstance;
+  const find = (id: string) => store.users.find((u: any) => u.id === id);
+
+  beforeEach(async () => {
+    store.emailVerificationTokens.length = 0;
+    store.users.length = 0;
+    store.users.push({
+      id: 'cx-1',
+      email: 'a@example.com',
+      name: 'A',
+      passwordHash: await bcrypt.hash('pw-123456', 4),
+      emailVerificationRequired: true,
+      emailVerifiedAt: null,
+      verificationSentAt: null,
+    });
+    store.emailVerificationTokens.push({
+      id: 'old', userId: 'cx-1', tokenHash: hashToken('old'), pendingEmail: null, usedAt: null,
+      expiresAt: new Date(Date.now() + HOUR),
+    });
+    prisma = new PrismaClient();
+    svc = new EmailVerificationService(prisma);
+    jest.spyOn(emailService, 'isConfigured').mockResolvedValue(true);
+    send = jest.spyOn(emailService, 'sendVerificationEmail').mockResolvedValue({ success: true } as any);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  test('changes email, revokes the old token and issues a new one', async () => {
+    const r = await svc.correctEmail({ email: 'A@example.com', password: 'pw-123456', newEmail: 'B@example.com' });
+    expect(r).toEqual({ status: 'ok', email: 'b@example.com', verificationEmailSent: true });
+    expect(find('cx-1').email).toBe('b@example.com');
+    expect(store.emailVerificationTokens.find((t: any) => t.id === 'old')).toBeUndefined();
+    expect(store.emailVerificationTokens).toHaveLength(1);
+  });
+
+  test('a concurrent verification (gating re-check inside the transaction) leaves the email unchanged', async () => {
+    (emailService.isConfigured as jest.Mock).mockImplementation(async () => {
+      find('cx-1').emailVerifiedAt = new Date();
+      return true;
+    });
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r.status).toBe('not_eligible');
+    expect(find('cx-1').email).toBe('a@example.com');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  test('a unique violation on the update maps to taken', async () => {
+    jest.spyOn(prisma.user, 'updateMany').mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r.status).toBe('taken');
+  });
+
+  test('a throwing audit does not turn a committed change into an error', async () => {
+    (logAudit as jest.Mock).mockRejectedValueOnce(new Error('audit down'));
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r.status).toBe('ok');
+    expect(find('cx-1').email).toBe('b@example.com');
+  });
+});
+
+describe('user.updateMany mock', () => {
+  test('throws on unsupported filters', () => {
+    const prisma: any = new PrismaClient();
+    expect(() => prisma.user.updateMany({ where: { email: 'x' }, data: {} })).toThrow(/unsupported filter/);
+  });
+});

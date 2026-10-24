@@ -1806,6 +1806,21 @@ class PrismaClient {
       inMemoryStore.users = inMemoryStore.users.filter((u) => !match(u));
       return { count: before - inMemoryStore.users.length };
     });
+    this.user.updateMany = jest.fn(({ where = {}, data = {} } = {}) => {
+      const allowed = ['id', 'emailVerificationRequired', 'emailVerifiedAt'];
+      Object.keys(where).forEach((k) => {
+        if (!allowed.includes(k)) throw new Error(`user.updateMany mock: unsupported filter "${k}"`);
+      });
+      const match = (u) =>
+        Object.entries(where).every(([k, v]) => (u[k] === undefined ? null : u[k]) === v);
+      let count = 0;
+      inMemoryStore.users = inMemoryStore.users.map((u) => {
+        if (!match(u)) return u;
+        count++;
+        return { ...u, ...data };
+      });
+      return { count };
+    });
     this.incidentComment = {
               findMany: jest.fn(({ where, orderBy, skip, take, include }) => {
           let results = [...inMemoryStore.incidentComments];

@@ -142,6 +142,7 @@ describe('POST /api/auth/correct-email', () => {
 
   test('wrong password and unknown account give the identical 401', async () => {
     addUser();
+    addUser({ id: 'stale-1', email: 'x@example.com' });
     const wrong = await send({ email: 'foo@example.com', password: 'nope-nope', newEmail: 'x@example.com' });
     const unknown = await send({ email: 'ghost@example.com', newEmail: 'x@example.com' });
     expect(wrong.status).toBe(401);
@@ -149,6 +150,9 @@ describe('POST /api/auth/correct-email', () => {
     expect(wrong.body).toEqual({ error: 'Invalid email or password.' });
     expect(unknown.body).toEqual(wrong.body);
     expect(find('gated-1').email).toBe('foo@example.com');
+    expect(find('stale-1')).toBeTruthy();
+    expect(sendSpy).not.toHaveBeenCalled();
+    expect(inMemoryStore.emailVerificationTokens).toHaveLength(0);
   });
 
   test('verified or ungated account, or unconfigured email -> 400', async () => {
@@ -213,6 +217,53 @@ describe('POST /api/auth/correct-email', () => {
     addUser();
     const res = await send({ email: 'foo@example.com', newEmail: 'FOO@example.com' });
     expect(res.status).toBe(200);
+    expect(res.body).toEqual({ email: 'foo@example.com', verificationEmailSent: true });
     expect(find('gated-1').email).toBe('foo@example.com');
+    expect(sendSpy).toHaveBeenCalledTimes(1);
+    expect(sendSpy.mock.calls[0][0]).toBe('foo@example.com');
+  });
+
+  test('the old token stops working after a correction', async () => {
+    addUser();
+    addToken('oldtoken', 'gated-1');
+    expect((await send({ email: 'foo@example.com', newEmail: 'new@example.com' })).status).toBe(200);
+    const res = await request(app).post('/api/auth/verify-email').send({ token: 'oldtoken' });
+    expect(res.status).toBe(400);
+    expect(find('gated-1').emailVerifiedAt).toBeNull();
+  });
+
+  test('verified mid-request (race) -> 400 and the email does not change', async () => {
+    addUser();
+    emailService.isConfigured.mockImplementation(async () => {
+      find('gated-1').emailVerifiedAt = new Date();
+      return true;
+    });
+    const res = await send({ email: 'foo@example.com', newEmail: 'new@example.com' });
+    expect(res.status).toBe(400);
+    expect(find('gated-1').email).toBe('foo@example.com');
+    expect(sendSpy).not.toHaveBeenCalled();
+  });
+
+  test('array and object bodies are rejected without crashing', async () => {
+    addUser();
+    expect((await request(app).post('/api/auth/correct-email').send([1, 2])).status).toBe(400);
+    expect(
+      (await request(app).post('/api/auth/correct-email').send({ email: { a: 1 }, password: [], newEmail: {} })).status
+    ).toBe(400);
+    const r1 = await request(app).post('/api/auth/resend-verification').send([1, 2]);
+    const r2 = await request(app).post('/api/auth/resend-verification').send({ email: { $ne: 1 } });
+    await flush();
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+    expect(r2.body).toEqual(r1.body);
+    expect(sendSpy).not.toHaveBeenCalled();
+  });
+
+  test('a throwing audit still returns the success response', async () => {
+    addUser();
+    logAudit.mockRejectedValueOnce(new Error('audit down'));
+    const res = await send({ email: 'foo@example.com', newEmail: 'new@example.com' });
+    expect(res.status).toBe(200);
+    expect(find('gated-1').email).toBe('new@example.com');
   });
 });

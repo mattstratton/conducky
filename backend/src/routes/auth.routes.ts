@@ -5,11 +5,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { loginMiddleware, logoutMiddleware } from '../middleware/auth';
 import { createPrismaClient } from '../config/prisma-client';
 import logger from '../config/logger';
-import bcrypt from 'bcrypt';
-import validator from 'validator';
-import { EmailVerificationService, isGated } from '../services/email-verification.service';
-import { emailService } from '../utils/email';
-import { logAudit } from '../utils/audit';
+import { EmailVerificationService } from '../services/email-verification.service';
 
 // Import security middleware
 import { authRateLimit, passwordResetRateLimit, emailCheckRateLimit } from '../middleware/rate-limit';
@@ -93,7 +89,6 @@ router.post('/login', authRateLimit, loginMiddleware);
 
 // Email verification (public; the token or password is the credential)
 const verification = new EmailVerificationService(prisma);
-const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
 const normEmail = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
 
 router.post('/verify-email', authRateLimit, async (req: Request, res: Response): Promise<void> => {
@@ -105,8 +100,8 @@ router.post('/verify-email', authRateLimit, async (req: Request, res: Response):
       return;
     }
     res.json({ status: result.status });
-  } catch (error: any) {
-    logger().error('Verify email error:', { error: error?.message });
+  } catch (error) {
+    logger().error('Verify email error:', { error: error instanceof Error ? error.message : 'unknown' });
     res.status(500).json({ error: 'Email verification failed.' });
   }
 });
@@ -115,8 +110,8 @@ router.post('/verify-email', authRateLimit, async (req: Request, res: Response):
 router.post('/resend-verification', authRateLimit, (req: Request, res: Response): void => {
   const email = normEmail(req.body?.email);
   if (email) {
-    verification.resendFor(email).catch((error: any) => {
-      logger().error('Resend verification failed', { error: error?.message });
+    verification.resendFor(email).catch((error: unknown) => {
+      logger().error('Resend verification failed', { error: error instanceof Error ? error.message : 'unknown' });
     });
   }
   res.json({ message: 'If that account is awaiting verification, a new email is on its way.' });
@@ -124,53 +119,33 @@ router.post('/resend-verification', authRateLimit, (req: Request, res: Response)
 
 router.post('/correct-email', authRateLimit, async (req: Request, res: Response): Promise<void> => {
   try {
-    const email = normEmail(req.body?.email);
-    const newEmail = normEmail(req.body?.newEmail);
-    const password = req.body?.password;
-    if (!email || typeof password !== 'string' || !password) {
-      res.status(400).json({ error: 'Email, password and new email are required.' });
-      return;
-    }
-    if (!newEmail || newEmail.length > 254 || !validator.isEmail(newEmail)) {
-      res.status(400).json({ error: 'Please enter a valid email address.' });
-      return;
-    }
-    const user = await prisma.user.findUnique({ where: { email } });
-    // Unknown accounts still pay for a bcrypt compare so timing does not reveal them.
-    const passwordOk = await bcrypt.compare(password, user?.passwordHash || DUMMY_HASH) && !!user?.passwordHash;
-    if (!user || !passwordOk) {
-      res.status(401).json({ error: 'Invalid email or password.' });
-      return;
-    }
-    if (!isGated(user) || !(await emailService.isConfigured())) {
-      res.status(400).json({ error: 'This account does not need email verification.' });
-      return;
-    }
-    if (newEmail === email) {
-      await verification.resendFor(email);
-      res.json({ email });
-      return;
-    }
-    // All validation done; only now touch anything destructive.
-    const holder = await prisma.user.findUnique({ where: { email: newEmail } });
-    if (holder && !(await verification.releaseUnverifiedAddress(newEmail))) {
-      res.status(409).json({ error: 'Email already registered.' });
-      return;
-    }
-    try {
-      await prisma.user.update({ where: { id: user.id }, data: { email: newEmail } });
-    } catch (err: any) {
-      if (err?.code === 'P2002') {
+    const result = await verification.correctEmail({
+      email: req.body?.email,
+      password: req.body?.password,
+      newEmail: req.body?.newEmail,
+    });
+    switch (result.status) {
+      case 'ok':
+        res.json({ email: result.email, verificationEmailSent: result.verificationEmailSent });
+        return;
+      case 'invalid_input':
+        res.status(400).json({ error: 'Email, password and new email are required.' });
+        return;
+      case 'invalid_email':
+        res.status(400).json({ error: 'Please enter a valid email address.' });
+        return;
+      case 'invalid_credentials':
+        res.status(401).json({ error: 'Invalid email or password.' });
+        return;
+      case 'not_eligible':
+        res.status(400).json({ error: 'This account does not need email verification.' });
+        return;
+      case 'taken':
         res.status(409).json({ error: 'Email already registered.' });
         return;
-      }
-      throw err;
     }
-    const verificationEmailSent = await verification.sendVerification({ id: user.id, email: newEmail, name: user.name });
-    await logAudit({ action: 'verification_email_corrected', targetType: 'User', targetId: user.id, userId: user.id });
-    res.json({ email: newEmail, verificationEmailSent });
-  } catch (error: any) {
-    logger().error('Correct email error:', { error: error?.message });
+  } catch (error) {
+    logger().error('Correct email error:', { error: error instanceof Error ? error.message : 'unknown' });
     res.status(500).json({ error: 'Email correction failed.' });
   }
 });
