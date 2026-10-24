@@ -1551,10 +1551,26 @@ class PrismaClient {
         return { count: before - inMemoryStore.passwordResetTokens.length };
       }),
     };
+    // Filter support is deliberate: unknown keys throw so a test can't pass or fail for the wrong reason.
+    const matchesEvt = (row, where = {}) =>
+      Object.entries(where).every(([key, cond]) => {
+        if (['userId', 'id', 'tokenHash', 'pendingEmail', 'usedAt'].includes(key)) {
+          return row[key] === cond;
+        }
+        if (key === 'expiresAt') {
+          const ops = cond instanceof Date ? { equals: cond } : cond;
+          return Object.entries(ops).every(([op, val]) => {
+            if (op === 'lt') return row.expiresAt < val;
+            if (op === 'gt') return row.expiresAt > val;
+            throw new Error(`emailVerificationToken mock: unsupported expiresAt operator "${op}"`);
+          });
+        }
+        throw new Error(`emailVerificationToken mock: unsupported filter "${key}"`);
+      });
     this.emailVerificationToken = {
       create: jest.fn(({ data }) => {
         const token = {
-          id: String(inMemoryStore.emailVerificationTokens.length + 1),
+          id: require('crypto').randomUUID(),
           createdAt: new Date(),
           pendingEmail: null,
           usedAt: null,
@@ -1575,17 +1591,16 @@ class PrismaClient {
       updateMany: jest.fn(({ where, data }) => {
         let count = 0;
         inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.map((t) => {
-          if (where?.userId && t.userId !== where.userId) return t;
-          if (where && 'usedAt' in where && where.usedAt === null && t.usedAt !== null) return t;
+          if (!matchesEvt(t, where)) return t;
           count++;
           return { ...t, ...data };
         });
         return { count };
       }),
-      deleteMany: jest.fn(({ where }) => {
+      deleteMany: jest.fn(({ where } = {}) => {
         const before = inMemoryStore.emailVerificationTokens.length;
         inMemoryStore.emailVerificationTokens = inMemoryStore.emailVerificationTokens.filter(
-          (t) => !(where?.userId && t.userId === where.userId)
+          (t) => !matchesEvt(t, where)
         );
         return { count: before - inMemoryStore.emailVerificationTokens.length };
       }),
