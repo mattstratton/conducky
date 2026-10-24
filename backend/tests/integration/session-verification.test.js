@@ -79,7 +79,38 @@ describe('POST /api/users/me/verification-email', () => {
     expect(sendMail.mock.calls[0][0]).toBe(EMAIL);
     expect(inMemoryStore.emailVerificationTokens).toHaveLength(1);
     expect(inMemoryStore.emailVerificationTokens[0]).toMatchObject({ userId: ID, email: EMAIL, pendingEmail: null });
+    expect(res.body.email).toBe(EMAIL);
     expect(JSON.stringify(res.body)).not.toContain(rawToken());
+  });
+
+  describe('pending email change', () => {
+    const pendingToken = (over = {}) => ({
+      id: 'pt-1', userId: ID, tokenHash: 'h-pending', email: 'new@example.com', pendingEmail: 'new@example.com',
+      usedAt: null, expiresAt: new Date(Date.now() + 3600000), ...over,
+    });
+
+    test('a live pending change token -> 409, nothing sent, the token is kept', async () => {
+      addUser();
+      inMemoryStore.emailVerificationTokens.push(pendingToken());
+      const res = await post();
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('You have a pending email change. The link sent to your new address also verifies your account.');
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(inMemoryStore.emailVerificationTokens.map((t) => t.id)).toEqual(['pt-1']);
+    });
+
+    test('an expired pending token does not block', async () => {
+      addUser();
+      inMemoryStore.emailVerificationTokens.push(pendingToken({ expiresAt: new Date(Date.now() - 1000) }));
+      expect((await post()).status).toBe(200);
+      expect(sendMail).toHaveBeenCalledTimes(1);
+    });
+
+    test('a plain (non-change) unused token does not block', async () => {
+      addUser();
+      inMemoryStore.emailVerificationTokens.push(pendingToken({ pendingEmail: null, email: EMAIL }));
+      expect((await post()).status).toBe(200);
+    });
   });
 
   test('second call inside the cooldown is 429 and sends nothing; after the cooldown it sends', async () => {

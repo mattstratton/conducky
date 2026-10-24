@@ -33,8 +33,8 @@ export type CorrectEmailResult =
   | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' | 'cooldown' };
 
 export type OwnVerificationResult =
-  | { status: 'ok'; emailSent: boolean }
-  | { status: 'already_verified' | 'not_eligible' | 'cooldown' };
+  | { status: 'ok'; emailSent: boolean; email: string }
+  | { status: 'already_verified' | 'not_eligible' | 'cooldown' | 'pending_change' };
 
 // Valid bcrypt hash of a throwaway string: unknown accounts still pay for a compare (timing).
 const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
@@ -313,7 +313,12 @@ export class EmailVerificationService {
     if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
       return { status: 'cooldown' };
     }
-    return { status: 'ok', emailSent: await this.sendVerification(user) };
+    // A live change token would be revoked by issuing a new one, silently killing the link already mailed.
+    const live = await this.prisma.emailVerificationToken.findMany({
+      where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (live.some((t) => t.pendingEmail)) return { status: 'pending_change' };
+    return { status: 'ok', emailSent: await this.sendVerification(user), email: norm(user.email) };
   }
 
   /** Never reveals whether the address exists, is verified or is rate limited. */

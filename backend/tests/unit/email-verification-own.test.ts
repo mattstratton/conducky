@@ -27,7 +27,7 @@ describe('EmailVerificationService.sendOwnVerification', () => {
 
   it('sends to the current address and binds the token to it', async () => {
     add();
-    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: true });
+    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: true, email: 'own@example.com' });
     expect(send.mock.calls[0][0]).toBe('own@example.com');
     expect(store.emailVerificationTokens[0]).toMatchObject({ email: 'own@example.com', pendingEmail: null });
   });
@@ -35,7 +35,7 @@ describe('EmailVerificationService.sendOwnVerification', () => {
   it('reports emailSent false when the mail fails', async () => {
     add();
     send.mockResolvedValue({ success: false });
-    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: false });
+    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: false, email: 'own@example.com' });
   });
 
   it('already_verified wins and sends nothing', async () => {
@@ -63,6 +63,26 @@ describe('EmailVerificationService.sendOwnVerification', () => {
     expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'cooldown' });
     expect(send).not.toHaveBeenCalled();
     u.verificationSentAt = new Date(Date.now() - RESEND_COOLDOWN_MS - 1000);
-    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: true });
+    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: true, email: 'own@example.com' });
+  });
+
+  it('pending_change when a live change token exists: nothing revoked, nothing sent', async () => {
+    add();
+    store.emailVerificationTokens.push({
+      id: 't1', userId: 'own-1', tokenHash: 'h', email: 'new@example.com', pendingEmail: 'new@example.com',
+      usedAt: null, expiresAt: new Date(Date.now() + 60000),
+    });
+    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'pending_change' });
+    expect(send).not.toHaveBeenCalled();
+    expect(store.emailVerificationTokens).toHaveLength(1);
+  });
+
+  it('an expired change token does not block', async () => {
+    add();
+    store.emailVerificationTokens.push({
+      id: 't1', userId: 'own-1', tokenHash: 'h', email: 'new@example.com', pendingEmail: 'new@example.com',
+      usedAt: null, expiresAt: new Date(Date.now() - 60000),
+    });
+    expect(await svc.sendOwnVerification('own-1')).toEqual({ status: 'ok', emailSent: true, email: 'own@example.com' });
   });
 });

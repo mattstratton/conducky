@@ -1579,6 +1579,7 @@ class PrismaClient {
         inMemoryStore.emailVerificationTokens.push(token);
         return token;
       }),
+      findMany: jest.fn(({ where } = {}) => inMemoryStore.emailVerificationTokens.filter((t) => matchesEvt(t, where))),
       findUnique: jest.fn(({ where }) => {
         return inMemoryStore.emailVerificationTokens.find((t) => t.tokenHash === where.tokenHash) || null;
       }),

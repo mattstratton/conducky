@@ -6,7 +6,7 @@ import { createPrismaClient } from '../config/prisma-client';
 import multer from 'multer';
 
 // Import security middleware
-import { fileUploadRateLimit } from '../middleware/rate-limit';
+import { fileUploadRateLimit, verificationEmailRateLimit } from '../middleware/rate-limit';
 import { validateUser, handleValidationErrors } from '../middleware/validation';
 import logger from '../config/logger';
 import { EmailVerificationService } from '../services/email-verification.service';
@@ -90,7 +90,7 @@ router.patch('/me/password', requireAuth, async (req: any, res: Response): Promi
 });
 
 // Existing account asks for a verification mail to its current address (never blocks anything)
-router.post('/me/verification-email', requireAuth, async (req: any, res: Response): Promise<void> => {
+router.post('/me/verification-email', requireAuth, verificationEmailRateLimit, async (req: any, res: Response): Promise<void> => {
   try {
     const result = await verification.sendOwnVerification(req.user.id);
     switch (result.status) {
@@ -98,10 +98,16 @@ router.post('/me/verification-email', requireAuth, async (req: any, res: Respons
         res.json({
           message: result.emailSent ? 'Verification email sent.' : 'Verification email could not be sent.',
           verificationEmailSent: result.emailSent,
+          email: result.email,
         });
         return;
       case 'already_verified':
         res.json({ status: 'already_verified' });
+        return;
+      case 'pending_change':
+        res.status(409).json({
+          error: 'You have a pending email change. The link sent to your new address also verifies your account.',
+        });
         return;
       case 'cooldown':
         res.status(429).json({ error: 'Please wait a minute before requesting another verification email.' });
