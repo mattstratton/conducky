@@ -15,7 +15,7 @@ This document describes the main data models used in the system, based on the Pr
 - **passwordHash**: Hashed password (nullable for social login users)
 - **emailVerifiedAt**: Timestamp when the address was verified (null when unverified)
 - **emailVerificationRequired**: Boolean, default false. The "gated" flag: true only for signups made while email was configured. Gated accounts cannot sign in until verified and are deleted if they never verify. Existing accounts are never gated
-- **verificationSentAt**: Timestamp of the last verification email that was sent successfully (the 7 day purge and the 1 hour replacement window count from it)
+- **verificationSentAt**: Timestamp of the last verification email that was sent successfully (the 7 day purge counts from it, and accounts where it is null are never purged; the 1 hour replacement window counts from it, or from `createdAt` if no mail was ever sent)
 - **createdAt, updatedAt**: Timestamps
 - **Relations**: userRoles, grantedRoles, incidents, auditLogs, reportComments, relatedFilesUploaded, assignedIncidents, avatar, passwordResetTokens, emailVerificationTokens, notifications, socialAccounts, notificationSettings, createdOrganizations, createdOrgInvites
 
@@ -209,6 +209,8 @@ Represents a file uploaded as a related file for an incident.
 - **usedAt**: When the token was used (null while unused)
 - **createdAt**: Timestamp
 - **Relations**: user
+
+## Notification
 
 - **id**: UUID, primary key
 - **userId**: User reference

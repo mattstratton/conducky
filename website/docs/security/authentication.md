@@ -73,8 +73,8 @@ When email is configured, Conducky verifies that people own the address they sig
 
 **Protecting pending signups:**
 - An unverified new account that tries to sign in with the right password sees "check your email" (with Resend and a way to fix a mistyped address). Requests to resend are always answered the same way, so they do not reveal whether an account exists
-- A new account that never verifies is deleted after 7 days. This runs daily and at startup, counts from the last verification email that was sent successfully, and never runs while email is not configured
-- Registering an address held by a still-pending unverified signup replaces that signup only if its last verification email is more than 1 hour old. Otherwise the registrant gets "Email already registered."
+- A new account that never verifies is deleted after 7 days. This runs daily and at startup, counts from the last verification email that was sent successfully (accounts whose verification email never sent are not purged), and never runs while email is not configured
+- Registering an address held by a still-pending unverified signup replaces that signup only if its last verification email (or, if none was ever sent, its creation) is more than 1 hour old. Otherwise the registrant gets "Email already registered."
 - Login, registration, registration with an invite, verification, resend and correct-email requests share one rate limit of 5 requests per 15 minutes per IP. The "send me a verification email" button for existing accounts has its own limit (5 per 15 minutes per IP) and a 60 second cooldown per account
 
 **Google and GitHub:**

@@ -57,8 +57,8 @@ When the instance has email configured, new email/password accounts (including a
 - **Expires after 24 hours**: Request a new one with **Resend**
 - **Single-use**: Each link works once
 - **Address-bound**: A link only works for the address it was sent to
-- **Unverified accounts are deleted after 7 days**: If you never verify, the account is removed and you can register again. The 7 days count from the last verification email that was sent
-- **Reusing a pending address**: If someone started a signup with an address that is still waiting for verification, a new signup with the same address replaces the pending one only if its last verification email is more than an hour old. Otherwise you'll see "Email already registered."
+- **Unverified accounts are deleted after 7 days**: If you never verify, the account is removed and you can register again. The 7 days count from the last verification email that was sent successfully; an account whose verification email never went out is not deleted
+- **Reusing a pending address**: If someone started a signup with an address that is still waiting for verification, a new signup with the same address replaces the pending one only if its last verification email (or, if none was ever sent, the signup itself) is more than an hour old. Otherwise you'll see "Email already registered."
 
 #### Signing in with Google or GitHub
 Accounts created with Google or GitHub are verified from the start, but only when the provider reports your email address as verified. If it doesn't, sign-in is rejected. If the provider's email matches an existing account that wasn't verified yet, signing in with the provider links to that account and marks it verified. If that account was a new signup still waiting for verification, its password is removed; use **Forgot Password** if you want to set one.

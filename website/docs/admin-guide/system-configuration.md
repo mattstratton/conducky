@@ -76,14 +76,14 @@ The email card under **Admin → System Settings** (and `PUT /api/admin/settings
 
 ### What counts as configured
 
-Email is "configured" when `EMAIL_PROVIDER` is `smtp` or `sendgrid` (any capitalisation) and the mailer initialized without falling back to console. Conducky checks only the provider name and initialization. It does not detect a configured-but-broken mail server (wrong password, blocked port), so send a test message after setup.
+Email is "configured" when `EMAIL_PROVIDER` is `smtp` or `sendgrid` (any capitalisation) and the mailer initialized without falling back to console. Conducky verifies the connection when the mailer first initializes. A failure there (wrong password, blocked port) makes it count as not configured until the next restart, and the startup warning and admin banner appear. It does not detect problems that start later, so watch for `verificationEmailSent: false` responses and send a real message to test.
 
 ### What changes when email is configured
 
 - New email/password signups, including signups through an invite link, must click an emailed verification link before they can sign in. See [Email verification](../security/authentication.md#4-email-verification).
 - Existing accounts are never locked out. Existing email/password users who have not verified see a banner offering to send a verification email.
 - Changing an email address in profile settings is not applied until the new address is verified.
-- New accounts that never verify are deleted after 7 days.
+- New accounts that never verify are deleted after 7 days. Accounts whose verification email never sent successfully are not purged.
 
 ### If email is not configured
 
@@ -172,6 +172,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 - Verify SMTP credentials and server settings
 - Check firewall and network connectivity
 - Ensure from address is authorized by your email provider
+- The admin test-send uses the values typed into the form and does not exercise the environment variables the live mailer reads, so a passing test does not prove verification emails will send
 
 **OAuth Login Issues:**
 - Verify redirect URIs match exactly
@@ -181,7 +182,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 ### Logs and Debugging
 
 - **Backend logs**: Check Docker logs for detailed error messages
-- **Email testing**: Use the built-in test functionality
+- **Email testing**: The built-in test uses the form values, not the environment variables the live mailer reads; confirm with a real email such as Forgot Password
 - **OAuth debugging**: Check browser network tab for redirect errors
 
 ## Security Best Practices

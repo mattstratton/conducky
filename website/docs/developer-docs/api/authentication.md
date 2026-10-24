@@ -17,7 +17,7 @@ Authentication endpoints handle user registration, login, session management, an
 - **Notes:**
   - `verificationRequired` is `true` when email is configured and the new account must verify its address before it can sign in (the first account is verified automatically and gets `false`). It is `false` when email is not configured.
   - `verificationEmailSent` is `true` when the verification email was sent successfully. If it is `false` while `verificationRequired` is `true`, the person can use `POST /api/auth/resend-verification`.
-  - Registering an address held by a still-pending unverified signup replaces that signup only if its last verification email is more than 1 hour old. Otherwise the response is `409` with `Email already registered.` (the invite endpoint returns the same message with `400`).
+  - Registering an address held by a still-pending unverified signup replaces that signup only if its last verification email (or, if none was ever sent, its creation) is more than 1 hour old. Otherwise the response is `409` with `Email already registered.` (the invite endpoint returns the same message with `400`).
 
 ### Register with Invite
 
@@ -50,8 +50,8 @@ Authentication endpoints handle user registration, login, session management, an
 
 - **GET** `/api/auth/session` or `/api/session` or `/session`
 - **Description:** Get current session user and roles.
-- **Response:** `{ authenticated: true, user: { id, email, name, avatarUrl, emailVerified, canVerifyEmail } }` or `{ authenticated: false }`
-- **Notes:** `emailVerified` and `canVerifyEmail` are returned by `GET /api/session` (the other two paths return only `id, email, name, avatarUrl`). `emailVerified` is `true` when the account's email address is verified. `canVerifyEmail` is `true` when the account is unverified, has a password, and email is configured; the frontend uses it to show the verification banner.
+- **Response (`/api/session`):** `{ authenticated: true, user: { id, email, name, emailVerified, canVerifyEmail, roles, avatarUrl } }` or `{ authenticated: false }`
+- **Notes:** `/api/session` is the full response. `/session` returns only `id, email, name, avatarUrl`, and `/api/auth/session` returns only `id, email, name`; neither includes `roles`, `emailVerified` or `canVerifyEmail`. `emailVerified` is `true` when the account's email address is verified. `canVerifyEmail` is `true` when the account is unverified, has a password, and email is configured; the frontend uses it to show the verification banner.
 
 ## ✉️ Email Validation
 
