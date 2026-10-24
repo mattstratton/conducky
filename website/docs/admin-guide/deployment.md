@@ -110,7 +110,7 @@ Also consider the Pulumi program at [mattstratton/conducky-pulumi](https://githu
    npm run seed:roles      # Essential user roles
    npm run seed:logging    # Default logging configuration
    ```
-6. (Optional) Seed with sample data for development:
+6. (Development only, never on a real deployment) Seed with sample data. These commands create test accounts with passwords that are published in the README, including a System Admin, and refuse to run when `NODE_ENV=production`:
    ```bash
    npm run seed           # Includes roles, logging, and test data
    npm run sample-data    # Additional sample organizations and incidents

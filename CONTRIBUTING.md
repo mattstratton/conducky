@@ -43,7 +43,8 @@ Conducky is a safety-critical application designed to help manage code of conduc
 
 3. **Initialize the database**:
    ```bash
-   # Seed with default roles and test users
+   # Seed with default roles and test users (development only: the test
+   # accounts have published passwords, so it refuses to run in production)
    npm run seed
    
    # Optional: Add sample data for development

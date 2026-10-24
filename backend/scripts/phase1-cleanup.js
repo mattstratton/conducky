@@ -29,7 +29,6 @@ const MIGRATION_SCRIPTS_TO_ARCHIVE = [
 ];
 
 const SCRIPTS_TO_KEEP = [
-  'backend/scripts/cleanup-user.js',
   'backend/scripts/deploy.sh',
   'backend/scripts/convert-console-logs.js',
   'backend/scripts/replace-console-logs.js'

@@ -14,18 +14,13 @@ const models = new Set(
   [...schema.matchAll(/^model (\w+)/gm)].map(([, name]) => name[0].toLowerCase() + name.slice(1)),
 );
 
-// Legacy scripts that still use models removed from the schema (`role`,
-// `userEventRole`, `report`, ...). Delete or fix them, then drop them from this list.
-const knownBroken = ['prisma/seed.js', 'prisma/roles-seed.js', 'scripts/cleanup-user.js'];
-
 const scriptFiles = ['prisma', 'scripts']
   .flatMap((dir) =>
     fs
       .readdirSync(path.join(root, dir))
       .filter((file) => file.endsWith('.js') && file !== 'db.js')
       .map((file) => `${dir}/${file}`),
-  )
-  .filter((file) => !knownBroken.includes(file));
+  );
 
 describe('seed and maintenance scripts', () => {
   test('the schema has models to check against', () => {
