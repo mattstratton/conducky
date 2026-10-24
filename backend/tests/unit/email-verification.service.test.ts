@@ -154,6 +154,61 @@ describe('EmailVerificationService', () => {
       expect(await svc.verifyToken(raw)).toEqual({ status: 'already_verified' });
     });
 
+    it('a used token bound to an address the verified user no longer has is invalid', async () => {
+      const u = addUser();
+      const raw = await svc.issueToken(u.id, u.email);
+      await svc.verifyToken(raw);
+      store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, email: 'moved@example.com' } : x));
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+    });
+
+    it('lost claim: verified user with matching address -> already_verified', async () => {
+      const u = addUser({ emailVerifiedAt: new Date() });
+      const raw = await svc.issueToken(u.id, u.email);
+      jest.spyOn(prisma.emailVerificationToken, 'updateMany').mockResolvedValueOnce({ count: 0 });
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'already_verified' });
+    });
+
+    it('lost claim: answers from a fresh read, not the pre-claim snapshot', async () => {
+      const u = addUser();
+      const raw = await svc.issueToken(u.id, u.email);
+      jest.spyOn(prisma.emailVerificationToken, 'updateMany').mockImplementationOnce(async () => {
+        // the winner commits while we wait on its row lock
+        store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, emailVerifiedAt: new Date() } : x));
+        return { count: 0 };
+      });
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'already_verified' });
+    });
+
+    it('lost claim: unverified user -> invalid', async () => {
+      const u = addUser();
+      const raw = await svc.issueToken(u.id, u.email);
+      jest.spyOn(prisma.emailVerificationToken, 'updateMany').mockResolvedValueOnce({ count: 0 });
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+    });
+
+    it('lost claim: verified user with a different address -> invalid', async () => {
+      const u = addUser({ email: 'stale@example.com' });
+      const raw = await svc.issueToken(u.id, u.email);
+      const snapshot = { ...findUser(u.id) };
+      store.users = store.users.map((x: any) =>
+        x.id === u.id ? { ...x, email: 'victim@example.com', emailVerifiedAt: new Date() } : x
+      );
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(snapshot);
+      jest.spyOn(prisma.emailVerificationToken, 'updateMany').mockResolvedValueOnce({ count: 0 });
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+    });
+
+    it('the database-level condition holds: address changed after the pre-check -> invalid, nothing verified', async () => {
+      const u = addUser({ email: 'stale@example.com' });
+      const raw = await svc.issueToken(u.id, u.email);
+      const snapshot = { ...findUser(u.id) }; // what the pre-check sees
+      store.users = store.users.map((x: any) => (x.id === u.id ? { ...x, email: 'victim@example.com' } : x));
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValueOnce(snapshot);
+      expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
+      expect(findUser(u.id).emailVerifiedAt).toBeNull();
+    });
+
     it('expired token is invalid with no state change', async () => {
       const u = addUser();
       const raw = await svc.issueToken(u.id, u.email);

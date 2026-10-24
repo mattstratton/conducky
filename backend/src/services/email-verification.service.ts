@@ -97,8 +97,9 @@ export class EmailVerificationService {
     // Expiry first, so a used token that has also expired is invalid, not already_verified.
     if (token.expiresAt.getTime() < Date.now()) return { status: 'invalid' };
 
-    // Claim + verify in one transaction: a concurrent duplicate waits on the winner's row lock,
-    // then sees the committed emailVerifiedAt, and a failed user update can't burn the token.
+    // Claim + verify in one transaction: a concurrent duplicate waits on the winner's row lock, then
+    // re-reads the user (after the lost claim) to see the committed emailVerifiedAt, and a failed user
+    // update can't burn the token.
     // The token only counts for the address it was mailed to (token.email), which must still be the
     // user's current address; the conditional updateMany makes that check atomic with the update.
     const ROLLBACK = new Error('address changed since the token was mailed');
@@ -107,13 +108,18 @@ export class EmailVerificationService {
       outcome = await this.prisma.$transaction(async (tx) => {
         const u = await tx.user.findUnique({ where: { id: token.userId } });
         // A token for a stale (or unbound) address is rejected before it is claimed.
-        if (!token.usedAt && (!u || !token.email || norm(token.email) !== norm(u.email))) return 'invalid' as const;
+        if (!u || !token.email || norm(token.email) !== norm(u.email)) return 'invalid' as const;
         const claimed = await tx.emailVerificationToken.updateMany({
           where: { id: token.id, usedAt: null },
           data: { usedAt: new Date() },
         });
-        if (claimed.count === 0) return u?.emailVerifiedAt ? ('already_verified' as const) : ('invalid' as const);
-        if (!u) throw ROLLBACK;
+        if (claimed.count === 0) {
+          // Lost the claim: answer from a FRESH read, never the pre-claim one, which may predate the winner's commit.
+          const cur = await tx.user.findUnique({ where: { id: token.userId } });
+          return cur?.emailVerifiedAt && norm(cur.email) === norm(token.email)
+            ? ('already_verified' as const)
+            : ('invalid' as const);
+        }
         const { count } = await tx.user.updateMany({
           where: { id: token.userId, email: u.email },
           data: { emailVerifiedAt: new Date() },
