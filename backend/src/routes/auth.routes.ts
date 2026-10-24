@@ -143,6 +143,9 @@ router.post('/correct-email', authRateLimit, async (req: Request, res: Response)
       case 'taken':
         res.status(409).json({ error: 'Email already registered.' });
         return;
+      case 'cooldown':
+        res.status(429).json({ error: 'Please wait a minute before requesting another email.' });
+        return;
     }
   } catch (error) {
     logger().error('Correct email error:', { error: error instanceof Error ? error.message : 'unknown' });

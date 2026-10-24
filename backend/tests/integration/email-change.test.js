@@ -7,6 +7,7 @@ const app = require('../../index');
 const { inMemoryStore } = require('@prisma/client');
 const { logAudit } = require('../../src/utils/audit');
 const { emailService, maskEmail } = require('../../src/utils/email');
+const { EmailVerificationService, isGated: gatedPredicate, RESEND_COOLDOWN_MS } = require('../../src/services/email-verification.service');
 
 jest.mock('../../src/utils/audit', () => ({
   logAudit: jest.fn().mockResolvedValue({ id: 'audit-log-1' }),
@@ -47,6 +48,7 @@ describe('requesting an email change (mail configured)', () => {
     expect(res.body.verificationEmailSent).toBe(true);
     expect(res.body.user.email).toBe(OLD);
     expect(me().email).toBe(OLD);
+    expect(JSON.stringify(res.body)).not.toContain(lastRaw());
 
     expect(inMemoryStore.emailVerificationTokens).toHaveLength(1);
     expect(inMemoryStore.emailVerificationTokens[0]).toMatchObject({ userId: ID, email: NEW, pendingEmail: NEW });
@@ -98,9 +100,77 @@ describe('requesting an email change (mail not configured)', () => {
     expect(res.body.emailChangePending).toBeUndefined();
     expect(me().email).toBe(NEW);
     expect(me().emailVerifiedAt).toBeNull();
-    expect(me().emailVerificationRequired).toBe(true);
+    // Not gated: an established account must never look like an abandoned signup.
+    expect(me().emailVerificationRequired).toBe(false);
+    expect(gatedPredicate(me())).toBe(false);
     expect(sendVerification).not.toHaveBeenCalled();
     expect(requestedNotice).not.toHaveBeenCalled();
+  });
+
+  test('the account is not purgeable, not releasable to a registrant, and can still sign in once mail works again', async () => {
+    isConfigured.mockResolvedValue(false);
+    me().verificationSentAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    await patch({ email: NEW });
+    isConfigured.mockResolvedValue(true);
+    // purgeUnverifiedAccounts selects emailVerificationRequired: true AND emailVerifiedAt: null
+    expect(gatedPredicate(me())).toBe(false);
+    const svc = new EmailVerificationService(new (require('@prisma/client').PrismaClient)());
+    expect(await svc.releaseUnverifiedAddress(NEW)).toBe(false);
+    expect(me()).toBeTruthy();
+    const login = await request(app).post('/api/auth/login').send({ email: NEW, password: 'password123' });
+    expect(login.status).toBe(200);
+  });
+
+  test('empty or whitespace-only address is rejected and changes nothing', async () => {
+    for (const email of ['', '   ']) {
+      const res = await patch({ email, name: 'Nope' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Please enter a valid email address.');
+    }
+    expect(me().email).toBe(OLD);
+    expect(me().name).toBe('Changer');
+    expect(inMemoryStore.emailVerificationTokens).toHaveLength(0);
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(requestedNotice).not.toHaveBeenCalled();
+  });
+});
+
+describe('cooldown on repeated change requests', () => {
+  const recent = () => new Date(Date.now() - RESEND_COOLDOWN_MS / 2);
+
+  test('inside the cooldown: 429, nothing written, revoked or sent (name included)', async () => {
+    await patch({ email: NEW });
+    const tokensBefore = JSON.parse(JSON.stringify(inMemoryStore.emailVerificationTokens));
+    sendVerification.mockClear();
+    requestedNotice.mockClear();
+    const res = await patch({ email: 'another@example.com', name: 'Renamed' });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe('Please wait a minute before requesting another email change.');
+    expect(me().name).toBe('Changer');
+    expect(me().email).toBe(OLD);
+    expect(JSON.parse(JSON.stringify(inMemoryStore.emailVerificationTokens))).toEqual(tokensBefore);
+    expect(sendVerification).not.toHaveBeenCalled();
+    expect(requestedNotice).not.toHaveBeenCalled();
+  });
+
+  test('name-only updates and the unchanged address are not subject to it', async () => {
+    me().verificationSentAt = recent();
+    expect((await patch({ name: 'Renamed', email: OLD })).status).toBe(200);
+    expect(me().name).toBe('Renamed');
+  });
+
+  test('after the cooldown a request succeeds; a failed previous mail (null verificationSentAt) does not block', async () => {
+    me().verificationSentAt = new Date(Date.now() - RESEND_COOLDOWN_MS - 1000);
+    expect((await patch({ email: NEW })).status).toBe(200);
+    me().verificationSentAt = null;
+    expect((await patch({ email: 'third@example.com' })).status).toBe(200);
+  });
+
+  test('without mail (immediate write) there is no cooldown', async () => {
+    isConfigured.mockResolvedValue(false);
+    me().verificationSentAt = recent();
+    expect((await patch({ email: NEW })).status).toBe(200);
+    expect(me().email).toBe(NEW);
   });
 });
 
@@ -153,6 +223,7 @@ describe('verifying an email change', () => {
   test('changing the address twice before verifying: only the newest link works', async () => {
     await patch({ email: 'first@example.com' });
     const first = lastRaw();
+    me().verificationSentAt = new Date(Date.now() - 2 * RESEND_COOLDOWN_MS); // past the cooldown
     await patch({ email: NEW });
     const second = lastRaw();
     expect((await verify(first)).status).toBe(400);

@@ -136,9 +136,19 @@ describe('POST /api/auth/correct-email', () => {
       expect.objectContaining({ action: 'verification_email_corrected', userId: 'gated-1' })
     );
 
+    find('gated-1').verificationSentAt = new Date(Date.now() - 2 * HOUR); // past the resend cooldown
     const mixed = await send({ email: 'New@EXAMPLE.com', newEmail: 'third@example.com' });
     expect(mixed.status).toBe(200);
     expect(find('gated-1').email).toBe('third@example.com');
+  });
+
+  test('new address inside the resend cooldown -> 429, nothing changed or sent', async () => {
+    addUser({ verificationSentAt: new Date() });
+    const res = await send({ email: 'foo@example.com', newEmail: 'new@example.com' });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe('Please wait a minute before requesting another email.');
+    expect(find('gated-1').email).toBe('foo@example.com');
+    expect(sendSpy).not.toHaveBeenCalled();
   });
 
   test('wrong password and unknown account give the identical 401', async () => {

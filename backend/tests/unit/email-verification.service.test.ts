@@ -284,7 +284,7 @@ describe('EmailVerificationService', () => {
         expect(store.emailVerificationTokens[0].usedAt).toBeNull();
       });
 
-      it('another account owns the pending address -> invalid, rolled back', async () => {
+      it('another account owns the pending address -> invalid, address unchanged, no notice', async () => {
         const { u, raw } = await setup();
         addUser({ email: NEW });
         expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
@@ -301,14 +301,6 @@ describe('EmailVerificationService', () => {
         expect(findUser(u.id).email).toBe('moved@example.com');
         expect(findUser(u.id).emailVerifiedAt).toBe(snapshot.emailVerifiedAt);
         expect(notice).not.toHaveBeenCalled();
-      });
-
-      it('the update is conditional on the current email', async () => {
-        const { u, raw } = await setup();
-        await svc.verifyToken(raw);
-        expect(prisma.user.updateMany).toHaveBeenCalledWith(
-          expect.objectContaining({ where: { id: u.id, email: u.email } })
-        );
       });
 
       it('P2002 on the update -> invalid, not rethrown', async () => {
@@ -744,6 +736,22 @@ describe('EmailVerificationService.correctEmail', () => {
     expect(find('cx-1').email).toBe('b@example.com');
     expect(store.emailVerificationTokens.find((t: any) => t.id === 'old')).toBeUndefined();
     expect(store.emailVerificationTokens).toHaveLength(1);
+  });
+
+  test('new-address branch: inside the cooldown -> cooldown, nothing changed, revoked or sent', async () => {
+    find('cx-1').verificationSentAt = new Date(Date.now() - RESEND_COOLDOWN_MS / 2);
+    const r = await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' });
+    expect(r).toEqual({ status: 'cooldown' });
+    expect(find('cx-1').email).toBe('a@example.com');
+    expect(store.emailVerificationTokens.map((t: any) => t.id)).toEqual(['old']);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  test('new-address branch: after the cooldown, or with no mail ever sent, it changes the address', async () => {
+    find('cx-1').verificationSentAt = new Date(Date.now() - RESEND_COOLDOWN_MS - 1000);
+    expect((await svc.correctEmail({ email: 'a@example.com', password: 'pw-123456', newEmail: 'b@example.com' })).status).toBe('ok');
+    find('cx-1').verificationSentAt = null;
+    expect((await svc.correctEmail({ email: 'b@example.com', password: 'pw-123456', newEmail: 'c@example.com' })).status).toBe('ok');
   });
 
   test('a concurrent verification (gating re-check inside the transaction) leaves the email unchanged', async () => {

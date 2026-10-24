@@ -640,6 +640,7 @@ export class AuthService {
           data: { used: true }
         })
       ]);
+      await this.verification.revokeUnusedTokens(resetToken.userId);
 
       return {
         success: true,

@@ -30,7 +30,7 @@ export type VerifyResult =
 
 export type CorrectEmailResult =
   | { status: 'ok'; email: string; verificationEmailSent: boolean }
-  | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' };
+  | { status: 'invalid_input' | 'invalid_email' | 'invalid_credentials' | 'not_eligible' | 'taken' | 'cooldown' };
 
 // Valid bcrypt hash of a throwaway string: unknown accounts still pay for a compare (timing).
 const DUMMY_HASH = '$2b$10$K7L1OJ45/4Y.aKqyudyeNu.oQ8fP3WXAoVLYU2aEXCLWHuCrTyHqS';
@@ -59,6 +59,18 @@ export class EmailVerificationService {
       },
     });
     return raw;
+  }
+
+  /** Revokes the user's unused tokens (e.g. a pending email change) after a password change. Logs, never throws. */
+  async revokeUnusedTokens(userId: string): Promise<void> {
+    try {
+      await this.prisma.emailVerificationToken.deleteMany({ where: { userId, usedAt: null } });
+    } catch (err) {
+      logger().error('Failed to revoke unused verification tokens', {
+        userId,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
   }
 
   async sendVerification(
@@ -104,14 +116,18 @@ export class EmailVerificationService {
     // The token only counts for the address it was mailed to (token.email), which must still be the
     // user's current address; the conditional updateMany makes that check atomic with the update.
     const ROLLBACK = new Error('address changed since the token was mailed');
-    let outcome: 'verified' | 'email_changed' | 'already_verified' | 'invalid';
-    let changed: { oldEmail: string; name: string | null } | null = null;
+    type Outcome =
+      | { kind: 'verified' }
+      | { kind: 'already_verified' }
+      | { kind: 'invalid' }
+      | { kind: 'changed'; oldEmail: string; name: string | null; newEmail: string };
+    let outcome: Outcome;
     try {
-      outcome = await this.prisma.$transaction(async (tx) => {
+      outcome = await this.prisma.$transaction(async (tx): Promise<Outcome> => {
         const u = await tx.user.findUnique({ where: { id: token.userId } });
         // A token for a stale (or unbound) address is rejected before it is claimed.
         // (A change token's address is the pending one, so it legitimately differs from the current one.)
-        if (!u || !token.email || (!pending && norm(token.email) !== norm(u.email))) return 'invalid' as const;
+        if (!u || !token.email || (!pending && norm(token.email) !== norm(u.email))) return { kind: 'invalid' };
         const claimed = await tx.emailVerificationToken.updateMany({
           where: { id: token.id, usedAt: null },
           data: { usedAt: new Date() },
@@ -120,8 +136,8 @@ export class EmailVerificationService {
           // Lost the claim: answer from a FRESH read, never the pre-claim one, which may predate the winner's commit.
           const cur = await tx.user.findUnique({ where: { id: token.userId } });
           return cur?.emailVerifiedAt && norm(cur.email) === norm(token.email)
-            ? ('already_verified' as const)
-            : ('invalid' as const);
+            ? { kind: 'already_verified' }
+            : { kind: 'invalid' };
         }
         if (pending) {
           // Token already claimed: an unused change token whose address is already the user's is stale.
@@ -136,15 +152,14 @@ export class EmailVerificationService {
             data: { email: pending, emailVerifiedAt: new Date() },
           });
           if (applied.count !== 1) throw ROLLBACK;
-          changed = { oldEmail: u.email, name: u.name };
-          return 'email_changed' as const;
+          return { kind: 'changed', oldEmail: u.email, name: u.name, newEmail: pending };
         }
         const { count } = await tx.user.updateMany({
           where: { id: token.userId, email: u.email },
           data: { emailVerifiedAt: new Date() },
         });
         if (count !== 1) throw ROLLBACK;
-        return 'verified' as const;
+        return { kind: 'verified' };
       });
     } catch (err) {
       if (err === ROLLBACK) return { status: 'invalid' };
@@ -152,12 +167,11 @@ export class EmailVerificationService {
       if (pending && (err as { code?: string } | null)?.code === 'P2002') return { status: 'invalid' };
       throw err;
     }
-    if (outcome === 'email_changed' && changed) {
-      const { oldEmail, name } = changed as { oldEmail: string; name: string | null };
-      await this.afterEmailChanged(token.userId, oldEmail, name, pending as string);
+    if (outcome.kind === 'changed') {
+      await this.afterEmailChanged(token.userId, outcome.oldEmail, outcome.name, outcome.newEmail);
       return { status: 'email_changed', userId: token.userId };
     }
-    if (outcome !== 'verified') return { status: outcome as 'already_verified' | 'invalid' };
+    if (outcome.kind !== 'verified') return { status: outcome.kind };
     await logAudit({ action: 'email_verified', targetType: 'User', targetId: token.userId, userId: token.userId });
     return { status: 'verified', userId: token.userId };
   }
@@ -313,6 +327,11 @@ export class EmailVerificationService {
       const recent = user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS;
       const sent = recent ? false : await this.sendVerification(user);
       return { status: 'ok', email, verificationEmailSent: sent };
+    }
+
+    // Same cooldown as the same-address branch, checked before anything is released, changed or sent.
+    if (user.verificationSentAt && Date.now() - user.verificationSentAt.getTime() < RESEND_COOLDOWN_MS) {
+      return { status: 'cooldown' };
     }
 
     if (await this.prisma.user.findUnique({ where: { email: newEmail } })) {
