@@ -2,7 +2,7 @@ jest.mock('nodemailer');
 
 import nodemailer = require('nodemailer');
 
-const ENV_KEYS = ['EMAIL_PROVIDER', 'SMTP_HOST', 'SMTP_PORT', 'FRONTEND_BASE_URL'];
+const ENV_KEYS = ['EMAIL_PROVIDER', 'SMTP_HOST', 'SMTP_PORT', 'FRONTEND_BASE_URL', 'SENDGRID_API_KEY'];
 
 describe('EmailService verification additions', () => {
   const saved: Record<string, string | undefined> = {};
@@ -47,6 +47,27 @@ describe('EmailService verification additions', () => {
       process.env.EMAIL_PROVIDER = 'smtp';
       verify.mockRejectedValue(new Error('nope'));
       expect(await makeService().isConfigured()).toBe(false);
+    });
+  });
+
+  describe('isConfigured provider matching', () => {
+    it.each(['Console', 'ses', ''])('is false for EMAIL_PROVIDER=%p', async (provider) => {
+      process.env.EMAIL_PROVIDER = provider;
+      verify.mockResolvedValue(true);
+      expect(await makeService().isConfigured()).toBe(false);
+    });
+
+    it('is true for uppercase SMTP when verify resolves', async () => {
+      process.env.EMAIL_PROVIDER = 'SMTP';
+      verify.mockResolvedValue(true);
+      expect(await makeService().isConfigured()).toBe(true);
+    });
+
+    it('is true for sendgrid with an API key', async () => {
+      process.env.EMAIL_PROVIDER = 'sendgrid';
+      process.env.SENDGRID_API_KEY = 'SG.x';
+      verify.mockResolvedValue(true);
+      expect(await makeService().isConfigured()).toBe(true);
     });
   });
 

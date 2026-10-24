@@ -398,7 +398,7 @@ The Conducky Team
    */
   async isConfigured(): Promise<boolean> {
     await this.initialize();
-    return this.config.provider !== 'console';
+    return ['smtp', 'sendgrid'].includes(this.config.provider.toLowerCase());
   }
 
   /**
