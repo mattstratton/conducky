@@ -138,6 +138,7 @@ describe('EmailVerificationService', () => {
       const u = addUser();
       const raw = await svc.issueToken(u.id);
       expect(await svc.verifyToken(raw)).toEqual({ status: 'verified', userId: u.id });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(findUser(u.id).emailVerifiedAt).toBeInstanceOf(Date);
       expect(store.emailVerificationTokens[0].usedAt).toBeInstanceOf(Date);
       expect(logAudit).toHaveBeenCalledWith(
@@ -184,7 +185,7 @@ describe('EmailVerificationService', () => {
       expect(await svc.verifyToken(raw)).toEqual({ status: 'invalid' });
     });
 
-    it('a failed user update rolls the claim back path: error propagates', async () => {
+    it('a failing user update inside the transaction propagates the error', async () => {
       const u = addUser();
       const raw = await svc.issueToken(u.id);
       prisma.user.update.mockImplementationOnce(() => {
@@ -298,6 +299,18 @@ describe('EmailVerificationService', () => {
       expect(logAudit).not.toHaveBeenCalled();
     });
 
+    it('uses a transaction and rethrows non-P2003 errors', async () => {
+      const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      expect(await svc.releaseUnverifiedAddress(u.email)).toBe(true);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      const v = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
+      prisma.user.deleteMany.mockImplementationOnce(() => {
+        throw new Error('db down');
+      });
+      await expect(svc.releaseUnverifiedAddress(v.email)).rejects.toThrow('db down');
+      expect(findUser(v.id)).toBeDefined();
+    });
+
     it('returns false when the account got verified between check and delete', async () => {
       const u = addUser({ verificationSentAt: new Date(Date.now() - 2 * HOUR) });
       prisma.user.deleteMany.mockImplementationOnce(() => ({ count: 0 }));
@@ -333,6 +346,36 @@ describe('EmailVerificationService', () => {
 
     it('returns false for an unknown address', async () => {
       expect(await svc.releaseUnverifiedAddress('nobody@example.com')).toBe(false);
+    });
+  });
+
+  describe('deleteGatedUnverifiedAccount', () => {
+    it('deletes a gated unverified account and its reset tokens, without grace or config checks', async () => {
+      configured.mockResolvedValue(false);
+      const u = addUser({ verificationSentAt: new Date() });
+      store.passwordResetTokens.push({ id: 'pd1', userId: u.id, token: 'tt', expiresAt: new Date() });
+      expect(await svc.deleteGatedUnverifiedAccount(u.id)).toBe(true);
+      expect(findUser(u.id)).toBeUndefined();
+      expect(store.passwordResetTokens.filter((t: any) => t.userId === u.id)).toHaveLength(0);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns false for a verified account, an ungated account and an unknown id', async () => {
+      const verified = addUser({ emailVerifiedAt: new Date() });
+      const ungated = addUser({ emailVerificationRequired: false });
+      expect(await svc.deleteGatedUnverifiedAccount(verified.id)).toBe(false);
+      expect(await svc.deleteGatedUnverifiedAccount(ungated.id)).toBe(false);
+      expect(await svc.deleteGatedUnverifiedAccount('nope')).toBe(false);
+      expect(findUser(verified.id)).toBeDefined();
+      expect(findUser(ungated.id)).toBeDefined();
+    });
+
+    it('rethrows non-P2003 errors', async () => {
+      const u = addUser();
+      prisma.user.deleteMany.mockImplementationOnce(() => {
+        throw new Error('db down');
+      });
+      await expect(svc.deleteGatedUnverifiedAccount(u.id)).rejects.toThrow('db down');
     });
   });
 

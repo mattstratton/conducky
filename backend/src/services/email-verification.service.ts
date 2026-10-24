@@ -118,7 +118,7 @@ export class EmailVerificationService {
    * Frees an address held by an unverified signup so someone else can register it.
    * Only when mail works and the last verification mail (or, if none was sent, account creation)
    * is over TAKEOVER_GRACE_MS old, so a pending signup cannot be wiped by a stranger.
-   * Returns false, never throws, if the account cannot be deleted (e.g. it already has roles).
+   * Returns false, never throws on a blocked delete (see deleteGatedUnverifiedAccount).
    */
   async releaseUnverifiedAddress(email: string): Promise<boolean> {
     const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
@@ -126,30 +126,41 @@ export class EmailVerificationService {
     if (!(await this.mailer.isConfigured())) return false;
     const since = user.verificationSentAt ?? user.createdAt;
     if (since && Date.now() - since.getTime() <= TAKEOVER_GRACE_MS) return false;
+    if (!(await this.deleteGatedUnverifiedAccount(user.id))) return false;
+    // userId null: the actor is the anonymous registrant, and AuditLog.userId would FK-fail on the deleted id.
+    await logAudit({ action: 'unverified_account_replaced', targetType: 'User', targetId: user.id, userId: null });
+    return true;
+  }
 
-    const ROLLBACK = new Error('not deletable');
+  /**
+   * Deletes exactly one gated, unverified account plus the ON DELETE RESTRICT children it can have.
+   * Does NOT check the grace window or isConfigured: callers (release, purge) do.
+   * True only when that account was deleted. False if it is not gated-unverified (or vanished), or
+   * a remaining RESTRICT relation blocks the delete (P2003: created organizations or organization
+   * invite links, which a never-signed-in gated account cannot have). Other errors are rethrown.
+   * UserRole rows go with the user (ON DELETE CASCADE), so role holders are deleted too.
+   */
+  async deleteGatedUnverifiedAccount(userId: string): Promise<boolean> {
+    const ROLLBACK = new Error('not a gated unverified account');
     try {
       await this.prisma.$transaction(async (tx) => {
-        // Clear RESTRICT children a bare gated account can have (see user FKs); roles/orgs still block.
-        const where = { userId: user.id };
+        const where = { userId };
         await tx.passwordResetToken.deleteMany({ where });
         await tx.userNotificationSettings.deleteMany({ where });
         await tx.userAvatar.deleteMany({ where });
         await tx.socialAccount.deleteMany({ where });
         await tx.notification.deleteMany({ where });
-        // Conditional delete closes the race with a concurrent verification.
+        // Conditional delete closes the race with a concurrent verification; rollback undoes the child deletes.
         const { count } = await tx.user.deleteMany({
-          where: { id: user.id, emailVerificationRequired: true, emailVerifiedAt: null },
+          where: { id: userId, emailVerificationRequired: true, emailVerifiedAt: null },
         });
         if (count !== 1) throw ROLLBACK;
       });
+      return true;
     } catch (err) {
       if (err === ROLLBACK || (err as { code?: string })?.code === 'P2003') return false;
       throw err;
     }
-    // userId null: the actor is the anonymous registrant, and AuditLog.userId would FK-fail on the deleted id.
-    await logAudit({ action: 'unverified_account_replaced', targetType: 'User', targetId: user.id, userId: null });
-    return true;
   }
 
   /** Never reveals whether the address exists, is verified or is rate limited. */
