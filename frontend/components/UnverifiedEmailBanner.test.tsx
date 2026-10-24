@@ -36,7 +36,7 @@ describe('UnverifiedEmailBanner', () => {
     renderWith(U);
     const section = screen.getByRole('region', { name: 'Email verification' });
     expect(section).toHaveTextContent(
-      'Please verify your email address so you receive notifications. We will send a verification link to me@example.com.'
+      'Please verify your email address so we know notifications reach you. We will send a verification link to me@example.com.'
     );
     expect(screen.getByRole('status')).toContainElement(section);
     expect(screen.getByRole('button', { name: 'Send verification email' })).toBeInTheDocument();
@@ -66,13 +66,25 @@ describe('UnverifiedEmailBanner', () => {
     expect(btn).toHaveAttribute('aria-disabled', 'true');
     expect(btn).toHaveFocus();
     expect(screen.getByRole('status')).toHaveTextContent('Sending…');
-    resolve({ ok: true, status: 200, json: async () => ({ verificationEmailSent: true }) });
+    resolve({ ok: true, status: 200, json: async () => ({ verificationEmailSent: true, email: 'me@example.com' }) });
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('We sent a link to me@example.com. Check your inbox.'));
     const [url, init] = mockFetch.mock.calls[0];
     expect(url).toMatch(/\/api\/users\/me\/verification-email$/);
     expect(init).toMatchObject({ method: 'POST', credentials: 'include' });
     expect(btn).toHaveFocus();
     expect(btn).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  it('names the address the server sent to, not the context one', async () => {
+    reply(200, { verificationEmailSent: true, email: 'current@example.com' });
+    renderWith(U);
+    await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
+    expect(await screen.findByText('We sent a link to current@example.com. Check your inbox.')).toBeInTheDocument();
+  });
+
+  it('status wrapper is non-atomic so changes do not re-read the banner', () => {
+    renderWith(U);
+    expect(screen.getByRole('status')).toHaveAttribute('aria-atomic', 'false');
   });
 
   it('does not claim a send when verificationEmailSent is false', async () => {
@@ -89,6 +101,7 @@ describe('UnverifiedEmailBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Email verification' })).toBeNull());
     expect(screen.getByRole('status')).toHaveTextContent('Your email is already verified.');
+    expect(screen.getByText('Your email is already verified.')).toHaveFocus();
   });
 
   it('429 shows the wait message', async () => {
@@ -98,14 +111,16 @@ describe('UnverifiedEmailBanner', () => {
     expect(await screen.findByText('Please wait a minute before requesting another email.')).toBeInTheDocument();
   });
 
-  it('other errors and network failures are announced as alerts', async () => {
-    reply(500, { error: 'Boom <b>bold</b>' });
+  it('errors are carried by the polite wrapper only (no nested alert), as plain text', async () => {
+    reply(409, { error: 'Pending <b>change</b>' });
     renderWith(U);
     await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Boom <b>bold</b>');
+    const msg = await screen.findByText('Pending <b>change</b>');
+    expect(msg.closest('[role="status"]')).not.toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
     mockFetch.mockRejectedValueOnce(new Error('down'));
     await userEvent.click(screen.getByRole('button', { name: 'Send verification email' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Network error. Please try again.'));
+    await waitFor(() => expect(screen.getByText('Network error. Please try again.')).toBeInTheDocument());
+    expect(screen.queryByText('Pending <b>change</b>')).toBeNull();
   });
 });

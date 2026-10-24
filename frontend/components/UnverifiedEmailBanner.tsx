@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserContext } from '../pages/_app';
@@ -17,6 +17,12 @@ export function UnverifiedEmailBanner() {
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState(false);
   const busyRef = useRef(false);
+  const verifiedRef = useRef<HTMLParagraphElement>(null);
+
+  // The button disappears with the section on already_verified: move focus to the message.
+  useEffect(() => {
+    if (verified) verifiedRef.current?.focus();
+  }, [verified]);
 
   const send = async () => {
     if (busyRef.current) return;
@@ -35,7 +41,7 @@ export function UnverifiedEmailBanner() {
       } else if (res.ok) {
         setStatus(
           data.verificationEmailSent === true
-            ? `We sent a link to ${user?.email}. Check your inbox.`
+            ? `We sent a link to ${typeof data.email === 'string' && data.email ? data.email : user?.email}. Check your inbox.`
             : 'We could not send the email. Please try again in a minute.'
         );
       } else {
@@ -53,8 +59,13 @@ export function UnverifiedEmailBanner() {
 
   const show = user?.canVerifyEmail === true && !verified;
   return (
-    <div role="status">
-      {verified && <p className="mx-4 mt-4 text-sm">{status}</p>}
+    // aria-atomic=false: only the changed text is announced, not the whole banner.
+    <div role="status" aria-atomic="false">
+      {verified && (
+        <p ref={verifiedRef} tabIndex={-1} className="mx-4 mt-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+          {status}
+        </p>
+      )}
       {show && (
         <section
           aria-label="Email verification"
@@ -63,12 +74,12 @@ export function UnverifiedEmailBanner() {
           <Info className="h-4 w-4" aria-hidden="true" />
           <div className="grid gap-2">
             <p>
-              Please verify your email address so you receive notifications. We will send a verification link to{' '}
+              Please verify your email address so we know notifications reach you. We will send a verification link to{' '}
               <strong className="break-all">{user?.email}</strong>.
             </p>
             {status && <p className="font-medium">{status}</p>}
             {error && (
-              <p role="alert" className="font-medium text-red-800 dark:text-red-300">
+              <p className="font-medium text-red-800 dark:text-red-300">
                 {error}
               </p>
             )}
@@ -77,7 +88,7 @@ export function UnverifiedEmailBanner() {
                 type="button"
                 onClick={send}
                 aria-disabled={busy}
-                className="min-h-[44px] aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                className="min-h-[44px] focus-visible:ring-2 focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-50"
               >
                 Send verification email
               </Button>
