@@ -4,11 +4,16 @@ import { ServiceResult } from '../types';
 import { UnifiedRBACService } from './unified-rbac.service';
 import { AuthService } from './auth.service';
 import logger from '../config/logger';
+import { EmailVerificationService, RESEND_COOLDOWN_MS } from './email-verification.service';
+import { emailService, maskEmail } from '../utils/email';
+import { logAudit } from '../utils/audit';
 
 export interface ProfileUpdateData {
   name?: string;
   email?: string;
 }
+
+export const EMAIL_CHANGE_COOLDOWN_ERROR = 'Please wait a minute before requesting another email change.';
 
 export interface PasswordChangeData {
   currentPassword: string;
@@ -94,20 +99,26 @@ export class UserService {
   private unifiedRBAC: UnifiedRBACService;
   private authService: AuthService;
 
+  private verification: EmailVerificationService;
+
   constructor(private prisma: PrismaClient) {
     this.unifiedRBAC = new UnifiedRBACService(prisma);
     this.authService = new AuthService(prisma);
+    this.verification = new EmailVerificationService(prisma);
   }
 
   /**
    * Update user profile (name and/or email)
    */
-  async updateProfile(userId: string, data: ProfileUpdateData): Promise<ServiceResult<{ user: any; message: string }>> {
+  async updateProfile(
+    userId: string,
+    data: ProfileUpdateData
+  ): Promise<ServiceResult<{ user: any; message: string; emailChangePending?: string; verificationEmailSent?: boolean }>> {
     try {
       const { name, email } = data;
 
-      // Validate email format if provided
-      if (email) {
+      // Validate email format whenever it is sent (an empty string is not "no change")
+      if (email !== undefined) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
           return {
@@ -130,10 +141,33 @@ export class UserService {
         }
       }
 
-      // Update user profile
+      // A CHANGED address is never written straight away when mail works: it is mailed a link first
+      // (verifyToken applies it), so a typo or a hijacked session can't silently move the account.
+      const current = email !== undefined ? await this.prisma.user.findUnique({ where: { id: userId } }) : null;
+      const newEmail = email !== undefined ? email.trim().toLowerCase() : undefined;
+      const changed = !!current && newEmail !== undefined && newEmail !== current.email.trim().toLowerCase();
+      const pendingChange = changed && (await emailService.isConfigured());
+
+      // Same cooldown as resend, measured from the last mail that went out (null = none sent, no cooldown).
+      // Checked before anything is written, revoked or sent.
+      if (
+        pendingChange &&
+        current?.verificationSentAt &&
+        Date.now() - current.verificationSentAt.getTime() < RESEND_COOLDOWN_MS
+      ) {
+        return { success: false, error: EMAIL_CHANGE_COOLDOWN_ERROR };
+      }
+
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
-      if (email !== undefined) updateData.email = email.toLowerCase();
+      if (changed && !pendingChange) {
+        // No mail can be sent: write it now. emailVerifiedAt only vouches for the address it was set for,
+        // and the account becomes an unconfigured-era one (never blocked or purged as an abandoned signup).
+        updateData.email = newEmail;
+        updateData.emailVerifiedAt = null;
+        updateData.emailVerificationRequired = false;
+      }
+      // An unchanged address is never written back: an unconditional write could undo a change applied meanwhile.
 
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
@@ -151,6 +185,32 @@ export class UserService {
         email: updatedUser.email,
         avatarUrl: avatar ? `/users/${userId}/avatar` : null
       };
+
+      if (pendingChange && newEmail && current) {
+        const verificationEmailSent = await this.verification.sendVerification(
+          { id: userId, email: current.email, name: updatedUser.name },
+          newEmail
+        );
+        try {
+          await emailService.sendEmailChangeRequestedNotice(current.email, updatedUser.name ?? '', maskEmail(newEmail));
+        } catch (err) {
+          logger().error('Failed to send email-change notice', { userId, error: err instanceof Error ? err.message : 'unknown' });
+        }
+        try {
+          await logAudit({ action: 'email_change_requested', targetType: 'User', targetId: userId, userId });
+        } catch (err) {
+          logger().error('Audit of email change request failed', { userId, error: err instanceof Error ? err.message : 'unknown' });
+        }
+        return {
+          success: true,
+          data: {
+            message: 'Profile updated successfully!',
+            user: userResponse,
+            emailChangePending: newEmail,
+            verificationEmailSent
+          }
+        };
+      }
 
       return {
         success: true,
@@ -233,6 +293,8 @@ export class UserService {
         where: { id: userId },
         data: { passwordHash: newPasswordHash }
       });
+      // A pending email-change link must not survive a password change (the notice tells the owner to do this).
+      await this.verification.revokeUnusedTokens(userId);
 
       return {
         success: true,

@@ -1,8 +1,9 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { UserContext } from '../_app';
@@ -36,6 +37,10 @@ export default function ProfileSettings() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
+  // Pending email change notice: 'sent' (success) or 'failed' (warning), shown in the polite live region.
+  // Typed address kept in the field after a failed send, so a retry resubmits it.
+  const pendingEmailRef = useRef<string | null>(null);
+  const [emailNotice, setEmailNotice] = useState<{ kind: 'sent' | 'failed'; text: string } | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   
   // Password form state
@@ -80,7 +85,7 @@ export default function ProfileSettings() {
     if (user) {
       setProfileForm({
         name: user.name || '',
-        email: user.email || ''
+        email: pendingEmailRef.current ?? (user.email || '')
       });
     }
   }, [user]);
@@ -143,8 +148,12 @@ export default function ProfileSettings() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The submit button uses aria-disabled while saving (so focus is kept), so guard here.
+    if (profileLoading) return;
+    pendingEmailRef.current = null;
     setProfileError('');
     setProfileSuccess('');
+    setEmailNotice(null);
     setEmailError(null);
 
     // Validate email before submitting
@@ -168,12 +177,32 @@ export default function ProfileSettings() {
       const data = await response.json();
 
       if (!response.ok) {
-        setProfileError(data.error || 'Failed to update profile');
+        const message = data.error || 'Failed to update profile';
+        // Email-specific errors are announced once, on the field itself.
+        if (response.status === 409 || (response.status === 400 && /email/i.test(message))) {
+          setEmailError(message);
+        } else {
+          setProfileError(message);
+        }
         return;
       }
 
       setUser(data.user);
-      setProfileSuccess('Profile updated successfully!');
+      if (data.emailChangePending) {
+        // The address has not changed yet: the form keeps showing the current one.
+        const current = data.user?.email ?? user?.email ?? '';
+        if (data.verificationEmailSent) {
+          setProfileForm(prev => ({ ...prev, email: current }));
+          setEmailNotice({ kind: 'sent', text: `We sent a verification link to ${data.emailChangePending}. Your email stays ${current} until you verify.` });
+        } else {
+          // Keep the typed address so "Try saving again" resubmits it.
+          pendingEmailRef.current = data.emailChangePending;
+          setProfileForm(prev => ({ ...prev, email: data.emailChangePending }));
+          setEmailNotice({ kind: 'failed', text: `We could not send a verification link to ${data.emailChangePending}. Your email is still ${current}. Try saving again.` });
+        }
+      } else {
+        setProfileSuccess('Profile updated successfully!');
+      }
     } catch (error) {
       console.error('Profile update error:', error);
       setProfileError('Network error. Please try again.');
@@ -288,6 +317,7 @@ export default function ProfileSettings() {
                       value={profileForm.name}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Enter your full name"
+                      autoComplete="name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -299,6 +329,9 @@ export default function ProfileSettings() {
                       onChange={(e) => {
                         const value = e.target.value;
                         setProfileForm(prev => ({ ...prev, email: value }));
+                        pendingEmailRef.current = null;
+                        setEmailNotice(null);
+                        setProfileSuccess('');
                         // Validate email in real-time
                         if (value && !isValidEmail(value)) {
                           setEmailError('Please enter a valid email address');
@@ -307,28 +340,50 @@ export default function ProfileSettings() {
                         }
                       }}
                       placeholder="Enter your email address"
+                      autoComplete="email"
                       className={emailError ? 'border-red-500 focus:border-red-500' : ''}
+                      aria-invalid={emailError ? true : undefined}
+                      aria-describedby={[emailError && 'email-error', emailNotice && 'profile-status'].filter(Boolean).join(' ') || undefined}
                       required
                     />
                     {emailError && (
-                      <p className="text-sm text-red-600">{emailError}</p>
+                      <p id="email-error" role="alert" className="text-sm text-red-700 dark:text-red-400">{emailError}</p>
                     )}
                   </div>
                 </div>
                 
                 {profileError && (
-                  <div className="text-sm text-red-600 dark:text-red-400">
-                    {profileError}
-                  </div>
+                  <Alert variant="destructive" className="border-red-600 text-red-700 dark:border-red-400 dark:text-red-400">
+                    <AlertDescription>{profileError}</AlertDescription>
+                  </Alert>
                 )}
-                
-                {profileSuccess && (
-                  <div className="text-sm text-green-600 dark:text-green-400">
-                    {profileSuccess}
-                  </div>
-                )}
-                
-                <Button type="submit" disabled={profileLoading || !!emailError} className="flex items-center gap-2">
+
+                {/* Always mounted so screen readers register it before its content changes. */}
+                <div id="profile-status" role="status">
+                  {profileLoading && (
+                    <p className="text-sm text-muted-foreground">Saving profile…</p>
+                  )}
+                  {profileSuccess && (
+                    <div className="rounded-lg border border-green-600 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                      {profileSuccess}
+                    </div>
+                  )}
+                  {emailNotice && (
+                    <div
+                      className={`rounded-lg border px-4 py-3 text-sm ${emailNotice.kind === 'sent'
+                        ? 'border-green-600 text-green-700 dark:text-green-400'
+                        : 'border-amber-600 text-amber-800 dark:text-amber-400'}`}
+                    >
+                      {emailNotice.text}
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  aria-disabled={profileLoading || !!emailError || undefined}
+                  className="flex items-center gap-2 min-h-[44px] aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                >
                   <Save className="h-4 w-4" />
                   {profileLoading ? 'Saving...' : 'Save Profile'}
                 </Button>

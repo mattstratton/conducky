@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { UserService } from '../services/user.service';
+import { UserService, EMAIL_CHANGE_COOLDOWN_ERROR } from '../services/user.service';
 import { UserController } from '../controllers/user.controller';
 import { requireAuth } from '../middleware/auth';
 import { createPrismaClient } from '../config/prisma-client';
@@ -37,6 +37,10 @@ router.patch('/me/profile', requireAuth, async (req: any, res: Response): Promis
       // Check for email conflict to return correct status code
       if (result.error === 'This email address is already in use.') {
         res.status(409).json({ error: 'This email address is already in use.' });
+        return;
+      }
+      if (result.error === EMAIL_CHANGE_COOLDOWN_ERROR) {
+        res.status(429).json({ error: EMAIL_CHANGE_COOLDOWN_ERROR });
         return;
       }
       res.status(400).json({ error: result.error });
