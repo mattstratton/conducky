@@ -46,7 +46,7 @@
     "react-hook-form": "^7.57.0",
     "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
     "validator": "^13.15.15",
     "zod": "^3.25.64"
